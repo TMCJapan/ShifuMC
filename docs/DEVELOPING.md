@@ -95,6 +95,37 @@ Paper のクローンが要らないので、CI でも同じものが走る。
 javac は既定でエラー 100 件で打ち切る。`tools/maxerrs.gradle` で外してある。
 上げないと「100 件で止まったまま」を「100 件しかない」と読み違える。
 
+## 当たった結果を読む
+
+`patches/` は当てるための入力で、読む対象ではない。当たったツリーがそのまま
+git リポジトリになっているので、差分を読むならそちら。
+
+**NMS** — `HEAD` は vanilla の基点コミット。作業ツリーが当たった状態。
+
+```
+cd "$PW/paper-server/src/minecraft/java"
+git diff --shortstat            # 558 files changed, 10173 insertions(+), 82 deletions(-)
+git diff net/minecraft/world/entity/Entity.java
+git diff --stat | sort -k3 -rn | head -20      # 変更の大きい順
+git show "$SHIFU_BASE:net/minecraft/world/entity/Entity.java"   # 素の vanilla
+```
+
+**アダプタ層** — `.pw` 本体のリポジトリの一部。
+
+```
+cd "$PW"
+git diff -- paper-server/src/main/java         # 40 files changed, 215 insertions(+), 121 deletions(-)
+```
+
+`dev/shifu/**` は `src/event` からコピーされるので未追跡で出る。
+
+消えた 82 行の中身は `python tools/verify_additive.py` が分類する。
+可視性・interface・逆コンパイルで消えた局所変数・式の末尾の発火のどれかで、
+それ以外の削除や書き換えが 1 行でもあれば落ちる。
+
+**ここで直接編集したものは次の `once.sh` / `closure.sh` で消える。**
+どちらも最初に `git reset --hard` でツリーを vanilla に戻す。直すなら `patches/` の側に書く。
+
 ## 変えてよい vanilla の行
 
 Paper が vanilla の行そのものを書き換えている箇所のうち、コンパイル時の性質だけが

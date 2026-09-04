@@ -31,6 +31,10 @@ sh tools/closure.sh   # 不動点まで回してコンパイル
 sh tools/run-server.sh
 ```
 
+当たった結果は `$PW/paper-server/src/minecraft/java` に出る。ここは vanilla の基点
+コミットを `HEAD` に持つ git リポジトリなので、`git diff` で Shifu の追加が全部読める
+(読み方は [docs/DEVELOPING.md](docs/DEVELOPING.md) の「当たった結果を読む」)。
+
 `tools/setup.sh` は Paper をリポジトリの隣(`../.pw`)に clone する。別の場所に置きたい
 ときは `SHIFU_PAPER` を設定するか、`tools/env.local.sh`(git 管理外)に書く。
 

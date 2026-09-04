@@ -46,8 +46,8 @@ java -jar shifu.jar nogui
 `Done (...)` が出たら `127.0.0.1:25565` で入れる。
 
 初回に `versions/` `libraries/` `cache/` `.shifu/` `world/` `logs/` ができる。
-`shifu-server.jar` を新しいものに入れ替えたときは、`versions/` `libraries/` `cache/`
-`.shifu/` を消してから起動する。残っていると組み立て直さず、古いサーバーがそのまま動く。
+`shifu-server.jar` を新しいものに入れ替えたら、起動側が中身のハッシュで見分けて
+組み立て直す(`versions/<版>/paper-<版>.jar.from` に記録している)。消す必要はない。
 
 `eula.txt` は自分で書く。Minecraft の EULA に同意したことになるので、中身を確かめてから。
 
