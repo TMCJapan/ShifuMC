@@ -42,6 +42,14 @@ PW=/e/paper
 パスを直書きしない。`tools/*.sh` は `tools/env.sh` を読み、Python 側は
 `tools/paths.py` を読む。新しいツールを足すときも同じにする。
 
+Windows の git は既定で `core.filemode = false` なので、新しく足したスクリプトの
+実行ビットが記録されない。`./gradlew` を Linux の CI で走らせたときに
+`exit code 126` で落ちて分かった。`.sh` を足したら手で立てる。
+
+```
+git update-index --chmod=+x tools/<名前>.sh
+```
+
 ## 譲れない 2 条件
 
 1. **挙動が vanilla と完全に一致する。** 表面上ではなく、処理順とアルゴリズムまで
