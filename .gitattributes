@@ -1,0 +1,16 @@
+# 既定は LF。Windows と Linux が混ざっても差分が出ないようにする。
+* text=auto eol=lf
+
+# Windows のバッチだけ CRLF。cmd.exe は LF の .bat を正しく読まないことがある。
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# gradlew は POSIX の sh スクリプト。CRLF だと Linux / macOS で
+# 「bad interpreter: /bin/sh^M」になる。
+gradlew text eol=lf
+*.sh text eol=lf
+
+*.jar binary
+*.png binary
+*.gz binary
+*.litematic binary

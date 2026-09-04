@@ -1,0 +1,40 @@
+.gradle/
+build/
+out/
+run/
+*.class
+*.log
+*.log.gz
+logs/
+
+# 実行時に取得する成果物は絶対にコミットしない
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+versions/
+cache/
+libraries/
+
+.idea/
+*.iml
+.vscode/
+
+# 途中の作業ファイル
+*.bak
+*.bak2
+
+# 個人のパス設定。tools/env.sh が読む
+tools/env.local.sh
+
+__pycache__/
+
+# tools/player-events.sh が組む検証プラグインと bot
+tools/build/
+
+# 手で動かすためのサーバー。世界・設定・組み立て済みの jar が入る
+test/
+
+# ツールが毎回上書きする出力と、ビルドログ・サーバーログの全文
+docs/backlog/
+
+# セッションごとの作業メモ。恒久的な内容は docs/DEVELOPING.md に置く
+docs/HANDOFF.md

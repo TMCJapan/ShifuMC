@@ -1,0 +1,49 @@
+Shifu
+Copyright (C) 2026 Shifu contributors
+
+このプログラムはフリーソフトウェアです。Free Software Foundation が公開した
+GNU General Public License version 3 の条件に従って再頒布・改変できます。
+全文は LICENSE にあります。
+
+
+由来
+----
+
+Shifu は PaperMC/Paper (https://github.com/PaperMC/Paper) から次のものを受け継いでいる。
+
+  * アダプタ層  org.bukkit.craftbukkit.* / io.papermc.paper.* / org.spigotmc.*
+  * API         Bukkit / Paper API
+  * ビルド      paperweight による逆コンパイルと paperclip 形式の配布物
+
+Paper は Spigot から、Spigot は Bukkit と CraftBukkit から GPLv3 を受け継いでいる。
+Shifu も同じ条件で頒布する。
+
+このリポジトリの中で Paper 由来の内容を含むのは次の 2 つ。どちらも Paper の
+パッチファイル (paper-server/patches/sources) から宣言や行を取り出したものになる。
+
+  patches/shim/**.add     Paper のパッチから抜き出したメンバーの宣言 (tools/write_members.py が生成)
+  patches/adapter/*.rules アダプタ層の行の書き換え
+
+patches/events/ の規則は Paper のパッチの「どこで発火するか」だけを参照して作った。
+発火の中身 (src/event) は Shifu で書いている。
+
+
+Minecraft
+---------
+
+Minecraft のコードとデータは含まない。
+
+Shifu が置いている net.minecraft.* のソースは、Paper の paperweight が
+Mojang 公開のサーバー jar を逆コンパイルしたものを基点にしている。
+配布物 (shifu.jar / shifu-server.jar) に Minecraft のクラスは入らず、
+実行時に Mojang の公式 server.jar を利用者のマシンへ取得して合成する。
+
+Minecraft は Mojang AB の商標。Shifu は Mojang / Microsoft とは関係が無い。
+
+
+その他
+------
+
+  Fabric Loader (https://github.com/FabricMC/fabric-loader)  Apache-2.0
+      shifu-bootstrap は GameProvider の内部 API に対して書いてある。
+      コードは含まず、実行時に取得する。
