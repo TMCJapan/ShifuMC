@@ -1,0 +1,45 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// CombatTracker.recordDamageAndCheckCombatState
+    // Paper が recordDamage の後半を切り出したもの。vanilla の recordDamage は触らないので、
+    // vanilla の本体(vanilla CombatTracker.java:37-49)と同じ式をここに書く。
+    // 呼ぶのは Bukkit の CombatTracker#addCombatEntry だけで、vanilla の経路からは呼ばれない。
+    // Paper が同じ場所に入れている maxTrackingCombatEntries による entries の切り詰めは
+    // vanilla の挙動ではないので入れない。
+    public void recordDamageAndCheckCombatState(final CombatEntry entry) {
+        final DamageSource source = entry.source();
+        this.entries.add(entry);
+        this.lastDamageTime = this.mob.tickCount;
+        this.takingDamage = true;
+        if (!this.inCombat && this.mob.isAlive() && shouldEnterCombat(source)) {
+            this.inCombat = true;
+            this.combatStartTime = this.mob.tickCount;
+            this.combatEndTime = this.combatStartTime;
+            this.mob.onEnterCombat();
+        }
+    }
+
+// CombatTracker.resetCombatState
+    // Paper が recheckStatus の内側を切り出したもの。vanilla の recheckStatus は触らないので、
+    // vanilla の本体(vanilla CombatTracker.java:147-159)の内側と同じ式をここに書く。
+    // 呼ぶのは Bukkit の CombatTracker#resetCombatState だけ。
+    public void resetCombatState() {
+        boolean wasInCombat = this.inCombat;
+        this.takingDamage = false;
+        this.inCombat = false;
+        this.combatEndTime = this.mob.tickCount;
+        if (wasInCombat) {
+            this.mob.onLeaveCombat();
+        }
+
+        this.entries.clear();
+    }
+
+// CombatTracker.paperCombatTracker
+    // Paper は CombatTracker(LivingEntity) の中で代入するが、vanilla の構築子は触らない。
+    // 目印に paperCombatTracker と書いた時点で make_shim はこの名前を足さなくなるので、
+    // 宣言そのものをここに書いて初期化子で埋める。
+    // PaperCombatTrackerWrapper は handle を持つだけの record なので、
+    // 初期化子が構築子本体の this.mob の設定より前に走っても読むものが無い。
+    public final io.papermc.paper.world.damagesource.PaperCombatTrackerWrapper paperCombatTracker =
+        new io.papermc.paper.world.damagesource.PaperCombatTrackerWrapper(this);

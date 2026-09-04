@@ -1,0 +1,31 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// BaseCommandBlock.getBukkitSender
+    // Paper は所有側 (CommandBlockEntity / MinecartCommandBlock) に override を書くが、
+    // CommandBlockEntity の BaseCommandBlock は vanilla の匿名クラスなので足せない。
+    // CommandSourceStack から同じものを引く。CommandBlockEntity が渡す位置は
+    // Vec3.atCenterOf(worldPosition) なので、BlockPos.containing で元の座標に戻る。
+    // 読むだけで状態は変えない。
+    // /execute at などで位置を動かした stack では別のブロックを見ることになる。
+    // BaseCommandBlock から持ち主のブロックへ戻る道が無いので、追加だけではここまで。
+    protected org.bukkit.command.CommandSender getBukkitSender(final CommandSourceStack wrapper) {
+        final net.minecraft.world.entity.Entity entity = wrapper.getEntity();
+
+        if (entity != null) {
+            return entity.getBukkitEntity();
+        }
+
+        final BlockEntity blockEntity = wrapper.getLevel().getBlockEntity(net.minecraft.core.BlockPos.containing(wrapper.getPosition()));
+
+        return blockEntity != null
+            ? new org.bukkit.craftbukkit.command.CraftBlockCommandSender(wrapper, blockEntity)
+            : io.papermc.paper.brigadier.NullCommandSender.INSTANCE;
+    }
+
+// CloseableCommandBlockSource.getBukkitSender
+        // @Override は書かない。apply_shim_adds は塊の先頭の非註釈行 (head) が
+        // ファイル内に既にあると塊ごと捨てるので、@Override を先頭にすると
+        // このファイルに既にある @Override と一致して何も入らない。
+        public org.bukkit.command.CommandSender getBukkitSender(final CommandSourceStack wrapper) {
+            return BaseCommandBlock.this.getBukkitSender(wrapper);
+        }

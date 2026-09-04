@@ -1,0 +1,11 @@
+// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
+
+// WorldGenLevel.getFluidIfLoaded
+    public final FluidState getFluidIfLoaded(BlockPos pos) {
+        return Fluids.EMPTY.defaultFluidState();
+    }
+
+// LevelAccessor.getBlockStateIfLoaded
+    public final BlockState getBlockStateIfLoaded(BlockPos pos) {
+        return Blocks.AIR.defaultBlockState();
+    }

@@ -1,0 +1,29 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// Zombie.convertVillagerToZombieVillager
+    // Bukkit の変換理由 2 つ(transformReason / creatureSpawnReason)は受け取るだけで使わない。
+    // vanilla に対応する事象が無い。
+    // vanilla の版は instance メソッドで this.blockPosition() と this.isSilent() を読むので、
+    // 静的にするために同じ式を引数から取るように組み直した。状態は変えない。
+    public static @Nullable ZombieVillager convertVillagerToZombieVillager(
+            final ServerLevel level, final Villager villager, final BlockPos blockPosition, final boolean silent,
+            final org.bukkit.event.entity.EntityTransformEvent.TransformReason transformReason,
+            final org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason creatureSpawnReason) {
+        return villager.convertTo(
+            EntityTypes.ZOMBIE_VILLAGER,
+            ConversionParams.single(villager, true, true),
+            zombie -> {
+                zombie.setVillagerDataFinalized(villager.getVillagerDataFinalized());
+                zombie.finalizeSpawn(
+                    level, level.getCurrentDifficultyAt(zombie.blockPosition()), EntitySpawnReason.CONVERSION, new Zombie.ZombieGroupData(false, true)
+                );
+                zombie.setVillagerData(villager.getVillagerData());
+                zombie.setGossips(villager.getGossips().copy());
+                zombie.setTradeOffers(villager.getOffers().copy());
+                zombie.setVillagerXp(villager.getVillagerXp());
+                if (!silent) {
+                    level.levelEvent(null, LevelEvent.SOUND_ZOMBIE_INFECTED, blockPosition, 0);
+                }
+            }
+        );
+    }

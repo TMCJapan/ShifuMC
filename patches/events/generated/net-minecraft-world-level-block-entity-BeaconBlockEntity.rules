@@ -1,0 +1,31 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# BeaconActivatedEvent, BeaconDeactivatedEvent
+file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
+anchor:
+    if (entity.lastCheckY >= lastSetBlock) {
+insert:
+    // Paper start - beacon activation/deactivation events
+    if (previousLevels <= 0 && entity.levels > 0) {
+        org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+        new io.papermc.paper.event.block.BeaconActivatedEvent(block).callEvent();
+    } else if (previousLevels > 0 && entity.levels <= 0) {
+        org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+        new io.papermc.paper.event.block.BeaconDeactivatedEvent(block).callEvent();
+    }
+    // Paper end - beacon activation/deactivation events
+
+# BeaconDeactivatedEvent
+file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
+anchor:
+    playSound(this.level, this.worldPosition, SoundEvents.BEACON_DEACTIVATE);
+insert:
+    // Paper start - beacon activation/deactivation events
+    org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, worldPosition);
+    new io.papermc.paper.event.block.BeaconDeactivatedEvent(block).callEvent();
+    // Paper end - beacon activation/deactivation events
+    // Paper start - fix MC-153086
+    if (this.levels > 0 && !this.beamSections.isEmpty()) {
+insert-after:
+    }
+    // Paper end

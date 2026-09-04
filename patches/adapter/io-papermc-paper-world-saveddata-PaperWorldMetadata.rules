@@ -1,0 +1,9 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: io/papermc/paper/world/saveddata/PaperWorldMetadata.java
+
+# 同上
+replace:
+    DataFixTypes.NONE
+with:
+    DataFixTypes.SHIFU_NO_FIX

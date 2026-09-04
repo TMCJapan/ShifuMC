@@ -1,0 +1,29 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+#
+# Paper は「API の CommandSourceStack と NMS のそれは同じオブジェクト」を前提に、
+# API のノードをそのまま vanilla の dispatcher に入れている。Shifu は NMS のクラス宣言を
+# 変えない(Fabric API の mixin と衝突するため)ので、ノードを入れるときに
+# 述語・実行・補完・リダイレクトを包み直す(dev.shifu.command.ApiSource)。
+
+file: io/papermc/paper/command/brigadier/ApiMirrorRootNode.java
+
+# 素のノード(リテラル、NMS が知っている引数)
+replace:
+    private CommandNode<CommandSourceStack> simpleUnwrap(final CommandNode<CommandSourceStack> node) {
+        return node.createBuilder()
+            .forward(node.getRedirect() == null ? null : this.unwrapNode(node.getRedirect()), node.getRedirectModifier(), node.isFork())
+            .build();
+    }
+with:
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private CommandNode<CommandSourceStack> simpleUnwrap(final CommandNode<CommandSourceStack> node) {
+        // Shifu - source を包み直して組み立てる
+        return dev.shifu.command.ApiSource.unwrapNode(node,
+            node.getRedirect() == null ? null : this.unwrapNode(node.getRedirect()));
+    }
+
+# 包んだ引数のノード
+replace:
+        return new WrappedArgumentCommandNode<>(pureNode.getName(), pureArgumentType, nativeArgumentType, pureNode.getCommand(), pureNode.getRequirement(), redirectNode, pureNode.getRedirectModifier(), pureNode.isFork(), suggestionProvider);
+with:
+        return new WrappedArgumentCommandNode<>(pureNode.getName(), pureArgumentType, nativeArgumentType, dev.shifu.command.ApiSource.toNms(pureNode.getCommand()), dev.shifu.command.ApiSource.toNms(pureNode.getRequirement()), redirectNode, dev.shifu.command.ApiSource.toNms(pureNode.getRedirectModifier()), pureNode.isFork(), dev.shifu.command.ApiSource.toNms(suggestionProvider)); // Shifu - source を包み直す

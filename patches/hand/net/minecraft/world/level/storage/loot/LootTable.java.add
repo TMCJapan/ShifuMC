@@ -1,0 +1,27 @@
+// 自前で書いた追加。vanilla の本体には触らず、乱数源を受ける版を持つ。
+
+// LootTable.fill
+    // vanilla の fill(Container, LootParams, long)(LootTable.java:146) と同じ手順。
+    // 種から乱数源を作る代わりに、渡された乱数源をそのまま使う。
+    // plugin は LootGenerateEvent 用。発火しないので使わない。
+    public void fill(final Container container, final LootParams params, final RandomSource randomSource,
+                     final boolean plugin) {
+        LootContext context = new LootContext.Builder(params).withOptionalRandomSource(randomSource).create(this.randomSequence);
+        ObjectArrayList<ItemStack> itemStacks = this.getRandomItems(context);
+        RandomSource random = context.getRandom();
+        List<Integer> availableSlots = this.getAvailableSlots(container, random);
+        this.shuffleAndSplitItems(itemStacks, availableSlots.size(), random);
+
+        for (ItemStack itemStack : itemStacks) {
+            if (availableSlots.isEmpty()) {
+                LOGGER.warn("Tried to over-fill a container");
+                return;
+            }
+
+            if (itemStack.isEmpty()) {
+                container.setItem(availableSlots.remove(availableSlots.size() - 1), ItemStack.EMPTY);
+            } else {
+                container.setItem(availableSlots.remove(availableSlots.size() - 1), itemStack);
+            }
+        }
+    }

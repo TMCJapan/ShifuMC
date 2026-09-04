@@ -1,0 +1,13 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// WeatherData.setRaining
+    // cause は WeatherChangeEvent 用。発火しないので渡さない。
+    public void setRaining(final boolean raining, final org.bukkit.event.weather.WeatherChangeEvent.Cause cause) {
+        this.setRaining(raining);
+    }
+
+// WeatherData.setThundering
+    // cause は ThunderChangeEvent 用。発火しないので渡さない。
+    public void setThundering(final boolean thundering, final org.bukkit.event.weather.ThunderChangeEvent.Cause cause) {
+        this.setThundering(thundering);
+    }

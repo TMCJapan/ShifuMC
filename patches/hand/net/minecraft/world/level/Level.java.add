@@ -1,0 +1,26 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// Level.world
+    // make_shim が Paper のパッチから写した world(Paper のパッチ Level.java.patch:28)は空の final。
+    // Paper は ServerLevel 側の構築子で this.world = new CraftWorld(...) を代入するが、
+    // vanilla の Level(WritableLevelData, ...) は触らないので代入する場所が無く、
+    // 構築子の末尾(Level.java:166)で「変数 world は初期化されていない可能性があります」になる。
+    // final を外して shim の方を止める。getWorld() は shim の版がそのまま残る。
+    private org.bukkit.craftbukkit.CraftWorld world;
+
+// Level.spigotConfig
+    // world と同じ。Paper のパッチは構築子で this.spigotConfig = new SpigotWorldConfig(...) を
+    // 代入するが(Level.java.patch:91)、vanilla の構築子は触らないので空の final のままになる。
+    // final を外す。
+    public org.spigotmc.SpigotWorldConfig spigotConfig; // Spigot
+
+// Level.paperConfig
+    // world と同じ。Paper のパッチは構築子で this.paperConfig = ... を代入するが
+    // (Level.java.patch:92)、vanilla の構築子は触らないので空の final のままになる。
+    // 目印の paperConfig は同じ名前の読み出しメソッドも巻き込んで make_shim を止めるので、
+    // フィールドとメソッドの両方をここに書く。
+    public io.papermc.paper.configuration.WorldConfiguration paperConfig;
+
+    public io.papermc.paper.configuration.WorldConfiguration paperConfig() {
+        return this.paperConfig;
+    }

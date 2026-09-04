@@ -1,0 +1,11 @@
+// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
+
+// LevelSettings.withLevelName
+    public LevelSettings withLevelName(String name) {
+        return new LevelSettings(name, this.gameType, this.difficultySettings, this.allowCommands, this.dataConfiguration);
+    }
+
+// LevelSettings.withHardcore
+    public LevelSettings withHardcore(boolean hardcore) {
+        return new LevelSettings(this.levelName, this.gameType, new LevelSettings.DifficultySettings(this.difficultySettings.difficulty(), hardcore, this.difficultySettings.locked()), this.allowCommands, this.dataConfiguration);
+    }

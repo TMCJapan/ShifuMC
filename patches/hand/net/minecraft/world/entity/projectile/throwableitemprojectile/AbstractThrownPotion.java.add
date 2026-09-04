@@ -1,0 +1,30 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// AbstractThrownPotion.splash
+    // Paper は onHit の本体(super.onHit の後ろ全部)をこの名前で切り出している。
+    // onHit を呼ぶと super.onHit の当たり処理まで走ってしまうので、vanilla の onHit の
+    // 本体をそのまま写した。
+    // CraftThrownPotion は hitResult に null を渡す。ThrownSplashPotion.onHitAsPotion は
+    // hitResult.getLocation() から自分の位置を引くので、差が 0 になる MISS を作って渡す。
+    // Paper が null のときに使う this.getBoundingBox() と同じ当たり範囲になる。
+    public void splash(final @org.jspecify.annotations.Nullable HitResult hitResult) {
+        final HitResult hit = hitResult != null
+            ? hitResult
+            : BlockHitResult.miss(this.position(), Direction.DOWN, this.blockPosition());
+        if (this.level() instanceof ServerLevel level) {
+            ItemStack potionItemStack = this.getItem();
+            PotionContents potion = potionItemStack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY);
+            if (potion.is(Potions.WATER)) {
+                dev.shifu.event.EntityEvents.splashHit(hit);
+                this.onHitAsWater(level);
+            } else if (potion.hasEffects()) {
+                this.onHitAsPotion(level, potionItemStack, hit);
+            }
+
+            int type = potion.potion().isPresent() && potion.potion().get().value().hasInstantEffects()
+                ? LevelEvent.PARTICLES_INSTANT_POTION_SPLASH
+                : LevelEvent.PARTICLES_SPELL_POTION_SPLASH;
+            level.levelEvent(type, this.blockPosition(), potion.getColor());
+            this.discard();
+        }
+    }

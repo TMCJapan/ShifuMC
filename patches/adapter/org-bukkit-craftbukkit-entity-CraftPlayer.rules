@@ -1,0 +1,9 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: org/bukkit/craftbukkit/entity/CraftPlayer.java
+
+# vanilla の DiscardedPayload は成分が Identifier 1 つで、record の成分は足せない
+replace:
+    new DiscardedPayload(id, message)
+with:
+    new DiscardedPayload(id)

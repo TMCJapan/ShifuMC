@@ -1,0 +1,11 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+#
+# Bukkit のコマンドのノードは vanilla の dispatcher にも入るので、
+# 述語に来る source は包んだもの。中身を見るときは取り出す。
+
+file: io/papermc/paper/command/brigadier/bukkit/BukkitCommandNode.java
+
+replace:
+                if (source instanceof net.minecraft.commands.CommandSourceStack commandSourceStack && commandSourceStack.source == CommandSource.NULL) {
+with:
+                if (dev.shifu.command.ApiSource.unwrap(source) instanceof final net.minecraft.commands.CommandSourceStack commandSourceStack && commandSourceStack.source == CommandSource.NULL) { // Shifu - 包んだ source から取り出す

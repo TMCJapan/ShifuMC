@@ -1,0 +1,9 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: io/papermc/paper/registry/set/NamedRegistryKeySetImpl.java
+
+# 中身は通したが、target のパスを直した
+replace:
+            return this.namedSet.contains(valueKey);
+with:
+            return this.values().contains(valueKey);

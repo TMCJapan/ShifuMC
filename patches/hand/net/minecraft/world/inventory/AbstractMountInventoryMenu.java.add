@@ -1,0 +1,15 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// AbstractMountInventoryMenu.SHIFU_SLOT_SADDLE
+    // vanilla の SLOT_SADDLE / SLOT_BODY_ARMOR / SLOT_INVENTORY_START は
+    // public final int のインスタンス定数。static 化は宣言の書き換えになるので、
+    // 同じ値の static 定数を別名で足してアダプタ層をそちらへ向ける。
+    public static final int SHIFU_SLOT_SADDLE = 0;
+
+// AbstractMountInventoryMenu.SHIFU_SLOT_BODY_ARMOR
+    // SLOT_BODY_ARMOR のインスタンス定数と同じ値の static 版。
+    public static final int SHIFU_SLOT_BODY_ARMOR = 1;
+
+// AbstractMountInventoryMenu.SHIFU_SLOT_INVENTORY_START
+    // SLOT_INVENTORY_START のインスタンス定数と同じ値の static 版。
+    public static final int SHIFU_SLOT_INVENTORY_START = 2;

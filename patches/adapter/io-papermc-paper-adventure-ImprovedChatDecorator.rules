@@ -1,0 +1,23 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: io/papermc/paper/adventure/ImprovedChatDecorator.java
+
+# target を正しいパスに直した(元案は org/bukkit/craftbukkit/inventory/../../../io/... という遠回りの表記だった)
+replace:
+    public final class ImprovedChatDecorator implements ChatDecorator {
+with:
+    public final class ImprovedChatDecorator {
+
+# そのまま通す
+replace:
+        @Override
+        public CompletableFuture<Component> decorate(final @Nullable ServerPlayer sender, final Component message) {
+with:
+        public CompletableFuture<Component> decorate(final @Nullable ServerPlayer sender, final Component message) {
+
+# そのまま通す
+replace:
+        @Override
+        public CompletableFuture<Component> decorate(final @Nullable ServerPlayer sender, final @Nullable CommandSourceStack commandSourceStack, final Component message) {
+with:
+        public CompletableFuture<Component> decorate(final @Nullable ServerPlayer sender, final @Nullable CommandSourceStack commandSourceStack, final Component message) {

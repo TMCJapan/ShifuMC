@@ -1,0 +1,24 @@
+# Bukkit 層の起動。Paper は PlayerList の構築子の先頭でこの 2 行を実行する
+# (patches/sources/net/minecraft/server/players/PlayerList.java.patch の @@ -128)。
+#
+# CraftServer の構築子が Bukkit.setServer(this) を呼ぶので、ここを通らないと
+# Bukkit 層は一度も起動しない。プラグインの読み込みも走らない。
+# 欄の初期化子では代われない(構築子の本体より先に走るので server がまだ入っていない)。
+#
+# vanilla の行は 1 文字も変えていない。間に 2 行入れているだけ。
+file: net/minecraft/server/players/PlayerList.java
+anchor:
+    this.server = server;
+    this.registries = registries;
+insert:
+    this.cserver = server.server = new org.bukkit.craftbukkit.CraftServer((net.minecraft.server.dedicated.DedicatedServer) server, this);
+    server.console = new com.destroystokyo.paper.console.TerminalConsoleCommandSender();
+
+# OptionSet を構築子の欄へ移す。Paper は構築子の引数で受けるが、vanilla の宣言は
+# 変えられないので、アダプタ層が置いた static から取る。
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    this.serverThread = serverThread;
+    this.executor = Util.backgroundExecutor();
+insert:
+    this.options = MinecraftServer.shifuOptions;

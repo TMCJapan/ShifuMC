@@ -1,0 +1,29 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# PlayerDeepSleepEvent
+file: net/minecraft/world/entity/player/Player.java
+anchor:
+    if (this.sleepCounter > 100) {
+insert:
+    // Paper start - Add PlayerDeepSleepEvent
+    if (this.sleepCounter == SLEEP_DURATION) {
+        if (!new io.papermc.paper.event.player.PlayerDeepSleepEvent((org.bukkit.entity.Player) getBukkitEntity()).callEvent()) {
+            this.sleepCounter = Integer.MIN_VALUE;
+        }
+    }
+    // Paper end - Add PlayerDeepSleepEvent
+
+# callToggleGlideEvent
+file: net/minecraft/world/entity/player/Player.java
+anchor:
+    this.setSharedFlag(Entity.FLAG_FALL_FLYING, true);
+insert:
+    // CraftBukkit start
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callToggleGlideEvent(this, true).isCancelled()) {
+insert-after:
+    } else {
+        // SPIGOT-5542: must toggle like below
+        this.setSharedFlag(Entity.FLAG_FALL_FLYING, true);
+        this.setSharedFlag(Entity.FLAG_FALL_FLYING, false);
+    }
+    // CraftBukkit end

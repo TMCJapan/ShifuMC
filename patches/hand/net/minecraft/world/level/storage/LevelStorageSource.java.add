@@ -1,0 +1,10 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// LevelStorageSource.readExistingSavedData
+    // Paper は次元ごとの data ディレクトリを読むために dimension を足している。
+    // vanilla は world/data の 1 か所しか読まないので、dimension は渡さず vanilla の版を呼ぶ。
+    // 宣言は 1 行に畳んである。改行すると先頭行が vanilla の 3 引数版と同じ文字列になり、
+    // apply_shim_adds の二重挿入判定に掛かって入らない。
+    public static <T extends SavedData> DataResult<T> readExistingSavedData(final LevelStorageSource.LevelStorageAccess access, final ResourceKey<Level> dimension, final HolderLookup.Provider registryAccess, final SavedDataType<T> savedDataType) {
+        return readExistingSavedData(access, registryAccess, savedDataType);
+    }

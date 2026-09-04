@@ -1,0 +1,8 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callPlayerRiptideEvent
+file: net/minecraft/world/item/TridentItem.java
+anchor:
+    player.push(xd, yd, zd);
+insert:
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerRiptideEvent(player, itemStack, xd, yd, zd)) return false; // Paper - Add player riptide event

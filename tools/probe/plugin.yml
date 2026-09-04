@@ -1,0 +1,5 @@
+name: ShifuPlayerProbe
+version: "1.0"
+main: dev.shifu.probe.PlayerProbe
+api-version: "1.21"
+description: bot を動かしてプレイヤー経路のイベントが届くかを確かめる

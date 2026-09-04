@@ -1,0 +1,14 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# handleBlockDispenseEvent
+file: net/minecraft/core/dispenser/FlintAndSteelDispenseItemBehavior.java
+anchor:
+    BlockState target = level.getBlockState(targetPos);
+insert:
+    // Paper start - Call BlockDispenseEvent
+    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(source, targetPos, dispensed, this);
+    if (result != null) {
+        this.setSuccess(false);
+        return result;
+    }
+    // Paper end - Call BlockDispenseEvent

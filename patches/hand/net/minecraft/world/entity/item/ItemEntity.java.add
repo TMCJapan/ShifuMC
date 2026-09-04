@@ -1,0 +1,7 @@
+// 自前で書いた追加。
+
+// ItemEntity.shifuCanHold
+    // 拾い上げのイベントに渡す「入る数」。局所変数にすると公式の int と並んでしまい、
+    // MixinExtras の @Local int が「候補が 2 つ以上」で当たらなくなる
+    // (carpet-tis-addition の ItemEntityMixin)。playerTouch の中だけで使う。
+    public int shifuCanHold;

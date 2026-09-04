@@ -1,0 +1,25 @@
+# vanilla の式の末尾に発火を足す。
+#
+# Paper が「式の途中」で発火しているところ。前後を囲む形では入らないので、
+# 行の末尾に `&& dev.shifu.event.*` を足す。**足すのは常に式の最後**で、
+# vanilla の判定が全て終わったあとにしか呼ばれない。
+# 発火に登録が無ければ true を返すので、実行される命令列は
+# 「true を返す static 呼び出しが 1 つ増える」だけになる(他の 866 箇所と同じ)。
+#
+# tools/verify_additive.py がこの形(末尾に ` && dev.shifu.event.…` を足しただけ)を
+# 機械で確かめる。それ以外の書き換えは通らない。
+
+# TurtleGoHomeEvent
+#
+# Paper は canUse() の return の式の末尾に発火を足している。
+# 前に出すと「帰ろうとしたとき」ではなく毎 tick 出てしまい、
+# vanilla の判定は getRandom().nextInt() を消費するので 2 回評価もできない。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/turtle/Turtle.java.patch
+file: net/minecraft/world/entity/animal/turtle/Turtle.java
+replace:
+    || this.turtle.getRandom().nextInt(reducedTickDelay(700)) == 0 && !this.turtle.homePos.closerToCenterThan(this.turtle.position(), 64.0)
+    );
+with:
+    || this.turtle.getRandom().nextInt(reducedTickDelay(700)) == 0 && !this.turtle.homePos.closerToCenterThan(this.turtle.position(), 64.0)
+    ) && dev.shifu.event.AnimalEvents.turtleGoHome(this.turtle);

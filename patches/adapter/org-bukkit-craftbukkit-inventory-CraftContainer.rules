@@ -1,0 +1,8 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: org/bukkit/craftbukkit/inventory/CraftContainer.java
+
+replace:
+    new LecternMenu(windowId, top, new SimpleContainerData(1), bottom)
+with:
+    new LecternMenu(windowId, top, new SimpleContainerData(1))

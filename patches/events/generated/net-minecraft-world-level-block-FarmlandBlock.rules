@@ -1,0 +1,24 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# EntityInteractEvent, callEntityChangeBlockEvent, callPlayerInteractEvent
+file: net/minecraft/world/level/block/FarmlandBlock.java
+anchor:
+    turnToDirt(entity, state, level, pos);
+insert:
+    // CraftBukkit start - Interact soil
+    org.bukkit.event.Cancellable cancellable;
+    if (entity instanceof Player) {
+        cancellable = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerInteractEvent((Player) entity, org.bukkit.event.block.Action.PHYSICAL, pos, null, null, null);
+    } else {
+        cancellable = new org.bukkit.event.entity.EntityInteractEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos));
+        level.getCraftServer().getPluginManager().callEvent((org.bukkit.event.entity.EntityInteractEvent) cancellable);
+    }
+
+    if (cancellable.isCancelled()) {
+        return;
+    }
+
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(entity, pos, Blocks.DIRT.defaultBlockState())) {
+        return;
+    }
+    // CraftBukkit end

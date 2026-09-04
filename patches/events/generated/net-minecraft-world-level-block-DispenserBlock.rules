@@ -1,0 +1,8 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# handleBlockPreDispenseEvent
+file: net/minecraft/world/level/block/DispenserBlock.java
+anchor:
+    blockEntity.setItem(slot, behavior.dispense(source, itemStack));
+insert:
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockPreDispenseEvent(level, pos, itemStack, slot)) return; // Paper - Add BlockPreDispenseEvent

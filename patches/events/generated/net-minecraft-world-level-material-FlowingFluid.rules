@@ -1,0 +1,44 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# BlockFromToEvent
+file: net/minecraft/world/level/material/FlowingFluid.java
+anchor:
+    this.spreadTo(level, belowPos, belowState, Direction.DOWN, newBelowFluid);
+insert:
+    // CraftBukkit start
+    org.bukkit.block.Block source = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+    org.bukkit.event.block.BlockFromToEvent event = new org.bukkit.event.block.BlockFromToEvent(source, org.bukkit.block.BlockFace.DOWN);
+    level.getCraftServer().getPluginManager().callEvent(event);
+
+    if (event.isCancelled()) {
+        return;
+    }
+    // CraftBukkit end
+
+# callFluidLevelChangeEvent
+file: net/minecraft/world/level/material/FlowingFluid.java
+anchor:
+        level.setBlock(pos, blockState, Block.UPDATE_ALL);
+    } else if (newFluidState != fluidState) {
+insert:
+    // CraftBukkit start
+    org.bukkit.event.block.FluidLevelChangeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callFluidLevelChangeEvent(level, pos, blockState);
+    if (event.isCancelled()) {
+        return;
+    }
+    blockState = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
+    // CraftBukkit end
+
+# callFluidLevelChangeEvent
+file: net/minecraft/world/level/material/FlowingFluid.java
+anchor:
+    level.setBlock(pos, blockState, Block.UPDATE_ALL);
+    level.scheduleTick(pos, fluidState.getType(), tickDelay);
+insert:
+    // CraftBukkit start
+    org.bukkit.event.block.FluidLevelChangeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callFluidLevelChangeEvent(level, pos, blockState);
+    if (event.isCancelled()) {
+        return;
+    }
+    blockState = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
+    // CraftBukkit end

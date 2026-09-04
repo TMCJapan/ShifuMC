@@ -1,0 +1,13 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityChangeBlockEvent
+file: net/minecraft/world/level/block/CakeBlock.java
+anchor:
+    itemStack.consume(1, player);
+insert:
+    // Paper start - call change block event
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(player, pos, CandleCakeBlock.byCandle(candleBlock))) {
+        player.containerMenu.forceHeldSlot(hand); // update inv because candle could decrease
+        return InteractionResult.TRY_WITH_EMPTY_HAND;
+    }
+    // Paper end - call change block event

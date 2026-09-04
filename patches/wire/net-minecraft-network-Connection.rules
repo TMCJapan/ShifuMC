@@ -1,0 +1,18 @@
+# Bukkit 層の配線。vanilla の行は変えていない。
+
+# プラグインメッセージの本文を、復号した packet と結びつける handler を差し込む。
+# vanilla の DiscardedPayload の codec は本文を捨てるので、捨てる直前に控えを取り
+# (patches/anon/discarded-payload.rules)、その控えをこの handler が接続ごとの列へ移す。
+# プラグインが無ければ控えを取らないので、この handler は何もしない。
+file: net/minecraft/network/Connection.java
+anchor:
+        }).addLast(HandlerNames.PACKET_HANDLER, this);
+insert-after:
+    dev.shifu.event.PluginMessages.install(pipeline, this);
+
+# 接続が閉じたら、その接続の控えとチャンネルを忘れる
+file: net/minecraft/network/Connection.java
+anchor:
+    public void handleDisconnection() {
+insert-after:
+    dev.shifu.event.PluginMessages.forget(this);

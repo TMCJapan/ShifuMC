@@ -1,0 +1,42 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: org/bukkit/craftbukkit/event/CraftEventFactory.java
+# Spigot の「湧いた経験値オーブを近くのものと統合する」は vanilla に無い挙動。
+# 入れると条件 1(vanilla と一致)を壊す。加えて level.spigotConfig は
+# Shifu では誰も代入しないので、読んだ時点で NPE になる。
+# 半径 0 にして枝ごと通らなくする。中で読む level.paperConfig() も同じく null。
+replace:
+            double radius = level.spigotConfig.expMerge;
+with:
+            double radius = 0.0D; // Shifu - Spigot の経験値統合は vanilla に無い。設定も立ち上げていない
+
+# 死亡音は vanilla が hurtServer の中で die の直前に鳴らしている
+# (LivingEntity.java:1274 の makeSound(this.getDeathSound()))。
+# Paper はそこを消して自分で鳴らし直すが、Shifu はその行を残している。
+# ここを通すと 2 回鳴る。
+#
+# 未対応: EntityDeathEvent の setDeathSound / setShouldPlayDeathSound。
+# vanilla が先に鳴らし終えているので、あとから差し替える先が無い。
+replace:
+        if (event.shouldPlayDeathSound() && event.getDeathSound() != null && event.getDeathSoundCategory() != null) {
+with:
+        if (false) { // Shifu - vanilla が既に鳴らしている。通すと 2 回になる
+
+# Shifu の発火層(dev.shifu.event.ShifuEvents)が死亡イベントを自分で組み立てる。
+# 落ちる経験値を vanilla が実際に出したオーブの合計にするため、
+# callEntityDeathEvent / callPlayerDeathEvent(getExpReward を読む)は使わない。
+# 中で使っている 3 つを公開する。
+replace:
+    private static final java.util.function.Function<org.bukkit.inventory.ItemStack, Entity.DefaultDrop> FROM_FUNCTION = stack -> {
+with:
+    public static final java.util.function.Function<org.bukkit.inventory.ItemStack, Entity.DefaultDrop> FROM_FUNCTION = stack -> { // Shifu - 発火層から使う
+
+replace:
+    private static void dropAllItems(List<Entity.DefaultDrop> drops, Consumer<ItemStack> fallback) {
+with:
+    public static void dropAllItems(List<Entity.DefaultDrop> drops, Consumer<ItemStack> fallback) { // Shifu - 発火層から使う
+
+replace:
+    private static void populateFields(net.minecraft.world.entity.LivingEntity victim, EntityDeathEvent event) {
+with:
+    public static void populateFields(net.minecraft.world.entity.LivingEntity victim, EntityDeathEvent event) { // Shifu - 発火層から使う

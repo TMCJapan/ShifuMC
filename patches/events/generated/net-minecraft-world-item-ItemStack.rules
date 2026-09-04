@@ -1,0 +1,12 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callPlayerItemBreakEvent
+file: net/minecraft/world/item/ItemStack.java
+anchor:
+    this.shrink(1);
+insert:
+    // CraftBukkit start - Check for item breaking
+    if (this.getCount() == 1 && player instanceof final ServerPlayer serverPlayer) { // Paper - Add EntityDamageItemEvent
+        org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerItemBreakEvent(serverPlayer, this); // Paper - Add EntityDamageItemEvent
+    }
+    // CraftBukkit end

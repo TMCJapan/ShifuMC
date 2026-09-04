@@ -1,0 +1,12 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityChangeBlockEvent
+file: net/minecraft/world/item/AxeItem.java
+anchor:
+    if (player instanceof ServerPlayer serverPlayer) {
+insert:
+    // Paper start - EntityChangeBlockEvent
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(player, pos, newBlock.get())) {
+        return InteractionResult.PASS;
+    }
+    // Paper end

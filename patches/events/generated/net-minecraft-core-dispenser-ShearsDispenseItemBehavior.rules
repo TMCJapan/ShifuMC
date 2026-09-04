@@ -1,0 +1,28 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# BlockDispenseEvent
+file: net/minecraft/core/dispenser/ShearsDispenseItemBehavior.java
+anchor:
+    if (!level.isClientSide()) {
+insert:
+    // CraftBukkit start
+    org.bukkit.block.Block bukkitBlock = org.bukkit.craftbukkit.block.CraftBlock.at(level, source.pos());
+    org.bukkit.craftbukkit.inventory.CraftItemStack craftItem = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(dispensed); // Paper - ignore stack size on damageable items
+    org.bukkit.event.block.BlockDispenseEvent event = new org.bukkit.event.block.BlockDispenseEvent(bukkitBlock, craftItem.clone(), new org.bukkit.util.Vector(0, 0, 0));
+    level.getCraftServer().getPluginManager().callEvent(event);
+
+    if (event.isCancelled()) {
+        this.setSuccess(false);
+        return dispensed;
+    }
+
+    if (!event.getItem().equals(craftItem)) {
+        // Chain to handler for new item
+        ItemStack eventStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItem());
+        DispenseItemBehavior dispenseBehavior = DispenserBlock.getDispenseBehavior(source, eventStack);
+        if (dispenseBehavior != DispenseItemBehavior.NOOP && dispenseBehavior != this) {
+            dispenseBehavior.dispense(source, eventStack);
+            return dispensed;
+        }
+    }
+    // CraftBukkit end

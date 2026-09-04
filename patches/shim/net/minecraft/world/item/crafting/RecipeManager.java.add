@@ -1,0 +1,10 @@
+// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
+
+// RecipeManager.finalizeRecipeLoading
+    public void finalizeRecipeLoading() {
+        if (this.enabledFlags != null) {
+            this.finalizeRecipeLoading(this.enabledFlags);
+
+            net.minecraft.server.MinecraftServer.getServer().getPlayerList().reloadResources();
+        }
+    }

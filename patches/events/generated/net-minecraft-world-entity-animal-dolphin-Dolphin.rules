@@ -1,0 +1,11 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityPickupItemEvent
+file: net/minecraft/world/entity/animal/dolphin/Dolphin.java
+anchor:
+    this.onItemPickup(entity);
+insert:
+    // CraftBukkit start - call EntityPickupItemEvent
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPickupItemEvent(this, entity, 0).isCancelled()) return;
+    itemStack = entity.getItem(); // CraftBukkit- update ItemStack from event
+    // CraftBukkit end

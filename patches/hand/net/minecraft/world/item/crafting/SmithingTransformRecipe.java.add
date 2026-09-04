@@ -1,0 +1,18 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// SmithingTransformRecipe.copyDataComponents
+    // Paper は「データコンポーネントを引き継ぐか」を構築子で受けるが、vanilla の
+    // 5 引数の構築子は代入する場所が無い。宣言そのものをここに書いて初期値で埋める。
+    // 値は vanilla の assemble と同じ「引き継ぐ」。
+    // 目印に copyDataComponents と書いた時点で make_shim はこの名前を足さなくなるので、
+    // 初期化子だけを書くと代入する相手が居なくなる。
+    private final boolean copyDataComponents = true;
+
+// SmithingTransformRecipe.SmithingTransformRecipe
+    // Paper が足した「データコンポーネントを引き継ぐか」の引数。vanilla の assemble は
+    // 常に TransmuteRecipe.createWithOriginalComponents を通るので、受け取った値は使わず
+    // vanilla の 5 引数の構築子へ渡すだけにする。欄は final なので、this(...) の後では
+    // 代入できない(javac: 変数は既に代入されている可能性がある)。初期化子の塊で埋めてある。
+    public SmithingTransformRecipe(final Recipe.CommonInfo commonInfo, final Optional<Ingredient> template, final Ingredient base, final Optional<Ingredient> addition, final ItemStackTemplate result, final boolean copyDataComponents) {
+        this(commonInfo, template, base, addition, result);
+    }

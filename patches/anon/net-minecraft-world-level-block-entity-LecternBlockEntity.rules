@@ -1,0 +1,59 @@
+# vanilla の中の無名クラスへの追加。型の名前が無いので hand では届かない。
+
+# そのまま通す
+file: net/minecraft/world/level/block/entity/LecternBlockEntity.java
+anchor:
+            public int getContainerSize() {
+                return 1;
+            }
+insert-after:
+            public java.util.List<org.bukkit.entity.HumanEntity> transaction = new java.util.ArrayList<>();
+
+            @Override
+            public java.util.List<ItemStack> getContents() {
+                return java.util.List.of(LecternBlockEntity.this.book);
+            }
+
+            @Override
+            public void onOpen(final org.bukkit.craftbukkit.entity.CraftHumanEntity player) {
+                this.transaction.add(player);
+            }
+
+            @Override
+            public void onClose(final org.bukkit.craftbukkit.entity.CraftHumanEntity player) {
+                this.transaction.remove(player);
+            }
+
+            @Override
+            public java.util.List<org.bukkit.entity.HumanEntity> getViewers() {
+                return this.transaction;
+            }
+
+            @Override
+            public org.bukkit.inventory.@Nullable InventoryHolder getOwner() {
+                return LecternBlockEntity.this.getOwner();
+            }
+
+            @Override
+            public void setMaxStackSize(final int size) {
+            }
+
+            @Override
+            public org.bukkit.@Nullable Location getLocation() {
+                if (LecternBlockEntity.this.level == null) {
+                    return null;
+                }
+
+                return org.bukkit.craftbukkit.util.CraftLocation.toBukkit(LecternBlockEntity.this.worldPosition, LecternBlockEntity.this.level);
+            }
+
+file: net/minecraft/world/level/block/entity/LecternBlockEntity.java
+anchor:
+            @Override
+            public int getContainerSize() {
+insert:
+    @Override
+    public LecternBlockEntity shifuLectern() {
+        return LecternBlockEntity.this;
+    }
+

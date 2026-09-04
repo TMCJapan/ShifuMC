@@ -1,0 +1,14 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callNonLivingEntityDamageEvent
+file: net/minecraft/world/entity/Interaction.java
+anchor:
+    this.attack = new Interaction.PlayerAction(player.getUUID(), this.level().getGameTime());
+insert:
+    // CraftBukkit start
+    DamageSource damageSource = player.damageSources().generic().eventEntityDamager(source);
+    org.bukkit.event.entity.EntityDamageEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callNonLivingEntityDamageEvent(this, damageSource, 1.0F, false);
+    if (event.isCancelled()) {
+        return true;
+    }
+    // CraftBukkit end

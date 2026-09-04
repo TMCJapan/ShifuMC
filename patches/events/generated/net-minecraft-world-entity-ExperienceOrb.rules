@@ -1,0 +1,28 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# ExperienceOrbMergeEvent
+file: net/minecraft/world/entity/ExperienceOrb.java
+anchor:
+    this.count = this.count + orb.count;
+insert:
+    // Paper start - call orb merge event
+    if (!new com.destroystokyo.paper.event.entity.ExperienceOrbMergeEvent((org.bukkit.entity.ExperienceOrb) this.getBukkitEntity(), (org.bukkit.entity.ExperienceOrb) orb.getBukkitEntity()).callEvent()) {
+        return;
+    }
+    // Paper end - call orb merge event
+
+# callPlayerItemMendEvent
+file: net/minecraft/world/entity/ExperienceOrb.java
+anchor:
+    itemStack.setDamageValue(itemStack.getDamageValue() - repair);
+insert:
+    // CraftBukkit start
+    // Paper start - mending event
+    final int consumedExperience = repair > 0 ? repair * amount / toRepairFromXpAmount : 0;
+    org.bukkit.event.player.PlayerItemMendEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerItemMendEvent(player, this, itemStack, selected.get().inSlot(), repair, consumedExperience);
+    // Paper end - mending event
+    repair = event.getRepairAmount();
+    if (event.isCancelled()) {
+        return amount;
+    }
+    // CraftBukkit end

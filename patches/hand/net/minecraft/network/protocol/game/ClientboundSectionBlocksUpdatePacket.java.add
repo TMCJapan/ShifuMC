@@ -1,0 +1,17 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// ClientboundSectionBlocksUpdatePacket.ClientboundSectionBlocksUpdatePacket
+    // CraftBukkit と Paper が足している構築子。vanilla の 3 引数の版は
+    // LevelChunkSection から状態を読むが、こちらは呼び出し側が状態の並びを直に渡す。
+    public ClientboundSectionBlocksUpdatePacket(final SectionPos sectionPos, final ShortSet changes, final BlockState[] states) {
+        this.sectionPos = sectionPos;
+        this.positions = changes.toShortArray();
+        this.states = states;
+    }
+
+    public ClientboundSectionBlocksUpdatePacket(final SectionPos sectionPos,
+                                                final it.unimi.dsi.fastutil.shorts.Short2ObjectMap<BlockState> blockChanges) {
+        this.sectionPos = sectionPos;
+        this.positions = blockChanges.keySet().toShortArray();
+        this.states = blockChanges.values().toArray(new BlockState[0]);
+    }

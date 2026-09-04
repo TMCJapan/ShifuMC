@@ -1,0 +1,7 @@
+# Bukkit 層の配線。Paper は構築子の末尾で PaperPlayerConfigurationConnection を作る
+# (patches/sources/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java.patch:14)。
+file: net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
+anchor:
+    this.clientInformation = cookie.clientInformation();
+insert-after:
+    this.paperConnection = new io.papermc.paper.connection.PaperPlayerConfigurationConnection(this);

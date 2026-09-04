@@ -1,0 +1,87 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: org/bukkit/craftbukkit/CraftWorld.java
+
+# 中身は元案の通りだが、**replace を 2 行に広げた**
+replace:
+            net.minecraft.world.entity.Entity entity = (source == null) ? null : ((CraftEntity) source).getHandle();
+            return !this.world.explode0(entity, Explosion.getDefaultDamageSource(this.world, entity), null, x, y, z, power, setFire, explosionType, ParticleTypes.EXPLOSION, ParticleTypes.EXPLOSION_EMITTER, Level.DEFAULT_EXPLOSION_BLOCK_PARTICLES, SoundEvents.GENERIC_EXPLODE, configurator).wasCanceled; // Paper - expand explosion API
+with:
+            net.minecraft.world.entity.Entity entity = (source == null) ? null : ((CraftEntity) source).getHandle();
+            // vanilla の explode は void。ServerExplosion を返す explode0 と wasCanceled は Paper の追加。
+            // configurator が書き換える excludeSourceFromDamage も Paper の追加で、vanilla は常に発生源を除く。
+            // イベントを発火しないので取り消しは起きない。常に true を返す。
+            this.world.explode(entity, Explosion.getDefaultDamageSource(this.world, entity), null, x, y, z, power, setFire, explosionType, ParticleTypes.EXPLOSION, ParticleTypes.EXPLOSION_EMITTER, Level.DEFAULT_EXPLOSION_BLOCK_PARTICLES, SoundEvents.GENERIC_EXPLODE);
+            return true;
+
+# 元案の通りで通す
+replace:
+                explosionType = net.minecraft.world.level.Level.ExplosionInteraction.STANDARD; // Break blocks, don't decay drops
+with:
+                explosionType = net.minecraft.world.level.Level.ExplosionInteraction.BLOCK; // Shifu - STANDARD は CraftBukkit が足した定数。enum に定数は足さないので vanilla の BLOCK を使う
+
+# 組み立ての中身は元案の通りだが、**replace をメソッド 3 行に広げた**
+replace:
+        public void setHardcore(boolean hardcore) {
+            this.world.serverLevelData.setHardcore(hardcore);
+        }
+with:
+        public void setHardcore(boolean hardcore) {
+            // ServerLevelData.setHardcore は Paper の追加。vanilla の ServerLevelData にも WritableLevelData にも無い。
+            // hardcore は PrimaryLevelData.settings(LevelSettings は record)の中にあるので、ここで組み直す。
+            if (this.world.serverLevelData instanceof net.minecraft.world.level.storage.PrimaryLevelData data) {
+                final net.minecraft.world.level.LevelSettings settings = data.settings;
+                final net.minecraft.world.level.LevelSettings.DifficultySettings difficulty = settings.difficultySettings();
+                data.settings = new net.minecraft.world.level.LevelSettings(settings.levelName(), settings.gameType(), new net.minecraft.world.level.LevelSettings.DifficultySettings(difficulty.difficulty(), hardcore, difficulty.locked()), settings.allowCommands(), settings.dataConfiguration());
+            }
+        }
+
+# 元案から 2 点直した
+replace:
+            Vec3 endPos = startPos.add(dir.getX(), dir.getY(), dir.getZ());
+            HitResult hitResult = this.getHandle().clip(new ClipContext(startPos, endPos, ClipContext.Block.values()[blockCollisionMode.ordinal()], CraftFluidCollisionMode.toFluid(fluidCollisionMode), CollisionContext.empty()), canCollide);
+with:
+            Vec3 endPos = startPos.add(dir.getX(), dir.getY(), dir.getZ());
+            // canCollide を取る clip は Paper が BlockGetter に足したもの。vanilla の clip(ClipContext) の走査を写して述語だけ足す。
+            final ClipContext clipContext = new ClipContext(startPos, endPos, ClipContext.Block.values()[blockCollisionMode.ordinal()], CraftFluidCollisionMode.toFluid(fluidCollisionMode), CollisionContext.empty());
+            final HitResult hitResult;
+            if (canCollide == null) {
+                hitResult = this.getHandle().clip(clipContext);
+            } else {
+                hitResult = net.minecraft.world.level.BlockGetter.<net.minecraft.world.phys.BlockHitResult, ClipContext>traverseBlocks(startPos, endPos, clipContext, (context, pos) -> {
+                    if (!canCollide.test(org.bukkit.craftbukkit.block.CraftBlock.at(this.getHandle(), pos))) {
+                        return null;
+                    }
+                    final net.minecraft.world.level.block.state.BlockState blockState = this.getHandle().getBlockState(pos);
+                    final Vec3 from = context.getFrom();
+                    final Vec3 to = context.getTo();
+                    final net.minecraft.world.phys.BlockHitResult blockResult = this.getHandle().clipWithInteractionOverride(from, to, pos, context.getBlockShape(blockState, this.getHandle(), pos), blockState);
+                    final net.minecraft.world.phys.BlockHitResult liquidResult = context.getFluidShape(this.getHandle().getFluidState(pos), this.getHandle(), pos).clip(from, to, pos);
+                    final double blockDistanceSquared = blockResult == null ? Double.MAX_VALUE : from.distanceToSqr(blockResult.getLocation());
+                    final double liquidDistanceSquared = liquidResult == null ? Double.MAX_VALUE : from.distanceToSqr(liquidResult.getLocation());
+                    return blockDistanceSquared <= liquidDistanceSquared ? blockResult : liquidResult;
+                }, context -> {
+                    final Vec3 delta = context.getFrom().subtract(context.getTo());
+                    return net.minecraft.world.phys.BlockHitResult.miss(context.getTo(), net.minecraft.core.Direction.getApproximateNearest(delta.x, delta.y, delta.z), BlockPos.containing(context.getTo()));
+                });
+            }
+
+# CraftWorld の構築子が this.world.paperConfig() を 4 回読む
+replace:
+            // Paper start - per world spawn limits
+            for (SpawnCategory spawnCategory : SpawnCategory.values()) {
+                if (CraftSpawnCategory.isValidForLimits(spawnCategory)) {
+                    setSpawnLimit(spawnCategory, this.world.paperConfig().entities.spawning.spawnLimits.getInt(CraftSpawnCategory.toNMS(spawnCategory)));
+                }
+            }
+            // Paper end - per world spawn limits
+
+            // Paper start - per world void damage height
+            this.voidDamageEnabled = this.world.paperConfig().environment.voidDamageAmount.enabled();
+            this.voidDamageMinBuildHeightOffset = this.world.paperConfig().environment.voidDamageMinBuildHeightOffset;
+            this.voidDamageAmount = (float) this.world.paperConfig().environment.voidDamageAmount.or(0);
+            // Paper end - per world void damage height
+with:
+            // Shifu - paperConfig() を読む 2 ブロックを落とした。Level.paperConfig は Shifu では null。
+            // 湧き上限は spawnCategoryLimit を空のままにすると getSpawnLimitUnsafe が server 側の値へ落ちる。
+            // voidDamage の 3 つは Paper の World API 用で、vanilla の奈落ダメージは Entity 側にある。

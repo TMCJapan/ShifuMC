@@ -1,0 +1,25 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# EntityInteractEvent
+file: net/minecraft/world/entity/ai/behavior/InteractWithDoor.java
+anchor:
+    fromBlock.setOpen(body, level, fromState, fromPos, true);
+insert:
+    // CraftBukkit start - entities opening doors
+    org.bukkit.event.entity.EntityInteractEvent event = new org.bukkit.event.entity.EntityInteractEvent(body.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(body.level(), fromPos));
+    if (!event.callEvent()) {
+        return false;
+    }
+    // CraftBukkit end - entities opening doors
+
+# EntityInteractEvent
+file: net/minecraft/world/entity/ai/behavior/InteractWithDoor.java
+anchor:
+    door.setOpen(body, level, toState, toPos, true);
+insert:
+    // CraftBukkit start - entities opening doors
+    org.bukkit.event.entity.EntityInteractEvent event = new org.bukkit.event.entity.EntityInteractEvent(body.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(body.level(), toPos));
+    if (!event.callEvent()) {
+        return false;
+    }
+    // CraftBukkit end - entities opening doors

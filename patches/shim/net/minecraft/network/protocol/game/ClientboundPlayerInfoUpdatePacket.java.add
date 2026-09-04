@@ -1,0 +1,21 @@
+// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
+
+// ClientboundPlayerInfoUpdatePacket.createPlayerInitializing
+    public static ClientboundPlayerInfoUpdatePacket createPlayerInitializing(Collection<ServerPlayer> players, ServerPlayer forPlayer) {
+        final EnumSet<ClientboundPlayerInfoUpdatePacket.Action> enumSet = EnumSet.of(
+            ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER,
+            ClientboundPlayerInfoUpdatePacket.Action.INITIALIZE_CHAT,
+            ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE,
+            ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LISTED,
+            ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY,
+            ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME,
+            ClientboundPlayerInfoUpdatePacket.Action.UPDATE_HAT,
+            ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LIST_ORDER
+        );
+        final List<ClientboundPlayerInfoUpdatePacket.Entry> entries = new java.util.ArrayList<>(players.size());
+        final org.bukkit.craftbukkit.entity.CraftPlayer bukkitEntity = forPlayer.getBukkitEntity();
+        for (final ServerPlayer player : players) {
+            entries.add(new ClientboundPlayerInfoUpdatePacket.Entry(player, bukkitEntity.isListed(player.getBukkitEntity())));
+        }
+        return new ClientboundPlayerInfoUpdatePacket(enumSet, entries);
+    }

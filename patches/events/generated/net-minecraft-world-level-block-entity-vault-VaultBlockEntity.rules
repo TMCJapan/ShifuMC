@@ -1,0 +1,12 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callVaultDisplayItemEvent
+file: net/minecraft/world/level/block/entity/vault/VaultBlockEntity.java
+anchor:
+    sharedData.setDisplayItem(displayItem);
+insert:
+    // CraftBukkit start
+    org.bukkit.event.block.VaultDisplayItemEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callVaultDisplayItemEvent(serverLevel, pos, displayItem);
+    if (event.isCancelled()) return;
+    displayItem = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getDisplayItem());
+    // CraftBukkit end

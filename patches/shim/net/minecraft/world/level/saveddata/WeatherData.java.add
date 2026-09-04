@@ -1,0 +1,4 @@
+// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
+
+// WorldGenerationContext.level
+    private net.minecraft.server.level.@org.jspecify.annotations.Nullable ServerLevel level;

@@ -1,0 +1,4 @@
+// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
+
+// WorldGenerationContext.level
+    net.minecraft.world.level.Level level(); // Shearable API - expose default level needed for shearing.

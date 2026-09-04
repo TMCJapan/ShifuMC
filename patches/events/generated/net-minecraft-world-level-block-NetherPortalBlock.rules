@@ -1,0 +1,33 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# EntityInsideBlockEvent
+file: net/minecraft/world/level/block/NetherPortalBlock.java
+anchor:
+    if (entity.canUsePortal(false)) {
+insert:
+    if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+
+# EntityPortalEnterEvent
+file: net/minecraft/world/level/block/NetherPortalBlock.java
+anchor:
+    entity.setAsInsidePortal(this, pos);
+insert:
+    // CraftBukkit start - Entity in portal
+    org.bukkit.event.entity.EntityPortalEnterEvent event = new org.bukkit.event.entity.EntityPortalEnterEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level), org.bukkit.PortalType.NETHER); // Paper - add portal type
+    level.getCraftServer().getPluginManager().callEvent(event);
+    if (event.isCancelled()) return; // Paper - make cancellable
+    // CraftBukkit end
+
+# EntityPortalReadyEvent
+file: net/minecraft/world/level/block/NetherPortalBlock.java
+anchor:
+    if (newLevel == null) {
+insert:
+    // Paper start - Add EntityPortalReadyEvent
+    io.papermc.paper.event.entity.EntityPortalReadyEvent portalReadyEvent = new io.papermc.paper.event.entity.EntityPortalReadyEvent(entity.getBukkitEntity(), newLevel == null ? null : newLevel.getWorld(), org.bukkit.PortalType.NETHER);
+    if (!portalReadyEvent.callEvent()) {
+        entity.portalProcess = null;
+        return null;
+    }
+    newLevel = portalReadyEvent.getTargetWorld() == null ? null : ((org.bukkit.craftbukkit.CraftWorld) portalReadyEvent.getTargetWorld()).getHandle();
+    // Paper end - Add EntityPortalReadyEvent

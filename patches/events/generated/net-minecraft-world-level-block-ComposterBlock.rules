@@ -1,0 +1,28 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityChangeBlockEvent
+file: net/minecraft/world/level/block/ComposterBlock.java
+anchor:
+    if (!level.isClientSide()) {
+insert:
+    // CraftBukkit start
+    if (!(sourceEntity instanceof Player)) {
+        BlockState emptyState = ComposterBlock.empty(sourceEntity, state, org.bukkit.craftbukkit.util.DummyLevelAccessor.INSTANCE, pos);
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(sourceEntity, pos, emptyState)) {
+            return state;
+        }
+    }
+    // CraftBukkit end
+
+# callEntityChangeBlockEvent
+file: net/minecraft/world/level/block/ComposterBlock.java
+anchor:
+    level.setBlock(pos, newState, Block.UPDATE_ALL);
+    level.gameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Context.of(sourceEntity, newState));
+    if (newLevel == 7) {
+insert:
+    // Paper start - move the EntityChangeBlockEvent here to avoid conflict later for the compost events
+    if (sourceEntity != null && !org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(sourceEntity, pos, newState)) {
+        return null;
+    }
+    // Paper end

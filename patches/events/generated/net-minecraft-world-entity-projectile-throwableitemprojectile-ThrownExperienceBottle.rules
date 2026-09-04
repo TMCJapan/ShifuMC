@@ -1,0 +1,11 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callExpBottleEvent
+file: net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownExperienceBottle.java
+anchor:
+    if (hitResult instanceof BlockHitResult blockHitResult) {
+insert:
+    // Paper start - exp bottle event
+    org.bukkit.event.entity.ExpBottleEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callExpBottleEvent(this, hitResult, xpCount);
+    xpCount = event.getExperience();
+    // Paper end - exp bottle event

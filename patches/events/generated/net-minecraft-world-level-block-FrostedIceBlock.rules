@@ -1,0 +1,12 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callBlockFadeEvent
+file: net/minecraft/world/level/block/FrostedIceBlock.java
+anchor:
+    level.setBlock(pos, state.setValue(AGE, age + 1), Block.UPDATE_CLIENTS);
+insert:
+    // Paper start - FrostedIce BlockFadeEvent
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, state.setValue(AGE, age + 1)).isCancelled()) {
+        return false;
+    }
+    // Paper end - FrostedIce BlockFadeEvent

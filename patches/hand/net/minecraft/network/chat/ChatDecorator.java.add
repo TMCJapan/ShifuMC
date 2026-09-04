@@ -1,0 +1,4 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// ChatDecorator.decorate
+    // Shifu - Paper の CompletableFuture 版 decorate は足さない。vanilla の decorate と引数が同じで二重宣言になる。

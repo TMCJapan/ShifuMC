@@ -1,0 +1,19 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// VaultServerData.addToRewardedPlayers
+    // Paper は vanilla の addToRewardedPlayers(Player) の中身を UUID の版へ切り出して、
+    // 足せたかを返すようにした。vanilla の版は触れないので、同じ中身をここに書く。
+    // vanilla の Player の版は rewardedPlayers に直に足していて、こちらは呼ばない。
+    // 呼ぶのは CraftVault#addRewardedPlayer だけなので、二重には走らない。
+    public boolean addToRewardedPlayers(final UUID player) {
+        final boolean added = this.rewardedPlayers.add(player);
+        if (this.rewardedPlayers.size() > 128) {
+            Iterator<UUID> iterator = this.rewardedPlayers.iterator();
+            if (iterator.hasNext()) {
+                iterator.next();
+                iterator.remove();
+            }
+        }
+        this.markChanged();
+        return added;
+    }

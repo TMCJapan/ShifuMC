@@ -1,0 +1,20 @@
+# Bukkit 層の配線。Paper は構築子で cserver に CraftServer を入れる
+# (patches/sources/net/minecraft/server/network/ServerCommonPacketListenerImpl.java.patch の @@ -53)。
+# 生成した発火の規則が this.cserver.getPluginManager() を読むので、入っていないと
+# プレイヤーの packet を受けた瞬間に落ちる。vanilla の行は 1 文字も変えていない。
+file: net/minecraft/server/network/ServerCommonPacketListenerImpl.java
+anchor:
+    this.connection = connection;
+insert-after:
+    this.cserver = server.server;
+    // プラグインメッセージのチャンネル。Paper は cookie に成分を足して設定フェーズから引き継ぐが、
+    // vanilla の CommonListenerCookie には無いので、接続ごとに 1 つの集合を持つ
+    this.pluginMessagerChannels = dev.shifu.event.PluginMessages.channelsFor(connection);
+
+# handleCustomPayload。vanilla は中身が空(本文も捨てられている)。
+# Bukkit の Messenger へ渡す経路をここで作る。プラグインが無ければ何もしない。
+file: net/minecraft/server/network/ServerCommonPacketListenerImpl.java
+anchor:
+    public void handleCustomPayload(final ServerboundCustomPayloadPacket packet) {
+insert-after:
+    dev.shifu.event.PluginMessages.handle(this, packet);

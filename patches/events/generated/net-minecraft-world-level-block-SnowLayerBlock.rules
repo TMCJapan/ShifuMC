@@ -1,0 +1,12 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callBlockFadeEvent
+file: net/minecraft/world/level/block/SnowLayerBlock.java
+anchor:
+    dropResources(state, level, pos);
+insert:
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, Blocks.AIR.defaultBlockState()).isCancelled()) {
+        return;
+    }
+    // CraftBukkit end

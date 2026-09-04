@@ -1,0 +1,9 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: io/papermc/paper/connection/PaperPlayerConfigurationConnection.java
+
+# CraftPlayer と同じ
+replace:
+    new DiscardedPayload(id, message)
+with:
+    new DiscardedPayload(id)

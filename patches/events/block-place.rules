@@ -1,0 +1,42 @@
+# BlockPlaceEvent。手で書いたもの。
+#
+# Paper はブロックキャプチャを使って「置く前に発火し、通ってから置く」に
+# 作り変える。あれは設置そのものを遅らせるので、周囲のブロックへ更新が届く
+# 順番が変わる。条件 1(vanilla と完全に一致)を壊すので使わない。
+#
+# Shifu は vanilla の順のまま置き、置いたあとに発火する。取り消されたときだけ、
+# 置く前に控えておいた状態へ戻して FAIL を返す。通る経路は vanilla のまま。
+#
+# 控えを取るのは placeBlock の直前。登録が無ければ控えも取らない(null)ので、
+# プラグインを入れていないときに増える仕事は真偽値 1 つ分。
+#
+# 発火は placedState が確定したあと、音・gameEvent・手持ちの減りより前。
+# 取り消したときにその 3 つが起きないのは、Paper と同じ。
+#
+# 読んだ位置(Paper 26.2):
+#   paper-server src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:519
+#   vanilla      net/minecraft/world/item/BlockItem.java:67,86
+
+file: net/minecraft/world/item/BlockItem.java
+anchor:
+    if (!this.placeBlock(updatedPlaceContext, placementState)) {
+insert:
+    final org.bukkit.block.BlockState shifuReplaced =
+            dev.shifu.event.ShifuEvents.blockPlaceListening()
+                    ? org.bukkit.craftbukkit.block.CraftBlock.at(
+                            updatedPlaceContext.getLevel(),
+                            updatedPlaceContext.getClickedPos()).getState()
+                    : null;
+
+file: net/minecraft/world/item/BlockItem.java
+anchor:
+    SoundType soundType = placedState.getSoundType();
+insert:
+    if (shifuReplaced != null && level instanceof net.minecraft.server.level.ServerLevel shifuLevel
+            && !dev.shifu.event.ShifuEvents.blockPlace(
+                    shifuLevel, player, updatedPlaceContext.getHand(), shifuReplaced,
+                    updatedPlaceContext.getHitResult().getBlockPos())) {
+        shifuLevel.setBlock(pos, ((org.bukkit.craftbukkit.block.CraftBlockState) shifuReplaced).getHandle(),
+                net.minecraft.world.level.block.Block.UPDATE_ALL);
+        return InteractionResult.FAIL;
+    }

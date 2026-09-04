@@ -1,0 +1,57 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# PlayerArmorStandManipulateEvent
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+anchor:
+    if (player.hasInfiniteMaterials() && itemStack.isEmpty() && !playerItemStack.isEmpty()) {
+insert:
+    // CraftBukkit start
+    org.bukkit.inventory.ItemStack armorStandItem = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(itemStack);
+    org.bukkit.inventory.ItemStack playerHeldItem = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(playerItemStack);
+
+    org.bukkit.entity.Player player1 = (org.bukkit.entity.Player) player.getBukkitEntity();
+    org.bukkit.entity.ArmorStand self = (org.bukkit.entity.ArmorStand) this.getBukkitEntity();
+
+    org.bukkit.inventory.EquipmentSlot slot1 = org.bukkit.craftbukkit.CraftEquipmentSlot.getSlot(slot);
+    org.bukkit.inventory.EquipmentSlot hand1 = org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand);
+    org.bukkit.event.player.PlayerArmorStandManipulateEvent armorStandManipulateEvent = new org.bukkit.event.player.PlayerArmorStandManipulateEvent(player1, self, playerHeldItem, armorStandItem, slot1, hand1);
+    this.level().getCraftServer().getPluginManager().callEvent(armorStandManipulateEvent);
+
+    if (armorStandManipulateEvent.isCancelled()) {
+        return true;
+    }
+    // CraftBukkit end
+
+
+# handleNonLivingEntityDamageEvent
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+anchor:
+    if (this.isOnFire()) {
+insert:
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.handleNonLivingEntityDamageEvent(this, source, damage, true, this.invisible)) {
+        return false;
+    }
+    // CraftBukkit end
+
+# handleNonLivingEntityDamageEvent
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+anchor:
+    this.causeDamage(level, source, 4.0F);
+insert:
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.handleNonLivingEntityDamageEvent(this, source, damage, true, this.invisible)) {
+        return false;
+    }
+    // CraftBukkit end
+
+# handleNonLivingEntityDamageEvent
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+anchor:
+    boolean allowIncrementalBreaking = source.is(DamageTypeTags.CAN_BREAK_ARMOR_STAND);
+insert:
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.handleNonLivingEntityDamageEvent(this, source, damage, true, this.invisible)) {
+        return false;
+    }
+    // CraftBukkit end

@@ -1,0 +1,715 @@
+# プレイヤー・サーバー・世界(境界、時間、生成)の発火。発火層は dev.shifu.event.PlayerEvents。
+# どれも vanilla の行を残し、前後に差し込む。登録が無ければ発火しない。
+
+# ============================================================ コマンド
+
+# UnknownCommandEvent
+#
+# 登録があるときは vanilla の 2 つの送信(生の失敗文、位置の文)を飛ばし、
+# 位置の文を組み終えたところで 1 つにまとめて発火する(Paper と同じ文)。
+# 位置の文を組まない経路(入力が無い例外)では、その分岐に入らないときに発火する。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/commands/Commands.java.patch(UnknownCommandEvent)
+file: net/minecraft/commands/Commands.java
+anchor:
+    sender.sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
+insert:
+    if (dev.shifu.event.PlayerEvents.silentUnknownCommand()) {
+insert-after:
+    }
+
+file: net/minecraft/commands/Commands.java
+anchor:
+    if (e.getInput() != null && e.getCursor() >= 0) {
+insert:
+    if (!dev.shifu.event.PlayerEvents.silentUnknownCommand() && !(e.getInput() != null && e.getCursor() >= 0)) {
+        dev.shifu.event.PlayerEvents.unknownCommand(sender, commandString, e, null);
+    }
+
+file: net/minecraft/commands/Commands.java
+anchor:
+    sender.sendFailure(context);
+insert:
+    if (dev.shifu.event.PlayerEvents.silentUnknownCommand()) {
+insert-after:
+    } else {
+        dev.shifu.event.PlayerEvents.unknownCommand(sender, commandString, e, context);
+    }
+
+# AsyncPlayerSendCommandsEvent / PlayerCommandSendEvent。木を送る直前(同期)
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/commands/Commands.java.patch(PlayerCommandSendEvent)
+file: net/minecraft/commands/Commands.java
+anchor:
+    player.connection.send(new ClientboundCommandsPacket(root, COMMAND_NODE_INSPECTOR));
+insert:
+    dev.shifu.event.PlayerEvents.commandSend(player, root);
+
+# WorldGameRuleChangeEvent(/gamerule)。書く行を囲む。値の差し替えは発火層が書く
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/commands/GameRuleCommand.java.patch
+file: net/minecraft/server/commands/GameRuleCommand.java
+anchor:
+    source.getLevel().getGameRules().set(gameRule, value, context.getSource().getServer());
+insert:
+    if (dev.shifu.event.PlayerEvents.gameRuleSet(gameRule, value, source)) {
+insert-after:
+    }
+
+# TimeSkipEvent(/time set)。書く行を囲む
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/commands/TimeCommand.java.patch
+file: net/minecraft/server/commands/TimeCommand.java
+anchor:
+    clockManager.setTotalTicks(clock, totalTicks);
+insert:
+    if (dev.shifu.event.PlayerEvents.timeSet(source, clockManager, clock, totalTicks)) {
+insert-after:
+    }
+
+# TimeSkipEvent(/time add)
+file: net/minecraft/server/commands/TimeCommand.java
+anchor:
+    clockManager.addTicks(clock, time);
+insert:
+    if (dev.shifu.event.PlayerEvents.timeAdd(source, clockManager, clock, time)) {
+insert-after:
+    }
+
+# TimeSkipEvent(/time set <時刻マーカー>)。vanilla が動かしたあとに発火し、取り消されたら戻す
+file: net/minecraft/server/commands/TimeCommand.java
+anchor:
+    if (!clockManager.moveToTimeMarker(clock, timeMarkerId)) {
+insert:
+    final long shifuTime = dev.shifu.event.PlayerEvents.timeBefore(clockManager, clock);
+
+file: net/minecraft/server/commands/TimeCommand.java
+anchor:
+    throw ERROR_NO_TIME_MARKER_FOUND.create(clock.getRegisteredName(), timeMarkerId);
+    }
+insert-after:
+    dev.shifu.event.PlayerEvents.timeMarkerSkipped(source, clockManager, clock, shifuTime);
+
+# PlayerSetSpawnEvent の理由(/spawnpoint)
+file: net/minecraft/server/commands/SetSpawnCommand.java
+anchor:
+    target.setRespawnPosition(new ServerPlayer.RespawnConfig(LevelData.RespawnData.of(dimension, pos, yaw, pitch), true), false);
+insert:
+    dev.shifu.event.PlayerEvents.spawnCause(target, com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause.COMMAND);
+
+# ============================================================ サーバー
+
+# WorldDifficultyChangeEvent。ロックの判定のあと、書く前
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/MinecraftServer.java.patch(WorldDifficultyChangeEvent)
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    this.worldData.setDifficulty(this.worldData.isHardcore() ? Difficulty.HARD : difficulty);
+insert:
+    dev.shifu.event.PlayerEvents.difficultyChange(this, difficulty);
+
+# WhitelistToggleEvent
+file: net/minecraft/server/dedicated/DedicatedServer.java
+anchor:
+    this.settings.update(p -> p.whiteList.update(this.registryAccess(), usingWhitelist));
+insert:
+    dev.shifu.event.PlayerEvents.whitelistToggle(usingWhitelist);
+
+# RemoteServerCommandEvent(RCON)。実行のタスクを囲む
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/dedicated/DedicatedServer.java.patch(RemoteServerCommandEvent)
+file: net/minecraft/server/dedicated/DedicatedServer.java
+anchor:
+    this.executeBlocking(() -> this.getCommands().performPrefixedCommand(this.rconConsoleSource.createCommandSourceStack(), command));
+insert:
+    if (dev.shifu.event.PlayerEvents.remoteCommand(this, this.rconConsoleSource, command)) {
+insert-after:
+    }
+
+# GS4QueryEvent(BASIC)。vanilla の書き出し 7 行を囲み、登録があれば発火層が書く
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/rcon/thread/QueryThreadGs4.java.patch
+file: net/minecraft/server/rcon/thread/QueryThreadGs4.java
+anchor:
+    dos.writeString(this.serverName);
+    dos.writeString("SMP");
+    dos.writeString(this.worldName);
+    dos.writeString(Integer.toString(this.serverInterface.getPlayerCount()));
+    dos.writeString(Integer.toString(this.maxPlayers));
+    dos.writeShort((short)this.serverPort);
+    dos.writeString(this.hostIp);
+insert:
+    if (dev.shifu.event.PlayerEvents.silentQuery()) {
+insert-after:
+    } else {
+        dev.shifu.event.PlayerEvents.queryBasic(dos, packet, this.serverName, this.worldName, this.serverInterface.getPlayerCount(),
+                this.maxPlayers, this.serverPort, this.hostIp, this.serverInterface.getServerVersion());
+    }
+
+# GS4QueryEvent(FULL)。書き出し 20 行を囲む。プレイヤー名の列は vanilla のまま
+file: net/minecraft/server/rcon/thread/QueryThreadGs4.java
+anchor:
+    this.rulesResponse.writeString("hostname");
+    this.rulesResponse.writeString(this.serverName);
+    this.rulesResponse.writeString("gametype");
+    this.rulesResponse.writeString("SMP");
+    this.rulesResponse.writeString("game_id");
+    this.rulesResponse.writeString("MINECRAFT");
+    this.rulesResponse.writeString("version");
+    this.rulesResponse.writeString(this.serverInterface.getServerVersion());
+    this.rulesResponse.writeString("plugins");
+    this.rulesResponse.writeString(this.serverInterface.getPluginNames());
+    this.rulesResponse.writeString("map");
+    this.rulesResponse.writeString(this.worldName);
+    this.rulesResponse.writeString("numplayers");
+    this.rulesResponse.writeString(this.serverInterface.getPlayerCount() + "");
+    this.rulesResponse.writeString("maxplayers");
+    this.rulesResponse.writeString(this.maxPlayers + "");
+    this.rulesResponse.writeString("hostport");
+    this.rulesResponse.writeString(this.serverPort + "");
+    this.rulesResponse.writeString("hostip");
+    this.rulesResponse.writeString(this.hostIp);
+insert:
+    if (dev.shifu.event.PlayerEvents.silentQuery()) {
+insert-after:
+    } else {
+        dev.shifu.event.PlayerEvents.queryFull(this.rulesResponse, packet, this.serverName, this.serverInterface.getServerVersion(),
+                this.worldName, this.serverInterface.getPlayerCount(), this.maxPlayers, this.serverPort, this.hostIp,
+                this.serverInterface.getPlayerNames());
+    }
+
+# ============================================================ 世界
+
+# WorldSaveEvent。保存の頭
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    if (progressListener != null) {
+    progressListener.progressStartNoAbort(Component.translatable("menu.savingLevel"));
+insert:
+    dev.shifu.event.PlayerEvents.worldSave(this);
+
+# TimeSkipEvent(NIGHT_SKIP)。vanilla が朝へ動かしたあとに発火し、取り消されたら戻して起こさない
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerLevel.java.patch(TimeSkipEvent)
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    if (this.getGameRules().get(GameRules.ADVANCE_TIME) && defaultClock.isPresent()) {
+insert:
+    boolean shifuWake = true;
+    final long shifuNight = dev.shifu.event.PlayerEvents.nightBefore(this, defaultClock);
+
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    this.server.clockManager().moveToTimeMarker(defaultClock.get(), ClockTimeMarkers.WAKE_UP_FROM_SLEEP);
+insert-after:
+    shifuWake = dev.shifu.event.PlayerEvents.nightSkipped(this, defaultClock.get(), shifuNight);
+
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    this.wakeUpAllPlayers();
+insert:
+    if (shifuWake) {
+insert-after:
+    }
+
+# MapInitializeEvent。置く前
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    this.getServer().getDataStorage().set(MapItemSavedData.type(id), data);
+insert:
+    dev.shifu.event.PlayerEvents.mapInitialize(id, data);
+
+# SpawnChangeEvent。書いたあと(位置が同じなら出さない)
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    this.getServer().setRespawnData(respawnData);
+insert:
+    final org.bukkit.Location shifuSpawn = dev.shifu.event.PlayerEvents.spawnBefore(this);
+insert-after:
+    dev.shifu.event.PlayerEvents.spawnChanged(this, shifuSpawn);
+
+# ServerExceptionEvent。エンティティの tick の例外。落とす挙動は変えない
+file: net/minecraft/world/level/Level.java
+anchor:
+    CrashReport report = CrashReport.forThrowable(t, "Ticking entity");
+insert:
+    dev.shifu.event.PlayerEvents.entityException(entity, t);
+
+file: net/minecraft/world/level/chunk/LevelChunk.java
+anchor:
+    CrashReport report = CrashReport.forThrowable(t, "Ticking block entity");
+insert:
+    dev.shifu.event.PlayerEvents.blockEntityException(LevelChunk.this.level, this.getPos(), t);
+
+# BlockDestroyEvent。壊す効果の前。効果の差し替えは発火層が出す。落とすかは vanilla と
+# イベントの両方が真のときだけ
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/Level.java.patch(BlockDestroyEvent)
+file: net/minecraft/world/level/Level.java
+anchor:
+    if (!(blockState.getBlock() instanceof BaseFireBlock)) {
+    this.levelEvent(LevelEvent.PARTICLES_DESTROY_BLOCK, pos, Block.getId(blockState));
+    }
+insert:
+    final com.destroystokyo.paper.event.block.BlockDestroyEvent shifuDestroy =
+            dev.shifu.event.PlayerEvents.blockDestroy(this, pos, blockState, fluidState, dropResources);
+    if (shifuDestroy != null && shifuDestroy.isCancelled()) {
+        return false;
+    }
+    if (shifuDestroy == null) {
+insert-after:
+    } else {
+        dev.shifu.event.PlayerEvents.destroyEffect(this, pos, blockState, shifuDestroy);
+    }
+
+file: net/minecraft/world/level/Level.java
+anchor:
+    if (dropResources) {
+    BlockEntity blockEntity = blockState.hasBlockEntity() ? this.getBlockEntity(pos) : null;
+    Block.dropResources(blockState, this, pos, blockEntity, breaker, ItemStack.EMPTY);
+    }
+insert:
+    if (shifuDestroy == null || shifuDestroy.willDrop()) {
+insert-after:
+    }
+
+# PreCreatureSpawnEvent(自然湧き)。位置の判定の前
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/NaturalSpawner.java.patch
+file: net/minecraft/world/level/NaturalSpawner.java
+anchor:
+    return type.getCategory() != MobCategory.MISC
+insert:
+    if (!dev.shifu.event.PlayerEvents.preCreatureSpawn(level, pos, type)) {
+        return false;
+    }
+
+# PreSpawnerSpawnEvent。エンティティを作る前
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/BaseSpawner.java.patch
+file: net/minecraft/world/level/BaseSpawner.java
+anchor:
+    Entity entity = EntityType.loadEntityRecursive(input, level, EntitySpawnReason.SPAWNER, e -> {
+insert:
+    final int shifuPre = dev.shifu.event.PlayerEvents.preSpawnerSpawn(level, spawnPos, entityType.get(), pos);
+    if (shifuPre != 0) {
+        delay = true;
+        if (shifuPre == 2) {
+            break;
+        }
+        continue;
+    }
+
+# SpawnerSpawnEvent。世界に入れる直前
+file: net/minecraft/world/level/BaseSpawner.java
+anchor:
+    if (!level.tryAddFreshEntityWithPassengers(entity)) {
+insert:
+    if (!dev.shifu.event.PlayerEvents.spawnerSpawn(entity, pos)) {
+        delay = true;
+        continue;
+    }
+
+# DragonEggFormEvent。登録があれば vanilla の「初回だけ置く」の代わりに発火層が置く
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/dimension/end/EnderDragonFight.java.patch
+file: net/minecraft/world/level/dimension/end/EnderDragonFight.java
+anchor:
+    if (!this.hasPreviouslyKilledDragon) {
+    this.level
+    .setBlockAndUpdate(
+    this.level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, EndPodiumFeature.getLocation(this.origin)),
+    Blocks.DRAGON_EGG.defaultBlockState()
+    );
+    }
+insert:
+    if (dev.shifu.event.PlayerEvents.silentDragonEgg()) {
+insert-after:
+    } else {
+        dev.shifu.event.PlayerEvents.dragonEggForm(this, this.level, this.origin, this.hasPreviouslyKilledDragon);
+    }
+
+# ============================================================ 世界の境界
+
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/border/WorldBorder.java.patch
+file: net/minecraft/world/level/border/WorldBorder.java
+anchor:
+    public void setCenter(final double x, final double z) {
+insert-after:
+    if (!dev.shifu.event.PlayerEvents.borderCenter(this, x, z)) {
+        return;
+    }
+
+file: net/minecraft/world/level/border/WorldBorder.java
+anchor:
+    public void setSize(final double size) {
+insert-after:
+    if (!dev.shifu.event.PlayerEvents.borderSize(this, size)) {
+        return;
+    }
+
+file: net/minecraft/world/level/border/WorldBorder.java
+anchor:
+    public void lerpSizeBetween(final double from, final double to, final long ticks, final long gameTime) {
+insert-after:
+    if (!dev.shifu.event.PlayerEvents.borderLerp(this, from, to, ticks, gameTime)) {
+        return;
+    }
+
+file: net/minecraft/world/level/border/WorldBorder.java
+anchor:
+    return this.lerpProgress <= 0L ? WorldBorder.this.new StaticBorderExtent(this.to) : this;
+insert:
+    if (this.lerpProgress <= 0L) {
+        dev.shifu.event.PlayerEvents.borderFinish(WorldBorder.this, this.from, this.to, this.lerpDuration);
+    }
+
+# ============================================================ ログイン・設定フェーズ
+
+# PlayerConnectionValidateLoginEvent(ログインフェーズ、設定フェーズ)
+#
+# 読んだ位置: CraftEventFactory.handleLoginResult
+file: net/minecraft/server/network/ServerLoginPacketListenerImpl.java
+anchor:
+    Component error = playerList.canPlayerLogin(this.connection.getRemoteAddress(), new NameAndId(profile));
+insert-after:
+    error = dev.shifu.event.PlayerEvents.validateLogin(this.paperLoginConnection, error);
+
+file: net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
+anchor:
+    Component loginError = playerList.canPlayerLogin(this.connection.getRemoteAddress(), new NameAndId(this.gameProfile));
+insert-after:
+    loginError = dev.shifu.event.PlayerEvents.validateLogin(this.paperConnection, loginError);
+
+# PlayerLinksSendEvent。送る前
+file: net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
+anchor:
+    ServerLinks serverLinks = this.server.serverLinks();
+insert-after:
+    serverLinks = dev.shifu.event.PlayerEvents.linksSend(this, serverLinks);
+
+# PlayerCodeOfConductSendEvent。文が決まったあと(lambda の中)
+file: net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
+anchor:
+    return codeOfConduct;
+insert:
+    codeOfConduct = dev.shifu.event.PlayerEvents.codeOfConduct(this, codeOfConduct);
+    if (codeOfConduct == null) {
+        this.finishCurrentTask(ServerCodeOfConductConfigurationTask.TYPE);
+    }
+
+# ProfileWhitelistVerifyEvent。isWhiteListed の判定の代わり
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/players/PlayerList.java.patch(isWhiteListedLogin)
+file: net/minecraft/server/players/PlayerList.java
+anchor:
+    return !this.isUsingWhitelist() || this.ops.contains(nameAndId) || this.whitelist.contains(nameAndId);
+insert:
+    if (!dev.shifu.event.PlayerEvents.silentWhitelist()) {
+        return dev.shifu.event.PlayerEvents.whitelistVerify(this, nameAndId,
+                !this.isUsingWhitelist() || this.ops.contains(nameAndId) || this.whitelist.contains(nameAndId),
+                this.ops.contains(nameAndId));
+    }
+
+# PlayerServerFullCheckEvent。入れるかを決める最後のところ。
+#
+# Paper と同じく満員でなくても発火する。vanilla の判定(満員かつ上限を超えて入れる相手でもない)を
+# 引数で渡し、返ってきた文をそのまま返す(入れてよければ null)。登録が無ければ vanilla の行へ進む。
+file: net/minecraft/server/players/PlayerList.java
+anchor:
+    return this.players.size() >= this.getMaxPlayers() && !this.canBypassPlayerLimit(nameAndId)
+    ? Component.translatable("multiplayer.disconnect.server_full")
+    : null;
+insert:
+    if (!dev.shifu.event.PlayerEvents.silentServerFull()) {
+        return dev.shifu.event.PlayerEvents.serverFull(nameAndId,
+                this.players.size() >= this.getMaxPlayers() && !this.canBypassPlayerLimit(nameAndId));
+    }
+
+# ProfileWhitelistVerifyEvent の弾く文。isWhiteListed で控えたものがあればそれを返す
+file: net/minecraft/server/players/PlayerList.java
+anchor:
+    return Component.translatable("multiplayer.disconnect.not_whitelisted");
+insert:
+    final Component shifuWhitelistKick = dev.shifu.event.PlayerEvents.whitelistKickMessage();
+    if (shifuWhitelistKick != null) {
+        return shifuWhitelistKick;
+    }
+
+# WorldDifficultyChangeEvent の送り主。/difficulty が呼ぶ直前に置く
+file: net/minecraft/server/commands/DifficultyCommand.java
+anchor:
+    server.setDifficulty(difficulty, true);
+insert:
+    dev.shifu.event.PlayerEvents.difficultySource(source);
+
+# GS4QueryEvent(FULL)でプラグインが載せたプレイヤー名の列。vanilla の局所変数へ入れ替える
+file: net/minecraft/server/rcon/thread/QueryThreadGs4.java
+anchor:
+    String[] players = this.serverInterface.getPlayerNames();
+insert-after:
+    players = dev.shifu.event.PlayerEvents.queryPlayers(players);
+
+# MapInitializeEvent。読み込んだとき(Paper は getMapData でも出す)
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    return this.getServer().getDataStorage().get(MapItemSavedData.type(id));
+insert:
+    dev.shifu.event.PlayerEvents.mapLoaded(this, id);
+
+# PreCreatureSpawnEvent の shouldAbortSpawn。位置の判定のあと、この回の湧きをやめる。
+#
+# Paper は判定の返り値を enum にして「ABORT なら return」を判定の手前に置くが、返り値は変えられない。
+# 判定が false を返して if を素通りした直後に控えを見て、同じ位置で抜ける。
+file: net/minecraft/world/level/NaturalSpawner.java
+anchor:
+    if (mob.isMaxGroupSizeReached(groupSize)) {
+    break;
+    }
+    }
+    }
+insert-after:
+    if (dev.shifu.event.PlayerEvents.takeSpawnAbort()) {
+        return;
+    }
+
+# ============================================================ プレイヤー
+
+# PlayerSpawnChangeEvent / PlayerSetSpawnEvent。setRespawnPosition の頭
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch(PlayerSetSpawnEvent)
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    if (showMessage && respawnConfig != null && !respawnConfig.isSamePosition(this.respawnConfig)) {
+insert:
+    if (!dev.shifu.event.PlayerEvents.setSpawn(this, respawnConfig, showMessage)) {
+        return;
+    }
+
+# 理由(ベッド)
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    this.setRespawnPosition(
+    new ServerPlayer.RespawnConfig(LevelData.RespawnData.of(this.level().dimension(), pos, this.getYRot(), this.getXRot()), false), true
+insert:
+    dev.shifu.event.PlayerEvents.spawnCause(this, com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause.BED);
+
+# 理由(リスポーンで引き継ぐ)
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    this.setRespawnPosition(player.respawnConfig, false);
+insert:
+    dev.shifu.event.PlayerEvents.spawnCause(this, com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause.PLAYER_RESPAWN);
+
+# PlayerInteractEvent(左クリック、触れない場所)。Paper と同じく結果は見ない
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+anchor:
+    this.player.connection.send(new ClientboundBlockUpdatePacket(pos, this.level.getBlockState(pos)));
+    this.debugLogging(pos, false, sequence, "may not interact");
+insert:
+    dev.shifu.event.ShifuEvents.interactBlockLeft(this.player, pos, direction);
+
+# BlockDamageEvent。壊し始め(即時破壊でないとき)
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayerGameMode.java.patch(BlockDamageEvent)
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+anchor:
+    if (!blockState.isAir() && progress >= 1.0F) {
+insert:
+    final org.bukkit.event.block.BlockDamageEvent shifuDamage = dev.shifu.event.PlayerEvents.blockDamage(this.player, pos, direction, progress >= 1.0F);
+    if (shifuDamage != null) {
+        if (shifuDamage.isCancelled()) {
+            return;
+        }
+        if (shifuDamage.getInstaBreak()) {
+            progress = 2.0F;
+        }
+    }
+
+# BlockDamageAbortEvent
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+anchor:
+    this.debugLogging(pos, true, sequence, "aborted destroying");
+insert-after:
+    dev.shifu.event.PlayerEvents.blockDamageAbort(this.player, pos);
+
+# ClientTickEndEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    public void handleClientTickEnd(final ServerboundClientTickEndPacket packet) {
+    PacketUtils.ensureRunningOnSameThread(packet, this, this.player.level());
+insert-after:
+    dev.shifu.event.PlayerEvents.clientTickEnd(this.player);
+
+# WorldGameRuleChangeEvent(クライアントの設定画面からの packet)。lambda の中の書く行を囲む
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    gameRules.set(rule, (T)parsedValue, this.server);
+insert:
+    if (dev.shifu.event.PlayerEvents.gameRuleSet(rule, (T)parsedValue, this.player)) {
+insert-after:
+    }
+
+# PlayerJumpEvent。跳ぶ直前
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch(PlayerJumpEvent)
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player.jumpFromGround();
+insert:
+    if (!dev.shifu.event.PlayerEvents.jump(this, startX, startY, startZ, targetX, targetY, targetZ, targetYRot, targetXRot)) {
+        return;
+    }
+
+# PlayerMoveEvent(乗り物に乗っている間)。vanilla が乗り物を動かしたあと
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch(handleMoveVehicle)
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    vehicle.absSnapTo(targetX, targetY, targetZ, targetYRot, targetXRot);
+insert-after:
+    if (!dev.shifu.event.PlayerEvents.vehicleMove(this, targetX, targetY, targetZ, targetYRot, targetXRot)) {
+        return;
+    }
+
+# PlayerSwapHandItemsEvent。入れ替えの 2 行を囲む
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player.setItemInHand(InteractionHand.OFF_HAND, this.player.getItemInHand(InteractionHand.MAIN_HAND));
+    this.player.setItemInHand(InteractionHand.MAIN_HAND, swap);
+insert:
+    if (dev.shifu.event.PlayerEvents.swapHands(this.player, swap)) {
+insert-after:
+    } else if (dev.shifu.event.PlayerEvents.swapHandsCancelled()) {
+        return;
+    }
+
+# PlayerCommandPreprocessEvent。解析の前
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    private void performUnsignedChatCommand(final String command) {
+insert-after:
+    if (!dev.shifu.event.PlayerEvents.commandPreprocess(this, command)) {
+        return;
+    }
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    private void performSignedChatCommand(final ServerboundChatCommandSignedPacket packet, final LastSeenMessages lastSeenMessages) {
+insert-after:
+    if (!dev.shifu.event.PlayerEvents.commandPreprocessSigned(this, packet.command())) {
+        return;
+    }
+
+# PlayerEditBookEvent(編集)。vanilla が書き換えたあと。取り消されたら控えに戻す
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch(handleEditBookEvent)
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    carried.set(DataComponents.WRITABLE_BOOK_CONTENT, new WritableBookContent(pages));
+insert:
+    final ItemStack shifuBook = dev.shifu.event.PlayerEvents.bookBefore(carried);
+insert-after:
+    dev.shifu.event.PlayerEvents.bookEdited(this.player, slot, shifuBook, carried, false);
+
+# PlayerEditBookEvent(署名)。スロットに置いたあと
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player.getInventory().setItem(slot, writtenBook);
+insert:
+    final ItemStack shifuSigned = dev.shifu.event.PlayerEvents.bookBefore(carried);
+insert-after:
+    dev.shifu.event.PlayerEvents.bookEdited(this.player, slot, shifuSigned, writtenBook, true);
+
+# ============================================================ 効果・盾・エンチャント
+
+# FoodLevelChangeEvent(満腹の効果)
+file: net/minecraft/world/effect/SaturationMobEffect.java
+anchor:
+    player.getFoodData().eat(amplification + 1, 1.0F);
+insert:
+    if (dev.shifu.event.PlayerEvents.saturation(player, amplification)) {
+insert-after:
+    }
+
+# PlayerShieldDisableEvent。クールダウンを付ける前。攻撃者は Player.blockUsingItem で置く(担当範囲外)
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/component/BlocksAttacks.java.patch
+file: net/minecraft/world/item/component/BlocksAttacks.java
+anchor:
+    player.getCooldowns().addCooldown(blockingWith, cooldownTicks);
+insert:
+    final int shifuCooldown = dev.shifu.event.PlayerEvents.shieldDisable(player, cooldownTicks);
+    if (shifuCooldown < 0) {
+        return;
+    }
+    if (shifuCooldown == cooldownTicks) {
+insert-after:
+    } else {
+        player.getCooldowns().addCooldown(blockingWith, shifuCooldown);
+    }
+
+# EntityLungeEvent。突きの効果を囲む。
+#
+# 強さが差し替えられたときは vanilla の行を飛ばして、同じ効果を新しい強さで当てる
+# (hand の shifuLunge。vanilla の enchantmentLevel は引数なので代入できない)。
+# 取り消しなら何もしない。登録が無ければ vanilla の行だけが走る。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/enchantment/Enchantment.java.patch
+file: net/minecraft/world/item/enchantment/Enchantment.java
+anchor:
+    applyEffects(
+    this.getEffects(EnchantmentEffectComponents.POST_PIERCING_ATTACK),
+    entityContext(serverLevel, enchantmentLevel, user, user.position()),
+    e -> e.apply(serverLevel, enchantmentLevel, item, user, user.position())
+    );
+insert:
+    final int shifuLunge = dev.shifu.event.PlayerEvents.lungePower(user, enchantmentLevel);
+    if (shifuLunge == enchantmentLevel) {
+insert-after:
+    } else if (shifuLunge != Integer.MIN_VALUE) {
+        this.shifuLunge(serverLevel, shifuLunge, item, user);
+    }
+
+# EntityCombustByEntityEvent / EntityCombustEvent(火属性)
+file: net/minecraft/world/item/enchantment/effects/Ignite.java
+anchor:
+    entity.igniteForSeconds(this.duration.calculate(enchantmentLevel));
+insert:
+    if (dev.shifu.event.PlayerEvents.enchantIgnite(item, entity, this.duration, enchantmentLevel)) {
+insert-after:
+    }
+
+# ServerCommandEvent(コマンドブロック)
+file: net/minecraft/world/level/BaseCommandBlock.java
+anchor:
+    level.getServer().getCommands().performPrefixedCommand(commandSourceStack, this.command);
+insert:
+    final String shifuCommand = dev.shifu.event.PlayerEvents.commandBlock(commandSourceStack, this.command);
+    if (shifuCommand == null) {
+        return true;
+    }
+    if (shifuCommand == this.command) {
+insert-after:
+    } else {
+        level.getServer().getCommands().performPrefixedCommand(commandSourceStack, shifuCommand);
+    }
+
+# FoodLevelChangeEvent(食べ物を食べ終えたとき)。満腹度を足す行を囲む
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/food/FoodProperties.java.patch
+file: net/minecraft/world/food/FoodProperties.java
+anchor:
+    player.getFoodData().eat(this);
+insert:
+    if (dev.shifu.event.PlayerEvents.eatFood(player, this, stack)) {
+insert-after:
+    }
+
+# PlayerShieldDisableEvent の攻撃者を置く。発火は BlocksAttacks.disable の中。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/player/Player.java.patch(PlayerShieldDisableEvent)
+file: net/minecraft/world/entity/player/Player.java
+anchor:
+            blocksAttacks.disable(level, this, secondsToDisableBlocking, itemBlockingWith);
+insert:
+    dev.shifu.event.PlayerEvents.shieldAttacker(attacker);

@@ -1,0 +1,9 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// GameRules.set
+    // Paper は世界ごとのゲームルールのために ServerLevel を受ける。vanilla は
+    // サーバー全体しか持たないので、その世界のサーバーを渡す。
+    public <T> void set(final GameRule<T> gameRule, final T value,
+                        final net.minecraft.server.level.ServerLevel level) {
+        this.set(gameRule, value, level == null ? null : level.getServer());
+    }

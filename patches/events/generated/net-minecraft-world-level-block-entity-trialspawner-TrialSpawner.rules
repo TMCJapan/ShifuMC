@@ -1,0 +1,21 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callBlockDispenseLootEvent
+file: net/minecraft/world/level/block/entity/trialspawner/TrialSpawner.java
+anchor:
+    for (ItemStack item : lootDrops) {
+insert:
+    // CraftBukkit start
+    org.bukkit.event.block.BlockDispenseLootEvent spawnerDispenseLootEvent = org.bukkit.craftbukkit.event.CraftEventFactory.callBlockDispenseLootEvent(
+        level,
+        pos,
+        null,
+        lootDrops,
+        lootTable
+    );
+    if (spawnerDispenseLootEvent.isCancelled()) {
+        return;
+    }
+
+    lootDrops = new ObjectArrayList<>(spawnerDispenseLootEvent.getDispensedLoot().stream().map(org.bukkit.craftbukkit.inventory.CraftItemStack::asNMSCopy).toList());
+    // CraftBukkit end

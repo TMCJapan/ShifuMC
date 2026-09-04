@@ -1,0 +1,18 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// ItemStack.hurtAndBreak
+    // Paper の force 付きの版。CraftLivingEntity#damageItemStack が呼ぶ。
+    // force は Paper が hasInfiniteMaterials の判定を飛ばすための旗。vanilla の判定は変えないので渡さない。
+    // slot は ItemStack 単体を痛める API(CraftLivingEntity.java:1077)から null で来る。
+    // 装備枠が無いので、壊れたときの装備側の後始末(onEquippedItemBroken)はしない。
+    // それ以外は vanilla の hurtAndBreak(int, LivingEntity, EquipmentSlot) と同じ式で、
+    // 実際に痛めるのは vanilla の hurtAndBreak(int, ServerLevel, ServerPlayer, Consumer) 1 回だけ。
+    public void hurtAndBreak(final int amount, final LivingEntity owner, final @Nullable EquipmentSlot slot, final boolean force) {
+        if (owner.level() instanceof ServerLevel serverLevel) {
+            this.hurtAndBreak(amount, serverLevel, owner instanceof ServerPlayer player ? player : null, brokenItem -> {
+                if (slot != null) {
+                    owner.onEquippedItemBroken(brokenItem, slot);
+                }
+            });
+        }
+    }

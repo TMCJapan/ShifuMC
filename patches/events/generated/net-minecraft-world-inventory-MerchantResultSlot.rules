@@ -1,0 +1,28 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# PlayerPurchaseEvent, PlayerTradeEvent
+file: net/minecraft/world/inventory/MerchantResultSlot.java
+anchor:
+    if (offer != null) {
+insert:
+    // Paper start - Add PlayerTradeEvent and PlayerPurchaseEvent
+    io.papermc.paper.event.player.PlayerPurchaseEvent event = null;
+    if (offer != null && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+        if (this.merchant instanceof net.minecraft.world.entity.npc.villager.AbstractVillager abstractVillager) {
+            event = new io.papermc.paper.event.player.PlayerTradeEvent(serverPlayer.getBukkitEntity(), (org.bukkit.entity.AbstractVillager) abstractVillager.getBukkitEntity(), offer.asBukkit(), true, true);
+        } else if (this.merchant instanceof org.bukkit.craftbukkit.inventory.CraftMerchantCustom.MinecraftMerchant minecraftMerchant) {
+            event = new io.papermc.paper.event.player.PlayerPurchaseEvent(serverPlayer.getBukkitEntity(), minecraftMerchant.getCraftMerchant(), offer.asBukkit(), false, true);
+        }
+        if (event != null) {
+            if (!event.callEvent()) {
+                carried.setCount(0);
+                player.containerMenu.sendAllDataToRemote();
+                int level = merchant instanceof net.minecraft.world.entity.npc.villager.Villager villager ? villager.getVillagerData().level() : 1;
+                serverPlayer.sendMerchantOffers(player.containerMenu.containerId, merchant.getOffers(), level, merchant.getVillagerXp(), merchant.showProgressBar(), merchant.canRestock());
+                return;
+            }
+            offer = org.bukkit.craftbukkit.inventory.CraftMerchantRecipe.fromBukkit(event.getTrade()).toMinecraft();
+        }
+    }
+    this.checkTakeAchievements(carried);
+    // Paper end - Add PlayerTradeEvent and PlayerPurchaseEvent

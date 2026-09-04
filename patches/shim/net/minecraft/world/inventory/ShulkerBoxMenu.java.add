@@ -1,0 +1,11 @@
+// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
+
+// (supertype).getBukkitView
+    public org.bukkit.craftbukkit.inventory.CraftInventoryView getBukkitView() {
+        if (this.view != null) {
+            return this.view;
+        }
+
+        this.view = new org.bukkit.craftbukkit.inventory.CraftInventoryView(this.inventory.player.getBukkitEntity(), new org.bukkit.craftbukkit.inventory.CraftInventory(this.container), this);
+        return this.view;
+    }

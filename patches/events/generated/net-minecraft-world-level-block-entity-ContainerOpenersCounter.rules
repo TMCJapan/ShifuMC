@@ -1,0 +1,54 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callRedstoneChange
+file: net/minecraft/world/level/block/entity/ContainerOpenersCounter.java
+anchor:
+    if (previous == 0) {
+insert:
+
+    // Paper start - Call BlockRedstoneEvent
+    if (blockState.is(net.minecraft.world.level.block.Blocks.TRAPPED_CHEST)) {
+        int oldCurrent = Math.clamp(previous, 0, 15);
+        int newCurrent = Math.clamp(this.openCount, 0, 15);
+
+        if (oldCurrent != newCurrent) {
+            org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, oldCurrent, newCurrent);
+        }
+    }
+    // Paper end - Call BlockRedstoneEvent
+
+
+# callRedstoneChange
+file: net/minecraft/world/level/block/entity/ContainerOpenersCounter.java
+anchor:
+    if (this.openCount == 0) {
+insert:
+
+    // Paper start - Call BlockRedstoneEvent
+    if (blockState.is(net.minecraft.world.level.block.Blocks.TRAPPED_CHEST)) {
+        int oldCurrent = Math.clamp(previous, 0, 15);
+        int newCurrent = Math.clamp(this.openCount, 0, 15);
+
+        if (oldCurrent != newCurrent) {
+            org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, oldCurrent, newCurrent);
+        }
+    }
+    // Paper end - Call BlockRedstoneEvent
+
+
+# callRedstoneChange
+file: net/minecraft/world/level/block/entity/ContainerOpenersCounter.java
+anchor:
+    boolean isOpen = openCount != 0;
+insert:
+    // Paper start - Call BlockRedstoneEvent
+    if (blockState.is(net.minecraft.world.level.block.Blocks.TRAPPED_CHEST)) {
+        int oldCurrent = Math.clamp(prevCount, 0, 15);
+        int newCurrent = Math.clamp(openCount, 0, 15);
+
+        if (oldCurrent != newCurrent) {
+            org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, oldCurrent, newCurrent);
+        }
+    }
+    // Paper end - Call BlockRedstoneEvent
+

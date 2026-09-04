@@ -1,0 +1,15 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: org/bukkit/craftbukkit/entity/CraftLivingEntity.java
+
+replace:
+    addEffect(org.bukkit.craftbukkit.potion.CraftPotionUtil.fromBukkit(effect), EntityPotionEffectEvent.Cause.PLUGIN)
+with:
+    addEffect(org.bukkit.craftbukkit.potion.CraftPotionUtil.fromBukkit(effect), (net.minecraft.world.entity.Entity) null)
+
+# craftAttributes は vanilla の構築子で作れないので、初回に作る読み出しへ向ける
+count: 2
+replace:
+    getHandle().craftAttributes
+with:
+    getHandle().shifuCraftAttributes()

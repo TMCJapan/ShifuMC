@@ -1,0 +1,4 @@
+// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
+
+// (supertype).reload
+    protected abstract T reload(final RegistryAccess registryAccess, final Properties properties, final joptsimple.OptionSet options); // CraftBukkit

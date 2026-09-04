@@ -1,0 +1,11 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callPlayerRecipeListUpdateEvent
+file: net/minecraft/stats/ServerRecipeBook.java
+anchor:
+    this.add(id);
+insert:
+    // Paper start - PlayerRecipeDiscoverEvent event
+    final org.bukkit.event.player.PlayerRecipeDiscoverEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerRecipeListUpdateEvent(player, recipe);
+    if (event.isCancelled()) continue;
+    // Paper end - PlayerRecipeDiscoverEvent event

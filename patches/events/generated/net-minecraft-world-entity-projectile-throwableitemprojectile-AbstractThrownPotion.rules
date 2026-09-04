@@ -1,0 +1,19 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityChangeBlockEvent
+file: net/minecraft/world/entity/projectile/throwableitemprojectile/AbstractThrownPotion.java
+anchor:
+    this.level().destroyBlock(pos, false, this);
+insert:
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(this, pos, blockState.getFluidState().createLegacyBlock())) { // Paper - fix wrong block state
+insert-after:
+    } // CraftBukkit
+
+# callEntityChangeBlockEvent
+file: net/minecraft/world/entity/projectile/throwableitemprojectile/AbstractThrownPotion.java
+anchor:
+    AbstractCandleBlock.extinguish(null, blockState, this.level(), pos);
+insert:
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(this, pos, blockState.setValue(AbstractCandleBlock.LIT, false))) { // CraftBukkit
+insert-after:
+    } // CraftBukkit

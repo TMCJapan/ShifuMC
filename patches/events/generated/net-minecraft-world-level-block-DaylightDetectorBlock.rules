@@ -1,0 +1,8 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callRedstoneChange
+file: net/minecraft/world/level/block/DaylightDetectorBlock.java
+anchor:
+    level.setBlock(pos, state.setValue(POWER, target), Block.UPDATE_ALL);
+insert:
+    target = org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, state.getValue(POWER), target).getNewCurrent(); // Paper - Call BlockRedstoneEvent

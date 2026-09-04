@@ -1,0 +1,8 @@
+// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
+
+// (supertype).setTarget
+    public void setTarget(@Nullable Entity finalTarget) {
+        this.finalTarget = finalTarget == null ? null : net.minecraft.world.entity.EntityReference.of(finalTarget);
+        this.currentMoveDirection = Direction.UP;
+        this.selectNextMoveDirection(Direction.Axis.X, finalTarget);
+    }

@@ -1,0 +1,54 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callBinaryRedstoneChange
+file: net/minecraft/world/level/block/ButtonBlock.java
+anchor:
+    this.press(state, level, pos, player);
+insert:
+    // Paper start - Call BlockRedstoneEvent
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, true)) {
+        return InteractionResult.SUCCESS;
+    }
+    // Paper end - Call BlockRedstoneEvent
+
+# callBinaryRedstoneChange
+file: net/minecraft/world/level/block/ButtonBlock.java
+anchor:
+    this.press(state, level, pos, null);
+insert:
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, true)) { // Paper - Call BlockRedstoneEvent
+insert-after:
+    } // Paper - Call BlockRedstoneEvent
+
+# EntityInsideBlockEvent
+file: net/minecraft/world/level/block/ButtonBlock.java
+anchor:
+    if (!level.isClientSide() && this.type.canButtonBeActivatedByArrows() && !state.getValue(POWERED)) {
+insert:
+    if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+
+# EntityInteractEvent
+file: net/minecraft/world/level/block/ButtonBlock.java
+anchor:
+    if (shouldBePressed != wasPressed) {
+insert:
+    // CraftBukkit start - Call interact event when arrows turn on wooden buttons
+    if (wasPressed != shouldBePressed && shouldBePressed) {
+        org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+        org.bukkit.event.entity.EntityInteractEvent event = new org.bukkit.event.entity.EntityInteractEvent(firstArrow.getBukkitEntity(), block);
+        if (!event.callEvent()) {
+            return;
+        }
+    }
+    // CraftBukkit end
+
+# callBinaryRedstoneChange
+file: net/minecraft/world/level/block/ButtonBlock.java
+anchor:
+    level.setBlock(pos, state.setValue(POWERED, shouldBePressed), Block.UPDATE_ALL);
+insert:
+    // Paper start - Call BlockRedstoneEvent
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, shouldBePressed)) {
+        return;
+    }
+    // Paper end - Call BlockRedstoneEvent

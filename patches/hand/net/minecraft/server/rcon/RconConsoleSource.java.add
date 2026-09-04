@@ -1,0 +1,18 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// RconConsoleSource.remoteConsole
+    // Paper は DedicatedServer の構築子の中で CraftServer を先に作るので、この欄の
+    // 初期化子が走るときには Bukkit.getServer() が入っている。vanilla の構築子は触らないので、
+    // ここでは空のままにして、初めて読まれたときに作る。
+    // 初期化子のままだと DedicatedServer の構築子で
+    // 「Bukkit.getServer() が null」で落ちる(起動しない)。
+    private org.bukkit.craftbukkit.command.CraftRemoteConsoleCommandSender remoteConsole;
+
+// RconConsoleSource.getBukkitSender
+    public org.bukkit.command.CommandSender getBukkitSender(final CommandSourceStack wrapper) {
+        if (this.remoteConsole == null) {
+            this.remoteConsole = new org.bukkit.craftbukkit.command.CraftRemoteConsoleCommandSender(this);
+        }
+
+        return this.remoteConsole;
+    }

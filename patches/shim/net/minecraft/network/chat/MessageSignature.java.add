@@ -1,0 +1,4 @@
+// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
+
+// ServerPlayer.adventure
+    public net.kyori.adventure.chat.SignedMessage.Signature adventure() { return net.kyori.adventure.chat.SignedMessage.signature(this.bytes); } // Paper - adventure; support signed messages

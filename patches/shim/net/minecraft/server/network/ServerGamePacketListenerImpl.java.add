@@ -1,0 +1,11 @@
+// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
+
+// ServerGamePacketListenerImpl.internalTeleport
+    public void internalTeleport(Location dest) {
+        this.internalTeleport(dest.getX(), dest.getY(), dest.getZ(), dest.getYaw(), dest.getPitch());
+    }
+
+// (supertype).paperConnection
+    public io.papermc.paper.connection.PaperPlayerGameConnection paperConnection() {
+        return this.playerGameConnection;
+    }

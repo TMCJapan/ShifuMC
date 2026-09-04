@@ -1,0 +1,13 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// ItemBasedSteering.boost
+    // CraftPig/CraftStrider の setBoostTicks 用。tick 数を指定して加速させる。
+    // vanilla の boost(RandomSource) は tick 数を乱数で決めるので委譲できない。
+    // vanilla の boost の代入 3 行から、乱数の部分だけを引数に置き換えた。
+    // vanilla の呼び出し(Pig/Strider の食べ物使用)は boost(RandomSource) のままなので
+    // 乱数の消費順は変わらない。
+    public void boost(final int boostTime) {
+        this.boosting = true;
+        this.boostTime = 0;
+        this.entityData.set(this.boostTimeAccessor, boostTime);
+    }

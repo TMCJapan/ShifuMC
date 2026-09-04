@@ -1,0 +1,18 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// BundleContents.getMaxAmountToAdd
+    // Paper が InventoryClickEvent の action(PICKUP_ALL_INTO_BUNDLE など)を決めるために足したもの
+    // (patches/sources/net/minecraft/world/item/component/BundleContents.java.patch:33,49)。
+    // Paper は外側と Mutable の 2 つに分けているが、読むだけの計算なので 1 つにまとめた。
+    // vanilla の Mutable.getMaxAmountToAdd(Fraction) と同じ式で、何も書き換えない。
+    public int getMaxAmountToAdd(final ItemStack stack) {
+        final DataResult<Fraction> weight = this.weight();
+
+        if (weight.isError()) {
+            return 0;
+        }
+
+        final Fraction remainingWeight = Fraction.ONE.subtract(weight.getOrThrow());
+
+        return Math.max(remainingWeight.divideBy(BundleContents.getWeight(stack).getOrThrow()).intValue(), 0);
+    }

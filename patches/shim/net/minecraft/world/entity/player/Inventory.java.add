@@ -1,0 +1,16 @@
+// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
+
+// BlockEntity.getOwner
+    public org.bukkit.inventory.InventoryHolder getOwner() {
+        return this.player.getBukkitEntity();
+    }
+
+// (supertype).setMaxStackSize
+    public void setMaxStackSize(int size) {
+        this.maxStack = size;
+    }
+
+// Container.getLocation
+    public org.bukkit.Location getLocation() {
+        return this.player.getBukkitEntity().getLocation();
+    }

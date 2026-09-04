@@ -1,0 +1,14 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: org/bukkit/craftbukkit/CraftServer.java
+
+replace:
+    new DedicatedServerSettings(this.console.options)
+with:
+    new DedicatedServerSettings(java.nio.file.Paths.get("server.properties")) /* Shifu - vanilla の Main と同じ場所を読む */
+
+count: 4
+replace:
+    io.papermc.paper.configuration.GlobalConfiguration.get().misc.loadPermissionsYmlBeforePlugins
+with:
+    true /* Shifu - Paper の設定は読まないので既定値を書く */

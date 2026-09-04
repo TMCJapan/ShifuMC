@@ -1,0 +1,33 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# PlayerAdvancementCriterionGrantEvent
+file: net/minecraft/server/PlayerAdvancements.java
+anchor:
+    this.unregisterListeners(holder);
+insert:
+    // Paper start - Add PlayerAdvancementCriterionGrantEvent
+    if (!new com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent(this.player.getBukkitEntity(), holder.toBukkit(), criterion).callEvent()) {
+        progress.revokeProgress(criterion);
+        return false;
+    }
+    // Paper end - Add PlayerAdvancementCriterionGrantEvent
+
+# PlayerAdvancementDoneEvent
+file: net/minecraft/server/PlayerAdvancements.java
+anchor:
+    holder.value().rewards().grant(this.player);
+insert:
+    // Paper start - Add Adventure message to PlayerAdvancementDoneEvent
+    // Paper は flatMap のラムダで書いているが、ここに足すと vanilla の
+    // ifPresent(display -> ...) が lambda$award$1 に繰り下がる。番号で狙う mixin
+    // (styled-chat の PlayerAdvancementsMixin)が当たらなくなるので、ラムダを使わずに書く。
+    net.kyori.adventure.text.Component message = null;
+    if (holder.value().display().isPresent()) {
+        final net.minecraft.advancements.DisplayInfo shifuInfo = holder.value().display().get();
+        if (shifuInfo.shouldAnnounceChat()) {
+            message = io.papermc.paper.adventure.PaperAdventure.asAdventure(shifuInfo.getType().createAnnouncement(holder, this.player));
+        }
+    }
+    final org.bukkit.event.player.PlayerAdvancementDoneEvent event = new org.bukkit.event.player.PlayerAdvancementDoneEvent(this.player.getBukkitEntity(), holder.toBukkit(), message);
+    this.player.level().getCraftServer().getPluginManager().callEvent(event); // CraftBukkit
+    // Paper end

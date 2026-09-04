@@ -1,0 +1,9 @@
+# Paper が vanilla のメソッドの中で行う代入。既存の行は変えていない。
+
+# プラグインの jar を探して provider として登録する
+file: net/minecraft/server/Main.java
+anchor:
+    Bootstrap.bootStrap();
+insert:
+    io.papermc.paper.plugin.PluginInitializerManager.load(net.minecraft.server.MinecraftServer.shifuOptions);
+

@@ -1,0 +1,9 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: io/papermc/paper/command/brigadier/PaperBrigadier.java
+
+# 使い方の一覧を組むときに API 側のノードへ source を渡す。NMS の DUMMY を包んで渡す
+replace:
+            Map<CommandNode<CommandSourceStack>, String> map = PaperCommands.INSTANCE.getDispatcherInternal().getSmartUsage(argumentCommandNode, DUMMY);
+with:
+            Map<CommandNode<CommandSourceStack>, String> map = PaperCommands.INSTANCE.getDispatcherInternal().getSmartUsage(argumentCommandNode, dev.shifu.command.ApiSource.wrap(DUMMY)); // Shifu - API のノードには包んだ source を渡す

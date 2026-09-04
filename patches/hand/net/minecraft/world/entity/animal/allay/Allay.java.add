@@ -1,0 +1,20 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// Allay.shifuDuplicateAllay
+    // Paper は duplicateAllay を「作った Allay を返す」形に書き換えているが、
+    // 返り値の変更は vanilla の宣言を触るので、別名で足す。
+    // vanilla の duplicateAllay(Allay.java:460) と同じ式を書き、生まれた Allay を返す。
+    // vanilla の版は AI(Allay.java:286)から呼ばれるので触らない。
+    // 二重に生まれるので、ここから vanilla の duplicateAllay は呼ばない。
+    public @Nullable Allay shifuDuplicateAllay() {
+        Allay allay = EntityTypes.ALLAY.create(this.level(), EntitySpawnReason.BREEDING);
+        if (allay != null) {
+            allay.snapTo(this.position());
+            allay.setPersistenceRequired();
+            allay.resetDuplicationCooldown();
+            this.resetDuplicationCooldown();
+            this.level().addFreshEntity(allay);
+        }
+
+        return allay;
+    }

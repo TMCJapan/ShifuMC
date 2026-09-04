@@ -1,0 +1,34 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# EntityInsideBlockEvent
+file: net/minecraft/world/level/block/EndPortalBlock.java
+anchor:
+    if (entity.canUsePortal(false)) {
+insert:
+    if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+
+# EntityPortalEnterEvent
+file: net/minecraft/world/level/block/EndPortalBlock.java
+anchor:
+    if (!level.isClientSide() && level.dimension() == Level.END && entity instanceof ServerPlayer player && !player.seenCredits) {
+insert:
+    // CraftBukkit start - Entity in portal
+    org.bukkit.event.entity.EntityPortalEnterEvent event = new org.bukkit.event.entity.EntityPortalEnterEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level), org.bukkit.PortalType.ENDER); // Paper - add portal type
+    if (!event.callEvent()) return; // Paper - make cancellable
+    // CraftBukkit end
+
+# handlePortalEvents
+file: net/minecraft/world/level/block/EndPortalBlock.java
+anchor:
+    return new TeleportTransition(
+insert:
+    // CraftBukkit start
+    relatives.removeAll(Relative.ROTATION); // remove relative rotation flags to simplify event mutation
+    float absoluteYaw = !fromEnd ? yRot : entity.getYRot() + yRot;
+    float absolutePitch = entity.getXRot() + xRot;
+    org.bukkit.craftbukkit.event.PortalEventResult result = org.bukkit.craftbukkit.event.CraftEventFactory.handlePortalEvents(entity, org.bukkit.craftbukkit.util.CraftLocation.toBukkit(spawnPos, newLevel, absoluteYaw, absolutePitch), org.bukkit.PortalType.ENDER, 0, 0);
+    if (result == null) {
+        return null;
+    }
+    org.bukkit.Location to = result.to();
+

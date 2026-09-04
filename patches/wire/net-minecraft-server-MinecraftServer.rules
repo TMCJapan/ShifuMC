@@ -1,0 +1,104 @@
+# Paper が vanilla のメソッドの中で行う代入。既存の行は変えていない。
+
+# Paper は createLevels に相当する場所で this.server.scoreboardManager = new CraftScoreboardManager(t
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+            this.stopwatches = this.savedDataStorage.computeIfAbsent(Stopwatches.TYPE);
+insert-after:
+    this.server.scoreboardManager = new org.bukkit.craftbukkit.scoreboard.CraftScoreboardManager(this, overworld.getScoreboard());
+
+# 毎 tick のスケジューラ実行
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+            this.getPlayerList().getPlayers().forEach(playerx -> playerx.connection.suspendFlushing());
+insert-after:
+    this.server.getScheduler().mainThreadHeartbeat();
+
+# pause-when-empty-seconds で止まっている間のスケジューラ実行
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+                    this.tickConnection();
+                    return;
+insert:
+    this.server.getScheduler().mainThreadHeartbeat();
+
+# 検証で足した 1 件
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+                    this.tickConnection();
+                    return;
+insert:
+    while (!this.processQueue.isEmpty()) { this.processQueue.remove().run(); }
+
+# 起動中に積まれた 1 tick 遅延のタスクを、最初の tick の前に 1 回流す
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+                this.statusIcon = this.loadStatusIcon().orElse(null);
+                this.status = this.buildServerStatus();
+insert-after:
+    this.server.getScheduler().mainThreadHeartbeat();
+
+# 停止時のプラグイン無効化。Paper と同じく、非同期タスクの終わりを最大 5 秒待つ
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+            LOGGER.info("Stopping server");
+insert-after:
+    if (this.server != null) {
+        this.server.disablePlugins();
+        this.server.waitForAsyncTasksShutdown();
+    }
+
+# MinecraftServer.hasStopped を立てる
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+            this.packetProcessor.close();
+insert:
+    synchronized (this.stopLock) { this.hasStopped = true; }
+
+# メインスレッド待ちのタスク列 (processQueue) を毎 tick 流す
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+            profiler.push("levels");
+insert:
+    while (!this.processQueue.isEmpty()) { this.processQueue.remove().run(); }
+
+# MinecraftServer.currentTick を進める
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+                    boolean sprinting = thisTickNanos == 0L;
+insert:
+    ++MinecraftServer.currentTick;
+
+# 検証で見つけた欠け
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+            super("Server", propagatesCrashes);
+insert-after:
+    SERVER = this;
+
+
+# Paper の設定。Paper は Services.create で作って構築子で受け取る
+# (patches/sources/net/minecraft/server/Services.java.patch:38, MinecraftServer.java.patch:252)。
+# アダプタ層(CraftWorld, ChatProcessor)が paperConfig() と GlobalConfiguration.get() を読む。
+# 引数は PlayerList の配線と同じ static から取る(順序に依らない)。
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    this.serverThread = serverThread;
+    this.executor = Util.backgroundExecutor();
+insert:
+    this.paperConfigurations = dev.shifu.event.ShifuBootstrap.paperConfigurations(MinecraftServer.shifuOptions);
+
+# watchdog に tick を知らせる。止めるのは stopServer の先頭
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/MinecraftServer.java.patch:575,972
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    protected void tickServer(final BooleanSupplier haveTime) {
+insert-after:
+    org.spigotmc.WatchdogThread.tick();
+
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    LOGGER.info("Stopping server");
+insert:
+    org.spigotmc.WatchdogThread.doStop();

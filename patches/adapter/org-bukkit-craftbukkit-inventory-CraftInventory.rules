@@ -1,0 +1,9 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: org/bukkit/craftbukkit/inventory/CraftInventory.java
+
+# 原案どおり
+replace:
+    this.inventory instanceof LecternBlockEntity.LecternInventory
+with:
+    this.inventory.shifuLectern() != null

@@ -1,0 +1,19 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# EntityInsideBlockEvent
+file: net/minecraft/world/level/block/CampfireBlock.java
+anchor:
+    if (state.getValue(LIT) && entity instanceof LivingEntity) {
+insert:
+    if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+
+# callBlockIgniteEvent
+file: net/minecraft/world/level/block/CampfireBlock.java
+anchor:
+    level.setBlock(pos, state.setValue(BlockStateProperties.LIT, true), Block.UPDATE_ALL_IMMEDIATE);
+insert:
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, pos, projectile).isCancelled()) {
+        return;
+    }
+    // CraftBukkit end

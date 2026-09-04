@@ -1,0 +1,15 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# AsyncStructureSpawnEvent
+file: net/minecraft/world/level/chunk/ChunkGenerator.java
+anchor:
+    structureManager.setStartForStructure(sectionPos, structure, start, centerChunk);
+insert:
+    // CraftBukkit start
+    BoundingBox box = start.getBoundingBox();
+    org.bukkit.event.world.AsyncStructureSpawnEvent event = new org.bukkit.event.world.AsyncStructureSpawnEvent(structureManager.level.getMinecraftWorld().getWorld(), org.bukkit.craftbukkit.generator.structure.CraftStructure.minecraftToBukkit(structure), new org.bukkit.util.BoundingBox(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ()), sourceChunkPos.x(), sourceChunkPos.z());
+    org.bukkit.Bukkit.getPluginManager().callEvent(event);
+    if (event.isCancelled()) {
+        return true;
+    }
+    // CraftBukkit end

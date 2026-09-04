@@ -1,0 +1,15 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// DamageSource.DamageSource
+    // Paper の 5 引数のコンストラクタ。shim が足した copy() と CraftDamageSource が呼ぶ。
+    // vanilla の 4 引数へ渡してから damageContext を入れるだけで、vanilla の命令列は変わらない。
+    // damageContext のフィールドから final を外すのが前提(同じファイルの none の項を見ること)。
+    public DamageSource(final Holder<DamageType> type, final @Nullable Entity directEntity, final @Nullable Entity causingEntity, final @Nullable Vec3 damageSourcePosition, final net.kyori.adventure.pointer.Pointers damageContext) {
+        this(type, directEntity, causingEntity, damageSourcePosition);
+        this.damageContext = damageContext;
+    }
+
+// DamageSource.damageContext
+    // make_shim が Paper のパッチから写した宣言は final で、vanilla の 4 引数の構築子は
+    // 代入しない。5 引数の版から this(...) の後で入れるので final を外す。
+    private net.kyori.adventure.pointer.Pointers damageContext;

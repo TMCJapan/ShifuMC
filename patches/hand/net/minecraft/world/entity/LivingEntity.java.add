@@ -1,0 +1,84 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// LivingEntity.heal
+    // Paper のパッチは EntityRegainHealthEvent を略名で書いていて、その import は
+    // vanilla に無い。型を完全修飾にした形をここで書く。
+    // EntityRegainHealthEvent を発火しないので、理由も旗も使わない。
+    public void heal(final float heal,
+                     final org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason regainReason) {
+        this.heal(heal, regainReason, false);
+    }
+
+    public void heal(final float heal,
+                     final org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason regainReason,
+                     final boolean isFastRegen) {
+        this.heal(heal);
+    }
+
+// LivingEntity.removeAllEffects
+    // 理由を発火層に置いてから vanilla へ渡す。EntityPotionEffectEvent は vanilla の中で出る。
+    public boolean removeAllEffects(final org.bukkit.event.entity.EntityPotionEffectEvent.Cause cause) {
+        dev.shifu.event.EntityEvents.effectCause(cause);
+        return this.removeAllEffects();
+    }
+
+// LivingEntity.removeEffect
+    public boolean removeEffect(final Holder<MobEffect> effect,
+                                final org.bukkit.event.entity.EntityPotionEffectEvent.Cause cause) {
+        dev.shifu.event.EntityEvents.effectCause(cause);
+        return this.removeEffect(effect);
+    }
+
+// LivingEntity.setItemSlot
+    // silent は装備音を出さないための旗。vanilla の setItemSlot は音を出さないので渡さない。
+    public void setItemSlot(final EquipmentSlot slot, final ItemStack itemStack, final boolean silent) {
+        this.setItemSlot(slot, itemStack);
+    }
+
+// LivingEntity.getExpReward
+    // Paper は dropExperience を「量を返す」形に書き換えているが、こちらは足すだけ。
+    // 条件は vanilla の dropExperience(LivingEntity.java:1524) と同じものを読むだけで、
+    // 経験値の生成はしない。vanilla の drop 経路は触らない。
+    public int getExpReward(final ServerLevel level, final @Nullable Entity killer) {
+        if (!this.wasExperienceConsumed()
+            && (
+                this.isAlwaysExperienceDropper()
+                    || this.lastHurtByPlayerMemoryTime > 0 && this.shouldDropExperience() && level.getGameRules().get(GameRules.MOB_DROPS)
+            )) {
+            return this.getExperienceReward(level, killer);
+        }
+
+        return 0;
+    }
+
+// LivingEntity.drop
+    // Paper の Extend dropItem API。callEvent は PlayerDropItemEvent を出すための旗で、
+    // vanilla の drop はイベントを持たないので使わない。
+    // entityOperation は落ちた ItemEntity に対する手続き。Paper は addFreshEntity の前に呼ぶが、
+    // vanilla の drop を二重に書かないため、こちらは vanilla の drop が返した後に呼ぶ。
+    public @Nullable ItemEntity drop(final ItemStack itemStack, final boolean randomly, final boolean thrownFromHand,
+                                     final boolean callEvent,
+                                     final @Nullable Consumer<org.bukkit.entity.Item> entityOperation) {
+        final ItemEntity entity = this.drop(itemStack, randomly, thrownFromHand);
+
+        if (entity != null && entityOperation != null) {
+            entityOperation.accept((org.bukkit.entity.Item) entity.getBukkitEntity());
+        }
+
+        return entity;
+    }
+
+// LivingEntity.craftAttributes
+    // Paper は構築子の中で this.attributes の次にこれを作るが、vanilla の構築子は触らない。
+    // 欄の初期化子は構築子の本体より先に走るので、そこで作ると this.attributes がまだ null。
+    // 空のままにして、初めて読まれたときに作る。読むのはアダプタ層の 2 箇所だけで、
+    // どちらもエンティティが出来上がった後に呼ばれる。
+    public org.bukkit.craftbukkit.attribute.CraftAttributeMap craftAttributes;
+
+    public org.bukkit.craftbukkit.attribute.CraftAttributeMap shifuCraftAttributes() {
+        if (this.craftAttributes == null) {
+            this.craftAttributes = new org.bukkit.craftbukkit.attribute.CraftAttributeMap(this.getAttributes());
+        }
+
+        return this.craftAttributes;
+    }

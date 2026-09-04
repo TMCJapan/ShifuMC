@@ -1,0 +1,398 @@
+# プレイヤーのイベント。
+#
+# 参加と退出は取り消せないが、告知するメッセージは差し替えられる。
+# vanilla の告知の文を丸ごと囲み、差し替えられたときだけ飛ばす。
+# 囲むだけなので vanilla の行は 1 文字も変わらない。
+#
+# 告知の文を組み立てる式を引数に渡すと、登録が無くても必ず評価される。
+# silentJoin / silentQuit を先に見て短絡させ、登録が無いときは
+# vanilla と同じ命令列にする。
+
+# PlayerJoinEvent
+file: net/minecraft/server/players/PlayerList.java
+anchor:
+    this.broadcastSystemMessage(component.withStyle(ChatFormatting.YELLOW), false);
+insert:
+    if (dev.shifu.event.ShifuEvents.silentJoin()
+            || dev.shifu.event.ShifuEvents.playerJoin(player, component.withStyle(ChatFormatting.YELLOW))) {
+insert-after:
+    }
+
+# PlayerQuitEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.server
+        .getPlayerList()
+        .broadcastSystemMessage(Component.translatable("multiplayer.player.left", this.player.getDisplayName()).withStyle(ChatFormatting.YELLOW), false);
+insert:
+    if (dev.shifu.event.ShifuEvents.silentQuit()
+            || dev.shifu.event.ShifuEvents.playerQuit(this.player, Component.translatable("multiplayer.player.left", this.player.getDisplayName()).withStyle(ChatFormatting.YELLOW))) {
+insert-after:
+    }
+
+# PlayerMoveEvent
+#
+# vanilla が位置を確定させる absSnapTo(target...) の直前。Paper と同じ位置。
+# 登録が無ければ真偽値 1 つで抜ける。取り消しか行き先の変更があれば、
+# 以降(位置の確定・落下判定・統計)を飛ばす。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch:889
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player.absSnapTo(targetX, targetY, targetZ, targetYRot, targetXRot);
+insert:
+    if (!dev.shifu.event.ShifuEvents.playerMove(this, startX, startY, startZ, targetX, targetY, targetZ, targetYRot, targetXRot)) {
+        return;
+    }
+
+# 位置がずれたときの戻し。Paper は internalTeleport(発火しない)に向け替えている
+# (SPIGOT-1807)。vanilla の行はそのままにして、発火しない印だけ先に付ける。
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.teleport(startX, startY, startZ, targetYRot, targetXRot);
+insert:
+    dev.shifu.event.ShifuEvents.silentTeleport(this);
+
+# PlayerTeleportEvent(同じ世界の中)
+#
+# connection.teleport(destination, relatives) の中。vanilla が位置を確定させて
+# packet を送ったあとで発火し、取り消し・変更があればもう 1 度動かす。
+# 動かす前の場所は先に取っておく(登録が無ければ null)。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch:986
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player.teleportSetPosition(destination, relatives);
+insert:
+    final org.bukkit.Location shifuTeleportFrom = dev.shifu.event.ShifuEvents.teleportFrom(this);
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.send(ClientboundPlayerPositionPacket.of(this.awaitingTeleport, destination, relatives));
+insert-after:
+    dev.shifu.event.ShifuEvents.playerTeleported(this, shifuTeleportFrom);
+
+# PlayerTeleportEvent(ServerPlayer.teleport(TeleportTransition)。別の世界への移動もここ)
+#
+# Paper と同じく動かす前に発火する。取り消されたら null を返す(Paper と同じ)。
+# 行き先が変わったら作り直した TeleportTransition で自分を呼び直す。
+# transition は final なので差し替えられない。呼び直しの中では発火しない。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch:740
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    ServerLevel newLevel = transition.newLevel();
+insert:
+    final TeleportTransition shifuTransition = dev.shifu.event.ShifuEvents.playerTeleport(this, transition);
+    if (shifuTransition == null) {
+        return null;
+    }
+    if (shifuTransition != transition) {
+        return this.teleport(shifuTransition);
+    }
+
+# PlayerChangedWorldEvent
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    this.teleportSpectators(transition, oldLevel);
+insert-after:
+    dev.shifu.event.ShifuEvents.playerChangedWorld(this, oldLevel);
+
+# テレポートの理由。Paper は署名を増やして渡しているが、Shifu は呼ぶ直前に置く。
+# 登録が無ければ何もしない。
+file: net/minecraft/server/commands/TeleportCommand.java
+anchor:
+    if (victim.teleportTo(level, relativeOrAbsoluteX, relativeOrAbsoluteY, relativeOrAbsoluteZ, relatives, newYRot, newXRot, true)) {
+insert:
+    dev.shifu.event.ShifuEvents.teleportCause(victim, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.COMMAND);
+
+file: net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEnderpearl.java
+anchor:
+    ServerPlayer newOwner = player.teleport(
+insert:
+    dev.shifu.event.ShifuEvents.teleportCause(player, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.ENDER_PEARL);
+
+file: net/minecraft/world/item/consume_effects/TeleportRandomlyConsumeEffect.java
+anchor:
+    if (user.randomTeleport(xx, yy, zz, true)) {
+insert:
+    dev.shifu.event.ShifuEvents.teleportCause(user, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.CHORUS_FRUIT);
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player.teleportTo(level, entity.getX(), entity.getY(), entity.getZ(), Set.of(), entity.getYRot(), entity.getXRot(), true);
+insert:
+    dev.shifu.event.ShifuEvents.teleportCause(this.player, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.SPECTATE);
+
+# AsyncChatEvent / ChatEvent / AsyncPlayerChatEvent / PlayerChatEvent
+#
+# vanilla が全員へ送る行を囲む。登録があれば Paper の ChatProcessor に渡し、
+# 発火も送信もそちらが行う。vanilla と同じくサーバースレッドで処理する。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch:1709
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.server.getPlayerList().broadcastChatMessage(message, this.player, ChatType.bind(ChatType.CHAT, this.player));
+insert:
+    if (dev.shifu.event.ShifuEvents.silentChat()
+            || dev.shifu.event.ShifuEvents.playerChat(this.server, this.player, message)) {
+insert-after:
+    }
+
+# InventoryClickEvent(CraftItemEvent / SmithItemEvent / CartographyItemEvent)
+#
+# vanilla の clicked(...) を囲む。取り消されたら clicked を飛ばし、そのあとの
+# vanilla の同期(broadcastChanges)がクライアントを直す。イベントの中で
+# 別の画面が開かれたら、Paper と同じくその画面を送り直して抜ける。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch:1989
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player.containerMenu.clicked(slotIndex, packet.buttonNum(), packet.containerInput(), this.player);
+insert:
+    final org.bukkit.event.inventory.InventoryClickEvent shifuClick =
+            dev.shifu.event.ShifuEvents.inventoryClick(this.player, packet, slotIndex);
+    if (dev.shifu.event.ShifuEvents.containerChanged(this.player, shifuClick)) {
+        this.player.containerMenu.resumeRemoteUpdates();
+        this.player.containerMenu.broadcastFullState();
+        return;
+    }
+    if (shifuClick == null || shifuClick.getResult() != org.bukkit.event.Event.Result.DENY) {
+insert-after:
+    }
+    dev.shifu.event.ShifuEvents.afterInventoryClick(this.player, shifuClick);
+
+# PlayerDropItemEvent
+#
+# LivingEntity.drop で ItemEntity を作ったあと、世界に入れる直前。
+# プレイヤー以外と、死んで落とす分(vanilla の dropAll から来るもの)では発火しない。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch:148
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    this.level().addFreshEntity(entity);
+insert:
+    if (!dev.shifu.event.ShifuEvents.playerDropItem(this, entity, thrownFromHand)) {
+        return null;
+    }
+
+# PlayerDeathEvent
+#
+# 3 箇所で 1 組。
+#   1. 先頭で登録の有無を控える
+#   2. 登録があれば vanilla の死亡メッセージの告知を飛ばす(if で囲む)。
+#      発火のあとでイベントの文を送る
+#   3. 落とし物と経験値を出す if を囲む。前で控え始め、後で発火する
+# 落とし物は EntityDeathEvent と同じく、世界に入る手前で控える。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch:448
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    this.gameEvent(GameEvent.ENTITY_DIE);
+insert:
+    final boolean shifuDeath = dev.shifu.event.ShifuEvents.listening(org.bukkit.event.entity.PlayerDeathEvent.getHandlerList());
+
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    if (showDeathMessage) {
+insert:
+    if (!shifuDeath) {
+
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    this.connection.send(new ClientboundPlayerCombatKillPacket(this.getId(), CommonComponents.EMPTY));
+    }
+insert-after:
+    }
+
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    if (!this.isSpectator()) {
+    this.dropAllDeathLoot(this.level(), source);
+    }
+insert:
+    final java.util.List<net.minecraft.world.entity.Entity.DefaultDrop> shifuDeathDrops =
+            shifuDeath ? dev.shifu.event.ShifuEvents.beginPlayerDeath(this) : null;
+insert-after:
+    if (!dev.shifu.event.ShifuEvents.playerDeath(this, source, shifuDeathDrops, showDeathMessage)) {
+        return;
+    }
+
+# PlayerRespawnEvent
+#
+# vanilla がリスポーン先を決めた直後。Paper と同じ位置(Paper は決める側の
+# メソッドの中で発火するが、そこは return が 3 つあって囲めない)。
+# 変えられたときだけ差し替える。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch:607
+file: net/minecraft/server/players/PlayerList.java
+anchor:
+    TeleportTransition respawnInfo = serverPlayer.findRespawnPositionAndUseSpawnBlock(!keepAllPlayerData, TeleportTransition.DO_NOTHING);
+insert-after:
+    final TeleportTransition shifuRespawn = dev.shifu.event.ShifuEvents.playerRespawn(serverPlayer, respawnInfo, keepAllPlayerData);
+    if (shifuRespawn != null) {
+        respawnInfo = shifuRespawn;
+    }
+
+# リスポーンで作り直された ServerPlayer へ、Bukkit の Player を付け替える。
+# 死亡イベントが決めた持ち物と経験値の扱いもここで写す。
+file: net/minecraft/server/players/PlayerList.java
+anchor:
+    player.restoreFrom(serverPlayer, keepAllPlayerData);
+insert-after:
+    dev.shifu.event.ShifuEvents.playerRespawned(serverPlayer, player, keepAllPlayerData);
+
+# PlayerInteractEvent(ブロックへの右クリック)
+#
+# useItemOn の先頭、状態を読んだ直後。Paper と同じ位置。ブロックの使用が拒まれたら
+# Paper と同じ後始末をして返る。手に持った物の使用だけが拒まれたら、
+# vanilla がそれを使う直前で抜ける(Paper は条件の行を書き換えているが、
+# ここは vanilla の行を残して手前で抜ける)。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayerGameMode.java.patch:340
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+anchor:
+    BlockState state = level.getBlockState(pos);
+insert-after:
+    final org.bukkit.event.player.PlayerInteractEvent shifuInteract =
+            dev.shifu.event.ShifuEvents.interactBlock(this, player, level, itemStack, hand, hitResult, state);
+    if (shifuInteract != null && shifuInteract.useInteractedBlock() == org.bukkit.event.Event.Result.DENY) {
+        return dev.shifu.event.ShifuEvents.interactBlockDenied(shifuInteract, player, state);
+    }
+
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+anchor:
+    if (!itemStack.isEmpty() && !player.getCooldowns().isOnCooldown(itemStack)) {
+insert:
+    if (dev.shifu.event.ShifuEvents.interactItemDenied(shifuInteract, player)) {
+        return InteractionResult.PASS;
+    }
+
+# PlayerInteractEvent(ブロックへの左クリック)
+#
+# 壊し始めの packet で、vanilla の権限判定(スポーン保護・mayInteract)のあと、
+# クリエイティブの即時破壊より前。Paper と同じ位置。拒まれたらブロックを送り直して抜ける。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayerGameMode.java.patch:172
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+anchor:
+    if (this.player.getAbilities().instabuild) {
+insert:
+    if (!dev.shifu.event.ShifuEvents.interactBlockLeft(this.player, pos, direction)) {
+        this.player.connection.send(new ClientboundBlockUpdatePacket(pos, this.level.getBlockState(pos)));
+        return;
+    }
+
+# AsyncPlayerPreLoginEvent / PlayerPreLoginEvent
+#
+# 名前が決まって vanilla が startClientVerification へ進む 2 箇所(オフライン・認証のスレッド)。
+# 登録があれば発火層が別スレッドで発火し、通ったら shifuStartClientVerification で続きへ進む。
+# 登録が無ければ vanilla の行がそのまま走る。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerLoginPacketListenerImpl.java.patch:134,207
+file: net/minecraft/server/network/ServerLoginPacketListenerImpl.java
+anchor:
+    this.startClientVerification(UUIDUtil.createOfflineProfile(this.requestedUsername));
+insert:
+    if (dev.shifu.event.ShifuEvents.preLogin(this, UUIDUtil.createOfflineProfile(this.requestedUsername))) {
+insert-after:
+    }
+
+file: net/minecraft/server/network/ServerLoginPacketListenerImpl.java
+anchor:
+    ServerLoginPacketListenerImpl.this.startClientVerification(profile);
+insert:
+    if (dev.shifu.event.ShifuEvents.preLogin(ServerLoginPacketListenerImpl.this, profile)) {
+insert-after:
+    }
+
+# PlayerLoginEvent
+#
+# 世界に入れる直前(placeNewPlayer の先頭)。禁止・ホワイトリスト・満員は vanilla が
+# 設定フェーズで判定済み。弾かれたら切断して抜ける。
+file: net/minecraft/server/players/PlayerList.java
+anchor:
+    NameAndId gameProfile = player.nameAndId();
+insert:
+    if (!dev.shifu.event.ShifuEvents.playerLogin(connection, player)) {
+        return;
+    }
+
+# PlayerGameModeChangeEvent
+#
+# 「同じモードなら何もしない」の判定のあと、書き換える前。Paper と同じ位置。
+# 理由は CraftPlayer.setGameMode(PLUGIN)と /gamemode(COMMAND)が呼ぶ直前に置く。
+# アンカーの 1 行目は 2 箇所にあるので、次の行まで含めて 1 箇所に定める。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayerGameMode.java.patch(PlayerGameModeChangeEvent)
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+anchor:
+    Abilities abilities = this.player.getAbilities();
+    this.setGameModeForPlayer(gameModeForPlayer, this.gameModeForPlayer);
+insert:
+    if (!dev.shifu.event.ShifuEvents.gameModeChange(this.player, gameModeForPlayer)) {
+        return false;
+    }
+
+file: net/minecraft/server/commands/GameModeCommand.java
+anchor:
+    if (setGameMode(context.getSource(), player, type)) {
+insert:
+    dev.shifu.event.ShifuEvents.gameModeCause(player, org.bukkit.event.player.PlayerGameModeChangeEvent.Cause.COMMAND);
+
+# PlayerToggleFlightEvent
+#
+# vanilla の代入を囲む。取り消されたら代入を飛ばし、クライアントに能力を送り直す。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch(PlayerToggleFlightEvent)
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player.getAbilities().flying = packet.isFlying() && this.player.getAbilities().mayfly;
+insert:
+    if (dev.shifu.event.ShifuEvents.toggleFlight(this.player, packet.isFlying())) {
+insert-after:
+    }
+
+# PlayerBedEnterEvent
+#
+# vanilla が寝られると判定して、寝る直前。取り消されたら理由(OTHER_PROBLEM)を返して寝ない。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch(callPlayerBedEnterEvent)
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    Either<Player.BedSleepingProblem, Unit> result = super.startSleepInBed(pos).ifRight(unit -> {
+insert:
+    final Either<Player.BedSleepingProblem, Unit> shifuBed = dev.shifu.event.ShifuEvents.bedEnter(this, pos);
+    if (shifuBed != null) {
+        return shifuBed;
+    }
+
+# PlayerItemConsumeEvent
+#
+# 食べ終える直前。取り消されたら消費せずに抜ける(手元を送り直す)。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch(PlayerItemConsumeEvent)
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    ItemStack result = this.useItem.finishUsingItem(this.level(), this);
+insert:
+    if (!dev.shifu.event.ShifuEvents.itemConsume(this, hand)) {
+        return;
+    }
+
+# ---------------------------------------------------------------- AsyncPlayerSendSuggestionsEvent
+#
+# 補完候補を送る直前。候補の差し替えと取り消しが効く。
+# vanilla の送信行はそのまま残し、差し替えられたときだけ別の行で送る。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.send(new ClientboundCommandSuggestionsPacket(packet.getId(), suggestions));
+insert:
+    final com.mojang.brigadier.suggestion.Suggestions shifuSuggestions = dev.shifu.event.PlayerEvents.sendSuggestions(this.player, packet.getCommand(), suggestions);
+    if (shifuSuggestions == suggestions) {
+insert-after:
+    } else if (shifuSuggestions != null) {
+        this.send(new ClientboundCommandSuggestionsPacket(packet.getId(), shifuSuggestions));
+    }

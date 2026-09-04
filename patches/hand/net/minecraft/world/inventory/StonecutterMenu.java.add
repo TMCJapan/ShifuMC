@@ -1,0 +1,29 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// StonecutterMenu.getBukkitView
+    // AbstractContainerMenu の getBukkitView。Paper は構築子で Bukkit のプレイヤーを
+    // 保持するが、vanilla の構築子は触らないので、プレイヤーインベントリのスロットから引く。
+    // INV_SLOT_START(2)は addStandardInventorySlots が置いたプレイヤーインベントリの先頭。
+    // view フィールドは shim が既に足しているのでそれを使う。
+    @Override
+    public org.bukkit.craftbukkit.inventory.view.CraftStonecutterView getBukkitView() {
+        if (this.view != null) {
+            return this.view;
+        }
+
+        org.bukkit.craftbukkit.inventory.CraftInventoryStonecutter bukkitInventory =
+            new org.bukkit.craftbukkit.inventory.CraftInventoryStonecutter(this.container, this.resultContainer);
+        Inventory playerInventory = (Inventory) this.slots.get(INV_SLOT_START).container;
+        this.view = new org.bukkit.craftbukkit.inventory.view.CraftStonecutterView(
+            playerInventory.player.getBukkitEntity(), bukkitInventory, this);
+        return this.view;
+    }
+
+// StonecutterMenu.player
+    // make_shim が Paper のパッチから写した player(Paper のパッチ 47 行目)は空の final。
+    // Paper は構築子の末尾で代入するが、vanilla の StonecutterMenu(int, Inventory,
+    // ContainerLevelAccess) は触らないので代入する場所が無く、getBukkitView が入った
+    // 途端に「変数 player は初期化されていない可能性があります」になる。
+    // 上の getBukkitView はスロットからプレイヤーを引くのでこのフィールドは読まない。
+    // final を外した宣言だけを残して shim の方を止める。
+    private org.bukkit.entity.Player player;

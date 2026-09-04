@@ -1,0 +1,11 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// BeaconBlockEntity.getHumansInRange
+    // Paper はこのメソッドを applyEffects から切り出している。範囲は shim が入れた getEffectRange を見る
+    // (未設定なら levels * 10 + 10 を返すので vanilla と同じ)。Paper が入れている「128 超えたら
+    // 全プレイヤー走査」の分岐は拾う集合が変わる(観戦者の扱いが違う)ので入れない。
+    public static List<Player> getHumansInRange(final Level level, final BlockPos pos, final int beaconLevel, final @Nullable BeaconBlockEntity blockEntity) {
+        final double range = blockEntity != null ? blockEntity.getEffectRange() : beaconLevel * 10 + 10;
+        AABB aabb = new AABB(pos).inflate(range).expandTowards(0.0, level.getHeight(), 0.0);
+        return level.getEntitiesOfClass(Player.class, aabb);
+    }

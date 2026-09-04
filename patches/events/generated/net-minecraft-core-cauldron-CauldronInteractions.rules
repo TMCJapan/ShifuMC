@@ -1,0 +1,26 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# handleCauldronLevelChangeEvent
+file: net/minecraft/core/cauldron/CauldronInteractions.java
+anchor:
+    Item usedItem = itemInHand.getItem();
+    player.setItemInHand(hand, ItemUtils.createFilledResult(itemInHand, player, new ItemStack(Items.GLASS_BOTTLE)));
+insert:
+    // CraftBukkit start
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleCauldronLevelChangeEvent(level, pos, Blocks.WATER_CAULDRON.defaultBlockState(), player, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.BOTTLE_EMPTY)) { // Paper - Call CauldronLevelChangeEvent
+        return InteractionResult.SUCCESS;
+    }
+    // CraftBukkit end
+
+# handleCauldronLevelChangeEvent
+file: net/minecraft/core/cauldron/CauldronInteractions.java
+anchor:
+    player.setItemInHand(hand, ItemUtils.createFilledResult(itemInHand, player, new ItemStack(Items.GLASS_BOTTLE)));
+    player.awardStat(Stats.USE_CAULDRON);
+    player.awardStat(Stats.ITEM_USED.get(itemInHand.getItem()));
+insert:
+    // CraftBukkit start
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleCauldronLevelChangeEvent(level, pos, state.cycle(LayeredCauldronBlock.LEVEL), player, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.BOTTLE_EMPTY)) { // Paper - Call CauldronLevelChangeEvent
+        return InteractionResult.SUCCESS;
+    }
+    // CraftBukkit end

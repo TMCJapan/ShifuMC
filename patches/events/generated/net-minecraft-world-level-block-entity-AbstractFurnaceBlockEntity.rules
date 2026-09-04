@@ -1,0 +1,35 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# FurnaceBurnEvent
+file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
+anchor:
+    entity.litTimeRemaining = newLitTime;
+insert:
+    // CraftBukkit start
+    org.bukkit.event.inventory.FurnaceBurnEvent burnEvent = new org.bukkit.event.inventory.FurnaceBurnEvent(
+        org.bukkit.craftbukkit.block.CraftBlock.at(level, pos),
+        org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(fuel),
+        newLitTime
+    );
+    if (!burnEvent.callEvent()) return;
+    newLitTime = burnEvent.getBurnTime();
+    // CraftBukkit end
+
+# FurnaceStartSmeltEvent
+file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
+anchor:
+    entity.cookingTimer++;
+insert:
+    // CraftBukkit start
+    if (entity.cookingTimer == 0) {
+        org.bukkit.event.inventory.FurnaceStartSmeltEvent smeltEvent = new org.bukkit.event.inventory.FurnaceStartSmeltEvent(
+            org.bukkit.craftbukkit.block.CraftBlock.at(level, pos),
+            org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(ingredient),
+            (org.bukkit.inventory.CookingRecipe<?>) recipe.toBukkitRecipe(),
+            getTotalCookTime(level, entity, entity.recipeType, entity.cookSpeedMultiplier) // Paper - cook speed multiplier API
+        );
+        smeltEvent.callEvent();
+
+        entity.cookingTotalTime = smeltEvent.getTotalCookTime();
+    }
+    // CraftBukkit end

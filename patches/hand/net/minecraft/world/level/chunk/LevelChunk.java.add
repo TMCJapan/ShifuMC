@@ -1,0 +1,6 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// LevelChunk.level
+    // vanilla の LevelChunk.level は Level 型。Paper はこれを ServerLevel 型に書き換えているが、
+    // 型の変更は許可されていないので何も足さない。shim が入れると level が 2 つになり、
+    // 併せて constructor の this.level = level(Level → ServerLevel)も通らなくなる。

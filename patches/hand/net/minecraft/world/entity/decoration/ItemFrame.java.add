@@ -1,0 +1,23 @@
+// 自前で書いた追加。vanilla の本体には触らず、同じ計算を static で持つ。
+
+// ItemFrame.createBoundingBoxStatic
+    // vanilla の createBoundingBox(ItemFrame.java:114) と同じ式。インスタンスの状態を
+    // 読まないので、そのまま static にできる。vanilla の版は触らない。
+    public static AABB createBoundingBoxStatic(final BlockPos blockPos, final Direction direction, final boolean hasFramedMap) {
+        Vec3 position = Vec3.atCenterOf(blockPos).relative(direction, -0.46875);
+        float width = hasFramedMap ? 1.0F : 0.75F;
+        float height = hasFramedMap ? 1.0F : 0.75F;
+        Direction.Axis axis = direction.getAxis();
+        double xSize = axis == Direction.Axis.X ? 0.0625 : width;
+        double ySize = axis == Direction.Axis.Y ? 0.0625 : height;
+        double zSize = axis == Direction.Axis.Z ? 0.0625 : width;
+        return AABB.ofSize(position, xSize, ySize, zSize);
+    }
+
+// ItemFrame.setItem
+    // Paper の追加引数。playSound=false は額縁に入れる音を止めるためだけのもので、
+    // Paper は音の条件を !isEmpty() から !isEmpty() && updateNeighbours && playSound に
+    // 書き換えている。vanilla の条件は触らないので playSound は渡さない。
+    public void setItem(final ItemStack itemStack, final boolean updateNeighbours, final boolean playSound) {
+        this.setItem(itemStack, updateNeighbours);
+    }

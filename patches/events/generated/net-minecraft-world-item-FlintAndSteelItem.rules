@@ -1,0 +1,25 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callBlockIgniteEvent
+file: net/minecraft/world/item/FlintAndSteelItem.java
+anchor:
+    level.playSound(player, relativePos, SoundEvents.FLINTANDSTEEL_USE, SoundSource.BLOCKS, 1.0F, level.getRandom().nextFloat() * 0.4F + 0.8F);
+insert:
+    // CraftBukkit start - Store the clicked block
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, relativePos, org.bukkit.event.block.BlockIgniteEvent.IgniteCause.FLINT_AND_STEEL, player).isCancelled()) {
+        context.getItemInHand().hurtAndBreak(1, player, context.getHand().asEquipmentSlot());
+        return InteractionResult.PASS;
+    }
+    // CraftBukkit end
+
+# callBlockIgniteEvent
+file: net/minecraft/world/item/FlintAndSteelItem.java
+anchor:
+    level.playSound(player, pos, SoundEvents.FLINTANDSTEEL_USE, SoundSource.BLOCKS, 1.0F, level.getRandom().nextFloat() * 0.4F + 0.8F);
+insert:
+    // CraftBukkit start - Store the clicked block
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, pos, org.bukkit.event.block.BlockIgniteEvent.IgniteCause.FLINT_AND_STEEL, player).isCancelled()) {
+        context.getItemInHand().hurtAndBreak(1, player, context.getHand().asEquipmentSlot());
+        return InteractionResult.PASS;
+    }
+    // CraftBukkit end

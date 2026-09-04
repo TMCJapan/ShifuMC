@@ -1,0 +1,23 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# HangingBreakByEntityEvent, HangingBreakEvent
+file: net/minecraft/world/entity/decoration/BlockAttachedEntity.java
+anchor:
+    this.kill(level);
+    this.markHurt();
+insert:
+    // CraftBukkit start - fire break events
+    Entity damager = source.getDirectEntity();
+    final org.bukkit.event.hanging.HangingBreakEvent event;
+    if (damager != null) {
+        event = new org.bukkit.event.hanging.HangingBreakByEntityEvent((org.bukkit.entity.Hanging) this.getBukkitEntity(), damager.getBukkitEntity(), new org.bukkit.craftbukkit.damage.CraftDamageSource(source), source.is(net.minecraft.tags.DamageTypeTags.IS_EXPLOSION) ? org.bukkit.event.hanging.HangingBreakEvent.RemoveCause.EXPLOSION : org.bukkit.event.hanging.HangingBreakEvent.RemoveCause.ENTITY);
+    } else {
+        event = new org.bukkit.event.hanging.HangingBreakEvent((org.bukkit.entity.Hanging) this.getBukkitEntity(), source.is(net.minecraft.tags.DamageTypeTags.IS_EXPLOSION) ? org.bukkit.event.hanging.HangingBreakEvent.RemoveCause.EXPLOSION : org.bukkit.event.hanging.HangingBreakEvent.RemoveCause.DEFAULT);
+    }
+
+    event.callEvent();
+
+    if (this.isRemoved() || event.isCancelled()) {
+        return true;
+    }
+    // CraftBukkit end

@@ -1,0 +1,11 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# EnderDragonShootFireballEvent
+file: net/minecraft/world/entity/boss/enderdragon/phases/DragonStrafePlayerPhase.java
+anchor:
+    level.addFreshEntity(entity);
+insert:
+    if (new com.destroystokyo.paper.event.entity.EnderDragonShootFireballEvent((org.bukkit.entity.EnderDragon) this.dragon.getBukkitEntity(), (org.bukkit.entity.DragonFireball) entity.getBukkitEntity()).callEvent()) { // Paper - EnderDragon Events
+        if (!this.dragon.isSilent()) level.levelEvent(null, LevelEvent.SOUND_DRAGON_FIREBALL, this.dragon.blockPosition(), 0); // Paper - EnderDragon Events; Fire after shoot fireball event
+insert-after:
+    } else entity.discard(null); // Paper - EnderDragon Events

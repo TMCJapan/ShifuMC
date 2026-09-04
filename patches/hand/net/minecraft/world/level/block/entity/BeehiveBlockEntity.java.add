@@ -1,0 +1,9 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// BeehiveBlockEntity.releaseBees
+    // force は Paper が releaseOccupant の BEES_STAY_IN_HIVE の判定だけを飛ばすための引数。
+    // vanilla の releaseOccupant は private static で force を受け取らず、渡すには vanilla の
+    // 宣言を書き換えるしかないので使わない。vanilla の releaseAllOccupants へ渡すだけにする。
+    public List<Entity> releaseBees(final BlockState state, final BeehiveBlockEntity.BeeReleaseStatus releaseStatus, final boolean force) {
+        return this.releaseAllOccupants(state, releaseStatus);
+    }

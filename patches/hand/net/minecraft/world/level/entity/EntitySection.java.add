@@ -1,0 +1,9 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// EntitySection.getEntities
+    // EntitySectionStorage.getAllEntities(shim が入れた版)が呼ぶ。
+    // Paper のパッチと同じ宣言・同じ本体。storage を読むだけで状態を変えない。
+    // EntitySection.java は java.util.List を import していないので完全修飾で書く。
+    public void getEntities(final java.util.List<T> into) {
+        into.addAll(this.storage);
+    }

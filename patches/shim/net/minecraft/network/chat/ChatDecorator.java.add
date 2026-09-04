@@ -1,0 +1,4 @@
+// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
+
+// (supertype).decorate
+    java.util.concurrent.CompletableFuture<Component> decorate(@Nullable ServerPlayer player, Component plain); // Paper - adventure; support async chat decoration events

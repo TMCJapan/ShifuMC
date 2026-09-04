@@ -1,0 +1,19 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityTargetLivingEvent
+file: net/minecraft/world/entity/boss/wither/WitherBoss.java
+anchor:
+    this.setAlternativeTarget(i, selected.getId());
+insert:
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTargetLivingEvent(this, selected, org.bukkit.event.entity.EntityTargetEvent.TargetReason.CLOSEST_ENTITY).isCancelled()) continue; // CraftBukkit
+
+# callEntityChangeBlockEvent
+file: net/minecraft/world/entity/boss/wither/WitherBoss.java
+anchor:
+    destroyed = level.destroyBlock(blockPos, true, this) || destroyed;
+insert:
+    // CraftBukkit start
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(this, blockPos, state.getFluidState().createLegacyBlock())) { // Paper - fix wrong block state
+        continue;
+    }
+    // CraftBukkit end

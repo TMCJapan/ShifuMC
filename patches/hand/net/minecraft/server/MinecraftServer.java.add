@@ -1,0 +1,131 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// MinecraftServer.halt
+    // isRestarting は Spigot の再起動処理用の旗。vanilla に再起動の経路は無いので渡さない。
+    public void halt(final boolean wait, final boolean isRestarting) {
+        this.halt(wait);
+    }
+
+// MinecraftServer.reloadResources
+    // cause は ServerResourcesReloadedEvent 用。発火しないので渡さない。
+    public CompletableFuture<Void> reloadResources(final Collection<String> packsToEnable,
+                                                   final io.papermc.paper.event.server.ServerResourcesReloadedEvent.Cause cause) {
+        return this.reloadResources(packsToEnable);
+    }
+
+// MinecraftServer.setDifficulty
+    // Paper は世界ごとに難易度を持つが、vanilla は 1 つしか持たない。
+    // level と source は使わず、vanilla と同じくサーバー全体を変える。
+    public void setDifficulty(final ServerLevel level, final Difficulty difficulty, final CommandSourceStack source,
+                              final boolean ignoreLock) {
+        this.setDifficulty(difficulty, ignoreLock);
+    }
+
+// MinecraftServer.motd
+    // vanilla の motd は String で、フィールドの型は変えられない。値は vanilla の motd だけに置いて、
+    // Paper が使う Component 版は出入り口で変換する。追加のフィールドは持たない。
+    // DedicatedServer は getMotd/setMotd を server.properties へ向けて上書きしているので、
+    // この 2 つを経由すれば vanilla と同じ場所を読み書きする。
+    public net.kyori.adventure.text.Component motd() {
+        return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+            .deserializeOr(this.getMotd(), net.kyori.adventure.text.Component.empty());
+    }
+
+    public void motd(final net.kyori.adventure.text.Component motd) {
+        this.setMotd(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(motd));
+    }
+
+// MinecraftServer.initWorld
+    // vanilla の createLevels() のうち、レベル 1 つ分の初期化。
+    // Shifu の起動経路は DedicatedServer.initServer -> vanilla の loadLevel() -> createLevels() なので、
+    // ここを通るのは CraftServer.createWorld で作った世界だけ。起動時の世界は vanilla のまま通る。
+    // Paper の版 (MinecraftServer.java.patch:409) から、Shifu に無いものだけ落とした:
+    // levelLoadListener は vanilla ではサーバーに 1 つなので this のものを使う。
+    // setupDebugLevel はゲームルールがサーバーに 1 つなので vanilla の 1 引数の版を呼ぶ。
+    public void initWorld(final ServerLevel level, final org.bukkit.@Nullable WorldCreator creator) {
+        final ServerLevelData levelData = level.serverLevelData;
+        final WorldOptions worldOptions = level.worldGenSettings.options();
+        final boolean isDebug = this.worldData.isDebugWorld();
+
+        if (level.generator != null) {
+            level.getWorld().getPopulators().addAll(level.generator.getDefaultPopulators(level.getWorld()));
+        }
+
+        level.getWorldBorder().world = level;
+        level.getWorldBorder().setAbsoluteMaxSize(this.getAbsoluteMaxWorldSize());
+        this.getPlayerList().addWorldborderListener(level);
+        new org.bukkit.event.world.WorldInitEvent(level.getWorld()).callEvent();
+
+        if (!levelData.isInitialized()) {
+            try {
+                if (creator != null && creator.forcedSpawnPosition() != null) {
+                    levelData.setSpawn(LevelData.RespawnData.of(
+                        level.dimension(),
+                        io.papermc.paper.util.MCUtil.toBlockPos(creator.forcedSpawnPosition()),
+                        Objects.requireNonNullElse(creator.forcedSpawnYaw(), LevelData.RespawnData.DEFAULT.yaw()),
+                        Objects.requireNonNullElse(creator.forcedSpawnPitch(), LevelData.RespawnData.DEFAULT.pitch())
+                    ));
+                } else {
+                    setInitialSpawn(level, levelData, worldOptions.generateBonusChest(), isDebug, this.levelLoadListener);
+                }
+
+                levelData.setInitialized(true);
+
+                if (isDebug) {
+                    this.setupDebugLevel(this.worldData);
+                }
+            } catch (Throwable t) {
+                CrashReport report = CrashReport.forThrowable(t, "Exception initializing level");
+
+                try {
+                    level.fillReportDetails(report);
+                } catch (Throwable ignored) {
+                }
+
+                throw new ReportedException(report);
+            }
+
+            levelData.setInitialized(true);
+        }
+
+        GlobalPos focusPos = this.selectLevelLoadFocusPos();
+        this.levelLoadListener.updateFocus(focusPos.dimension(), ChunkPos.containing(focusPos.pos()));
+    }
+
+// MinecraftServer.prepareLevel
+    // vanilla の prepareLevels() を 1 レベル分に絞ったもの。中身はレベルの繰り返しを外しただけで、
+    // 順番も待ち方も vanilla と同じ。updateMobSpawningFlags() は全レベルに
+    // setSpawnSettings(isSpawningMonsters()) を掛けるだけなので、そのレベル 1 つに書いた。
+    // Shifu の起動経路は vanilla の loadLevel() -> prepareLevels() なので、
+    // ここを通るのは CraftServer.createWorld で作った世界と、
+    // PaperWorldLoader.loadInitialWorlds() (Shifu では誰も呼ばない) だけ。
+    public void prepareLevel(final ServerLevel level) {
+        ChunkLoadCounter chunkLoadCounter = new ChunkLoadCounter();
+        chunkLoadCounter.track(level, () -> {
+            TicketStorage savedTickets = level.getDataStorage().get(TicketStorage.TYPE);
+            if (savedTickets != null) {
+                savedTickets.activateAllDeactivatedTickets();
+            }
+        });
+        this.levelLoadListener.start(LevelLoadListener.Stage.LOAD_INITIAL_CHUNKS, chunkLoadCounter.totalChunks());
+
+        do {
+            this.levelLoadListener.update(LevelLoadListener.Stage.LOAD_INITIAL_CHUNKS, chunkLoadCounter.readyChunks(), chunkLoadCounter.totalChunks());
+            this.nextTickTimeNanos = Util.getNanos() + PREPARE_LEVELS_DEFAULT_DELAY_NANOS;
+            this.waitUntilNextTick();
+        } while (chunkLoadCounter.pendingChunks() > 0);
+
+        this.levelLoadListener.finish(LevelLoadListener.Stage.LOAD_INITIAL_CHUNKS);
+        level.setSpawnSettings(level.isSpawningMonsters());
+        this.updateEffectiveRespawnData();
+        level.entityManager.tick();
+        new org.bukkit.event.world.WorldLoadEvent(level.getWorld()).callEvent();
+    }
+
+// MinecraftServer.shifuOptions
+    // Paper は構築子の引数を 1 つ増やして OptionSet を渡すが、vanilla の構築子の
+    // 宣言は変えられない。アダプタ層(PaperBootstrap)が起動前にここへ置き、
+    // 構築子の中で this.options に移す(patches/wire)。
+    // CraftServer.getConfigFile() が this.console.options を読むので、これが無いと
+    // CraftServer の構築中に NPE になる。
+    public static joptsimple.OptionSet shifuOptions;

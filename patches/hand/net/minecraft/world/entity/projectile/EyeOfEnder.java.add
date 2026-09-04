@@ -1,0 +1,6 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// EyeOfEnder.signalTo
+    public void signalTo(final Vec3 target, final boolean update) {
+        this.signalTo(target);
+    }

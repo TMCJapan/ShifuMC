@@ -1,0 +1,106 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// ServerGamePacketListenerImpl.handleContainerClose
+    public void handleContainerClose(final ServerboundContainerClosePacket packet,
+                                     final org.bukkit.event.inventory.InventoryCloseEvent.Reason reason) {
+        this.handleContainerClose(packet);
+    }
+
+// ServerGamePacketListenerImpl.internalTeleport
+    // Paper は vanilla の teleport(PositionMoveRotation, Set<Relative>) を
+    // internalTeleport に改名して、teleport の側に PlayerTeleportEvent を入れている。
+    // Shifu は vanilla の teleport をそのまま残し、その中に発火を差し込んでいるので、
+    // 発火しない印を付けてから vanilla の版へ渡す。
+    // justTeleported は Paper の internalTeleport が立てる旗で、PlayerMoveEvent の中で
+    // プラグインがテレポートさせたかの判定に使う(Paper と同じ)。
+    public void internalTeleport(final PositionMoveRotation destination, final Set<Relative> relatives) {
+        dev.shifu.event.ShifuEvents.silentTeleport(this);
+        this.justTeleported = true;
+        this.teleport(destination, relatives);
+    }
+
+    // Paper が足している 2 つの短縮形。同じ目印の下に置く(別々に書くと後の方だけが残る)。
+    public void internalTeleport(final org.bukkit.Location dest) {
+        this.internalTeleport(dest.getX(), dest.getY(), dest.getZ(), dest.getYaw(), dest.getPitch());
+    }
+
+    public void internalTeleport(final double x, final double y, final double z, final float yRot, final float xRot) {
+        this.internalTeleport(new PositionMoveRotation(new Vec3(x, y, z), Vec3.ZERO, yRot, xRot), java.util.Collections.emptySet());
+    }
+
+// ServerGamePacketListenerImpl.disconnect
+    // cause は PlayerKickEvent 用。vanilla はイベントを発火しないので渡さない。
+    public void disconnect(final Component reason, final org.bukkit.event.player.PlayerKickEvent.Cause cause) {
+        this.disconnect(reason);
+    }
+
+    public void disconnect(final net.kyori.adventure.text.Component reason, final org.bukkit.event.player.PlayerKickEvent.Cause cause) {
+        this.disconnect(io.papermc.paper.adventure.PaperAdventure.asVanilla(reason), cause);
+    }
+
+// ServerGamePacketListenerImpl.hasMoved
+    // Paper が PlayerMoveEvent のために持つ欄。直前に発火した to を控え、次の from にする。
+    // 生成した規則(PlayerJumpEvent)もここを読む。
+    private boolean hasMoved = false;
+
+// ServerGamePacketListenerImpl.lastPosX
+    private double lastPosX = Double.MAX_VALUE;
+
+// ServerGamePacketListenerImpl.lastPosY
+    private double lastPosY = Double.MAX_VALUE;
+
+// ServerGamePacketListenerImpl.lastPosZ
+    private double lastPosZ = Double.MAX_VALUE;
+
+// ServerGamePacketListenerImpl.lastYRot
+    private float lastYRot = Float.MAX_VALUE;
+
+// ServerGamePacketListenerImpl.lastXRot
+    private float lastXRot = Float.MAX_VALUE;
+
+// ServerGamePacketListenerImpl.justTeleported
+    private boolean justTeleported = false;
+
+// ServerGamePacketListenerImpl.shifuMoveFrom
+    // PlayerMoveEvent の from。まだ 1 度も発火していなければ、この packet を受ける前の位置。
+    // Paper の handleMovePlayer の「if (!this.hasMoved) { ... }」と同じ。
+    public org.bukkit.Location shifuMoveFrom(final double startX, final double startY, final double startZ,
+                                             final float startYRot, final float startXRot) {
+        if (!this.hasMoved) {
+            this.lastPosX = startX;
+            this.lastPosY = startY;
+            this.lastPosZ = startZ;
+            this.lastYRot = startYRot;
+            this.lastXRot = startXRot;
+            this.hasMoved = true;
+        }
+
+        return new org.bukkit.Location(this.player.level().getWorld(),
+                this.lastPosX, this.lastPosY, this.lastPosZ, this.lastYRot, this.lastXRot);
+    }
+
+// ServerGamePacketListenerImpl.shifuRememberMove
+    // 発火した to を控える。
+    public void shifuRememberMove(final org.bukkit.Location to) {
+        this.lastPosX = to.getX();
+        this.lastPosY = to.getY();
+        this.lastPosZ = to.getZ();
+        this.lastYRot = to.getYaw();
+        this.lastXRot = to.getPitch();
+    }
+
+// ServerGamePacketListenerImpl.shifuTakeJustTeleported
+    // イベントの中でテレポートしたかの旗を読んで消す。
+    public boolean shifuTakeJustTeleported() {
+        final boolean teleported = this.justTeleported;
+        this.justTeleported = false;
+
+        return teleported;
+    }
+
+// ServerGamePacketListenerImpl.shifuPerformUnsignedChatCommand
+    // PlayerCommandPreprocessEvent で文が差し替えられたとき、差し替えた文を vanilla の
+    // 私有メソッドへ通す(発火層からは private を呼べない)。
+    public void shifuPerformUnsignedChatCommand(final String command) {
+        this.performUnsignedChatCommand(command);
+    }

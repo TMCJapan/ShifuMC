@@ -1,0 +1,12 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# ItemCraftedEvent
+file: net/minecraft/world/inventory/ResultSlot.java
+anchor:
+    this.checkTakeAchievements(carried);
+insert:
+    // Paper start - add ItemCraftedEvent
+    if (!carried.isEmpty()) {
+        new io.papermc.paper.event.inventory.ItemCraftedEvent((org.bukkit.entity.Player) player.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(carried)).callEvent();
+    }
+    // Paper end - add ItemCraftedEvent

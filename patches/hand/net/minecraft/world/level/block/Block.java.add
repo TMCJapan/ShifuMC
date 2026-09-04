@@ -1,0 +1,14 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// Block.dropResources
+    // dropExperience を足した版。vanilla の 6 引数版は spawnAfterBreak に必ず true を渡すので、
+    // false で呼びたい CraftBlock#breakNaturally から経験値が二重に出る。本体は 6 引数版と同じ式で、
+    // spawnAfterBreak の最後の引数だけを通す。
+    // 宣言を 1 行に畳んでいるのは、折り返すと 1 行目が vanilla の 6 引数版の
+    // 宣言の 1 行目と同じ形になり、重複判定に当たって塊ごと落ちるため。
+    public static void dropResources(final BlockState state, final Level level, final BlockPos pos, final @Nullable BlockEntity blockEntity, final @Nullable Entity breaker, final ItemStack tool, final boolean dropExperience) {
+        if (level instanceof ServerLevel serverLevel) {
+            getDrops(state, serverLevel, pos, blockEntity, breaker, tool).forEach(stack -> popResource(level, pos, stack));
+            state.spawnAfterBreak(serverLevel, pos, tool, dropExperience);
+        }
+    }

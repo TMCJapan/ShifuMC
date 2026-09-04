@@ -1,0 +1,9 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// FoodData.shifuAdd
+    // vanilla の private な add を発火層から呼ぶための入り口。
+    // FoodLevelChangeEvent で値が差し替えられたときに、Paper と同じ
+    // add(差分, 元の saturation) を行う。
+    public void shifuAdd(final int food, final float saturation) {
+        this.add(food, saturation);
+    }

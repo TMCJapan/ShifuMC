@@ -1,0 +1,12 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityPickupItemEvent
+file: net/minecraft/world/entity/raid/Raider.java
+anchor:
+    EquipmentSlot slot = EquipmentSlot.HEAD;
+insert:
+    // Paper start - EntityPickupItemEvent fixes
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPickupItemEvent(this, entity, 0).isCancelled()) {
+        return;
+    }
+    // Paper end - EntityPickupItemEvent fixes

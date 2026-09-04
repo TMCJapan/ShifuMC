@@ -1,0 +1,4 @@
+// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
+
+// (supertype).paperConnection
+    public abstract io.papermc.paper.connection.PaperCommonConnection<?> paperConnection();

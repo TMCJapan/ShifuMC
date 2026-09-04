@@ -1,0 +1,9 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// Villager.updateTrades
+    // amount は追加する取引の数。vanilla の版は種類ごとに決まった数を足すので渡さない。
+    // 返り値は「取り消されなかったか」。VillagerAcquireTradeEvent を発火しないので常に true。
+    public boolean updateTrades(final ServerLevel level, final int amount) {
+        this.updateTrades(level);
+        return true;
+    }

@@ -1,0 +1,17 @@
+# サーバー(コンソール)のイベント。
+
+# ServerCommandEvent
+#
+# コンソールの入力を実行する直前。取り消されたら飛ばし、文が差し替えられていれば
+# 差し替えた入力で実行する。input は vanilla の局所変数(final ではない)。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/dedicated/DedicatedServer.java.patch(ServerCommandEvent)
+file: net/minecraft/server/dedicated/DedicatedServer.java
+anchor:
+    ConsoleInput input = this.consoleInput.remove(0);
+insert-after:
+    final ConsoleInput shifuInput = dev.shifu.event.ShifuEvents.serverCommand(this, input);
+    if (shifuInput == null) {
+        continue;
+    }
+    input = shifuInput;

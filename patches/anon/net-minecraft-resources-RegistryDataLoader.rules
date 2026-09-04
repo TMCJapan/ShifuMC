@@ -1,0 +1,13 @@
+# vanilla の中の無名クラスへの追加。型の名前が無いので hand では届かない。
+
+# createContext が返す RegistryInfoLookup の無名クラス(RegistryDataLoader$3)
+file: net/minecraft/resources/RegistryDataLoader.java
+anchor:
+    @Override
+    public <T> Optional<RegistryOps.RegistryInfo<T>> lookup(final ResourceKey<? extends Registry<? extends T>> key) {
+insert:
+    @Override
+    public HolderLookup.Provider lookupForValueCopyViaBuilders() {
+        return HolderLookup.Provider.create(java.util.stream.Stream.concat(contextRegistries.stream(), newRegistriesAndLoaders.stream().map(t -> t.registry)));
+    }
+

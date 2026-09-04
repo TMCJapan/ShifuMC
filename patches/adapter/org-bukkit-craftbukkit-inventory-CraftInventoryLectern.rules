@@ -1,0 +1,11 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: org/bukkit/craftbukkit/inventory/CraftInventoryLectern.java
+
+# 中身は原案と同じで、with の相対字下げだけ直した
+replace:
+    if (inventory instanceof LecternBlockEntity.LecternInventory) {
+                this.provider = ((LecternBlockEntity.LecternInventory) inventory).getLectern();
+with:
+    if (inventory.shifuLectern() != null) {
+        this.provider = inventory.shifuLectern();

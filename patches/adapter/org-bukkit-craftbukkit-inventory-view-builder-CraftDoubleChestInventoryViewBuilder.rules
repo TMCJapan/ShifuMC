@@ -1,0 +1,9 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: org/bukkit/craftbukkit/inventory/view/builder/CraftDoubleChestInventoryViewBuilder.java
+
+count: 4
+replace:
+    nextContainerCounter()
+with:
+    shifuNextContainerCounter()

@@ -1,0 +1,57 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// Entity.discard
+    // Bukkit の削除理由を発火層に置いてから、vanilla の discard へ渡す。
+    // 削除の経路は vanilla のまま。EntityRemoveEvent は setRemoved の中で出る。
+    public final void discard(final org.bukkit.event.entity.EntityRemoveEvent.Cause cause) {
+        dev.shifu.event.EntityEvents.removeCause(cause);
+        this.discard();
+    }
+
+// Entity.saveAsPassenger
+    // Paper の Raw entity serialization API 用の 3 つの旗。
+    // vanilla の書き出しは旗を持たないので、常に vanilla と同じ内容を書く。
+    // includeAll=false(座標を除く)と forceSerialization=true は反映されない。
+    public boolean saveAsPassenger(final ValueOutput output, final boolean includeAll,
+                                   final boolean includeNonSaveable, final boolean forceSerialization) {
+        return this.saveAsPassenger(output);
+    }
+
+// Entity.getEncodeId
+    // Paper の Raw entity serialization API 用。includeNonSaveable=true のとき
+    // canSerialize() の検査を飛ばす。vanilla の getEncodeId は状態を変えないので、
+    // 検査を飛ばした側だけ同じ式を書き直す。vanilla の版は触らない。
+    // 委譲だけにすると canSerialize() が false の型で null が返り、
+    // CraftEntity.save() の putString(TAG_ID, ...) に null が渡る。
+    public final @Nullable String getEncodeId(final boolean includeNonSaveable) {
+        if (!includeNonSaveable) {
+            return this.getEncodeId();
+        }
+
+        ResourceKey<EntityType<?>> typeId = this.typeHolder().unwrapKey().orElseThrow(() -> new IllegalStateException("Unregistered entity"));
+        return typeId.identifier().toString();
+    }
+
+// Entity.setRemoved
+    // Bukkit の削除理由を発火層に置いてから、vanilla の setRemoved へ渡す。
+    // EntityRemoveEvent は vanilla の setRemoved の先頭で出る(patches/events/entity-core.rules)。
+    public final void setRemoved(final Entity.RemovalReason reason,
+                                 final org.bukkit.event.entity.EntityRemoveEvent.@Nullable Cause cause) {
+        dev.shifu.event.EntityEvents.removeCause(cause);
+        this.setRemoved(reason);
+    }
+
+// Entity.shifuAdoptBukkitEntity
+    // リスポーンで作り直された ServerPlayer に、古い方の CraftPlayer を付け替える。
+    // CraftBukkit はエンティティを作り直さないので、プラグインは Player の参照が
+    // リスポーン後も生きている前提で書かれている。
+    public void shifuAdoptBukkitEntity(final org.bukkit.craftbukkit.entity.CraftEntity entity) {
+        this.bukkitEntity = entity;
+    }
+
+// Entity.shifuLastLavaContact
+    // 最後に触れた溶岩の位置。EntityCombustByBlockEvent に載せるためだけのもので、
+    // 入れるのは EntityCombustEvent に登録があるときだけ(EntityEvents.lavaContact が見る)。
+    // Paper は lastLavaContact という欄を同じ用途で持つ。
+    // 読んだ位置: patches/sources/net/minecraft/world/entity/EntityFluidInteraction.java.patch
+    public net.minecraft.core.BlockPos shifuLastLavaContact;

@@ -1,0 +1,18 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# ExplosionPrimeEvent
+file: net/minecraft/world/entity/vehicle/minecart/MinecartTNT.java
+anchor:
+    level.explode(
+insert:
+    // CraftBukkit start
+    org.bukkit.event.entity.ExplosionPrimeEvent event = new org.bukkit.event.entity.ExplosionPrimeEvent(
+        this.getBukkitEntity(),
+        (float) (this.explosionPowerBase + this.explosionSpeedFactor * this.random.nextDouble() * 1.5 * speed),
+        this.isIncendiary
+    );
+    if (!event.callEvent()) {
+        this.fuse = net.minecraft.world.entity.item.PrimedTnt.NO_FUSE;
+        return;
+    }
+    // CraftBukkit end

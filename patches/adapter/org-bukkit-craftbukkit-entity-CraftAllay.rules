@@ -1,0 +1,8 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: org/bukkit/craftbukkit/entity/CraftAllay.java
+
+replace:
+    Allay allay = this.getHandle().duplicateAllay();
+with:
+    Allay allay = this.getHandle().shifuDuplicateAllay(); // Shifu - vanilla の duplicateAllay は値を返さない

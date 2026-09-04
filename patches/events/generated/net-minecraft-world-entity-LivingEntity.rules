@@ -1,0 +1,73 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityPotionEffectChangeEvent
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    iterator.remove();
+insert:
+    // CraftBukkit start
+    EntityPotionEffectEvent event = CraftEventFactory.callEntityPotionEffectChangeEvent(this, effect, null, org.bukkit.event.entity.EntityPotionEffectEvent.Cause.EXPIRATION);
+    if (event.isCancelled()) {
+        continue;
+    }
+    // CraftBukkit end
+
+# EntityDropItemEvent
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    this.level().addFreshEntity(itemEntity);
+insert:
+    // CraftBukkit start
+    org.bukkit.event.entity.EntityDropItemEvent event = new org.bukkit.event.entity.EntityDropItemEvent(this.getBukkitEntity(), (org.bukkit.entity.Item) itemEntity.getBukkitEntity());
+    if (!event.callEvent()) {
+        return;
+    }
+    // CraftBukkit end
+
+# PlayerArmorChangeEvent
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    if (changedItems == null) {
+insert:
+    // Paper start - EntityEquipmentChangedEvent, PlayerArmorChangeEvent
+    final org.bukkit.inventory.ItemStack oldItem = CraftItemStack.asBukkitCopy(previous);
+    final org.bukkit.inventory.ItemStack newItem = CraftItemStack.asBukkitCopy(current);
+    if (this instanceof ServerPlayer && slot.getType() == EquipmentSlot.Type.HUMANOID_ARMOR) {
+        new com.destroystokyo.paper.event.player.PlayerArmorChangeEvent((org.bukkit.entity.Player)this.getBukkitEntity(), com.destroystokyo.paper.event.player.PlayerArmorChangeEvent.SlotType.valueOf(slot.name()), oldItem, newItem).callEvent();
+    }
+    // Paper end - EntityEquipmentChangedEvent, PlayerArmorChangeEvent
+
+# EntityMoveEvent
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    if (this.level() instanceof ServerLevel serverLevel && this.isSensitiveToWater() && this.isInWaterOrRain()) {
+insert:
+    // Paper start - Add EntityMoveEvent
+    if (((ServerLevel) this.level()).hasEntityMoveEvent && !(this instanceof Player)) {
+        if (this.xo != this.getX() || this.yo != this.getY() || this.zo != this.getZ() || this.yRotO != this.getYRot() || this.xRotO != this.getXRot()) {
+            Location from = new Location(this.level().getWorld(), this.xo, this.yo, this.zo, this.yRotO, this.xRotO);
+            Location to = new Location(this.level().getWorld(), this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
+            io.papermc.paper.event.entity.EntityMoveEvent event = new io.papermc.paper.event.entity.EntityMoveEvent(this.getBukkitLivingEntity(), from, to.clone());
+            if (!event.callEvent()) {
+                this.absSnapTo(from.getX(), from.getY(), from.getZ(), from.getYaw(), from.getPitch());
+            } else if (!to.equals(event.getTo())) {
+                this.absSnapTo(event.getTo().getX(), event.getTo().getY(), event.getTo().getZ(), event.getTo().getYaw(), event.getTo().getPitch());
+            }
+        }
+    }
+    // Paper end - Add EntityMoveEvent
+
+# callToggleGlideEvent
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    this.setSharedFlag(Entity.FLAG_FALL_FLYING, false);
+    return;
+insert:
+    if (this.getSharedFlag(Entity.FLAG_FALL_FLYING) && !CraftEventFactory.callToggleGlideEvent(this, false).isCancelled()) // CraftBukkit
+
+# PlayerStopUsingItemEvent
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    this.useItem.releaseUsing(this.level(), this, this.getUseItemRemainingTicks());
+insert:
+    if (this instanceof ServerPlayer) new io.papermc.paper.event.player.PlayerStopUsingItemEvent((org.bukkit.entity.Player) getBukkitEntity(), useItem.asBukkitMirror(), getTicksUsingItem()).callEvent(); // Paper - Add PlayerStopUsingItemEvent

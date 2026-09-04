@@ -1,0 +1,28 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: ca/spottedleaf/moonrise/common/util/TickThread.java
+
+# moonrise はメインスレッドを自前の TickThread 型で作る。Shifu の NMS は
+# vanilla なので、サーバースレッドは MinecraftServer.spin が作る素の Thread。
+# isTickThread() はどこから呼んでも false を返す。
+#
+# 影響はこの 1 メソッドに留まらない。isTickThreadFor の版は全部これに委ねて
+# いるし、CraftServer.isPrimaryThread() もこれを見ている。同期イベントは
+# PaperEventManager が isPrimaryThread() を確かめるので、発火が全部
+# 「may only be triggered synchronously」で落ちる。実際に
+# WorldSaveEvent が起動時に落として、サーバーが上がらなかった。
+#
+# Folia ではないサーバーでは、tick スレッド = メインのサーバースレッド。
+# vanilla でそれを見るのは BlockableEventLoop.isSameThread()。
+replace:
+    public static boolean isTickThread() {
+        return Thread.currentThread() instanceof TickThread;
+    }
+with:
+    public static boolean isTickThread() {
+        // Shifu - vanilla のサーバースレッドは TickThread ではない
+        final net.minecraft.server.MinecraftServer server = net.minecraft.server.MinecraftServer.getServer();
+
+        return Thread.currentThread() instanceof TickThread
+                || (server != null && server.isSameThread());
+    }

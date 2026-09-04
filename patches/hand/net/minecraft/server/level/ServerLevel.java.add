@@ -1,0 +1,166 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// ServerLevel.tryAddFreshEntityWithPassengers
+    // reason は CreatureSpawnEvent 用。Paper は addEntity まで引数で運ぶが、Shifu は vanilla の
+    // 署名を変えないので Entity.spawnReason の欄に置いてから vanilla の版へ渡す
+    // (patches/events/entity-spawn.rules がその欄を読む)。
+    public boolean tryAddFreshEntityWithPassengers(final Entity entity,
+                                                   final org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason reason) {
+        entity.spawnReason = reason;
+        return this.tryAddFreshEntityWithPassengers(entity);
+    }
+
+// ServerLevel.addFreshEntity
+    // Paper の addFreshEntity(entity, reason)。LevelWriter の既定は false を返すだけで、
+    // Paper は ServerLevel で addEntity(entity, reason) に向けている。その版が無かったので
+    // CraftWorld.spawn(=プラグインが出すエンティティ)が全部無視されていた。bot で実測した。
+    public boolean addFreshEntity(final Entity entity,
+                                  final org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason reason) {
+        entity.spawnReason = reason;
+        return this.addFreshEntity(entity);
+    }
+
+// ServerLevel.explode0
+    // vanilla の explode(13 引数) は void。ServerExplosion を返す形と wasCanceled は Paper の追加なので、
+    // ここには何も足さない。呼び出し元は CraftWorld.createExplosion だけで、そちらを vanilla の explode へ向けた。
+
+// ServerLevel.sendParticlesSource
+    // 可視性 API 用。vanilla の sendParticles(ServerPlayer, ...) を宛先ごとに呼ぶ。
+    // vanilla の sendParticles(T, ...) は呼ばない(宛先の絞り込みと canSee の判定ができないため)。
+    public <T extends ParticleOptions> int sendParticlesSource(
+        final @Nullable Entity sender,
+        final T options,
+        final boolean overrideLimiter,
+        final boolean alwaysShow,
+        final double x,
+        final double y,
+        final double z,
+        final int count,
+        final double xDist,
+        final double yDist,
+        final double zDist,
+        final double speed
+    ) {
+        return this.sendParticlesSource(this.players, sender, options, overrideLimiter, alwaysShow, x, y, z, count, xDist, yDist, zDist, speed);
+    }
+
+    public <T extends ParticleOptions> int sendParticlesSource(
+        final List<ServerPlayer> receivers,
+        final @Nullable Entity sender,
+        final T options,
+        final boolean overrideLimiter,
+        final boolean alwaysShow,
+        final double x,
+        final double y,
+        final double z,
+        final int count,
+        final double xDist,
+        final double yDist,
+        final double zDist,
+        final double speed
+    ) {
+        int result = 0;
+
+        for (int i = 0; i < receivers.size(); i++) {
+            final ServerPlayer player = receivers.get(i);
+
+            if (sender != null && !player.getBukkitEntity().canSee(sender.getBukkitEntity())) {
+                continue;
+            }
+
+            if (this.sendParticles(player, options, overrideLimiter, alwaysShow, x, y, z, count, xDist, yDist, zDist, speed)) {
+                result++;
+            }
+        }
+
+        return result;
+    }
+
+// ServerLevel.findLightningTargetAround
+    // returnNullWhenNoTarget は Paper の World.findLightningTarget 用。落雷点が無いときに null を返す旗だが、
+    // vanilla の版は必ず位置を返すので渡さない。CraftWorld 側は null 判定を残したまま動く。
+    public BlockPos findLightningTargetAround(final BlockPos pos, final boolean returnNullWhenNoTarget) {
+        return this.findLightningTargetAround(pos);
+    }
+
+// ServerLevel.typeKey
+    // 16 引数の構築子は this(...) で vanilla の版へ渡してから入れるので、final にできない。
+    // vanilla の 10 引数の版から作られた世界では null のまま。
+    private ResourceKey<LevelStem> typeKey;
+
+// ServerLevel.bukkitName
+    // typeKey と同じ理由で final を外す。CraftWorld.getName() がここを直に読む。
+    public String bukkitName;
+
+// ServerLevel.uuid
+    // typeKey と同じ理由で final を外す。CraftWorld.getUID() がここを直に読む。
+    public UUID uuid;
+
+// ServerLevel.worldGenSettings
+    // typeKey と同じ理由で final を外す。CraftWorld の canGenerateStructures /
+    // isBonusChestEnabled がここを直に読む。
+    public WorldGenSettings worldGenSettings;
+
+// ServerLevel.ServerLevel
+    // Paper が増やした 6 引数を受ける版。CraftServer.createWorld から呼ばれる。
+    // vanilla の 10 引数の版へ this(...) で渡してから、増えた分をフィールドへ入れる。
+    // vanilla の構築子の行は 1 行も触っていない。
+    //
+    // 4 番目は Paper と同じく loadedWorldData.levelOverrides() を渡す。
+    // PaperLevelOverrides は ServerLevelData の実装なのでそのまま入る。
+    //
+    // savedDataStorage は使わない。vanilla の ServerChunkCache が
+    // getDimensionPath(dimension)/data に対して SavedDataStorage をもう 1 つ作るので、
+    // 渡された方へ書くと同じフォルダを 2 つの管理が持つことになる。
+    // environment と biomeProvider も使わない。入れ先は Level の world (CraftWorld) だが、
+    // それは Level で private final に宣言されていて ServerLevel からは触れない。
+    public ServerLevel(final MinecraftServer server,
+                       final Executor executor,
+                       final LevelStorageSource.LevelStorageAccess levelStorage,
+                       final WorldGenSettings worldGenSettings,
+                       final ResourceKey<Level> dimension,
+                       final LevelStem levelStem,
+                       final boolean isDebug,
+                       final long biomeZoomSeed,
+                       final List<CustomSpawner> customSpawners,
+                       final boolean tickTime,
+                       final ResourceKey<LevelStem> typeKey,
+                       final org.bukkit.World.Environment environment,
+                       final org.bukkit.generator.@Nullable ChunkGenerator generator,
+                       final org.bukkit.generator.@Nullable BiomeProvider biomeProvider,
+                       final SavedDataStorage savedDataStorage,
+                       final io.papermc.paper.world.PaperWorldLoader.LoadedWorldData loadedWorldData) {
+        this(server, executor, levelStorage, loadedWorldData.levelOverrides(), dimension, levelStem, isDebug, biomeZoomSeed, customSpawners, tickTime);
+        this.typeKey = typeKey;
+        this.bukkitName = loadedWorldData.bukkitName();
+        this.uuid = loadedWorldData.uuid();
+        this.shifuCreateConfigs(levelStorage);
+        this.worldGenSettings = worldGenSettings;
+        this.generator = generator;
+
+        if (loadedWorldData.pdc() != null) {
+            this.persistentDataContainer.putAll(loadedWorldData.pdc().persistentData().toTagCompound());
+        }
+    }
+
+// ServerLevel.shifuCreateConfigs
+    // Paper は Level の構築子で spigotConfig と paperConfig を作る。そこでは bukkitName が
+    // まだ無いので、bukkitName が入った直後(vanilla の構築子では配線、
+    // 16 引数の版ではその本体)から呼ぶ。SpigotConfig.init と
+    // initializeWorldDefaultsConfiguration が先に済んでいること(DedicatedServer.initServer の配線)。
+    // 読んだ位置: patches/sources/net/minecraft/world/level/Level.java.patch:91,
+    //            patches/sources/net/minecraft/server/level/ServerLevel.java.patch:174
+    public void shifuCreateConfigs(final LevelStorageSource.LevelStorageAccess levelStorage) {
+        final org.bukkit.NamespacedKey worldKey = org.bukkit.craftbukkit.util.CraftNamespacedKey.fromMinecraft(this.dimension().identifier());
+        this.spigotConfig = new org.spigotmc.SpigotWorldConfig(this.bukkitName, worldKey);
+        this.paperConfig = this.server.paperConfigurations.createWorldConfig(
+                io.papermc.paper.configuration.PaperConfigurations.createWorldContextMap(
+                        levelStorage.getDimensionPath(this.dimension()),
+                        this.dimension().identifier(),
+                        this.spigotConfig,
+                        this.server.registryAccess(),
+                        this.getGameRules()));
+        // Paper は overworld の分を MinecraftServer.createLevels で、他の世界の分を initWorld で入れる。
+        // CraftWorldBorder が読む。世界ごとの境界はどれも自分の世界を指す
+        this.getWorldBorder().world = this;
+    }

@@ -1,0 +1,19 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// ServerLoginPacketListenerImpl.paperLoginConnection
+    // Paper の PlayerConnection API。AsyncPlayerPreLoginEvent が受け取る。
+    // 構築子で作る(patches/wire)。
+    public io.papermc.paper.connection.PaperPlayerLoginConnection paperLoginConnection;
+
+// ServerLoginPacketListenerImpl.shifuStartClientVerification
+    // AsyncPlayerPreLoginEvent のあと、発火層が vanilla の続き(startClientVerification は private)へ
+    // 進めるための口。
+    public void shifuStartClientVerification(final GameProfile profile) {
+        this.startClientVerification(profile);
+    }
+
+// ServerLoginPacketListenerImpl.shifuConnection
+    // 接続。発火層が住所と hostname を読む。
+    public Connection shifuConnection() {
+        return this.connection;
+    }

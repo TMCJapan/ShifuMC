@@ -1,0 +1,18 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# EntityConstructEvent
+file: net/minecraft/world/level/block/WitherSkullBlock.java
+anchor:
+    for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, witherBoss.getBoundingBox().inflate(50.0))) {
+insert:
+    // Paper start
+    if (!new io.papermc.paper.event.entity.EntityConstructEvent(witherBoss.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.getMatchingBlocks(level, match)).callEvent()) {
+        return;
+    }
+    // Paper end
+    // CraftBukkit start
+    if (!level.addFreshEntity(witherBoss, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.BUILD_WITHER)) {
+        return;
+    }
+    CarvedPumpkinBlock.clearPatternBlocks(level, match); // CraftBukkit - from above
+    // CraftBukkit end

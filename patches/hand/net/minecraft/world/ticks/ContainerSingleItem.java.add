@@ -1,0 +1,40 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// ContainerSingleItem.getContents
+    @Override
+    default java.util.List<ItemStack> getContents() {
+        return java.util.Arrays.asList(this.getTheItem());
+    }
+
+// ContainerSingleItem.onOpen
+    @Override
+    default void onOpen(final org.bukkit.craftbukkit.entity.CraftHumanEntity player) {
+    }
+
+// ContainerSingleItem.onClose
+    @Override
+    default void onClose(final org.bukkit.craftbukkit.entity.CraftHumanEntity player) {
+    }
+
+// ContainerSingleItem.getViewers
+    @Override
+    default java.util.List<org.bukkit.entity.HumanEntity> getViewers() {
+        return java.util.List.of();
+    }
+
+// ContainerSingleItem.getOwner
+    @Override
+    default org.bukkit.inventory.@org.jspecify.annotations.Nullable InventoryHolder getOwner() {
+        return null;
+    }
+
+// ContainerSingleItem.setMaxStackSize
+    @Override
+    default void setMaxStackSize(final int size) {
+    }
+
+// ContainerSingleItem.getLocation
+    @Override
+    default org.bukkit.@org.jspecify.annotations.Nullable Location getLocation() {
+        return null;
+    }

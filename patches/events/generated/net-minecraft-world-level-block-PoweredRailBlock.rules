@@ -1,0 +1,12 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callBinaryRedstoneChange
+file: net/minecraft/world/level/block/PoweredRailBlock.java
+anchor:
+    level.setBlock(pos, state.setValue(POWERED, shouldPower), Block.UPDATE_ALL);
+insert:
+    // Paper start - Call BlockRedstoneEvent
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, shouldPower)) {
+        return;
+    }
+    // Paper end - Call BlockRedstoneEvent

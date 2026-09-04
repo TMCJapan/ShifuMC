@@ -1,0 +1,8 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// DedicatedServerProperties.reload
+    // options はコマンド行の指定で上書きするためのもの。vanilla に経路が無いので渡さない。
+    public DedicatedServerProperties reload(final RegistryAccess registryAccess, final Properties properties,
+                                            final joptsimple.OptionSet options) {
+        return this.reload(registryAccess, properties);
+    }

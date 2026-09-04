@@ -1,0 +1,22 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// BlockGetter.clip
+    // CraftBlock.rayTrace(CraftBlock.java:640)が 1 ブロックだけ判定するための版。
+    // vanilla の clip(ClipContext) が traverseBlocks に渡すラムダの本体
+    // (vanilla BlockGetter.java:65-79)と同じ式を、その位置の pos について書く。
+    // 読むだけで状態を変えないので、vanilla の clip と二重に走っても影響しない。
+    // Paper は未読み込みチャンクの早期 return と空気の早期 return と canCollide を入れているが、
+    // どれも vanilla と読み込みの挙動や結果が変わるので入れない。
+    default @Nullable BlockHitResult clip(final ClipContext c, final BlockPos pos) {
+        BlockState blockState = this.getBlockState(pos);
+        FluidState fluidState = this.getFluidState(pos);
+        Vec3 from = c.getFrom();
+        Vec3 to = c.getTo();
+        VoxelShape blockShape = c.getBlockShape(blockState, this, pos);
+        BlockHitResult blockResult = this.clipWithInteractionOverride(from, to, pos, blockShape, blockState);
+        VoxelShape fluidShape = c.getFluidShape(fluidState, this, pos);
+        BlockHitResult liquidResult = fluidShape.clip(from, to, pos);
+        double blockDistanceSquared = blockResult == null ? Double.MAX_VALUE : c.getFrom().distanceToSqr(blockResult.getLocation());
+        double liquidDistanceSquared = liquidResult == null ? Double.MAX_VALUE : c.getFrom().distanceToSqr(liquidResult.getLocation());
+        return blockDistanceSquared <= liquidDistanceSquared ? blockResult : liquidResult;
+    }

@@ -1,0 +1,22 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityTargetEvent
+file: net/minecraft/world/entity/ai/behavior/GoToWantedItem.java
+anchor:
+    WalkTarget target = new WalkTarget(new EntityTracker(item, false), speedModifier, 0);
+insert:
+    // CraftBukkit start
+    if (body instanceof net.minecraft.world.entity.animal.allay.Allay) {
+        org.bukkit.event.entity.EntityTargetEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTargetEvent(body, item, org.bukkit.event.entity.EntityTargetEvent.TargetReason.CLOSEST_ENTITY);
+
+        if (event.isCancelled()) {
+            return false;
+        }
+        if (!(event.getTarget() instanceof org.bukkit.craftbukkit.entity.CraftItem targetItem)) { // Paper - only erase allay memory on non-item targets
+            wantedItem.erase();
+            return false; // Paper - only erase allay memory on non-item targets
+        }
+
+        item = targetItem.getHandle();
+    }
+    // CraftBukkit end

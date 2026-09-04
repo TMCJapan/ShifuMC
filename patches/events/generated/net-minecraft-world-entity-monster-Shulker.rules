@@ -1,0 +1,16 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityTeleportEvent
+file: net/minecraft/world/entity/monster/Shulker.java
+anchor:
+    if (attachmentDirection != null) {
+        this.unRide();
+insert:
+    // CraftBukkit start
+    org.bukkit.event.entity.EntityTeleportEvent teleportEvent = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTeleportEvent(this, target.getX(), target.getY(), target.getZ());
+    if (teleportEvent.isCancelled() || teleportEvent.getTo() == null) { // Paper
+        return false;
+    } else {
+        target = org.bukkit.craftbukkit.util.CraftLocation.toBlockPos(teleportEvent.getTo());
+    }
+    // CraftBukkit end

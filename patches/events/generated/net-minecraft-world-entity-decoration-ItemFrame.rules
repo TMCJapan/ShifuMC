@@ -1,0 +1,32 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# PlayerItemFrameChangeEvent, handleNonLivingEntityDamageEvent
+file: net/minecraft/world/entity/decoration/ItemFrame.java
+anchor:
+    this.dropItem(level, source.getEntity(), false);
+insert:
+    // CraftBukkit start - fire EntityDamageEvent
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.handleNonLivingEntityDamageEvent(this, source, damage, false) || this.isRemoved()) {
+        return true;
+    }
+    // CraftBukkit end
+    // Paper start - Add PlayerItemFrameChangeEvent
+    if (source.getEntity() instanceof Player player) {
+        var event = new io.papermc.paper.event.player.PlayerItemFrameChangeEvent((org.bukkit.entity.Player) player.getBukkitEntity(), (org.bukkit.entity.ItemFrame) this.getBukkitEntity(), this.getItem().asBukkitCopy(), io.papermc.paper.event.player.PlayerItemFrameChangeEvent.ItemFrameChangeAction.REMOVE);
+        if (!event.callEvent()) return true; // return true here because you aren't cancelling the damage, just the change
+        this.setItem(ItemStack.fromBukkitCopy(event.getItemStack()), false);
+    }
+    // Paper end - Add PlayerItemFrameChangeEvent
+
+# PlayerItemFrameChangeEvent
+file: net/minecraft/world/entity/decoration/ItemFrame.java
+anchor:
+    this.playSound(this.getRotateItemSound(), 1.0F, 1.0F);
+insert:
+    // Paper start - Add PlayerItemFrameChangeEvent
+    io.papermc.paper.event.player.PlayerItemFrameChangeEvent event = new io.papermc.paper.event.player.PlayerItemFrameChangeEvent((org.bukkit.entity.Player) player.getBukkitEntity(), (org.bukkit.entity.ItemFrame) this.getBukkitEntity(), this.getItem().asBukkitCopy(), io.papermc.paper.event.player.PlayerItemFrameChangeEvent.ItemFrameChangeAction.ROTATE);
+    if (!event.callEvent()) {
+        return InteractionResult.FAIL;
+    }
+    setItem(ItemStack.fromBukkitCopy(event.getItemStack()), false, false);
+    // Paper end - Add PlayerItemFrameChangeEvent

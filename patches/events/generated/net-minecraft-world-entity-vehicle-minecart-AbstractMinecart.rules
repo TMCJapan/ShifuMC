@@ -1,0 +1,17 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# EntityCollideWithEntityEvent, VehicleEntityCollisionEvent
+file: net/minecraft/world/entity/vehicle/minecart/AbstractMinecart.java
+anchor:
+    double xa = entity.getX() - this.getX();
+insert:
+    // Paper start - Collision Events
+    if (io.papermc.paper.event.entity.EntityCollideWithEntityEvent.getHandlerList().getRegisteredListeners().length != 0 &&
+            !new io.papermc.paper.event.entity.EntityCollideWithEntityEvent(this.getBukkitEntity(), entity.getBukkitEntity()).callEvent()) return;
+
+    org.bukkit.event.vehicle.VehicleEntityCollisionEvent collisionEvent = new org.bukkit.event.vehicle.VehicleEntityCollisionEvent(
+        (org.bukkit.entity.Vehicle) this.getBukkitEntity(),
+        entity.getBukkitEntity()
+    );
+    if (!collisionEvent.callEvent()) return;
+    // Paper end - Collision Events

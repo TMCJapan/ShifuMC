@@ -1,0 +1,7 @@
+// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
+
+// Player.closeContainer
+    public void closeContainer(org.bukkit.event.inventory.InventoryCloseEvent.Reason reason) {
+        this.closeContainer();
+        this.containerMenu = this.inventoryMenu;
+    }

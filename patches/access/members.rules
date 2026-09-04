@@ -1,0 +1,105 @@
+# アダプタ層が直に触る宣言の可視性を広げる。
+#
+# 変えるのは修飾子 1 語だけ。型も名前も引数も本体も触らない。
+# 可視性はコンパイル時の検査だけなので、実行される命令列は変わらない。
+#
+# 同じ名前で同じ引数の宣言はもう 1 つ足せないので、追加では届かない。
+# ここに書いたものだけが例外で、それ以外は patches/hand の追加で閉じる。
+#
+# アンカーは vanilla のソースそのまま。Minecraft が更新されて宣言が変わったら
+# widen_access.py が失敗するので、黙って通ることはない。
+
+# CraftPlayer と Paper の接続ラッパーが接続に直に触る
+file: net/minecraft/server/network/ServerCommonPacketListenerImpl.java
+line:
+    protected final Connection connection;
+
+# PaperPlayerLoginConnection がログイン中の名前と転送の有無を読む
+file: net/minecraft/server/network/ServerLoginPacketListenerImpl.java
+line:
+    private @Nullable String requestedUsername;
+line:
+    private final boolean transferred;
+
+# CraftCopperGolem が風化の予定時刻を読み書きする
+file: net/minecraft/world/entity/animal/golem/CopperGolem.java
+line:
+    private static final long IGNORE_WEATHERING_TICK = -2L;
+line:
+    private static final long UNSET_WEATHERING_TICK = -1L;
+line:
+    private long nextWeatheringTick = -1L;
+
+# CraftLlama が隊列の後続と強さを読み書きする
+file: net/minecraft/world/entity/animal/equine/Llama.java
+line:
+    private @Nullable Llama caravanTail;
+line:
+    private void setStrength(final int strength) {
+
+# CraftHumanEntity が動けない状態を見る
+file: net/minecraft/world/entity/player/Player.java
+line:
+    protected boolean isImmobile() {
+
+# CraftTadpole が成長の固定を切り替える
+file: net/minecraft/world/entity/animal/frog/Tadpole.java
+line:
+    protected void setAgeLocked(final boolean locked) {
+
+# CraftBlockData がブロック状態の文字列を解釈する
+file: net/minecraft/world/level/block/state/StateHolder.java
+line:
+    private static <T extends Comparable<T>> Property.Value<T> createValue(final Property<T> propertyKey, final Comparable<?> propertyValue) {
+
+# VanillaCommandWrapper がコマンドブロックの実行元を作る
+file: net/minecraft/world/level/BaseCommandBlock.java
+line:
+    private BaseCommandBlock.@Nullable CloseableCommandBlockSource createSource(final ServerLevel level) {
+
+# CraftVillager が職業の熟練度を上げる
+file: net/minecraft/world/entity/npc/villager/Villager.java
+line:
+    private void increaseMerchantCareer(final ServerLevel level) {
+
+# FeatureHooks がチャンクごとのエンティティを数える
+file: net/minecraft/world/level/entity/LevelEntityGetterAdapter.java
+line:
+    private final EntitySectionStorage<T> sectionStorage;
+
+# CraftStructure が使う配置の番号を指定する
+file: net/minecraft/world/level/levelgen/structure/templatesystem/StructurePlaceSettings.java
+line:
+    private int palette;
+
+# 検証して通した
+file: net/minecraft/server/MinecraftServer.java
+line:
+    private void updateEffectiveRespawnData() {
+
+# そのまま通した
+file: net/minecraft/world/entity/vehicle/minecart/AbstractMinecartContainer.java
+line:
+    private NonNullList<ItemStack> itemStacks = NonNullList.withSize(36, ItemStack.EMPTY);
+
+# CraftDragonBattle:151 が呼ぶ
+file: net/minecraft/world/level/dimension/end/EnderDragonFight.java
+line:
+    private void spawnNewGateway() {
+
+# CraftDragonBattle:97 の respawnDragon の返り値をアダプタ側で作るのに読む
+file: net/minecraft/world/level/dimension/end/EnderDragonFight.java
+line:
+    private boolean dragonKilled;
+
+# 上の RegistryDataLoader の差し込みが t.registry を読むので、private のままだと通らない
+file: net/minecraft/resources/RegistryLoadTask.java
+line:
+    private final WritableRegistry<T> registry;
+
+# BlockPlaceEvent の差し込みが、クリックされたブロックの位置を要る。
+# BlockPlaceContext.getClickedPos() は「置く場所」を返すので、
+# クリックされた側は getHitResult() から取るしかない。
+file: net/minecraft/world/item/context/UseOnContext.java
+line:
+    protected final BlockHitResult getHitResult() {

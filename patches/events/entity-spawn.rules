@@ -1,0 +1,38 @@
+# エンティティが世界に入るときのイベント。手で書いたもの。
+#
+# CreatureSpawnEvent / ItemSpawnEvent / ProjectileLaunchEvent /
+# VehicleCreateEvent / LightningStrikeEvent / EntitySpawnEvent は全部
+# CraftEventFactory.doEntityAddEventCalling が中で振り分ける。
+# 呼ぶ場所は 1 つでよい。
+#
+# Paper は addFreshEntity から addEntity までの経路に SpawnReason の引数を
+# 足して回している。Shifu は vanilla の署名を変えないので、その代わりに
+# Entity.spawnReason(Paper が足した欄。shim にある)を見る。
+# 誰も代入していなければ DEFAULT。
+#
+# 位置は vanilla の `return this.entityManager.addNewEntity(entity);` の直前。
+# ここは isRemoved の判定が済んだあと、実際に登録する直前にあたる。
+# Paper が発火するのと同じ場所。
+#
+# 取り消されたときは false を返す。vanilla の addEntity が false を返すのは
+# 「isRemoved で登録しなかった」ときなので、呼び手の扱いは変わらない。
+# doEntityAddEventCalling が中で entity.discard も済ませる。
+#
+# 読んだ位置(Paper 26.2):
+#   paper-server patches/sources/net/minecraft/server/level/ServerLevel.java.patch:667
+#   paper-server src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:721
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    return this.entityManager.addNewEntity(entity);
+insert:
+    if (dev.shifu.event.ShifuEvents.catchDrop(entity)) {
+        return true;
+    }
+
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.doEntityAddEventCalling(
+            this, entity,
+            entity.spawnReason != null
+                    ? entity.spawnReason
+                    : org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.DEFAULT)) {
+        return false;
+    }

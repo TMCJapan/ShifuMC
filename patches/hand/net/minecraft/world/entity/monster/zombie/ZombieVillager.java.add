@@ -1,0 +1,8 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// ZombieVillager.startConverting
+    // broadcastEntityEvent は変換開始の効果を周りに送るかどうかの旗。
+    // vanilla の版は必ず送るので渡さない。
+    public void startConverting(final UUID player, final int time, final boolean broadcastEntityEvent) {
+        this.startConverting(player, time);
+    }

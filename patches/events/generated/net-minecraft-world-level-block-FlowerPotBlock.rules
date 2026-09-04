@@ -1,0 +1,37 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# PlayerFlowerPotManipulateEvent
+file: net/minecraft/world/level/block/FlowerPotBlock.java
+anchor:
+    level.setBlock(pos, newContents, Block.UPDATE_ALL);
+insert:
+    // Paper start - Add PlayerFlowerPotManipulateEvent
+    org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+    org.bukkit.inventory.ItemStack placedStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(itemStack);
+
+    io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent event = new io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent((org.bukkit.entity.Player) player.getBukkitEntity(), block, placedStack, true);
+    if (!event.callEvent()) {
+        // Update client
+        player.containerMenu.forceHeldSlot(hand);
+
+        return InteractionResult.CONSUME;
+    }
+    // Paper end - Add PlayerFlowerPotManipulateEvent
+
+# PlayerFlowerPotManipulateEvent
+file: net/minecraft/world/level/block/FlowerPotBlock.java
+anchor:
+    if (!player.addItem(plant)) {
+insert:
+    // Paper start - Add PlayerFlowerPotManipulateEvent
+    org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+    org.bukkit.inventory.ItemStack pottedStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(plant);
+
+    io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent event = new io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent((org.bukkit.entity.Player) player.getBukkitEntity(), block, pottedStack, false);
+    if (!event.callEvent()) {
+        // Update client
+        player.containerMenu.sendAllDataToRemote();
+
+        return InteractionResult.PASS;
+    }
+    // Paper end - Add PlayerFlowerPotManipulateEvent

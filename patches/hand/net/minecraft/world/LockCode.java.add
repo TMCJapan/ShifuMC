@@ -1,0 +1,10 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// LockCode.canUnlock
+    // Paper は鍵に使うアイテムを差し替えられるようにして、vanilla の canUnlock(Player) の
+    // 中身を 2 引数へ切り出した。vanilla の式をそのまま書く。isSpectator も
+    // unlocksWith(ItemPredicate#test)も読むだけで状態を変えないので、1 引数の版と
+    // 別に呼んでも二重には効かない。
+    public boolean canUnlock(final Player player, final ItemStack item) {
+        return player.isSpectator() || this.unlocksWith(item);
+    }

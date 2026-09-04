@@ -1,0 +1,15 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// SpreadContext.getBlockState
+        // shim が入れた getBlockStateIfLoaded が呼ぶ 3 引数版。vanilla の 2 引数版(computeIfAbsent)は
+        // 触らず、load=false のときにチャンクを読み込まない経路だけをここに書く。stateCache は 2 引数版と共有する。
+        private @org.jspecify.annotations.Nullable BlockState getBlockState(final BlockPos pos, final short key, final boolean load) {
+            BlockState blockState = this.stateCache.get(key);
+            if (blockState == null) {
+                blockState = load ? this.level.getBlockState(pos) : this.level.getBlockStateIfLoaded(pos);
+                if (blockState != null) {
+                    this.stateCache.put(key, blockState);
+                }
+            }
+            return blockState;
+        }

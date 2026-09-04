@@ -1,0 +1,12 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callBinaryRedstoneChange
+file: net/minecraft/world/level/block/AbstractSkullBlock.java
+anchor:
+    level.setBlock(pos, state.setValue(POWERED, signal), Block.UPDATE_CLIENTS);
+insert:
+    // Paper start - Call BlockRedstoneEvent
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, signal)) {
+        return;
+    }
+    // Paper end - Call BlockRedstoneEvent

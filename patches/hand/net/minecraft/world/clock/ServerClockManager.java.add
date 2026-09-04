@@ -1,0 +1,7 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// ServerClockManager.createFullSyncPacket
+    // player は Paper の per-player time 用。vanilla は全員に同じ時刻を送るので渡さない。
+    public ClientboundSetTimePacket createFullSyncPacket(final net.minecraft.server.level.ServerPlayer player) {
+        return this.createFullSyncPacket();
+    }

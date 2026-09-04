@@ -1,0 +1,17 @@
+// 自前で書いた追加。vanilla の本体には触らず、同じ判定を座標から行う版を持つ。
+
+// SignBlockEntity.isFacingFrontText
+    // vanilla の isFacingFrontText(Player)(SignBlockEntity.java:61) と同じ式。
+    // プレイヤーから読んでいた座標を引数で受けるだけで、状態は変えない。
+    public boolean isFacingFrontText(final double x, final double z) {
+        if (this.getBlockState().getBlock() instanceof SignBlock sign) {
+            Vec3 signPositionOffset = sign.getSignHitboxCenterPosition(this.getBlockState());
+            double xd = x - (this.getBlockPos().getX() + signPositionOffset.x);
+            double zd = z - (this.getBlockPos().getZ() + signPositionOffset.z);
+            float signYRot = sign.getYRotationDegrees(this.getBlockState());
+            float playerYRot = (float)(Mth.atan2(zd, xd) * 180.0F / (float)Math.PI) - 90.0F;
+            return Mth.degreesDifferenceAbs(signYRot, playerYRot) <= 90.0F;
+        } else {
+            return false;
+        }
+    }

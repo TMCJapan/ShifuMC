@@ -1,0 +1,13 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityIgniteEvent
+file: net/minecraft/world/entity/monster/cubemob/SulfurCube.java
+anchor:
+    this.setInvulnerable(true);
+insert:
+    // Paper start - call EntityIgniteEvent
+    fuseTime = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityIgniteEvent(this, fuseTime);
+    if (fuseTime == PrimedTnt.NO_FUSE) {
+        return false;
+    }
+    // Paper end - call EntityIgniteEvent

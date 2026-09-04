@@ -1,0 +1,21 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# PlayerSwapWithEquipmentSlotEvent
+file: net/minecraft/world/item/equipment/Equippable.java
+anchor:
+    if (!player.level().isClientSide()) {
+        player.awardStat(Stats.ITEM_USED.get(inHand.getItem()));
+insert:
+    // Paper start
+    final io.papermc.paper.event.player.PlayerSwapWithEquipmentSlotEvent event = new io.papermc.paper.event.player.PlayerSwapWithEquipmentSlotEvent(
+        (org.bukkit.entity.Player) player.getBukkitEntity(),
+        org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(inHand),
+        org.bukkit.craftbukkit.CraftEquipmentSlot.getSlot(this.slot),
+        org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(inEquipmentSlot)
+    );
+    event.callEvent();
+    if (event.isCancelled()) {
+        ((org.bukkit.entity.Player) player.getBukkitEntity()).updateInventory();
+        return InteractionResult.FAIL;
+    }
+    // Paper end

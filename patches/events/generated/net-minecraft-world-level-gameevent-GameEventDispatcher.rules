@@ -1,0 +1,16 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# GenericGameEvent
+file: net/minecraft/world/level/gameevent/GameEventDispatcher.java
+anchor:
+    int sectionMinX = SectionPos.blockToSectionCoord(center.getX() - radius);
+insert:
+    // CraftBukkit start
+    org.bukkit.event.world.GenericGameEvent apiEvent = new org.bukkit.event.world.GenericGameEvent(
+        org.bukkit.craftbukkit.CraftGameEvent.minecraftHolderToBukkit(gameEvent), org.bukkit.craftbukkit.util.CraftLocation.toBukkit(center, this.level),
+        (context.sourceEntity() == null) ? null : context.sourceEntity().getBukkitEntity(), radius, !org.bukkit.Bukkit.isPrimaryThread());
+    if (!apiEvent.callEvent()) {
+        return;
+    }
+    radius = apiEvent.getRadius();
+    // CraftBukkit end

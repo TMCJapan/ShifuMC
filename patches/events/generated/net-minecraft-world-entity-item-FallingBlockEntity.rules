@@ -1,0 +1,20 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityChangeBlockEvent
+file: net/minecraft/world/entity/item/FallingBlockEntity.java
+anchor:
+    level.setBlock(pos, state.getFluidState().createLegacyBlock(), Block.UPDATE_ALL);
+insert:
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(entity, pos, state.getFluidState().createLegacyBlock())) return entity; // CraftBukkit
+
+# callEntityChangeBlockEvent
+file: net/minecraft/world/entity/item/FallingBlockEntity.java
+anchor:
+    if (this.level().setBlock(pos, this.blockState, Block.UPDATE_ALL)) {
+insert:
+    // CraftBukkit start
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(this, pos, this.blockState)) {
+        this.discard(org.bukkit.event.entity.EntityRemoveEvent.Cause.DESPAWN); // SPIGOT-6586 called before the event in previous versions
+        return;
+    }
+    // CraftBukkit end

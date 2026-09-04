@@ -1,0 +1,22 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callBinaryRedstoneChange
+file: net/minecraft/world/level/block/NoteBlock.java
+anchor:
+    if (signal) {
+insert:
+    // Paper start - Call BlockRedstoneEvent
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, signal)) {
+        return;
+    }
+    // Paper end - Call BlockRedstoneEvent
+
+# callNotePlayEvent
+file: net/minecraft/world/level/block/NoteBlock.java
+anchor:
+    float pitch;
+insert:
+    // Paper start - move NotePlayEvent call to fix instrument/note changes
+    org.bukkit.event.block.NotePlayEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callNotePlayEvent(level, pos, instrument, state.getValue(NOTE));
+    if (event.isCancelled()) return false;
+    // Paper end - move NotePlayEvent call to fix instrument/note changes

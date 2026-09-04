@@ -1,0 +1,22 @@
+# Bukkit 層の配線。vanilla の行は変えない。
+
+# PlayerNaturallySpawnCreaturesEvent が絞った範囲を使う
+#
+# vanilla の判定はそのまま残し、発火に登録があるときだけ別の道を通る。
+# Paper は anyPlayerCloseEnoughForSpawningInternal に reducedRange を足して分けているが、
+# ここでは呼び出し側を囲んで分ける(vanilla の行を変えないため)。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ChunkMap.java.patch
+file: net/minecraft/server/level/ChunkMap.java
+anchor:
+    if (chunk != null && this.anyPlayerCloseEnoughForSpawningInternal(holder.getPos())) {
+        output.add(chunk);
+    }
+insert:
+    if (dev.shifu.event.EntityEvents.naturallySpawnCreaturesListening()) {
+        if (chunk != null && this.shifuAnyPlayerCloseEnoughForSpawningReduced(holder.getPos())) {
+            output.add(chunk);
+        }
+    } else {
+insert-after:
+    }

@@ -1,0 +1,33 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// Mob.setTarget
+    // 理由を発火層に置いてから vanilla の setTarget(LivingEntity) へ渡す。
+    // EntityTargetLivingEntityEvent は vanilla の中で出る(patches/events/entity-core.rules)。
+    // 返り値は「取り消されなかったか」だが、vanilla の版は返さないので常に true。
+    // 下位クラスの上書きにはここからの呼び出しで届く。
+    public boolean setTarget(final LivingEntity target,
+                             final org.bukkit.event.entity.EntityTargetEvent.TargetReason reason) {
+        dev.shifu.event.EntityEvents.targetReason(reason);
+        this.setTarget(target);
+        return true;
+    }
+
+// Mob.shifuCanPickup
+    // equipItemIfPossible が「拾う」と判定するかを、状態を変えずに同じ順で計算する。
+    // EntityPickupItemEvent の既定(拾えない物は取り消し済みで出す)に使う。
+    public boolean shifuCanPickup(final ItemStack itemStack) {
+        EquipmentSlot slot = this.getEquipmentSlotForItem(itemStack);
+        if (!this.isEquippableInSlot(itemStack, slot)) {
+            return false;
+        }
+
+        ItemStack current = this.getItemBySlot(slot);
+        boolean canReplace = this.canReplaceCurrentItem(itemStack, current, slot);
+        if (slot.isArmor() && !canReplace) {
+            slot = EquipmentSlot.MAINHAND;
+            current = this.getItemBySlot(slot);
+            canReplace = current.isEmpty();
+        }
+
+        return canReplace && this.canHoldItem(itemStack);
+    }

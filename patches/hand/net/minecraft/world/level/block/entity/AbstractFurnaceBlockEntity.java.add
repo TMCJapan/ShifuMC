@@ -1,0 +1,10 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// AbstractFurnaceBlockEntity.getTotalCookTime
+    // recipeType と cookSpeedMultiplier は Paper の cook speed API 用。
+    // vanilla の版は炉の種類から自分で引いて、倍率を持たないので渡さない。
+    public static int getTotalCookTime(final ServerLevel level, final AbstractFurnaceBlockEntity entity,
+                                       final RecipeType<? extends AbstractCookingRecipe> recipeType,
+                                       final double cookSpeedMultiplier) {
+        return AbstractFurnaceBlockEntity.getTotalCookTime(level, entity);
+    }

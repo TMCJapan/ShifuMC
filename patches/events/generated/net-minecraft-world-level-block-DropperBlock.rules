@@ -1,0 +1,15 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# handleBlockFailedDispenseEvent
+file: net/minecraft/world/level/block/DropperBlock.java
+anchor:
+    level.levelEvent(LevelEvent.SOUND_DISPENSER_FAIL, pos, 0);
+insert:
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockFailedDispenseEvent(level, pos)) // Paper - Add BlockFailedDispenseEvent
+
+# handleBlockPreDispenseEvent
+file: net/minecraft/world/level/block/DropperBlock.java
+anchor:
+    remaining = DISPENSE_BEHAVIOUR.dispense(source, itemStack);
+insert:
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockPreDispenseEvent(level, pos, itemStack, slot)) return; // Paper - Add BlockPreDispenseEvent

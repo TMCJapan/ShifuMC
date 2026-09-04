@@ -1,0 +1,28 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# BlockPistonRetractEvent
+file: net/minecraft/world/level/block/piston/PistonBaseBlock.java
+anchor:
+    level.setBlock(pos, movingPistonState, Block.UPDATE_NONE | Block.UPDATE_KNOWN_SHAPE);
+insert:
+    // Paper start - Fix sticky pistons and BlockPistonRetractEvent; Move empty piston retract call to fix multiple event fires
+    if (!this.isSticky) {
+        if (!new org.bukkit.event.block.BlockPistonRetractEvent(org.bukkit.craftbukkit.block.CraftBlock.at(level, pos), java.util.Collections.emptyList(), org.bukkit.craftbukkit.block.CraftBlock.notchToBlockFace(direction)).callEvent()) {
+            return false;
+        }
+    }
+    // Paper end - Fix sticky pistons and BlockPistonRetractEvent
+
+# BlockPistonRetractEvent
+file: net/minecraft/world/level/block/piston/PistonBaseBlock.java
+anchor:
+        level.removeBlock(pos.relative(direction), false);
+    } else {
+insert:
+    // Paper start - Fix sticky pistons and BlockPistonRetractEvent; fire BlockPistonRetractEvent for sticky pistons retracting nothing (air)
+    if (b0 == TRIGGER_CONTRACT && movingState.isAir()) {
+        if (!new org.bukkit.event.block.BlockPistonRetractEvent(org.bukkit.craftbukkit.block.CraftBlock.at(level, pos), java.util.Collections.emptyList(), org.bukkit.craftbukkit.block.CraftBlock.notchToBlockFace(direction)).callEvent()) {
+            return false;
+        }
+    }
+    // Paper end - Fix sticky pistons and BlockPistonRetractEvent

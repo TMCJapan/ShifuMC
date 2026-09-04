@@ -1,0 +1,8 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// FishingHook.retrieve
+    // hand は PlayerFishEvent に載せる手。発火層に置いてから vanilla の retrieve へ渡す。
+    public int retrieve(final ItemStack rod, final net.minecraft.world.InteractionHand hand) {
+        dev.shifu.event.EntityEvents.fishingHand(hand);
+        return this.retrieve(rod);
+    }

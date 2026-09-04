@@ -1,0 +1,8 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# WhitelistToggleEvent
+file: net/minecraft/server/dedicated/DedicatedServer.java
+anchor:
+    this.settings.update(p -> p.whiteList.update(this.registryAccess(), usingWhitelist));
+insert:
+    new com.destroystokyo.paper.event.server.WhitelistToggleEvent(usingWhitelist).callEvent(); // Paper - WhitelistToggleEvent

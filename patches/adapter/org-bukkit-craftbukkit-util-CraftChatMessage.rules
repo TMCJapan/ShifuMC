@@ -1,0 +1,20 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: org/bukkit/craftbukkit/util/CraftChatMessage.java
+
+replace:
+        public static String fromComponent(Component component) {
+            if (component == null) return "";
+with:
+        // Shifu - vanilla の Component は Iterable ではない。Paper は宣言行に Iterable<Component> を足すが、vanilla の行は書き換えない。
+        // Paper の Component.stream() と同じ前順の並びをここで作る。
+        private static java.util.stream.Stream<Component> flattenComponent(Component component) {
+            return java.util.stream.Stream.concat(java.util.stream.Stream.of(component), component.getSiblings().stream().flatMap(CraftChatMessage::flattenComponent));
+        }
+        public static String fromComponent(Component component) {
+            if (component == null) return "";
+
+replace:
+            for (Component c : component) {
+with:
+            for (Component c : CraftChatMessage.flattenComponent(component).toList()) {

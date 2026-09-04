@@ -1,0 +1,13 @@
+# Bukkit 層の配線。vanilla の行は変えていない。
+
+# vanilla の codec は、知らないチャンネルの本文を読まずに捨てる(skipBytes)。
+# Paper は record に byte[] を足して codec を書き換えるが、それは vanilla の行の書き換えになる。
+# 捨てる直前に控えを取る(読むだけで reader index は動かさないので、skipBytes は同じ量を飛ばす)。
+# プラグインが 1 つも入っていなければ何もしない。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/network/protocol/common/custom/DiscardedPayload.java.patch
+file: net/minecraft/network/protocol/common/custom/DiscardedPayload.java
+anchor:
+    buf.skipBytes(length);
+insert:
+    dev.shifu.event.PluginMessages.remember(buf, length);

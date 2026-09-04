@@ -1,0 +1,7 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// ServerTickRateManager.requestGameToSprint
+    // silent は告知を出さないための旗。vanilla の版は告知を出さないので渡さない。
+    public boolean requestGameToSprint(final int time, final boolean silent) {
+        return this.requestGameToSprint(time);
+    }

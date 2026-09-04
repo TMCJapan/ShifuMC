@@ -1,0 +1,131 @@
+# エンティティのイベント。手で書いたもの。
+#
+# どれも「登録が無ければ null が返り、vanilla の行がそのまま走る」形。
+# vanilla の行は 1 文字も変えず、前後で分岐するだけ。
+
+# EntityRegainHealthEvent
+#
+# Paper は heal に理由の引数を足して呼び出し側から渡すが、Shifu は vanilla の
+# 署名を変えないので理由は CUSTOM 固定になる。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch:441
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    this.setHealth(health + heal);
+insert:
+    final org.bukkit.event.entity.EntityRegainHealthEvent shifuRegain =
+            dev.shifu.event.ShifuEvents.entityRegainHealth(this, heal);
+    if (shifuRegain == null) {
+insert-after:
+    } else if (!shifuRegain.isCancelled()) {
+        this.setHealth((float) (this.getHealth() + shifuRegain.getAmount()));
+    }
+
+# FoodLevelChangeEvent
+#
+# 空腹による減少。食事の側(FoodData.eat)は Paper が新しい引数付きの版を
+# 足して呼び出し側から呼ばせているので、ここでは入れていない。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/food/FoodData.java.patch:39
+file: net/minecraft/world/food/FoodData.java
+anchor:
+    this.foodLevel = Math.max(this.foodLevel - 1, 0);
+insert:
+    final org.bukkit.event.entity.FoodLevelChangeEvent shifuFood =
+            dev.shifu.event.ShifuEvents.foodLevelChange(player, Math.max(this.foodLevel - 1, 0));
+    if (shifuFood == null) {
+insert-after:
+    } else if (!shifuFood.isCancelled()) {
+        this.foodLevel = shifuFood.getFoodLevel();
+    }
+
+# EntityDamageEvent
+#
+# vanilla の actuallyHurt を囲む。2 箇所ある(無敵時間中の差分と、通常)。
+# 登録が無ければ null が返り、vanilla の行がそのまま走る。
+#
+# 取り消したときは false を返す。この時点で vanilla は既に lastHurt と
+# invulnerableTime を書いているので、その 2 つは元に戻らない。Paper は
+# もっと手前で取り消すが、そこは vanilla の行の書き換えになるので入れない。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch:537,551
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    this.actuallyHurt(level, source, damage - this.lastHurt);
+insert:
+    final org.bukkit.event.entity.EntityDamageEvent shifuHurtPartial =
+            dev.shifu.event.ShifuEvents.entityDamage(this, source, damage - this.lastHurt);
+    if (shifuHurtPartial == null) {
+insert-after:
+    } else if (!shifuHurtPartial.isCancelled()) {
+        this.actuallyHurt(level, source, (float) shifuHurtPartial.getDamage());
+    } else {
+        return false;
+    }
+
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    this.actuallyHurt(level, source, damage);
+insert:
+    final org.bukkit.event.entity.EntityDamageEvent shifuHurt =
+            dev.shifu.event.ShifuEvents.entityDamage(this, source, damage);
+    if (shifuHurt == null) {
+insert-after:
+    } else if (!shifuHurt.isCancelled()) {
+        this.actuallyHurt(level, source, (float) shifuHurt.getDamage());
+    } else {
+        return false;
+    }
+
+# EntityDeathEvent
+#
+# Paper は die() の前半をまるごと Runnable に包み、dropAllDeathLoot を
+# イベントより前に動かして、取り消されたら蘇生する。前半の入れ替えは
+# vanilla の行の書き換えになるので入れられない。
+#
+# Shifu は vanilla の順のまま dropAllDeathLoot を走らせ、その間だけ
+# 世界に入ろうとする ItemEntity を控えに移す。控え終えてから発火し、
+# プラグインが直した中身を CraftEventFactory が世界へ出す。
+# 登録が無ければ控えを取らないので、落とし物はその場で世界に入る
+# (= vanilla のまま)。
+#
+# 経験値オーブも同じ控えに入る。setDroppedExp で量が変わっていなければ
+# vanilla が作ったオーブをそのまま出し、変わっていれば作り直す。
+#
+# 未対応: 取り消しによる蘇生。取り消されたときは落とし物と経験値を vanilla のとおり出す。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch:809
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    this.dropAllDeathLoot(serverLevel, source);
+insert:
+    final java.util.List<net.minecraft.world.entity.Entity.DefaultDrop> shifuDeathDrops =
+            dev.shifu.event.ShifuEvents.beginDeathDrops();
+insert-after:
+    dev.shifu.event.ShifuEvents.entityDeath(serverLevel, this, source, shifuDeathDrops);
+
+# EntityExplodeEvent / BlockExplodeEvent
+#
+# 壊す位置の並びが決まって並べ替えられた直後。Paper と同じ位置。
+# プラグインが直した並びを targetBlocks に書き戻す。取り消されたら
+# 壊さずに抜け、ServerLevel.explode の告知(packet)も飛ばす。
+#
+# 未対応: setYield。落ちる確率は戦利品表が爆発の半径から読むので、渡す先が無い。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/ServerExplosion.java.patch:215,
+#            paper-server patches/sources/net/minecraft/server/level/ServerLevel.java.patch:893
+file: net/minecraft/world/level/ServerExplosion.java
+anchor:
+    Util.shuffle(targetBlocks, this.level.random);
+insert-after:
+    if (!dev.shifu.event.ShifuEvents.explode(this, targetBlocks)) {
+        return;
+    }
+
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    int blockCount = explosion.explode();
+insert-after:
+    if (dev.shifu.event.ShifuEvents.explosionCancelled(explosion)) {
+        return;
+    }

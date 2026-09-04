@@ -1,0 +1,8 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// Raid.persistentDataContainer
+    // Paper は構築子で作る。vanilla の構築子は触らないので初期化子で作る。
+    // Paper が NBT に保存・復元する分は入れていない(データ形式が vanilla と変わるため)。
+    // 読んだ位置: patches/sources/net/minecraft/world/entity/raid/Raid.java.patch
+    private static final org.bukkit.craftbukkit.persistence.CraftPersistentDataTypeRegistry SHIFU_PDC_TYPE_REGISTRY = new org.bukkit.craftbukkit.persistence.CraftPersistentDataTypeRegistry();
+    public org.bukkit.craftbukkit.persistence.CraftPersistentDataContainer persistentDataContainer = new org.bukkit.craftbukkit.persistence.CraftPersistentDataContainer(SHIFU_PDC_TYPE_REGISTRY);

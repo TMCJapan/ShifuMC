@@ -1,0 +1,9 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: io/papermc/paper/world/saveddata/PaperWorldPDC.java
+
+# NMS に足した別名へ向ける
+replace:
+    DataFixTypes.NONE
+with:
+    DataFixTypes.SHIFU_NO_FIX

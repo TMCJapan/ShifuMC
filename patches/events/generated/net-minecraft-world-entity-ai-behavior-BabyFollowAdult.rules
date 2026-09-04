@@ -1,0 +1,18 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityTargetLivingEvent
+file: net/minecraft/world/entity/ai/behavior/BabyFollowAdult.java
+anchor:
+    WalkTarget target = new WalkTarget(
+insert:
+    // CraftBukkit start
+    org.bukkit.event.entity.EntityTargetLivingEntityEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTargetLivingEvent(body, adult, org.bukkit.event.entity.EntityTargetEvent.TargetReason.FOLLOW_LEADER);
+    if (event.isCancelled()) {
+        return false;
+    }
+    if (event.getTarget() == null) {
+        walkTarget.erase();
+        return true;
+    }
+    adult = ((org.bukkit.craftbukkit.entity.CraftLivingEntity) event.getTarget()).getHandle();
+    // CraftBukkit end

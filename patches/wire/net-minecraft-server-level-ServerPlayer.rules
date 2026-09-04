@@ -1,0 +1,45 @@
+# Bukkit 層の配線。Paper は構築子で表示名などを入れる
+# (patches/sources/net/minecraft/server/level/ServerPlayer.java.patch:112)。
+# CraftPlayer.displayName() と ChatProcessor がここを読む。null のままだと
+# チャットを送った瞬間に落ちる。vanilla の行は 1 文字も変えていない。
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    this.advancements = server.getPlayerList().getPlayerAdvancements(this);
+insert-after:
+    this.displayName = this.getScoreboardName();
+    this.adventure$displayName = net.kyori.adventure.text.Component.text(this.getScoreboardName());
+    this.bukkitPickUpLoot = true;
+
+# クライアントの言語。Player.locale() がここを読む(同 patch:1346)。
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    this.language = information.language();
+insert-after:
+    this.adventure$locale = java.util.Objects.requireNonNullElse(net.kyori.adventure.translation.Translator.parseLocale(this.language), java.util.Locale.US);
+
+# タブ一覧の表示名(Player.setPlayerListName)
+#
+# vanilla は常に null を返す。Paper は listName をそのまま返すように書き換えている。
+# ここでは「入っていれば返す」を前に足す。誰も入れなければ null のままなので、
+# vanilla と同じ経路になる。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    public @Nullable Component getTabListDisplayName() {
+insert-after:
+    if (this.listName != null) {
+        return this.listName;
+    }
+
+# タブ一覧の並び順(Player.setPlayerListOrder)
+#
+# vanilla は常に 0。Paper は listOrder を返す。既定は 0 なので、
+# 誰も入れなければ vanilla と同じ値になる。
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    public int getTabListOrder() {
+insert-after:
+    if (this.listOrder != 0) {
+        return this.listOrder;
+    }

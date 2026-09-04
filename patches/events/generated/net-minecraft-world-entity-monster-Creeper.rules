@@ -1,0 +1,12 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callCreeperPowerEvent
+file: net/minecraft/world/entity/monster/Creeper.java
+anchor:
+    this.entityData.set(DATA_IS_POWERED, true);
+insert:
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callCreeperPowerEvent(this, lightningBolt, org.bukkit.event.entity.CreeperPowerEvent.PowerCause.LIGHTNING).isCancelled()) {
+        return;
+    }
+    // CraftBukkit end

@@ -1,0 +1,10 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// MerchantOffer.MerchantOffer
+    // CraftMerchantRecipe が作る取引。ignoreDiscounts と Bukkit 側の控えは Paper の追加で、
+    // vanilla の 8 引数の構築子は読まない。vanilla の版へ渡してから欄に記録する。
+    public MerchantOffer(final ItemCost baseCostA, final Optional<ItemCost> costB, final ItemStack result, final int uses, final int maxUses, final int experience, final float priceMultiplier, final int demand, final boolean ignoreDiscounts, final org.bukkit.craftbukkit.inventory.CraftMerchantRecipe bukkit) {
+        this(baseCostA, costB, result, uses, maxUses, experience, priceMultiplier, demand);
+        this.ignoreDiscounts = ignoreDiscounts;
+        this.bukkitHandle = bukkit;
+    }

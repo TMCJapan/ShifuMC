@@ -1,0 +1,5 @@
+name: ShifuPluginDrive
+version: "1.0"
+main: dev.shifu.drive.PluginDrive
+api-version: "1.21"
+load: POSTWORLD

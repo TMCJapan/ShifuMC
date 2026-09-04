@@ -1,0 +1,38 @@
+# Paper の API レジストリの初期化。Paper は vanilla のレジストリを作る場所で
+# PaperRegistryAccess に登録する。これが無いと CraftServer の構築子が
+# org.bukkit.Registry を初期化する時点で
+# 「RegistryKeyImpl[key=minecraft:attribute] points to a registry that is not available yet」
+# で落ちる。
+#
+# vanilla の行は 1 文字も変えていない。間に 1 行入れているだけ。
+
+# 組み込みのレジストリ(patches/sources/.../BuiltInRegistries.java.patch @@ -392)
+file: net/minecraft/core/registries/BuiltInRegistries.java
+anchor:
+    Identifier key = name.identifier();
+    LOADERS.put(key, () -> loader.run(registry));
+insert:
+    io.papermc.paper.registry.PaperRegistryAccess.instance().registerRegistry(registry);
+
+# 組み込みのレジストリを凍結するとき(同 @@ -399)。
+# Paper は if の外、ラムダの末尾に置く。アンカーの終わりが if の閉じ括弧なので
+# その後ろに入れる。
+anchor:
+    LOGGER.error("Unable to bootstrap registry '{}'", key);
+    }
+insert-after:
+    io.papermc.paper.registry.PaperRegistryAccess.instance().lockReferenceHolders(ResourceKey.createRegistryKey(key));
+
+# データパックから読むレジストリ(patches/sources/.../RegistryLoadTask.java.patch @@ -39)
+file: net/minecraft/resources/RegistryLoadTask.java
+anchor:
+    this.concurrentRegistrationGetter = new ConcurrentHolderGetter<>(this.registryWriteLock, this.registry.createRegistrationLookup());
+insert-after:
+    io.papermc.paper.registry.PaperRegistryAccess.instance().registerRegistry(this.registry);
+
+# 読み直せるレジストリ(patches/sources/.../ReloadableServerRegistries.java.patch)
+file: net/minecraft/server/ReloadableServerRegistries.java
+anchor:
+    Map<Identifier, T> elements = new HashMap<>();
+insert:
+    io.papermc.paper.registry.PaperRegistryAccess.instance().registerReloadableRegistry(registry);

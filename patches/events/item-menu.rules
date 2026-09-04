@@ -1,0 +1,706 @@
+# アイテム(world/item)とメニュー(world/inventory)のイベント。手で書いたもの。
+# 発火層は src/event/java/dev/shifu/event/ItemEvents.java。
+#
+# Paper が vanilla のメソッドを作り変えているもの(投擲物・花火・釣り竿・弓)は、
+# vanilla の行を残したまま「登録があれば Paper と同じ手順、無ければ vanilla の行」の
+# 形で囲む。登録が無いときに実行される命令列は vanilla と同一。
+
+# ---------------------------------------------------------------- InventoryDragEvent
+#
+# vanilla がスロットと手持ちを置いたあとに発火し、取り消されたら控えに戻す。
+# 控えはドラッグの並びを置く直前に取る(登録が無ければ null で、真偽値 1 つ分の仕事)。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/AbstractContainerMenu.java.patch(InventoryDragEvent)
+file: net/minecraft/world/inventory/AbstractContainerMenu.java
+anchor:
+    for (Slot slot : this.quickcraftSlots) {
+insert:
+    final java.util.Map<Slot, ItemStack[]> shifuDragBefore = dev.shifu.event.ItemEvents.dragBefore(this.quickcraftSlots);
+    final ItemStack shifuDragCarried = shifuDragBefore == null ? null : this.getCarried().copy();
+
+file: net/minecraft/world/inventory/AbstractContainerMenu.java
+anchor:
+    source.setCount(remaining);
+    this.setCarried(source);
+insert-after:
+    dev.shifu.event.ItemEvents.drag(this, shifuDragBefore, shifuDragCarried, this.quickcraftType == QUICKCRAFT_TYPE_GREEDY);
+
+# ---------------------------------------------------------------- PrepareResultEvent 系
+#
+# Paper は slotsChanged で createResult のあとに callPrepareResultEvent を呼ぶ。同じ位置。
+# createResult の中で Paper が setItem を callPrepareAnvilEvent などに置き換えている 5 + 2 箇所は、
+# setItem と同じ働きしかしない(発火はここ)ので触らない。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/ItemCombinerMenu.java.patch:60
+file: net/minecraft/world/inventory/ItemCombinerMenu.java
+anchor:
+    this.createResult();
+insert-after:
+    dev.shifu.event.ItemEvents.prepareResult(this, this.getResultSlot());
+
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/SmithingMenu.java.patch(callPrepareResultEvent)
+file: net/minecraft/world/inventory/SmithingMenu.java
+anchor:
+    this.hasRecipeError.set(hasRecipeError ? 1 : 0);
+insert-after:
+    dev.shifu.event.ItemEvents.prepareResult(this, RESULT_SLOT);
+
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/GrindstoneMenu.java.patch(callPrepareResultEvent)
+file: net/minecraft/world/inventory/GrindstoneMenu.java
+anchor:
+    this.createResult();
+insert-after:
+    dev.shifu.event.ItemEvents.prepareResult(this, RESULT_SLOT);
+
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/StonecutterMenu.java.patch(callPrepareResultEvent)
+file: net/minecraft/world/inventory/StonecutterMenu.java
+anchor:
+    this.setupRecipeList(input);
+    }
+insert-after:
+    dev.shifu.event.ItemEvents.prepareResult(this, RESULT_SLOT);
+
+# Paper は broadcastChanges を callPrepareResultEvent(中で broadcastChanges する)に置き換えている。
+# 発火を先に置き、vanilla の broadcastChanges を残す。登録があるときは prepareResult も 1 回送るので
+# 2 回送るが、送る中身は同じ。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/LoomMenu.java.patch(callPrepareResultEvent)
+file: net/minecraft/world/inventory/LoomMenu.java
+anchor:
+    this.broadcastChanges();
+insert:
+    dev.shifu.event.ItemEvents.prepareResult(this, 3);
+
+# ---------------------------------------------------------------- 砥石の BlockExpEvent
+#
+# 量の式(乱数)は 1 回しか評価しない。登録があれば ItemEvents が量を決めて出し、vanilla の行を飛ばす。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/GrindstoneMenu.java.patch(BlockExpEvent)
+file: net/minecraft/world/inventory/GrindstoneMenu.java
+anchor:
+    ExperienceOrb.award(serverLevel, Vec3.atCenterOf(pos), this.getExperienceAmount(level));
+insert:
+    if (!dev.shifu.event.ItemEvents.grindstoneExpListening()
+            || dev.shifu.event.ItemEvents.grindstoneExp(serverLevel, pos, this.getExperienceAmount(level))) {
+insert-after:
+    }
+
+# ---------------------------------------------------------------- PlayerChangeBeaconEffectEvent
+#
+# 効果を書き込む前。取り消しは true で抜ける(Paper と同じ。切断させない)。差し替えは
+# vanilla の局所変数に代入して vanilla の行に書き込ませる。消費は willConsumeItem で囲む。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/BeaconMenu.java.patch
+file: net/minecraft/world/inventory/BeaconMenu.java
+anchor:
+    this.beaconData.set(1, encodeEffect(primaryEffect));
+insert:
+    final io.papermc.paper.event.player.PlayerChangeBeaconEffectEvent shifuBeacon =
+            dev.shifu.event.ItemEvents.changeBeaconEffect(this.inventory.player, this.access, primaryEffect, secondaryEffect);
+    if (shifuBeacon != null) {
+        if (shifuBeacon.isCancelled()) {
+            return true;
+        }
+        primaryEffect = dev.shifu.event.ItemEvents.effect(shifuBeacon.getPrimary());
+        secondaryEffect = dev.shifu.event.ItemEvents.effect(shifuBeacon.getSecondary());
+    }
+
+file: net/minecraft/world/inventory/BeaconMenu.java
+anchor:
+    this.paymentSlot.remove(1);
+insert:
+    if (shifuBeacon == null || shifuBeacon.willConsumeItem()) {
+insert-after:
+    }
+
+# ---------------------------------------------------------------- EnchantItemEvent
+#
+# 経験値を払う前(Paper と同じ)。取り消し(経験値不足・空も)なら抜ける。付けるエンチャントは
+# vanilla の局所変数 newEnchantment に代入して vanilla のループに付けさせる。
+# PrepareItemEnchantEvent は patches/events/generated にある。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/EnchantmentMenu.java.patch(EnchantItemEvent)
+file: net/minecraft/world/inventory/EnchantmentMenu.java
+anchor:
+    if (!newEnchantment.isEmpty()) {
+insert:
+    newEnchantment = dev.shifu.event.ItemEvents.enchantItem(this, level, pos, player, enchantmentItem, newEnchantment, buttonId,
+            this.costs, this.enchantClue, this.levelClue);
+    if (newEnchantment == null) {
+        return;
+    }
+    enchantmentItem = dev.shifu.event.ItemEvents.enchantedItem(this.enchantSlots, itemStack, enchantmentItem);
+
+# ---------------------------------------------------------------- PlayerLecternPageChangeEvent
+#
+# ページを書き込む前。ページが差し替えられたときは自分で書いて抜ける(vanilla の 2 文と同じ)。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/LecternMenu.java.patch
+file: net/minecraft/world/inventory/LecternMenu.java
+anchor:
+    this.setData(0, currentPage - 1);
+insert:
+    final int shifuPage = dev.shifu.event.ItemEvents.lecternPage(this, player,
+            io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection.LEFT, currentPage, currentPage - 1);
+    if (shifuPage == dev.shifu.event.ItemEvents.CANCELLED) {
+        return false;
+    }
+    if (shifuPage != currentPage - 1) {
+        this.setData(0, shifuPage);
+        return true;
+    }
+
+file: net/minecraft/world/inventory/LecternMenu.java
+anchor:
+    this.setData(0, currentPage + 1);
+insert:
+    final int shifuPage = dev.shifu.event.ItemEvents.lecternPage(this, player,
+            io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection.RIGHT, currentPage, currentPage + 1);
+    if (shifuPage == dev.shifu.event.ItemEvents.CANCELLED) {
+        return false;
+    }
+    if (shifuPage != currentPage + 1) {
+        this.setData(0, shifuPage);
+        return true;
+    }
+
+# ---------------------------------------------------------------- PlayerLoomPatternSelectEvent
+#
+# 模様を書き込む前。差し替えられたときは自分で書いて抜ける。取り消しは手元を送り直して false。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/LoomMenu.java.patch(PlayerLoomPatternSelectEvent)
+file: net/minecraft/world/inventory/LoomMenu.java
+anchor:
+    this.selectedBannerPatternIndex.set(buttonId);
+    this.setupResultSlot(this.selectablePatterns.get(buttonId));
+insert:
+    final dev.shifu.event.ItemEvents.LoomChoice shifuLoom = dev.shifu.event.ItemEvents.loomPattern(
+            this, player, this.selectablePatterns, buttonId);
+    if (shifuLoom != null) {
+        if (shifuLoom.cancelled()) {
+            player.containerMenu.sendAllDataToRemote();
+            return false;
+        }
+        this.selectedBannerPatternIndex.set(shifuLoom.index());
+        this.setupResultSlot(shifuLoom.pattern());
+        return true;
+    }
+
+# ---------------------------------------------------------------- PlayerStonecutterRecipeSelectEvent
+#
+# vanilla が番号を書き込んだあと、結果を置く前(Paper と同じ)。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/StonecutterMenu.java.patch
+file: net/minecraft/world/inventory/StonecutterMenu.java
+anchor:
+    this.setupResultSlot(buttonId);
+insert:
+    final int shifuRecipe = dev.shifu.event.ItemEvents.stonecutterRecipe(this, player, this.recipesForInput, buttonId);
+    if (shifuRecipe == dev.shifu.event.ItemEvents.CANCELLED) {
+        player.containerMenu.sendAllDataToRemote();
+        return false;
+    }
+    if (shifuRecipe != buttonId) {
+        this.selectedRecipeIndex.set(shifuRecipe);
+        this.setupResultSlot(shifuRecipe);
+        return true;
+    }
+
+# ---------------------------------------------------------------- BlockCanBuildEvent
+#
+# 登録があれば vanilla の判定の式を同じ形で評価して発火し、イベントの答えで抜ける。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/BlockItem.java.patch(BlockCanBuildEvent)
+file: net/minecraft/world/item/BlockItem.java
+anchor:
+    return (!this.mustSurvive() || stateForPlacement.canSurvive(context.getLevel(), context.getClickedPos()))
+insert:
+    if (dev.shifu.event.ItemEvents.canBuildListening()) {
+        return dev.shifu.event.ItemEvents.canBuild(context.getLevel(), context.getClickedPos(), player, stateForPlacement,
+                (!this.mustSurvive() || stateForPlacement.canSurvive(context.getLevel(), context.getClickedPos()))
+                        && context.getLevel().isUnobstructed(stateForPlacement, context.getClickedPos(), CollisionContext.placementContext(player)),
+                context.getHand());
+    }
+
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/StandingAndWallBlockItem.java.patch
+file: net/minecraft/world/item/StandingAndWallBlockItem.java
+anchor:
+    return stateForPlacement != null && level.isUnobstructed(stateForPlacement, pos, CollisionContext.empty()) ? stateForPlacement : null;
+insert:
+    if (stateForPlacement != null && dev.shifu.event.ItemEvents.canBuildListening()) {
+        return dev.shifu.event.ItemEvents.canBuild(context.getLevel(), pos, context.getPlayer(), stateForPlacement,
+                level.isUnobstructed(stateForPlacement, pos, CollisionContext.empty()), context.getHand())
+                ? stateForPlacement : null;
+    }
+
+# ---------------------------------------------------------------- ボート
+#
+# 置く前の PlayerInteractEvent(RIGHT_CLICK_BLOCK)、足す前の EntityPlaceEvent。
+# スポーン系に登録があるときは Paper と同じく addFreshEntity の返り値を見て PASS で抜ける。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/BoatItem.java.patch
+file: net/minecraft/world/item/BoatItem.java
+anchor:
+    AbstractBoat boat = this.getBoat(level, hitResult, itemStack, player);
+insert:
+    if (!dev.shifu.event.ItemEvents.boatInteract(player, (net.minecraft.world.phys.BlockHitResult) hitResult, itemStack, hand)) {
+        return InteractionResult.PASS;
+    }
+
+file: net/minecraft/world/item/BoatItem.java
+anchor:
+    level.addFreshEntity(boat);
+insert:
+    if (!dev.shifu.event.ItemEvents.entityPlace(level, ((net.minecraft.world.phys.BlockHitResult) hitResult).getBlockPos(),
+            player.getDirection(), player, boat, hand)) {
+        return InteractionResult.FAIL;
+    }
+    if (dev.shifu.event.ItemEvents.spawnCancelListening()) {
+        if (!level.addFreshEntity(boat)) {
+            return InteractionResult.PASS;
+        }
+    } else {
+insert-after:
+    }
+
+# ---------------------------------------------------------------- トロッコ
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/MinecartItem.java.patch
+file: net/minecraft/world/item/MinecartItem.java
+anchor:
+    serverLevel.addFreshEntity(cart);
+insert:
+    if (!dev.shifu.event.ItemEvents.entityPlace(level, pos, context.getClickedFace(), context.getPlayer(), cart, context.getHand())) {
+        if (context.getPlayer() != null) {
+            context.getPlayer().containerMenu.forceHeldSlot(context.getHand());
+        }
+        return InteractionResult.FAIL;
+    }
+    if (dev.shifu.event.ItemEvents.spawnCancelListening()) {
+        if (!serverLevel.addFreshEntity(cart)) {
+            return InteractionResult.PASS;
+        }
+    } else {
+insert-after:
+    }
+
+# ---------------------------------------------------------------- EntityLoadCrossbowEvent
+#
+# 装填する前。vanilla の判定(tickPercent、isCharged)は副作用が無いので、先に同じ判定をして発火する。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/CrossbowItem.java.patch
+file: net/minecraft/world/item/CrossbowItem.java
+anchor:
+    if (tickPercent >= 1.0F && !isCharged(itemStack) && tryLoadProjectiles(entity, itemStack)) {
+insert:
+    if (tickPercent >= 1.0F && !isCharged(itemStack) && !dev.shifu.event.ItemEvents.loadCrossbow(entity, itemStack)) {
+        return;
+    }
+
+# ---------------------------------------------------------------- SheepDyeWoolEvent
+#
+# 色を書き込む前。差し替えは vanilla の局所変数に代入する。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/DyeItem.java.patch
+file: net/minecraft/world/item/DyeItem.java
+anchor:
+    sheep.setColor(dyeColor);
+insert:
+    dyeColor = dev.shifu.event.ItemEvents.dyeWool(sheep, player, dyeColor);
+    if (dyeColor == null) {
+        return InteractionResult.PASS;
+    }
+
+# ---------------------------------------------------------------- PlayerLaunchProjectileEvent(投擲物 5 種)
+#
+# 登録があるときは ItemEvents.launch が「生成 → 発火 → 音 → 世界に足す → 統計 → 消費」を行い、
+# vanilla の音・生成・統計・消費の行を飛ばす。無ければ vanilla の行がそのまま走る。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/SnowballItem.java.patch ほか同形 4 件
+
+file: net/minecraft/world/item/SnowballItem.java
+anchor:
+    level.playSound(
+        null,
+        player.getX(),
+        player.getY(),
+        player.getZ(),
+        SoundEvents.SNOWBALL_THROW,
+        SoundSource.NEUTRAL,
+        0.5F,
+        0.4F / (level.getRandom().nextFloat() * 0.4F + 0.8F)
+    );
+insert:
+    if (!dev.shifu.event.ItemEvents.launchListening()) {
+insert-after:
+    }
+
+file: net/minecraft/world/item/SnowballItem.java
+anchor:
+    Projectile.spawnProjectileFromRotation(Snowball::new, serverLevel, itemStack, player, 0.0F, 1.5F, 1.0F);
+insert:
+    if (dev.shifu.event.ItemEvents.launchListening()) {
+        if (!dev.shifu.event.ItemEvents.launch(Snowball::new, serverLevel, itemStack, player, hand, 0.0F, 1.5F, 1.0F,
+                SoundEvents.SNOWBALL_THROW, SoundSource.NEUTRAL, this)) {
+            return InteractionResult.FAIL;
+        }
+    } else {
+insert-after:
+    }
+
+file: net/minecraft/world/item/SnowballItem.java
+anchor:
+    player.awardStat(Stats.ITEM_USED.get(this));
+    itemStack.consume(1, player);
+insert:
+    if (!dev.shifu.event.ItemEvents.launchListening()) {
+insert-after:
+    }
+
+file: net/minecraft/world/item/EggItem.java
+anchor:
+    level.playSound(
+        null,
+        player.getX(),
+        player.getY(),
+        player.getZ(),
+        SoundEvents.EGG_THROW,
+        SoundSource.PLAYERS,
+        0.5F,
+        0.4F / (level.getRandom().nextFloat() * 0.4F + 0.8F)
+    );
+insert:
+    if (!dev.shifu.event.ItemEvents.launchListening()) {
+insert-after:
+    }
+
+file: net/minecraft/world/item/EggItem.java
+anchor:
+    Projectile.spawnProjectileFromRotation(ThrownEgg::new, serverLevel, itemStack, player, 0.0F, 1.5F, 1.0F);
+insert:
+    if (dev.shifu.event.ItemEvents.launchListening()) {
+        if (!dev.shifu.event.ItemEvents.launch(ThrownEgg::new, serverLevel, itemStack, player, hand, 0.0F, 1.5F, 1.0F,
+                SoundEvents.EGG_THROW, SoundSource.PLAYERS, this)) {
+            return InteractionResult.FAIL;
+        }
+    } else {
+insert-after:
+    }
+
+file: net/minecraft/world/item/EggItem.java
+anchor:
+    player.awardStat(Stats.ITEM_USED.get(this));
+    itemStack.consume(1, player);
+insert:
+    if (!dev.shifu.event.ItemEvents.launchListening()) {
+insert-after:
+    }
+
+file: net/minecraft/world/item/EnderpearlItem.java
+anchor:
+    level.playSound(
+        null,
+        player.getX(),
+        player.getY(),
+        player.getZ(),
+        SoundEvents.ENDER_PEARL_THROW,
+        SoundSource.NEUTRAL,
+        0.5F,
+        0.4F / (level.getRandom().nextFloat() * 0.4F + 0.8F)
+    );
+insert:
+    if (!dev.shifu.event.ItemEvents.launchListening()) {
+insert-after:
+    }
+
+file: net/minecraft/world/item/EnderpearlItem.java
+anchor:
+    Projectile.spawnProjectileFromRotation(ThrownEnderpearl::new, serverLevel, itemStack, player, 0.0F, 1.5F, 1.0F);
+insert:
+    if (dev.shifu.event.ItemEvents.launchListening()) {
+        if (!dev.shifu.event.ItemEvents.launch(ThrownEnderpearl::new, serverLevel, itemStack, player, hand, 0.0F, 1.5F, 1.0F,
+                SoundEvents.ENDER_PEARL_THROW, SoundSource.NEUTRAL, this)) {
+            return InteractionResult.FAIL;
+        }
+    } else {
+insert-after:
+    }
+
+file: net/minecraft/world/item/EnderpearlItem.java
+anchor:
+    player.awardStat(Stats.ITEM_USED.get(this));
+    itemStack.consume(1, player);
+insert:
+    if (!dev.shifu.event.ItemEvents.launchListening()) {
+insert-after:
+    }
+
+file: net/minecraft/world/item/ExperienceBottleItem.java
+anchor:
+    level.playSound(
+        null,
+        player.getX(),
+        player.getY(),
+        player.getZ(),
+        SoundEvents.EXPERIENCE_BOTTLE_THROW,
+        SoundSource.NEUTRAL,
+        0.5F,
+        0.4F / (level.getRandom().nextFloat() * 0.4F + 0.8F)
+    );
+insert:
+    if (!dev.shifu.event.ItemEvents.launchListening()) {
+insert-after:
+    }
+
+file: net/minecraft/world/item/ExperienceBottleItem.java
+anchor:
+    Projectile.spawnProjectileFromRotation(ThrownExperienceBottle::new, serverLevel, itemStack, player, -20.0F, 0.7F, 1.0F);
+insert:
+    if (dev.shifu.event.ItemEvents.launchListening()) {
+        if (!dev.shifu.event.ItemEvents.launch(ThrownExperienceBottle::new, serverLevel, itemStack, player, hand, -20.0F, 0.7F, 1.0F,
+                SoundEvents.EXPERIENCE_BOTTLE_THROW, SoundSource.NEUTRAL, this)) {
+            return InteractionResult.FAIL;
+        }
+    } else {
+insert-after:
+    }
+
+file: net/minecraft/world/item/ExperienceBottleItem.java
+anchor:
+    player.awardStat(Stats.ITEM_USED.get(this));
+    itemStack.consume(1, player);
+insert:
+    if (!dev.shifu.event.ItemEvents.launchListening()) {
+insert-after:
+    }
+
+# 投げポーションに音は無い
+file: net/minecraft/world/item/ThrowablePotionItem.java
+anchor:
+    Projectile.spawnProjectileFromRotation(this::createPotion, serverLevel, itemStack, player, -20.0F, 0.5F, 1.0F);
+insert:
+    if (dev.shifu.event.ItemEvents.launchListening()) {
+        if (!dev.shifu.event.ItemEvents.launch(this::createPotion, serverLevel, itemStack, player, hand, -20.0F, 0.5F, 1.0F,
+                null, null, this)) {
+            return InteractionResult.FAIL;
+        }
+    } else {
+insert-after:
+    }
+
+file: net/minecraft/world/item/ThrowablePotionItem.java
+anchor:
+    player.awardStat(Stats.ITEM_USED.get(this));
+    itemStack.consume(1, player);
+insert:
+    if (!dev.shifu.event.ItemEvents.launchListening()) {
+insert-after:
+    }
+
+# ---------------------------------------------------------------- 花火
+#
+# ブロックに向けて使う: PlayerLaunchProjectileEvent。取り消しは PASS、消費しないなら手元を送り直す。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/FireworkRocketItem.java.patch
+file: net/minecraft/world/item/FireworkRocketItem.java
+anchor:
+    Projectile.spawnProjectile(
+        new FireworkRocketEntity(
+            level,
+            context.getPlayer(),
+            clickLocation.x + direction.getStepX() * 0.15,
+            clickLocation.y + direction.getStepY() * 0.15,
+            clickLocation.z + direction.getStepZ() * 0.15,
+            itemStack
+        ),
+        serverLevel,
+        itemStack
+    );
+insert:
+    final boolean shifuFireworkConsume;
+    if (dev.shifu.event.ItemEvents.launchListening()) {
+        final Boolean shifuLaunched = dev.shifu.event.ItemEvents.launchFirework(serverLevel, context.getPlayer(), context.getHand(),
+                itemStack, clickLocation, direction);
+        if (shifuLaunched == null) {
+            return InteractionResult.PASS;
+        }
+        shifuFireworkConsume = shifuLaunched;
+    } else {
+        shifuFireworkConsume = true;
+insert-after:
+    }
+
+file: net/minecraft/world/item/FireworkRocketItem.java
+anchor:
+    itemStack.shrink(1);
+insert:
+    if (shifuFireworkConsume) {
+insert-after:
+    } else {
+        context.getPlayer().containerMenu.forceHeldSlot(context.getHand());
+    }
+
+# 飛行中に使う: PlayerElytraBoostEvent。登録があれば ItemEvents.elytraBoost が vanilla と同じ順で行う。
+file: net/minecraft/world/item/FireworkRocketItem.java
+anchor:
+    if (player.dropAllLeashConnections(null)) {
+        level.playSound(null, player, SoundEvents.LEAD_BREAK, SoundSource.NEUTRAL, 1.0F, 1.0F);
+    }
+
+    Projectile.spawnProjectile(new FireworkRocketEntity(level, itemStack, player), serverLevel, itemStack);
+    itemStack.consume(1, player);
+    player.awardStat(Stats.ITEM_USED.get(this));
+insert:
+    if (dev.shifu.event.ItemEvents.elytraBoostListening()) {
+        dev.shifu.event.ItemEvents.elytraBoost(level, serverLevel, player, hand, itemStack, this);
+    } else {
+insert-after:
+    }
+
+# ---------------------------------------------------------------- PlayerFishEvent(FISHING)
+#
+# 登録があれば ItemEvents.fish が「浮きを作る → 発火 → 音 → 世界に足す」を行い、vanilla の音と生成を飛ばす。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/FishingRodItem.java.patch
+file: net/minecraft/world/item/FishingRodItem.java
+anchor:
+    level.playSound(
+        null,
+        player.getX(),
+        player.getY(),
+        player.getZ(),
+        SoundEvents.FISHING_BOBBER_THROW,
+        SoundSource.NEUTRAL,
+        0.5F,
+        0.4F / (level.getRandom().nextFloat() * 0.4F + 0.8F)
+    );
+insert:
+    if (!dev.shifu.event.ItemEvents.fishListening()) {
+insert-after:
+    }
+
+file: net/minecraft/world/item/FishingRodItem.java
+anchor:
+    Projectile.spawnProjectile(new FishingHook(player, level, luck, lureSpeed), serverLevel, itemStack);
+insert:
+    if (dev.shifu.event.ItemEvents.fishListening()) {
+        if (!dev.shifu.event.ItemEvents.fish(level, serverLevel, player, hand, itemStack, luck, lureSpeed)) {
+            return InteractionResult.PASS;
+        }
+    } else {
+insert-after:
+    }
+
+# ---------------------------------------------------------------- EntityShootBowEvent
+#
+# createProjectile / shootProjectile は protected なので、登録があるときはここで作って発射方向を付け、
+# 発火と世界に足すのは ItemEvents.shootBow が行う。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/ProjectileWeaponItem.java.patch
+file: net/minecraft/world/item/ProjectileWeaponItem.java
+anchor:
+    Projectile.spawnProjectile(
+        this.createProjectile(level, shooter, weapon, projectile, isCrit),
+        level,
+        projectile,
+        projectileEntity -> this.shootProjectile(shooter, projectileEntity, index, power, uncertainty, angle, targetOverride)
+    );
+insert:
+    if (dev.shifu.event.ItemEvents.shootBowListening()) {
+        final Projectile shifuProjectile = this.createProjectile(level, shooter, weapon, projectile, isCrit);
+        this.shootProjectile(shooter, shifuProjectile, index, power, uncertainty, angle, targetOverride);
+        if (!dev.shifu.event.ItemEvents.shootBow(level, shooter, weapon, projectile, shifuProjectile, hand, power)) {
+            return;
+        }
+    } else {
+insert-after:
+    }
+
+# ---------------------------------------------------------------- EntityDropItemEvent(壊れた入れ物)
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/ItemUtils.java.patch
+file: net/minecraft/world/item/ItemUtils.java
+anchor:
+    contents.forEach(stack -> level.addFreshEntity(new ItemEntity(level, container.getX(), container.getY(), container.getZ(), stack)));
+insert:
+    if (!dev.shifu.event.ItemEvents.containerDropListening()) {
+insert-after:
+    } else {
+        contents.forEach(stack -> dev.shifu.event.ItemEvents.containerDrop(container, level, stack));
+    }
+
+# ---------------------------------------------------------------- リード
+#
+# vanilla の bindPlayerMobs は手を受け取らない。useOn から呼ぶ直前に手を置く。
+# FenceBlock からも呼ばれる(そちらは手を置かないので、置いた相手が違えば MAIN_HAND とみなす)。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/LeadItem.java.patch
+file: net/minecraft/world/item/LeadItem.java
+anchor:
+    return bindPlayerMobs(player, level, pos);
+insert:
+    dev.shifu.event.ItemEvents.leashHand(player, context.getHand());
+
+# HangingPlaceEvent(柵に新しく結び目を作るとき)。取り消しは結び目を消して PASS。
+file: net/minecraft/world/item/LeadItem.java
+anchor:
+    boolean anyLeashed = false;
+insert:
+    if (existingKnot.isEmpty() && !dev.shifu.event.ItemEvents.knotPlace(activeKnot, player, level, pos)) {
+        activeKnot.discard();
+        return InteractionResult.PASS;
+    }
+
+# PlayerLeashEntityEvent(1 匹ずつ)。vanilla の if の中身を囲む。
+file: net/minecraft/world/item/LeadItem.java
+anchor:
+    if (leashable.canHaveALeashAttachedTo(activeKnot)) {
+insert-after:
+    if (dev.shifu.event.ItemEvents.leash(leashable, activeKnot, player)) {
+
+file: net/minecraft/world/item/LeadItem.java
+anchor:
+    anyLeashed = true;
+insert-after:
+    }
+
+# ---------------------------------------------------------------- EntityAttemptSmashAttackEvent
+#
+# vanilla の判定の前。DENY なら何もせず抜ける(vanilla の if のあとには何も無い)。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/MaceItem.java.patch
+file: net/minecraft/world/item/MaceItem.java
+anchor:
+    if (canSmashAttack(attacker)) {
+        ServerLevel level = (ServerLevel)attacker.level();
+insert:
+    if (dev.shifu.event.ItemEvents.smashListening()
+            && !dev.shifu.event.ItemEvents.smashAttack(itemStack, mob, attacker, canSmashAttack(attacker))) {
+        return;
+    }
+
+# ---------------------------------------------------------------- PlayerNameEntityEvent
+#
+# 名前を書き込む前。通ったときはイベントの中身(名前・対象・永続)を書き、vanilla の 2 文は飛ばす。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/NameTagItem.java.patch
+file: net/minecraft/world/item/NameTagItem.java
+anchor:
+    target.setCustomName(customName);
+    if (target instanceof Mob mob) {
+        mob.setPersistenceRequired();
+    }
+insert:
+    final io.papermc.paper.event.player.PlayerNameEntityEvent shifuName = dev.shifu.event.ItemEvents.nameEntity(player, target, customName);
+    if (shifuName != null) {
+        if (shifuName.isCancelled()) {
+            return InteractionResult.PASS;
+        }
+        dev.shifu.event.ItemEvents.applyName(shifuName);
+    } else {
+insert-after:
+    }
+
+# ---------------------------------------------------------------- PlayerItemDamageEvent
+#
+# 減りが決まったあと。取り消しは 0 にして vanilla の「0 なら何もしない」に乗せる。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/ItemStack.java.patch(PlayerItemDamageEvent)
+file: net/minecraft/world/item/ItemStack.java
+anchor:
+    int newAmount = this.processDurabilityChange(amount, level, player);
+insert-after:
+    if (newAmount > 0 && player != null) {
+        newAmount = dev.shifu.event.ItemEvents.itemDamage(this, player, newAmount, amount);
+    }
+
+file: net/minecraft/world/item/ItemStack.java
+anchor:
+    int newDamage = Math.min(this.getDamageValue() + newAmount, this.getMaxDamage() - 1);
+insert-after:
+    if (newDamage - this.getDamageValue() > 0) {
+        final int shifuDamage = dev.shifu.event.ItemEvents.itemDamage(this, serverPlayer, newDamage - this.getDamageValue(), amount);
+        if (shifuDamage == 0) {
+            return;
+        }
+        newDamage = Math.min(this.getDamageValue() + shifuDamage, this.getMaxDamage() - 1);
+    }

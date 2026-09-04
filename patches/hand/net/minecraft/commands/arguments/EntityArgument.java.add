@@ -1,0 +1,9 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// EntityArgument.parse
+    // overridePermissions は選択子の権限確認を飛ばすための旗。
+    // vanilla に確認を飛ばす経路が無いので渡さない。
+    public EntitySelector parse(final StringReader reader, final boolean allowSelectors,
+                                final boolean overridePermissions) throws CommandSyntaxException {
+        return this.parse(reader, allowSelectors);
+    }

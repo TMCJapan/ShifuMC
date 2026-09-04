@@ -1,0 +1,13 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# VehicleEntityCollisionEvent
+file: net/minecraft/world/entity/vehicle/minecart/OldMinecartBehavior.java
+anchor:
+    entity.startRiding(this.minecart);
+insert:
+    // CraftBukkit start
+    org.bukkit.event.vehicle.VehicleEntityCollisionEvent collisionEvent = new org.bukkit.event.vehicle.VehicleEntityCollisionEvent(
+        (org.bukkit.entity.Vehicle) this.minecart.getBukkitEntity(), entity.getBukkitEntity()
+    );
+    if (!collisionEvent.callEvent()) continue;
+    // CraftBukkit end

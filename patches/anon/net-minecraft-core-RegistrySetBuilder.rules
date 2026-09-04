@@ -1,0 +1,24 @@
+# vanilla の中の無名クラスへの追加。型の名前が無いので hand では届かない。
+
+# lookupFromMap が返す EmptyTagRegistryLookup の無名クラス(RegistrySetBuilder$2)が、shim の足した HolderLoo
+file: net/minecraft/core/RegistrySetBuilder.java
+anchor:
+    @Override
+    public ResourceKey<? extends Registry<? extends T>> key() {
+insert:
+    @Override
+    public Optional<T> getValueForCopying(final ResourceKey<T> resourceKey) {
+        return this.get(resourceKey).map(Holder.Reference::value);
+    }
+
+# buildProviderWithContext の中の createSerializationContext が作る RegistryOps.RegistryInfoLookup
+file: net/minecraft/core/RegistrySetBuilder.java
+anchor:
+    @Override
+    public <T> Optional<RegistryOps.RegistryInfo<T>> lookup(final ResourceKey<? extends Registry<? extends T>> registryKey) {
+insert:
+    @Override
+    public HolderLookup.Provider lookupForValueCopyViaBuilders() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+

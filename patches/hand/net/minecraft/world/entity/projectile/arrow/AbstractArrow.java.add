@@ -1,0 +1,14 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// AbstractArrow.setOwner
+    // Paper の Fix PickupStatus getting reset。resetPickup=true のときは vanilla の
+    // setOwner とまったく同じなので、そちらへ渡す。false のときだけ pickup を
+    // 書き換えない形にするため、Projectile 側の setOwner を直に呼ぶ。
+    public void setOwner(final @Nullable Entity owner, final boolean resetPickup) {
+        if (resetPickup) {
+            this.setOwner(owner);
+            return;
+        }
+
+        super.setOwner(owner);
+    }
