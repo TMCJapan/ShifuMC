@@ -51,6 +51,8 @@ for round in 1 2 3 4 5 6 7 8 9 10; do
 
     mkdir -p "$PW/paper-server/src/main/java/dev/shifu/event"
     cp "$SHIFU/src/event/java/dev/shifu/event/"*.java        "$PW/paper-server/src/main/java/dev/shifu/event/"
+    mkdir -p "$PW/paper-server/src/main/java/dev/shifu/command"
+    cp "$SHIFU/src/event/java/dev/shifu/command/"*.java      "$PW/paper-server/src/main/java/dev/shifu/command/"
     # vanilla の中の無名クラスへの追加。型の名前が無いので hand では届かない。
     python "$SHIFU/tools/apply_events.py" "$SHIFU/patches/anon" . 無名クラスへの追加
     # Paper が vanilla のメソッドの中で行う代入。Bukkit 層の配線。

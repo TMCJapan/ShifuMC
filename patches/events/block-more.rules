@@ -93,15 +93,6 @@ insert:
         return dispensed;
     }
 
-# BlockDispenseEvent(硫黄の塊にかぶせる)
-file: net/minecraft/core/dispenser/SulfurCubeBlockDispenseItemBehavior.java
-anchor:
-    return dispenseBlock(source.level(), source.pos().relative(source.state().getValue(DispenserBlock.FACING)), dispensed)
-insert:
-    if (!dev.shifu.event.BlockEvents.dispense(source, dispensed)) {
-        return dispensed;
-    }
-
 # BlockDispenseArmorEvent(装備を着せる)
 file: net/minecraft/core/dispenser/EquipmentDispenseItemBehavior.java
 anchor:

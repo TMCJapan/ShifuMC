@@ -23,8 +23,6 @@ import net.minecraft.server.players.PlayerList;
 import net.minecraft.server.rcon.RconConsoleSource;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.clock.ServerClockManager;
-import net.minecraft.world.clock.WorldClock;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -54,7 +52,6 @@ import org.bukkit.craftbukkit.event.CraftEventFactory;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.craftbukkit.util.CraftLocation;
 import org.bukkit.event.player.PlayerTeleportEvent;
-import org.bukkit.event.world.ClockTimeSkipEvent;
 import org.bukkit.event.world.TimeSkipEvent;
 
 import java.net.DatagramPacket;
@@ -384,11 +381,11 @@ public final class PlayerEvents {
     // ------------------------------------------------------------ 時間
 
     private static boolean timeListening() {
-        return listening(TimeSkipEvent.getHandlerList()) || listening(ClockTimeSkipEvent.getHandlerList());
+        return listening(TimeSkipEvent.getHandlerList());
     }
 
-    /** TimeSkipEvent を作って発火する。vanilla の時間はサーバー全体だが、Paper の既定と同じく世界付きで出す。 */
-    private static TimeSkipEvent timeSkip(final org.bukkit.World world, final ClockTimeSkipEvent.SkipReason reason, final long amount) {
+    /** TimeSkipEvent を作って発火する。vanilla の時間は世界ごと。 */
+    private static TimeSkipEvent timeSkip(final org.bukkit.World world, final TimeSkipEvent.SkipReason reason, final long amount) {
         final TimeSkipEvent event = new TimeSkipEvent(world, reason, amount);
         event.callEvent();
 
@@ -400,87 +397,51 @@ public final class PlayerEvents {
      *
      * 読んだ位置: paper-server patches/sources/net/minecraft/server/commands/TimeCommand.java.patch
      */
-    public static boolean timeSet(final CommandSourceStack source, final ServerClockManager clockManager,
-                                  final Holder<WorldClock> clock, final int totalTicks) {
+    public static boolean timeSet(final ServerLevel level, final int time) {
         if (!timeListening()) {
             return true;
         }
 
-        final long current = clockManager.getTotalTicks(clock);
-        final TimeSkipEvent event = timeSkip(source.getLevel().getWorld(), ClockTimeSkipEvent.SkipReason.COMMAND, totalTicks - current);
+        final long current = level.getDayTime();
+        final TimeSkipEvent event = timeSkip(level.getWorld(), TimeSkipEvent.SkipReason.COMMAND, time - current);
 
         if (event.isCancelled()) {
             return false;
         }
 
-        if (current + event.getSkipAmount() == totalTicks) {
+        if (current + event.getSkipAmount() == time) {
             return true;
         }
 
-        clockManager.setTotalTicks(clock, current + event.getSkipAmount());
+        level.setDayTime(current + event.getSkipAmount());
 
         return false;
     }
 
     /** TimeSkipEvent(/time add)。 */
-    public static boolean timeAdd(final CommandSourceStack source, final ServerClockManager clockManager,
-                                  final Holder<WorldClock> clock, final int time) {
+    public static boolean timeAdd(final ServerLevel level, final int amount) {
         if (!timeListening()) {
             return true;
         }
 
-        final TimeSkipEvent event = timeSkip(source.getLevel().getWorld(), ClockTimeSkipEvent.SkipReason.COMMAND, time);
+        final TimeSkipEvent event = timeSkip(level.getWorld(), TimeSkipEvent.SkipReason.COMMAND, amount);
 
         if (event.isCancelled()) {
             return false;
         }
 
-        if (event.getSkipAmount() == time) {
+        if (event.getSkipAmount() == amount) {
             return true;
         }
 
-        clockManager.setTotalTicks(clock, Math.max(clockManager.getTotalTicks(clock) + event.getSkipAmount(), 0L));
+        level.setDayTime(level.getDayTime() + event.getSkipAmount());
 
         return false;
     }
 
-    /** 変える前の時刻。登録が無ければ読まずに 0。 */
-    public static long timeBefore(final ServerClockManager clockManager, final Holder<WorldClock> clock) {
-        if (!timeListening()) {
-            return 0L;
-        }
-
-        return clockManager.getTotalTicks(clock);
-    }
-
-    /**
-     * TimeSkipEvent(/time set の時刻マーカー)。vanilla が動かしたあとに発火し、
-     * 取り消されたら戻す。量が差し替えられていたら置き直す。マーカーの先を vanilla から
-     * 先に読む手が無いので、この形。
-     */
-    public static void timeMarkerSkipped(final CommandSourceStack source, final ServerClockManager clockManager,
-                                         final Holder<WorldClock> clock, final long before) {
-        if (!timeListening()) {
-            return;
-        }
-
-        final long after = clockManager.getTotalTicks(clock);
-        final TimeSkipEvent event = timeSkip(source.getLevel().getWorld(), ClockTimeSkipEvent.SkipReason.COMMAND, after - before);
-
-        if (event.isCancelled()) {
-            clockManager.setTotalTicks(clock, before);
-        } else if (before + event.getSkipAmount() != after) {
-            clockManager.setTotalTicks(clock, before + event.getSkipAmount());
-        }
-    }
-
     /** 夜を飛ばす前の時刻。登録が無ければ読まずに 0。 */
-    public static long nightBefore(final ServerLevel level, final Optional<Holder<WorldClock>> clock) {
-        if (!timeListening() || clock.isEmpty()) {
-            return 0L;
-        }
-
-        return level.getServer().clockManager().getTotalTicks(clock.get());
+    public static long nightBefore(final ServerLevel level) {
+        return timeListening() ? level.getDayTime() : 0L;
     }
 
     /**
@@ -488,23 +449,22 @@ public final class PlayerEvents {
      *
      * @return 起こしてよいか
      */
-    public static boolean nightSkipped(final ServerLevel level, final Holder<WorldClock> clock, final long before) {
+    public static boolean nightSkipped(final ServerLevel level, final long before) {
         if (!timeListening()) {
             return true;
         }
 
-        final ServerClockManager clockManager = level.getServer().clockManager();
-        final long after = clockManager.getTotalTicks(clock);
-        final TimeSkipEvent event = timeSkip(level.getWorld(), ClockTimeSkipEvent.SkipReason.NIGHT_SKIP, after - before);
+        final long after = level.getDayTime();
+        final TimeSkipEvent event = timeSkip(level.getWorld(), TimeSkipEvent.SkipReason.NIGHT_SKIP, after - before);
 
         if (event.isCancelled()) {
-            clockManager.setTotalTicks(clock, before);
+            level.setDayTime(before);
 
             return false;
         }
 
         if (before + event.getSkipAmount() != after) {
-            clockManager.setTotalTicks(clock, before + event.getSkipAmount());
+            level.setDayTime(before + event.getSkipAmount());
         }
 
         return true;

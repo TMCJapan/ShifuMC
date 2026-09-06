@@ -18,7 +18,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -32,8 +32,7 @@ import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.ElderGuardian;
 import net.minecraft.world.entity.monster.Shulker;
 import net.minecraft.world.entity.monster.Strider;
-import net.minecraft.world.entity.monster.cubemob.AbstractCubeMob;
-import net.minecraft.world.entity.monster.cubemob.SulfurCube;
+import net.minecraft.world.entity.monster.Slime;
 import net.minecraft.world.entity.monster.piglin.Piglin;
 import net.minecraft.world.entity.monster.zombie.ZombifiedPiglin;
 import net.minecraft.world.entity.npc.villager.Villager;
@@ -366,7 +365,7 @@ public final class AnimalEvents {
 
     /**
      * PlayerShearEntityEvent。{@code mobInteract} で {@code shear} を呼ぶ直前
-     * (Sheep / MushroomCow / SnowGolem / CopperGolem / Bogged / SulfurCube)。
+     * (Sheep / MushroomCow / SnowGolem / Bogged)。
      *
      * <p>効かないもの: {@code getDrops()} の中身と差し替え。落とし物は vanilla の {@code shear} が
      * ルートテーブルから自分で引くので、空のリストを載せる。
@@ -434,7 +433,7 @@ public final class AnimalEvents {
             return true;
         }
 
-        final ZombifiedPiglin sample = EntityTypes.ZOMBIFIED_PIGLIN.create(level, EntitySpawnReason.CONVERSION);
+        final ZombifiedPiglin sample = EntityType.ZOMBIFIED_PIGLIN.create(level, EntitySpawnReason.CONVERSION);
 
         if (sample == null) {
             return true;
@@ -619,26 +618,26 @@ public final class AnimalEvents {
     // ------------------------------------------------------------ スライム
 
     /**
-     * SlimeSplitEvent。{@code AbstractCubeMob.remove} で分裂する直前。
+     * SlimeSplitEvent。{@code Slime.remove} で分裂する直前。
      *
      * @return 分裂する数。取り消されたら 0(分裂しない)
      */
-    public static int slimeSplit(final AbstractCubeMob cube, final int count) {
+    public static int slimeSplit(final Slime cube, final int count) {
         if (!listening(org.bukkit.event.entity.SlimeSplitEvent.getHandlerList())) {
             return count;
         }
 
         final org.bukkit.event.entity.SlimeSplitEvent event = new org.bukkit.event.entity.SlimeSplitEvent(
-                (org.bukkit.entity.AbstractCubeMob) cube.getBukkitEntity(), count);
+                (org.bukkit.entity.Slime) cube.getBukkitEntity(), count);
 
         return event.callEvent() && event.getCount() > 0 ? event.getCount() : 0;
     }
 
-    private static AbstractCubeMob splitting;
+    private static Slime splitting;
     private static List<LivingEntity> splitCubes;
 
     /** 分裂の前。分裂で出来る個体を {@link #splitCube} で集め始める。 */
-    public static void splitBegin(final AbstractCubeMob cube) {
+    public static void splitBegin(final Slime cube) {
         if (!listening(org.bukkit.event.entity.EntityTransformEvent.getHandlerList())) {
             return;
         }
@@ -648,7 +647,7 @@ public final class AnimalEvents {
     }
 
     /** {@code setUpSplitCube} の末尾。convertTo が世界に置く前に呼ばれる。 */
-    public static void splitCube(final AbstractCubeMob cube, final AbstractCubeMob piece) {
+    public static void splitCube(final Slime cube, final Slime piece) {
         if (splitting == cube) {
             splitCubes.add(piece);
         }
@@ -659,7 +658,7 @@ public final class AnimalEvents {
      * {@code convertTo} は中で置くので、置いたあとに発火して、取り消されたら全部消す。
      * 同じ tick の中なので、クライアントには出現と消滅が一緒に届く。
      */
-    public static void splitEnd(final AbstractCubeMob cube) {
+    public static void splitEnd(final Slime cube) {
         if (splitting != cube) {
             return;
         }
@@ -685,14 +684,14 @@ public final class AnimalEvents {
     }
 
     /**
-     * SlimeTargetLivingEntityEvent。{@code CubeMobAttackGoal.canUse / canContinueToUse} で、
+     * SlimeTargetLivingEntityEvent。{@code SlimeAttackGoal.canUse / canContinueToUse} で、
      * vanilla が true を返す条件が揃っているときだけ発火する。
      *
      * @return 狙ってよいか
      */
-    public static boolean slimeTarget(final AbstractCubeMob cube, final LivingEntity target) {
+    public static boolean slimeTarget(final Slime cube, final LivingEntity target) {
         return new com.destroystokyo.paper.event.entity.SlimeTargetLivingEntityEvent(
-                (org.bukkit.entity.AbstractCubeMob) cube.getBukkitEntity(), (org.bukkit.entity.LivingEntity) target.getBukkitEntity()).callEvent();
+                (org.bukkit.entity.Slime) cube.getBukkitEntity(), (org.bukkit.entity.LivingEntity) target.getBukkitEntity()).callEvent();
     }
 
     /** SlimeSwimEvent に登録があるか。 */
@@ -700,9 +699,9 @@ public final class AnimalEvents {
         return listening(com.destroystokyo.paper.event.entity.SlimeSwimEvent.getHandlerList());
     }
 
-    /** SlimeSwimEvent。{@code CubeMobFloatGoal.canUse} で vanilla が true を返す条件が揃っているとき。 */
-    public static boolean slimeSwim(final AbstractCubeMob cube) {
-        return new com.destroystokyo.paper.event.entity.SlimeSwimEvent((org.bukkit.entity.AbstractCubeMob) cube.getBukkitEntity()).callEvent();
+    /** SlimeSwimEvent。{@code SlimeFloatGoal.canUse} で vanilla が true を返す条件が揃っているとき。 */
+    public static boolean slimeSwim(final Slime cube) {
+        return new com.destroystokyo.paper.event.entity.SlimeSwimEvent((org.bukkit.entity.Slime) cube.getBukkitEntity()).callEvent();
     }
 
     /** SlimeWanderEvent に登録があるか。 */
@@ -710,132 +709,8 @@ public final class AnimalEvents {
         return listening(com.destroystokyo.paper.event.entity.SlimeWanderEvent.getHandlerList());
     }
 
-    /** SlimeWanderEvent。{@code CubeMobKeepOnJumpingGoal.canUse} で vanilla が true を返す条件が揃っているとき。 */
-    public static boolean slimeWander(final AbstractCubeMob cube) {
-        return new com.destroystokyo.paper.event.entity.SlimeWanderEvent((org.bukkit.entity.AbstractCubeMob) cube.getBukkitEntity()).callEvent();
-    }
-
-    // ------------------------------------------------------------ 硫黄キューブ
-
-    /** ExplosionPrimeEvent に登録が無いか。 */
-    public static boolean silentExplosionPrime() {
-        return !listening(org.bukkit.event.entity.ExplosionPrimeEvent.getHandlerList());
-    }
-
-    /**
-     * ExplosionPrimeEvent。{@code SulfurCube.tickFuse} で導火線が尽きたとき、リードを外す前。
-     * 呼ぶ側が Paper と同じ条件(ServerLevel かつ TNT_EXPLODES)を見てから呼ぶ。
-     *
-     * <p>効かないもの: {@code setRadius} / {@code setFire}(爆発の値は vanilla が自分の欄から読む)。
-     *
-     * @return 爆発してよいか。取り消されたら呼ぶ側が導火線を止める
-     */
-    public static boolean sulfurPrime(final SulfurCube cube, final float power, final boolean fire) {
-        return !CraftEventFactory.callExplosionPrimeEvent(cube, power, fire).isCancelled();
-    }
-
-    /**
-     * EntityUnleashEvent(LEASHED_GONE)。{@code SulfurCube.tickFuse} で爆発の直前にリードを外すとき。
-     *
-     * @return vanilla の {@code dropLeash} へ進んでよいか。落とさない指定なら外すだけにして false
-     */
-    public static boolean unleashOnExplode(final SulfurCube cube) {
-        if (!listening(EntityUnleashEvent.getHandlerList()) || !cube.isLeashed()) {
-            return true;
-        }
-
-        final EntityUnleashEvent event = new EntityUnleashEvent(cube.getBukkitEntity(), EntityUnleashEvent.UnleashReason.LEASHED_GONE, true);
-        event.callEvent();
-
-        if (event.isDropLeash()) {
-            return true;
-        }
-
-        cube.removeLeash();
-
-        return false;
-    }
-
-    /**
-     * EntityIgniteEvent。{@code SulfurCube.primeTime} で導火線の長さが決まった直後。
-     *
-     * @return 導火線の長さ。取り消されたら {@code PrimedTnt.NO_FUSE}
-     */
-    public static int sulfurIgnite(final SulfurCube cube, final int fuseTime) {
-        return CraftEventFactory.callEntityIgniteEvent(cube, fuseTime);
-    }
-
-    /**
-     * SulfurCubeSwallowItemEvent。{@code SulfurCube.mobInteract} で持ち物を飲み込ませる直前。
-     *
-     * <p>効かないもの: {@code setNewItem}(飲み込む物の差し替え)。
-     *
-     * @return 飲み込ませてよいか
-     */
-    public static boolean sulfurSwallow(final SulfurCube cube, final Player player, final ItemStack held, final InteractionHand hand) {
-        if (!listening(io.papermc.paper.event.entity.SulfurCubeSwallowItemEvent.getHandlerList())) {
-            return true;
-        }
-
-        final io.papermc.paper.event.entity.SulfurCubeSwallowItemEvent event = new io.papermc.paper.event.entity.SulfurCubeSwallowItemEvent(
-                (org.bukkit.entity.SulfurCube) cube.getBukkitEntity(), (org.bukkit.entity.Player) player.getBukkitEntity(),
-                CraftItemStack.asCraftMirror(cube.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.BODY)),
-                CraftItemStack.asCraftMirror(held));
-
-        if (event.callEvent()) {
-            return true;
-        }
-
-        if (player instanceof ServerPlayer serverPlayer) {
-            serverPlayer.containerMenu.sendAllDataToRemote();
-        }
-
-        return false;
-    }
-
-    private static Vec3 knockbackReplacement;
-
-    /**
-     * EntityKnockbackEvent。{@code SulfurCube.knockback} で速度を書き換える直前。
-     * 押した者と理由は Paper の {@code LivingEntity.hurtServer} と同じ取り方
-     * (直接の攻撃者。いなければ DAMAGE、いれば ENTITY_ATTACK)。
-     *
-     * @return {@link #KEEP} / {@link #CANCEL} / {@link #REPLACE}({@link #knockbackReplacement()} で取り出す)
-     */
-    public static int sulfurKnockback(final SulfurCube cube, final DamageSource source, final double power,
-                                      final double kx, final double ky, final double kz) {
-        if (!listening(io.papermc.paper.event.entity.EntityKnockbackEvent.getHandlerList())) {
-            return KEEP;
-        }
-
-        final Entity attacker = source.getDirectEntity();
-        final Vec3 knockback = new Vec3(kx, ky, kz);
-        final io.papermc.paper.event.entity.EntityKnockbackEvent event = CraftEventFactory.callEntityKnockbackEvent(
-                (CraftLivingEntity) cube.getBukkitEntity(), attacker, attacker,
-                attacker == null ? io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.DAMAGE
-                        : io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.ENTITY_ATTACK,
-                power, knockback);
-
-        if (event.isCancelled()) {
-            return CANCEL;
-        }
-
-        final org.bukkit.util.Vector result = event.getKnockback();
-
-        if (result.getX() == kx && result.getY() == ky && result.getZ() == kz) {
-            return KEEP;
-        }
-
-        knockbackReplacement = new Vec3(result.getX(), result.getY(), result.getZ());
-
-        return REPLACE;
-    }
-
-    /** {@link #sulfurKnockback} が {@link #REPLACE} を返したときの、速度に足す量。 */
-    public static Vec3 knockbackReplacement() {
-        final Vec3 result = knockbackReplacement;
-        knockbackReplacement = null;
-
-        return result;
+    /** SlimeWanderEvent。{@code SlimeKeepOnJumpingGoal.canUse} で vanilla が true を返す条件が揃っているとき。 */
+    public static boolean slimeWander(final Slime cube) {
+        return new com.destroystokyo.paper.event.entity.SlimeWanderEvent((org.bukkit.entity.Slime) cube.getBukkitEntity()).callEvent();
     }
 }

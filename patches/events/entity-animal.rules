@@ -394,14 +394,6 @@ insert:
         return InteractionResult.PASS;
     }
 
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/cubemob/SulfurCube.java.patch(handlePlayerShearEntityEvent)
-file: net/minecraft/world/entity/monster/cubemob/SulfurCube.java
-anchor:
-    this.shear(level, SoundSource.PLAYERS, heldItem);
-insert:
-    if (!dev.shifu.event.AnimalEvents.shear(player, this, heldItem, hand)) {
-        return InteractionResult.PASS;
-    }
 
 # ============================================================ 拾う・落とす
 
@@ -591,138 +583,77 @@ insert:
         return null;
     }
 
-# ============================================================ スライム(AbstractCubeMob)
+# ============================================================ スライム(Slime)
 
 # SlimeSplitEvent と EntityTransformEvent(SPLIT)。
-# 数は count(final でない局所変数)に書き戻す。取り消しは 0 で、ループが回らず super.remove へ。
-# 分裂で出来る個体は setUpSplitCube の末尾で集め、ループのあとで EntityTransformEvent を発火する
-# (理由は AnimalEvents.splitEnd)。
+# 数は i1(final でない局所変数)に書き戻す。取り消しは 0 で、ループが回らず super.remove へ。
+# 分裂で出来る個体は convertTo に渡すラムダの末尾で集め、ループのあとで
+# EntityTransformEvent を発火する(理由は AnimalEvents.splitEnd)。
 #
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/cubemob/AbstractCubeMob.java.patch(SlimeSplitEvent)
-file: net/minecraft/world/entity/monster/cubemob/AbstractCubeMob.java
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/Slime.java.patch(SlimeSplitEvent)
+file: net/minecraft/world/entity/monster/Slime.java
 anchor:
-    for (int i = 0; i < count; i++) {
+    for (int i2 = 0; i2 < i1; i2++) {
 insert:
-    count = dev.shifu.event.AnimalEvents.slimeSplit(this, count);
+    i1 = dev.shifu.event.AnimalEvents.slimeSplit(this, i1);
     dev.shifu.event.AnimalEvents.splitBegin(this);
 
-file: net/minecraft/world/entity/monster/cubemob/AbstractCubeMob.java
+file: net/minecraft/world/entity/monster/Slime.java
 anchor:
     super.remove(reason);
 insert:
     dev.shifu.event.AnimalEvents.splitEnd(this);
 
-file: net/minecraft/world/entity/monster/cubemob/AbstractCubeMob.java
+file: net/minecraft/world/entity/monster/Slime.java
 anchor:
-    protected void setUpSplitCube(final AbstractCubeMob cubeMob, final int halfSize, final float xd, final float zd) {
+    mob.snapTo(this.getX() + f1, this.getY() + 0.5, this.getZ() + f2, this.random.nextFloat() * 360.0F, 0.0F);
 insert-after:
-    dev.shifu.event.AnimalEvents.splitCube(this, cubeMob);
+    dev.shifu.event.AnimalEvents.splitCube(this, mob);
 
 # SlimeTargetLivingEntityEvent / SlimeSwimEvent / SlimeWanderEvent。
 # Paper は return の式に && で足している。Shifu は return の前で、登録があるときだけ
 # vanilla と同じ条件を見て、揃っていれば発火し、取り消されたら false を返す。
 # canContinueToUse の --growTiredTimer は減らさずに見る(vanilla の行が減らす)。
 #
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/cubemob/AbstractCubeMob.java.patch(Slime pathfinder events)
-file: net/minecraft/world/entity/monster/cubemob/AbstractCubeMob.java
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/Slime.java.patch(Slime pathfinder events)
+file: net/minecraft/world/entity/monster/Slime.java
 anchor:
-    return target != null && this.cubeMob.canAttack(target) && this.cubeMob.getMoveControl() instanceof AbstractCubeMob.CubeMobMoveControl;
+    return target != null && this.slime.canAttack(target) && this.slime.getMoveControl() instanceof Slime.SlimeMoveControl;
 insert:
     if (dev.shifu.event.AnimalEvents.slimeTargetListening()
-            && target != null && this.cubeMob.canAttack(target) && this.cubeMob.getMoveControl() instanceof AbstractCubeMob.CubeMobMoveControl
-            && !dev.shifu.event.AnimalEvents.slimeTarget(this.cubeMob, target)) {
+            && target != null && this.slime.canAttack(target) && this.slime.getMoveControl() instanceof Slime.SlimeMoveControl
+            && !dev.shifu.event.AnimalEvents.slimeTarget(this.slime, target)) {
         return false;
     }
 
-file: net/minecraft/world/entity/monster/cubemob/AbstractCubeMob.java
+file: net/minecraft/world/entity/monster/Slime.java
 anchor:
-    return target != null && this.cubeMob.canAttack(target) && --this.growTiredTimer > 0;
+    return target != null && this.slime.canAttack(target) && --this.growTiredTimer > 0;
 insert:
     if (dev.shifu.event.AnimalEvents.slimeTargetListening()
-            && target != null && this.cubeMob.canAttack(target) && this.growTiredTimer - 1 > 0
-            && !dev.shifu.event.AnimalEvents.slimeTarget(this.cubeMob, target)) {
+            && target != null && this.slime.canAttack(target) && this.growTiredTimer - 1 > 0
+            && !dev.shifu.event.AnimalEvents.slimeTarget(this.slime, target)) {
         return false;
     }
 
-file: net/minecraft/world/entity/monster/cubemob/AbstractCubeMob.java
+file: net/minecraft/world/entity/monster/Slime.java
 anchor:
-    return (this.cubeMob.isInWater() || this.cubeMob.isInLava()) && this.cubeMob.getMoveControl() instanceof AbstractCubeMob.CubeMobMoveControl;
+    return (this.slime.isInWater() || this.slime.isInLava()) && this.slime.getMoveControl() instanceof Slime.SlimeMoveControl;
 insert:
     if (dev.shifu.event.AnimalEvents.slimeSwimListening()
-            && (this.cubeMob.isInWater() || this.cubeMob.isInLava()) && this.cubeMob.getMoveControl() instanceof AbstractCubeMob.CubeMobMoveControl
-            && !dev.shifu.event.AnimalEvents.slimeSwim(this.cubeMob)) {
+            && (this.slime.isInWater() || this.slime.isInLava()) && this.slime.getMoveControl() instanceof Slime.SlimeMoveControl
+            && !dev.shifu.event.AnimalEvents.slimeSwim(this.slime)) {
         return false;
     }
 
-file: net/minecraft/world/entity/monster/cubemob/AbstractCubeMob.java
+file: net/minecraft/world/entity/monster/Slime.java
 anchor:
-    return !this.cubeMob.isPassenger();
+    return !this.slime.isPassenger();
 insert:
     if (dev.shifu.event.AnimalEvents.slimeWanderListening()
-            && !this.cubeMob.isPassenger()
-            && !dev.shifu.event.AnimalEvents.slimeWander(this.cubeMob)) {
+            && !this.slime.isPassenger()
+            && !dev.shifu.event.AnimalEvents.slimeWander(this.slime)) {
         return false;
-    }
-
-# ============================================================ 硫黄キューブ(SulfurCube)
-
-# ExplosionPrimeEvent と EntityUnleashEvent(LEASHED_GONE)。
-# Paper は ExplosionPrimeEvent を通してからリードを外す。Shifu も同じ順(先に爆発の判定、次にリード)。
-# 取り消しは導火線を止める(Paper と同じ)。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/cubemob/SulfurCube.java.patch(Fire events for SulfurCube explosions)
-file: net/minecraft/world/entity/monster/cubemob/SulfurCube.java
-anchor:
-    this.dropLeash();
-insert:
-    if (!dev.shifu.event.AnimalEvents.silentExplosionPrime()
-            && this.level() instanceof ServerLevel shifuLevel
-            && shifuLevel.getGameRules().get(GameRules.TNT_EXPLODES)
-            && !dev.shifu.event.AnimalEvents.sulfurPrime(this, (float) this.explosionData.get().power(), this.explosionData.get().causesFire())) {
-        this.setFuse(PrimedTnt.NO_FUSE);
-        this.entityData.set(MAX_FUSE, PrimedTnt.NO_FUSE);
-        return;
-    }
-    if (dev.shifu.event.AnimalEvents.unleashOnExplode(this)) {
-insert-after:
-    }
-
-# EntityIgniteEvent。導火線の長さが決まった直後(fuseTime は final でない)。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/cubemob/SulfurCube.java.patch(call EntityIgniteEvent)
-file: net/minecraft/world/entity/monster/cubemob/SulfurCube.java
-anchor:
-    int fuseTime = imminent ? PrimedTnt.getRandomShortFuse(fuse, this.getRandom()) : fuse;
-insert-after:
-    fuseTime = dev.shifu.event.AnimalEvents.sulfurIgnite(this, fuseTime);
-    if (fuseTime == PrimedTnt.NO_FUSE) {
-        return false;
-    }
-
-# SulfurCubeSwallowItemEvent。飲み込ませる直前。取り消しは手元を送り直して PASS。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/cubemob/SulfurCube.java.patch(SulfurCubeSwallowItemEvent)
-file: net/minecraft/world/entity/monster/cubemob/SulfurCube.java
-anchor:
-    boolean itWorked = this.equipItem(heldItem);
-insert:
-    if (!dev.shifu.event.AnimalEvents.sulfurSwallow(this, player, heldItem, hand)) {
-        return InteractionResult.PASS;
-    }
-
-# EntityKnockbackEvent。速度を書き換える直前。取り消しは書き換えない(needsSync は vanilla が先に立てる)。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/cubemob/SulfurCube.java.patch(knockback events)
-file: net/minecraft/world/entity/monster/cubemob/SulfurCube.java
-anchor:
-    this.setDeltaMovement(deltaMovement.x - horizontalKnockback.x, deltaMovement.y + verticalPower * 1.2, deltaMovement.z - horizontalKnockback.z);
-insert:
-    final int shifuKnockback = dev.shifu.event.AnimalEvents.sulfurKnockback(
-            this, source, power, -horizontalKnockback.x, verticalPower * 1.2, -horizontalKnockback.z);
-    if (shifuKnockback == dev.shifu.event.AnimalEvents.KEEP) {
-insert-after:
-    } else if (shifuKnockback == dev.shifu.event.AnimalEvents.REPLACE) {
-        this.setDeltaMovement(deltaMovement.add(dev.shifu.event.AnimalEvents.knockbackReplacement()));
     }
 
 # ============================================================ 変身の理由(EntityTransformEvent)
