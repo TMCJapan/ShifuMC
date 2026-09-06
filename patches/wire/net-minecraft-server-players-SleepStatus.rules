@@ -19,10 +19,10 @@ insert:
 # 寝ている人数の数え上げ
 file: net/minecraft/server/players/SleepStatus.java
 anchor:
-    if (player.isSleeping()) {
-        this.sleepingPlayers++;
+    if (serverPlayer.isSleeping()) {
+    this.sleepingPlayers++;
     }
 insert:
-    if (!player.isSleeping() && player.fauxSleeping) {
+    if (!serverPlayer.isSleeping() && serverPlayer.fauxSleeping) {
         this.sleepingPlayers++;
     }

@@ -3,9 +3,9 @@
 # そのまま通す
 file: net/minecraft/world/entity/Mob.java
 anchor:
-                public boolean stillValid(final Player player) {
-                    return player.getVehicle() == Mob.this || player.isWithinEntityInteractionRange(Mob.this, 4.0);
-                }
+    public boolean stillValid(Player player) {
+    return player.getVehicle() == Mob.this || player.isWithinEntityInteractionRange(Mob.this, 4.0);
+    }
 insert-after:
                 private final List<org.bukkit.entity.HumanEntity> viewers = new java.util.ArrayList<>();
                 private int maxStackSize = Container.MAX_STACK;

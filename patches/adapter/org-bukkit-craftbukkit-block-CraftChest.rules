@@ -4,12 +4,12 @@ file: org/bukkit/craftbukkit/block/CraftChest.java
 
 # 元案の ChestBlock.getMenuProvider 4 引数版(hand)は落とした
 replace:
-            MenuProvider provider = block.getMenuProvider(this.block, world.getHandle(), this.getPosition(), true);
+            MenuProvider provider = block.getMenuProvider(this.data, world.getHandle(), this.getPosition(), true);
     
-            if (provider instanceof CraftInventoryDoubleChest.Provider doubleChestProvider) {
-                inventory = new CraftInventoryDoubleChest(doubleChestProvider);
+            if (provider instanceof ChestBlock.DoubleInventory) {
+                inventory = new CraftInventoryDoubleChest((ChestBlock.DoubleInventory) provider);
 with:
-            net.minecraft.world.Container container = ChestBlock.getContainer(block, this.block, world.getHandle(), this.getPosition(), true);
+            net.minecraft.world.Container container = ChestBlock.getContainer(block, this.data, world.getHandle(), this.getPosition(), true);
     
             if (container instanceof net.minecraft.world.CompoundContainer compoundContainer) {
                 inventory = new CraftInventoryDoubleChest(compoundContainer);

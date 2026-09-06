@@ -4,7 +4,7 @@
 file: net/minecraft/util/PlaceholderLookupProvider.java
 anchor:
     @Override
-    public <T> Optional<RegistryOps.RegistryInfo<T>> lookup(final ResourceKey<? extends Registry<? extends T>> registryKey) {
+    public <T> Optional<RegistryOps.RegistryInfo<T>> lookup(ResourceKey<? extends Registry<? extends T>> registryKey) {
 insert:
     @Override
     public HolderLookup.Provider lookupForValueCopyViaBuilders() {

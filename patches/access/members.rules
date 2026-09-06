@@ -17,7 +17,7 @@ line:
 # PaperPlayerLoginConnection がログイン中の名前と転送の有無を読む
 file: net/minecraft/server/network/ServerLoginPacketListenerImpl.java
 line:
-    private @Nullable String requestedUsername;
+    @Nullable String requestedUsername;
 line:
     private final boolean transferred;
 
@@ -41,16 +41,6 @@ line:
 file: net/minecraft/world/entity/player/Player.java
 line:
     protected boolean isImmobile() {
-
-# CraftTadpole が成長の固定を切り替える
-file: net/minecraft/world/entity/animal/frog/Tadpole.java
-line:
-    protected void setAgeLocked(final boolean locked) {
-
-# CraftBlockData がブロック状態の文字列を解釈する
-file: net/minecraft/world/level/block/state/StateHolder.java
-line:
-    private static <T extends Comparable<T>> Property.Value<T> createValue(final Property<T> propertyKey, final Comparable<?> propertyValue) {
 
 # VanillaCommandWrapper がコマンドブロックの実行元を作る
 file: net/minecraft/world/level/BaseCommandBlock.java
@@ -83,19 +73,14 @@ line:
     private NonNullList<ItemStack> itemStacks = NonNullList.withSize(36, ItemStack.EMPTY);
 
 # CraftDragonBattle:151 が呼ぶ
-file: net/minecraft/world/level/dimension/end/EnderDragonFight.java
+file: net/minecraft/world/level/dimension/end/EndDragonFight.java
 line:
     private void spawnNewGateway() {
 
 # CraftDragonBattle:97 の respawnDragon の返り値をアダプタ側で作るのに読む
-file: net/minecraft/world/level/dimension/end/EnderDragonFight.java
+file: net/minecraft/world/level/dimension/end/EndDragonFight.java
 line:
     private boolean dragonKilled;
-
-# 上の RegistryDataLoader の差し込みが t.registry を読むので、private のままだと通らない
-file: net/minecraft/resources/RegistryLoadTask.java
-line:
-    private final WritableRegistry<T> registry;
 
 # BlockPlaceEvent の差し込みが、クリックされたブロックの位置を要る。
 # BlockPlaceContext.getClickedPos() は「置く場所」を返すので、

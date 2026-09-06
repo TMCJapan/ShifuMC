@@ -7,7 +7,7 @@
 通す条件は 2 つ。
 
   * 消えた行は、`patches/access` で可視性を広げたか、型の宣言に interface を 1 つ足したものだけ
-  * その 1 行は、修飾子 1 語(private / protected -> public)か、
+  * その 1 行は、修飾子 1 語(private / protected -> public、または public を足す)か、
     末尾に足した `, <interface>`(または ` implements <interface>`)以外は 1 文字も変わらない
 
 これ以外の削除・書き換えが 1 行でもあれば落とす。追加は何行あってもよい。
@@ -26,6 +26,7 @@ import paths
 TREE = paths.TREE
 BASE = paths.BASE
 NARROW = re.compile(r"^(\s*)(private|protected)(\s.*)$")
+DECL_TAIL = re.compile(r"[;{]\s*$")
 
 
 def diff(tree):
@@ -53,10 +54,24 @@ def diff(tree):
 
 
 def widened(line):
-    """その行の private / protected を public にしたもの。違えば None。"""
+    """その行の可視性を public にした形の並び。可視性の変更で作れなければ空。
+
+    2 通りある。`private` / `protected` を `public` に替える形と、修飾子が無い
+    (同じパッケージからしか見えない)宣言に `public` を足す形。後者は Paper も
+    同じ形で通している(`@Nullable String requestedUsername;`)。
+    足す方は宣言の行(末尾が `;` か `{`)に限る。
+    """
     match = NARROW.match(line)
 
-    return match.group(1) + "public" + match.group(3) if match else None
+    if match:
+        return [match.group(1) + "public" + match.group(3)]
+
+    body = line.lstrip()
+
+    if not body or body.startswith("public ") or not DECL_TAIL.search(line):
+        return []
+
+    return [line[:len(line) - len(body)] + "public " + body]
 
 
 DECLARATION = re.compile(r"^(\s*(?:public\s+|protected\s+|private\s+)?(?:abstract\s+|final\s+|static\s+)*"
@@ -169,9 +184,9 @@ def subsequence(tree, target):
     at = 0
 
     for line in want:
-        other = widened(line)
+        others = widened(line)
 
-        while at < len(have) and have[at] != line and have[at] != other \
+        while at < len(have) and have[at] != line and have[at] not in others \
                 and not implemented(line, have[at]) \
                 and not hoisted(line, have[at], have[max(at - 2, 0):at]) \
                 and not looped(line, have[at], have[max(at - 2, 0):at]):
@@ -198,9 +213,9 @@ def main():
     checked = {}
 
     for target, line in removed:
-        want = widened(line)
+        wants = widened(line)
 
-        if want is not None and (target, want) in added_set:
+        if any((target, one) in added_set for one in wants):
             continue
 
         others = added_by_target.get(target, [])
@@ -227,7 +242,7 @@ def main():
         if missing == "":
             continue
 
-        if want is None:
+        if not wants:
             problems.append((target, line, "可視性の変更でも interface の追加でもない。消えた行: %r"
                              % (missing or line).strip()))
         else:

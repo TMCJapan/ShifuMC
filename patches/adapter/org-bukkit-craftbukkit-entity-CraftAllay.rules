@@ -3,6 +3,6 @@
 file: org/bukkit/craftbukkit/entity/CraftAllay.java
 
 replace:
-    Allay allay = this.getHandle().duplicateAllay();
+    Allay nmsAllay = this.getHandle().duplicateAllay();
 with:
-    Allay allay = this.getHandle().shifuDuplicateAllay(); // Shifu - vanilla の duplicateAllay は値を返さない
+    Allay nmsAllay = this.getHandle().shifuDuplicateAllay(); // Shifu - vanilla の duplicateAllay は値を返さない

@@ -5,18 +5,18 @@
 
 Minecraft のバージョンを移すと、規則のアンカー(vanilla の行そのもの)が
 そのままでは当たらなくなる。同じ意味の行が少し形を変えて残っていることが多いので、
-その候補を出す。**書き換えはしない。** 当たる位置を機械が選ぶと、
-発火が別の場所に付いたことに気付けなくなる。
+その候補を出す。
 
-出るのは規則 1 件につき 1 行と、その下に差分:
+既定では**書き換えない**。当てる位置を機械が選ぶと、発火が別の場所に付いたことに
+気付けなくなる。`--write` を付けたときだけ、次の 2 つに限って書き換える。
 
-    <規則ファイル>:<行> <一致度> <対象>:<行番号>
-        - もとのアンカー
-        + 候補の行
+* 引数や局所変数の `final` の有無だけが違う(逆コンパイラの設定の差)
+* 局所変数の名前だけが違う(型・メソッド名・演算子・リテラルは全て同じ)
 
-候補は、木の中で「アンカーと同じ行数の連なり」を総当たりして、一致度が最も高いものを
-1 つ選ぶ。同じ一致度が 2 箇所以上あるときは出さない(どちらか分からないため)。
+どちらも差し込む本体が同じ変数を参照しているので、アンカーと本体の両方に
+同じ対応を当てる。書き換えた対応は 1 件ずつ出るので、そこを読んで確かめる。
 """
+import collections
 import difflib
 import io
 import os
@@ -26,7 +26,6 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from apply_events import parse
-
 
 JAVA_WORDS = {
     "if", "else", "for", "while", "return", "new", "this", "super", "null",
@@ -38,9 +37,58 @@ JAVA_WORDS = {
 
 WORD = re.compile("([A-Za-z_$][A-Za-z0-9_$]*)")
 
+# 逆コンパイラの版で付いたり付かなかったりする。`foo(final Player p)` のように
+# 括弧に接する形があるので、空白区切りではなく語の境界で落とす。
+FINAL = re.compile(r"\bfinal\b\s*")
+
+# 目安で残す窓の数。ここに入らないほど語が重ならない窓が最も近い、ということは
+# 起きない。同じ形の窓が 2 つあれば両方ともここに入るので、曖昧さの判定も落ちない。
+KEEP = 60
+
+
+def normalize(line):
+    """比べる前に落とすもの。いまは修飾子の final だけ。"""
+    return FINAL.sub("", line.strip())
+
+
+def best_block(src, anchor):
+    """木の中で、アンカーに最も近い同じ行数の連なりを返す。
+
+    全部の窓に SequenceMatcher を掛けると規則の数だけ効いて遅いので、
+    語の重なりで候補を絞ってから測る。
+    """
+    size = len(anchor)
+    want = "\n".join(line.strip() for line in anchor)
+    want_words = collections.Counter(WORD.findall(want))
+    scored = []
+
+    for start in range(len(src) - size + 1):
+        text = "\n".join(line.strip() for line in src[start:start + size])
+
+        if not text.strip():
+            continue
+
+        overlap = sum((want_words & collections.Counter(WORD.findall(text))).values())
+        scored.append((overlap, start, text))
+
+    scored.sort(key=lambda row: (-row[0], row[1]))
+    best = (0.0, -1)
+    ties = 0
+
+    for _, start, text in scored[:KEEP]:
+        ratio = difflib.SequenceMatcher(None, text, want).ratio()
+
+        if ratio > best[0]:
+            best = (ratio, start)
+            ties = 1
+        elif ratio == best[0]:
+            ties += 1
+
+    return best, ties
+
 
 def rename_map(old_lines, new_lines):
-    """2 つの行の並びが「識別子の名前だけ」違うなら、その対応を返す。
+    """2 つの行の並びが「final の有無」と「局所変数の名前」だけ違うなら、その対応を返す。
 
     それ以外(演算子・リテラル・型名・メソッド名が違う)なら None。
     局所変数の名前は逆コンパイラの版で変わるが、意味は変わらない。
@@ -53,8 +101,8 @@ def rename_map(old_lines, new_lines):
     used = {}
 
     for old, new in zip(old_lines, new_lines):
-        a = WORD.split(old.strip())
-        b = WORD.split(new.strip())
+        a = WORD.split(normalize(old))
+        b = WORD.split(normalize(new))
 
         if len(a) != len(b):
             return None
@@ -80,7 +128,7 @@ def rename_map(old_lines, new_lines):
             if mapping.setdefault(x, y) != y or used.setdefault(y, x) != x:
                 return None
 
-    return mapping or None
+    return mapping
 
 
 def apply_names(line, mapping):
@@ -94,11 +142,10 @@ def apply_names(line, mapping):
 
 def rewrite(path, start, anchor_len, new_anchor, mapping):
     """規則ファイルの 1 件を書き換える。start は anchor: の行番号(1 起点)。"""
-    text = io.open(path, encoding="utf-8").read()
-    lines = text.split("\n")
-    i = start          # anchor: の次の行(0 起点で start)
-    body_start = i
+    lines = io.open(path, encoding="utf-8").read().split("\n")
+    body_start = start
     body = []
+    i = start
 
     while i < len(lines) and (lines[i].startswith("    ") or not lines[i].strip()):
         body.append(lines[i])
@@ -134,37 +181,6 @@ def rewrite(path, start, anchor_len, new_anchor, mapping):
 
     io.open(path, "w", encoding="utf-8", newline="\n").write("\n".join(lines))
     return True
-
-
-def best_block(src, anchor):
-    """木の中で、アンカーに最も近い同じ行数の連なりを返す。"""
-    want = "\n".join(line.strip() for line in anchor)
-    size = len(anchor)
-    matcher = difflib.SequenceMatcher()
-    matcher.set_seq2(want)
-    best = (0.0, -1)
-    ties = 0
-
-    for start in range(len(src) - size + 1):
-        have = "\n".join(line.strip() for line in src[start:start + size])
-
-        if not have.strip():
-            continue
-
-        matcher.set_seq1(have)
-
-        if matcher.real_quick_ratio() < best[0] or matcher.quick_ratio() < best[0]:
-            continue
-
-        ratio = matcher.ratio()
-
-        if ratio > best[0]:
-            best = (ratio, start)
-            ties = 1
-        elif ratio == best[0]:
-            ties += 1
-
-    return best, ties
 
 
 def main():
@@ -218,28 +234,33 @@ def main():
                 print(f"{rule.where}: 近い行が無い ({ratio:.2f}): {target}")
                 print(f"    - {rule.anchor[0].strip()}")
                 weak += 1
-            elif ties > 1:
+                continue
+
+            if ties > 1:
                 print(f"{rule.where}: 候補が {ties} 箇所 ({ratio:.2f}): {target}")
                 print(f"    - {rule.anchor[0].strip()}")
                 ambiguous += 1
-            else:
-                found = src[start:start + len(rule.anchor)]
-                names = rename_map(rule.anchor, found)
-                mark = ""
+                continue
 
-                if write and names:
-                    name, _, no = rule.where.rpartition(":")
-                    if rewrite(os.path.join(rules_root, name), int(no), len(rule.anchor), found, names):
-                        mark = " [書き換えた " + ", ".join(f"{k}->{v}" for k, v in names.items()) + "]"
-                        written += 1
+            found = src[start:start + len(rule.anchor)]
+            names = rename_map(rule.anchor, found)
+            mark = ""
 
-                print(f"{rule.where}: {ratio:.2f} {target}:{start + 1}{mark}")
+            if write and names is not None:
+                name, _, no = rule.where.rpartition(":")
 
-                for old, new in zip(rule.anchor, found):
-                    print(f"    - {old.strip()}")
-                    print(f"    + {new.strip()}")
+                if rewrite(os.path.join(rules_root, name), int(no), len(rule.anchor), found, names):
+                    detail = ", ".join(f"{k}->{v}" for k, v in names.items()) or "final のみ"
+                    mark = f" [書き換えた {detail}]"
+                    written += 1
 
-                proposed += 1
+            print(f"{rule.where}: {ratio:.2f} {target}:{start + 1}{mark}")
+
+            for old, new in zip(rule.anchor, found):
+                print(f"    - {old.strip()}")
+                print(f"    + {new.strip()}")
+
+            proposed += 1
 
     print(f"当たる {ok} / 候補あり {proposed} / 候補が定まらない {ambiguous} / "
           f"近い行が無い {weak} / ファイルが無い {missing}"

@@ -7,6 +7,6 @@
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerChunkCache.java.patch
 file: net/minecraft/server/level/ServerChunkCache.java
 anchor:
-    boolean spawnPersistent = this.level.getGameTime() % 400L == 0L;
+    boolean flag1 = this.level.getGameTime() % 400L == 0L;
 insert:
     dev.shifu.event.EntityEvents.naturallySpawnCreatures(this.level);

@@ -10,7 +10,7 @@ insert-after:
 # 毎 tick のスケジューラ実行
 file: net/minecraft/server/MinecraftServer.java
 anchor:
-            this.getPlayerList().getPlayers().forEach(playerx -> playerx.connection.suspendFlushing());
+    this.getPlayerList().getPlayers().forEach(serverPlayer1 -> serverPlayer1.connection.suspendFlushing());
 insert-after:
     this.server.getScheduler().mainThreadHeartbeat();
 

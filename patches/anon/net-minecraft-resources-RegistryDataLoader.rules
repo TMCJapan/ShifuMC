@@ -4,10 +4,10 @@
 file: net/minecraft/resources/RegistryDataLoader.java
 anchor:
     @Override
-    public <T> Optional<RegistryOps.RegistryInfo<T>> lookup(final ResourceKey<? extends Registry<? extends T>> key) {
+    public <T> Optional<RegistryOps.RegistryInfo<T>> lookup(ResourceKey<? extends Registry<? extends T>> registryKey) {
 insert:
     @Override
     public HolderLookup.Provider lookupForValueCopyViaBuilders() {
-        return HolderLookup.Provider.create(java.util.stream.Stream.concat(contextRegistries.stream(), newRegistriesAndLoaders.stream().map(t -> t.registry)));
+        return HolderLookup.Provider.create(java.util.stream.Stream.concat(registryLookups.stream(), loaders.stream().map(RegistryDataLoader.Loader::registry)));
     }
 

@@ -6,6 +6,9 @@ private / protected のままでは届かないものがある。同じ名前で
 
 **変えるのは修飾子 1 語だけ。** 型も名前も引数も本体も触らない。
 可視性はコンパイル時の検査だけなので、実行される命令列は変わらない。
+`private` / `protected` は `public` に替える。修飾子が無い(同じパッケージからしか
+見えない)宣言には `public` を足す。逆コンパイラの版で、同じ欄が
+`private` だったり修飾子無しだったりする。
 
 行番号ではなく、その行そのもの(アンカー)で指定する。
 **アンカーが見つからない、または 2 つ以上あるときは失敗させる。**
@@ -37,6 +40,12 @@ import re
 import sys
 
 NARROW = re.compile(r"^(\s*)(private|protected)(\s)")
+PUBLIC = re.compile(r"^\s*public\s")
+# 修飾子を足してよいのは宣言の行だけ。文の途中に public は書けない。
+DECL_TAIL = re.compile(r"[;{]\s*$")
+# 引数や局所変数の final は逆コンパイラの版で付いたり付かなかったりする。
+# 宣言の同一性には関わらないので、照合のときだけ落とす。
+FINAL = re.compile(r"\bfinal\b\s*")
 
 
 class Rule:
@@ -112,9 +121,22 @@ DECLARATION = re.compile(r"^\s*(?:public\s+|protected\s+|private\s+)?(?:abstract
                          r"(?:class|record|enum|interface)\s.*\{\s*$")
 
 
+def locate(lines, rule):
+    """アンカーの行番号。まず完全一致で探し、無ければ final を落として探す。"""
+    hits = [number for number, line in enumerate(lines) if line.rstrip() == rule.line]
+
+    if hits:
+        return hits
+
+    want = FINAL.sub("", rule.line.strip())
+
+    return [number for number, line in enumerate(lines)
+            if FINAL.sub("", line.strip()) == want]
+
+
 def implement(lines, rule):
     """型の宣言に interface を 1 つ足す。宣言の行でなければ失敗。"""
-    hits = [number for number, line in enumerate(lines) if line.rstrip() == rule.line]
+    hits = locate(lines, rule)
 
     if len(hits) != 1:
         raise SystemExit(
@@ -138,19 +160,31 @@ def widen(lines, rule):
     if rule.interface:
         return implement(lines, rule)
 
-    hits = [number for number, line in enumerate(lines) if line.rstrip() == rule.line]
+    hits = locate(lines, rule)
 
     if len(hits) != 1:
         raise SystemExit(
             f"{rule.where}: {rule.target} で {len(hits)} 件見つかった: {rule.line.strip()}")
 
     number = hits[0]
-    match = NARROW.match(lines[number])
 
-    if not match:
-        raise SystemExit(f"{rule.where}: private / protected で始まっていない: {rule.line.strip()}")
+    if NARROW.match(lines[number]):
+        lines[number] = NARROW.sub(r"\1public\3", lines[number], count=1)
+        return lines
 
-    lines[number] = NARROW.sub(r"\1public\3", lines[number], count=1)
+    # 修飾子が無い(同じパッケージからしか見えない)宣言。アダプタ層は別のパッケージなので
+    # これも届かない。Paper も public を足す形で通している
+    # (`@Nullable String requestedUsername;` -> `public @Nullable String requestedUsername;`)。
+    line = lines[number]
+    body = line.lstrip()
+
+    if PUBLIC.match(line):
+        raise SystemExit(f"{rule.where}: もう public になっている: {rule.line.strip()}")
+
+    if not DECL_TAIL.search(line):
+        raise SystemExit(f"{rule.where}: 宣言の行ではない: {rule.line.strip()}")
+
+    lines[number] = line[:len(line) - len(body)] + "public " + body
 
     return lines
 

@@ -4,6 +4,6 @@ file: io/papermc/paper/world/PaperWorldLoader.java
 
 # MinecraftServer.createLevel は Paper が loadLevel を割って作ったもので、呼ぶのは PaperWorldLoader.loadIniti
 replace:
-            this.server.createLevel(stem, loading, worldDataAndGenSettings);
+            this.server.createLevel(stem, info, levelStorageAccess, primaryLevelData);
 with:
             throw new UnsupportedOperationException("Shifu: 世界の読み込みは vanilla の MinecraftServer.createLevels() が行う"); // Shifu - loadInitialWorlds は使わない

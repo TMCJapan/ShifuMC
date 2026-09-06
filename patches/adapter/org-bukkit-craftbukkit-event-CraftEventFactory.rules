@@ -6,7 +6,7 @@ file: org/bukkit/craftbukkit/event/CraftEventFactory.java
 # Shifu では誰も代入しないので、読んだ時点で NPE になる。
 # 半径 0 にして枝ごと通らなくする。中で読む level.paperConfig() も同じく null。
 replace:
-            double radius = level.spigotConfig.expMerge;
+            double radius = world.spigotConfig.expMerge;
 with:
             double radius = 0.0D; // Shifu - Spigot の経験値統合は vanilla に無い。設定も立ち上げていない
 

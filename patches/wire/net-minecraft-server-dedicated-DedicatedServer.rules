@@ -22,7 +22,7 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/MinecraftServer.java.patch:295-301
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
-    LOGGER.info("Done ({})! For help, type \"help\"", time);
+    LOGGER.info("Done ({})! For help, type \"help\"", string3);
 insert:
     this.server.enablePlugins(org.bukkit.plugin.PluginLoadOrder.POSTWORLD);
     io.papermc.paper.command.brigadier.PaperCommands.INSTANCE.setValid();
@@ -59,7 +59,7 @@ insert:
 # 起動が終わったことを watchdog に伝える。ここまでは長くかかっても落とさない
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
-    LOGGER.info("Done ({})! For help, type \"help\"", time);
+    LOGGER.info("Done ({})! For help, type \"help\"", string3);
 insert-after:
     org.spigotmc.WatchdogThread.tick();
     org.spigotmc.WatchdogThread.hasStarted = true;
@@ -78,6 +78,6 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/dedicated/DedicatedServer.java.patch:60-72
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
-    consoleThread.setDaemon(true);
+    thread.setDaemon(true);
 insert:
     dev.shifu.event.ShifuBootstrap.forwardPluginLogs();

@@ -15,7 +15,7 @@ insert-after:
 # 読んだ位置: patches/sources/net/minecraft/server/players/PlayerList.java.patch(Replace OfflinePlayer#getLastPlayed)
 file: net/minecraft/server/players/PlayerList.java
 anchor:
-    NameAndId gameProfile = player.nameAndId();
+    NameAndId nameAndId = player.nameAndId();
 insert:
     player.loginTime = System.currentTimeMillis();
 
