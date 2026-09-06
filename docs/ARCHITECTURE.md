@@ -23,9 +23,20 @@ Shifu は逆コンパイルした vanilla の NMS をそのまま置き、Paper 
 宣言だけを足し、イベントの発火は自前で差し込む。移植しないので、本家とのズレが
 そもそも発生しない。
 
-この作りが成り立つのは Minecraft 26.1 以降だけになる。26.1 で Mojang が難読化を廃止し、
-Fabric が Intermediary の更新を止めたことで、Fabric MOD と Paper プラグインが
-同じ名前空間を見るようになった。
+26.1 で Mojang が難読化を廃止し、Fabric が Intermediary の更新を止めたので、
+26.1 以降は Fabric MOD と Paper プラグインが同じ名前空間(mojmap)を見る。
+リマッパ層が要らない。
+
+それより前でも作り自体は変わらない。Paper の開発ツリーは難読化バージョンでも
+mojang マッピングなので、NMS もアダプタ層も mojmap で揃う。ズレるのは MOD だけで、
+intermediary から mojmap への変換は Shifu 側で埋められる(1.21.11 で確認した)。
+要るのは 3 つ。intermediary と Mojang の `server.txt` を合成したマッピング、
+fabric-loader の名前空間のシステムプロパティ、そして入力側の名前空間にした
+リマップ用クラスパス。1.20.5 より前は Paper 自身が spigot 名前空間で動くので、
+プラグイン側の変換も抱えることになる。
+
+バージョンごとの実際の費用は名前空間ではなく、差し込みのアンカーの付け直しになる。
+版ごとのブランチの分け方は [DEVELOPING.md](DEVELOPING.md)。
 
 ## 層
 

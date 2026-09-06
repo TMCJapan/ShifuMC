@@ -451,12 +451,12 @@ final class ShifuCompatTransformer extends GameTransformer {
 	 * <p>引数はどちらも null を渡す。{@code startServer} は runDir が null なら
 	 * カレントディレクトリを使う(標準の MinecraftGameProvider と同じ結果)。
 	 */
-	record InsertFabricStartServer(String method, String methodDesc,
+	record InsertFabricStartServer(String method, List<String> methodDescs,
 			String afterOwner, String afterName) implements Rule {
 		@Override
 		public void apply(ClassNode node) {
 			for (MethodNode m : node.methods) {
-				if (!m.name.equals(method) || !m.desc.equals(methodDesc)) continue;
+				if (!m.name.equals(method) || !methodDescs.contains(m.desc)) continue;
 
 				for (AbstractInsnNode insn : m.instructions.toArray()) {
 					if (insn instanceof MethodInsnNode call
@@ -483,7 +483,7 @@ final class ShifuCompatTransformer extends GameTransformer {
 			}
 
 			Log.error(LogCategory.GAME_PROVIDER,
-					"[shifu] could not find %s#%s%s - mods will not be initialized", node.name, method, methodDesc);
+					"[shifu] could not find %s#%s%s - mods will not be initialized", node.name, method, methodDescs);
 		}
 	}
 

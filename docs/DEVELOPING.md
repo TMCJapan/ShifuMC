@@ -4,6 +4,39 @@ Shifu のツリーを組み立てて、追加を書いて、確かめるまで�
 設計は [ARCHITECTURE.md](ARCHITECTURE.md)、測った数字は [STATUS.md](STATUS.md)、
 参加のしかたと守ることは [CONTRIBUTING.md](../CONTRIBUTING.md)。
 
+## バージョンごとのブランチ
+
+`main` が最新。それより前は Paper と同じ形で `ver/<version>` に置く。
+`patches/` はそのブランチの 1 バージョン分だけを持つ。
+ツールの直しは `main` に入れて、各ブランチへ cherry-pick する。
+
+| ブランチ | Minecraft | Paper のパッチの形 |
+|---|---|---|
+| `main` | 26.2 | mache(`patches/sources` と `patches/features` に分かれている) |
+| `ver/1.21.11` | 1.21.11 | mache |
+| `ver/1.20.6` | 1.20.6 | classic(`patches/server/*.patch` 1000 件、分割なし) |
+| `ver/1.19.4` | 1.19.4 | classic |
+| `ver/1.18.2` | 1.18.2 | classic |
+
+分界線は 1.21.4。そこで Paper が paperweight 2.0(mache)に移り、
+API 配線と挙動を `sources` / `features` に分けた。それより前は 1 つの連なりに混ざっている。
+
+Paper のクローンもバージョンごとに分ける。`git worktree` で足すと履歴を共有できる。
+
+```sh
+git -C "$PW" fetch --no-tags origin ver/1.21.11:refs/remotes/origin/ver/1.21.11
+git -C "$PW" worktree add /d/.pw11 origin/ver/1.21.11
+SHIFU_PAPER=/d/.pw11 sh tools/setup.sh
+```
+
+`tools/env.sh` は基点コミットをそのクローンの履歴から拾うので、`SHIFU_PAPER` を
+差し替えるだけでツールは全部そのバージョンを見る。
+
+規則のアンカーは vanilla の行そのものなので、バージョンを移すと当たらなくなる。
+`python tools/reanchor.py patches/events <木>` が付け直しの候補を出す。
+**候補を出すだけで書き換えはしない。** 当てる位置を機械が選ぶと、
+発火が黙って別の場所に付いたことに気付けなくなる。
+
 ## 環境
 
 前提は Windows + Git Bash (MSYS)、JDK 25、Python 3.12。

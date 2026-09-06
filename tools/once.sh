@@ -27,7 +27,7 @@ git clean -fdq
 # データも Paper のパッチが当たった状態で置かれている。resources は別のリポジトリ。
 # 岩盤生成を paper:optionally_flat_bedrock_condition_source に差し替え、
 # 戦利品表から set_damage を 1 件落としている。どちらも vanilla の挙動が変わる。
-git -C "$PW/paper-server/src/minecraft/resources" reset --hard ba9af23 -q
+git -C "$RESOURCES" reset --hard "$SHIFU_BASE_RESOURCES" -q
 python "$SHIFU/tools/add_new_files.py" "$PW/paper-server/patches/sources" . 2>/dev/null
 python "$SHIFU/tools/make_shim.py" "$PW/paper-server/patches/sources" . "$REQ" | tail -3
 # 可視性だけを広げる。修飾子 1 語だけで、命令列は変わらない。

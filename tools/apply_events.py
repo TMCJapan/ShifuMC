@@ -206,6 +206,18 @@ def main():
     for target, rules in sorted(by_file.items()):
         path = os.path.join(tree, target.replace("/", os.sep))
 
+        # Minecraft の更新でファイルごと消えることがある。--report は
+        # 当たらないものを数え上げるためのモードなので、ここも数えて先へ進む。
+        if not os.path.isfile(path):
+            if not report:
+                print(f"{target}: このファイルが無い", file=sys.stderr)
+                return 1
+
+            for rule in rules:
+                failed.append(f"{target}: {rule.where}: このファイルが無い")
+
+            continue
+
         with open(path, encoding="utf-8") as handle:
             lines = handle.read().split("\n")
 

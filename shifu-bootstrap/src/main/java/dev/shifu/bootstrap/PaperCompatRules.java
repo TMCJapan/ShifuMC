@@ -52,7 +52,8 @@ final class PaperCompatRules {
 		// Bootstrap.bootStrap() / Bootstrap.validate() の直後がその位置にあたる。
 		//
 		// Shifu の NMS は vanilla なので、Main.main の署名は (String[]) のまま。
-		// Paper は (OptionSet) に書き換えるが、そのパッチは当てていない。
+		// 素の Paper は (OptionSet) に書き換える。server-paperclip を空にすると
+		// 素の Paper がそのまま起動するので、どちらの署名でも差し込む。
 		// ここを間違えると、サーバーは正常に起動し例外も出ないまま
 		// MOD が 1 つも初期化されない(ログに 1 行出るだけ)。
 		//
@@ -60,7 +61,8 @@ final class PaperCompatRules {
 		// **この呼び出しが Main.main の中にあること**を当てにしている MOD がある
 		// (owo-lib の MainMixin)。標準と同じものを同じ位置に置く。
 		b.add("net.minecraft.server.Main",
-				new InsertFabricStartServer("main", "([Ljava/lang/String;)V",
+				new InsertFabricStartServer("main",
+						List.of("([Ljava/lang/String;)V", "(Ljoptsimple/OptionSet;)V"),
 						"net/minecraft/server/Bootstrap", "validate"));
 
 		return b.build();

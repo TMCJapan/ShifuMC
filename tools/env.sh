@@ -57,7 +57,15 @@ case "$(uname -s)" in
     *)                    GRADLEW=./gradlew ;;
 esac
 
-# vanilla の基点。setup.sh が Paper のクローンから拾って base-commit.txt に書く。
+TREE=$PW/paper-server/src/minecraft/java
+RESOURCES=$PW/paper-server/src/minecraft/resources
+
+# vanilla の基点。バージョンごとに違うので、そのクローンの履歴から拾う。
+# 履歴がまだ無いとき(setup.sh を回す前)だけ base-commit.txt を見る。
+if [ -z "${SHIFU_BASE:-}" ] && [ -d "$TREE" ]; then
+    SHIFU_BASE=$(git -C "$TREE" log --format='%H %s' 2>/dev/null | awk '$0 ~ /paper Imports$/ { print $1; exit }' || true)
+fi
+
 if [ -z "${SHIFU_BASE:-}" ] && [ -f "$SHIFU/tools/build/base-commit.txt" ]; then
     SHIFU_BASE=$(cat "$SHIFU/tools/build/base-commit.txt")
 fi
@@ -65,5 +73,10 @@ fi
 SHIFU_BASE=${SHIFU_BASE:-6d83d4b}
 export SHIFU_BASE
 
-TREE=$PW/paper-server/src/minecraft/java
+# resources 側の基点。java と同じくパッチが当たる前。
+if [ -z "${SHIFU_BASE_RESOURCES:-}" ] && [ -d "$RESOURCES" ]; then
+    SHIFU_BASE_RESOURCES=$(git -C "$RESOURCES" log --format='%H %s' 2>/dev/null | awk '$0 ~ /Vanilla$/ { print $1; exit }' || true)
+fi
+
+export SHIFU_BASE_RESOURCES
 export PYTHONIOENCODING=utf-8

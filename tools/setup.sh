@@ -6,7 +6,7 @@
 #
 # やること:
 #   1. PaperMC/Paper を $SHIFU_PAPER(既定はリポジトリの隣の .pw)に clone
-#   2. paperweight の applyAllPatches を回す。これで
+#   2. paperweight の applyAllPatches(1.21.x では applyPatches)を回す。これで
 #      paper-server/src/minecraft/java に逆コンパイルした vanilla が出て、
 #      git の履歴が Vanilla → Mache → paper ATs → paper Imports → (file patches) になる
 #   3. その履歴から「paper Imports」のハッシュを拾い、tools が使う基点として書き出す
@@ -22,7 +22,8 @@ say() {
     printf '%s\n' "$*"
 }
 
-if [ ! -d "$PW/.git" ]; then
+# git worktree だと .git はファイルなので -d では見つからない。
+if [ ! -e "$PW/.git" ]; then
     if [ "$CHECK" = "--check" ]; then
         say "Paper のクローンが無い: $PW"
         exit 1
@@ -40,15 +41,28 @@ if [ ! -d "$TREE/net/minecraft" ]; then
         exit 1
     fi
 
-    say "applyAllPatches を回す(10〜30 分)"
-    (cd "$PW" && "$GRADLEW" --no-daemon applyAllPatches)
+    # タスク名は paperweight の版で違う。1.21.x が使う 2.0.0-beta は applyPatches、
+    # 26.x は applyAllPatches。名前が無いときだけもう一方を試す。
+    say "パッチを当てて逆コンパイルする(10〜30 分)"
+    LOG=$SHIFU/tools/build/apply.log
+    mkdir -p "$SHIFU/tools/build"
+
+    if ! (cd "$PW" && "$GRADLEW" --no-daemon applyAllPatches) 2>&1 | tee "$LOG"; then
+        if grep -q "Task 'applyAllPatches' not found" "$LOG"; then
+            say "applyAllPatches が無い。applyPatches で回す"
+            (cd "$PW" && "$GRADLEW" --no-daemon applyPatches)
+        else
+            say "パッチ当てに失敗した。$LOG を見ること"
+            exit 1
+        fi
+    fi
 fi
 
 # 「paper Imports」= file patches を当てる直前。Shifu の vanilla の基点
 BASE=$(git -C "$TREE" log --format='%H %s' | awk '$0 ~ /paper Imports$/ { print $1; exit }')
 
 if [ -z "$BASE" ]; then
-    say "vanilla の基点(paper Imports)が履歴に無い。applyAllPatches が途中で止まっていないか見ること"
+    say "vanilla の基点(paper Imports)が履歴に無い。パッチ当てが途中で止まっていないか見ること"
     exit 1
 fi
 
