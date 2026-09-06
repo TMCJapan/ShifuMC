@@ -37,7 +37,7 @@ file: net/minecraft/core/dispenser/DefaultDispenseItemBehavior.java
 anchor:
     spawnItem(blockSource.level(), itemStack, 6, direction, dispensePosition);
 insert:
-    dev.shifu.event.BlockEvents.dispensing(blockSource, dispensed);
+    dev.shifu.event.BlockEvents.dispensing(blockSource, item);
 
 file: net/minecraft/core/dispenser/DefaultDispenseItemBehavior.java
 anchor:
@@ -52,8 +52,8 @@ file: net/minecraft/core/dispenser/BoatDispenseItemBehavior.java
 anchor:
     AbstractBoat abstractBoat = this.type.create(serverLevel, EntitySpawnReason.DISPENSER);
 insert:
-    if (!dev.shifu.event.BlockEvents.dispense(source, dispensed, new net.minecraft.world.phys.Vec3(spawnX, spawnY + yOffset, spawnZ))) {
-        return dispensed;
+    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, new net.minecraft.world.phys.Vec3(d1, d2 + d4, d3))) {
+        return item;
     }
 
 # BlockDispenseEvent(トロッコ)
@@ -61,8 +61,8 @@ file: net/minecraft/core/dispenser/MinecartDispenseItemBehavior.java
 anchor:
     AbstractMinecart abstractMinecart = AbstractMinecart.createMinecart(
 insert:
-    if (!dev.shifu.event.BlockEvents.dispense(source, dispensed, spawnPos)) {
-        return dispensed;
+    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, vec31)) {
+        return item;
     }
 
 # BlockDispenseEvent(投射物)
@@ -70,9 +70,9 @@ file: net/minecraft/core/dispenser/ProjectileDispenseBehavior.java
 anchor:
     Projectile.spawnProjectileUsingShoot(
 insert:
-    if (!dev.shifu.event.BlockEvents.dispense(source, dispensed,
+    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item,
             new net.minecraft.world.phys.Vec3(direction.getStepX(), direction.getStepY(), direction.getStepZ()))) {
-        return dispensed;
+        return item;
     }
 
 # BlockDispenseEvent(シュルカーボックス)
@@ -80,8 +80,8 @@ file: net/minecraft/core/dispenser/ShulkerBoxDispenseBehavior.java
 anchor:
     Direction clickedFace = source.level().isEmptyBlock(relativePos.below()) ? facing : Direction.UP;
 insert-after:
-    if (!dev.shifu.event.BlockEvents.dispense(source, dispensed, relativePos)) {
-        return dispensed;
+    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, relativePos)) {
+        return item;
     }
 
 # BlockDispenseEvent(スポーンエッグ)
@@ -89,8 +89,8 @@ file: net/minecraft/core/dispenser/SpawnEggItemBehavior.java
 anchor:
     try {
 insert:
-    if (!dev.shifu.event.BlockEvents.dispense(source, dispensed)) {
-        return dispensed;
+    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item)) {
+        return item;
     }
 
 # BlockDispenseArmorEvent(装備を着せる)
@@ -98,7 +98,7 @@ file: net/minecraft/core/dispenser/EquipmentDispenseItemBehavior.java
 anchor:
     ItemStack equip = dispensed.split(1);
 insert:
-    if (!dev.shifu.event.BlockEvents.dispenseArmor(source, dispensed, target)) {
+    if (!dev.shifu.event.BlockEvents.dispenseArmor(blockSource, item, blockPos)) {
         return false;
     }
 
@@ -107,11 +107,11 @@ file: net/minecraft/core/dispenser/ShearsDispenseItemBehavior.java
 anchor:
     if (!serverLevel.isClientSide()) {
 insert:
-    if (!dev.shifu.event.BlockEvents.dispense(source, dispensed)) {
+    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item)) {
         this.setSuccess(false);
-        return dispensed;
+        return item;
     }
-    dev.shifu.event.BlockEvents.shearing(source);
+    dev.shifu.event.BlockEvents.shearing(blockSource);
 
 file: net/minecraft/core/dispenser/ShearsDispenseItemBehavior.java
 anchor:
@@ -126,8 +126,8 @@ file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
     PostSpawnProcessor<ArmorStand> postSpawnConfig = EntityType.appendDefaultStackConfig(
 insert:
-    if (!dev.shifu.event.BlockEvents.dispense(source, dispensed)) {
-        return dispensed;
+    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item)) {
+        return item;
     }
 
 # BlockDispenseArmorEvent(荷馬にチェスト)
@@ -135,7 +135,7 @@ file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
     if (slot != null && slot.set(item)) {
 insert:
-    if (slot != null && !dev.shifu.event.BlockEvents.dispenseArmor(source, item, abstractChestedHorse)) {
+    if (slot != null && !dev.shifu.event.BlockEvents.dispenseArmor(blockSource, item, abstractChestedHorse)) {
         this.setSuccess(false);
         return item;
     }
@@ -145,8 +145,8 @@ file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
     PrimedTnt tnt = new PrimedTnt(level, target.getX() + 0.5, target.getY(), target.getZ() + 0.5, null);
 insert:
-    if (!dev.shifu.event.BlockEvents.dispense(source, dispensed, target)) {
-        return dispensed;
+    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, blockPos)) {
+        return item;
     }
 
 # BlockDispenseEvent(ウィザースケルトンの頭)
@@ -154,9 +154,9 @@ file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
     if (level.isEmptyBlock(target) && WitherSkullBlock.canSpawnMob(level, target, dispensed)) {
 insert:
-    if (!dev.shifu.event.BlockEvents.dispense(source, dispensed, target)) {
+    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, blockPos)) {
         this.setSuccess(false);
-        return dispensed;
+        return item;
     }
 
 # BlockDispenseEvent(くり抜かれたカボチャ)
@@ -164,9 +164,9 @@ file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
     if (level.isEmptyBlock(target) && pumpkinBlock.canSpawnGolem(level, target)) {
 insert:
-    if (!dev.shifu.event.BlockEvents.dispense(source, dispensed, target)) {
+    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, blockPos)) {
         this.setSuccess(false);
-        return dispensed;
+        return item;
     }
 
 # BlockDispenseEvent(ガラス瓶で蜂の巣)
@@ -174,8 +174,8 @@ file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
     if (state.is(BlockTags.BEEHIVES, s -> s.hasProperty(BeehiveBlock.HONEY_LEVEL) && s.getBlock() instanceof BeehiveBlock)
 insert:
-    if (!dev.shifu.event.BlockEvents.dispense(source, dispensed, target)) {
-        return dispensed;
+    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, blockPos)) {
+        return item;
     }
 
 # BlockDispenseEvent(グロウストーンでリスポーンアンカー)
@@ -183,9 +183,9 @@ file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
     RespawnAnchorBlock.charge(null, level, blockPos, blockState);
 insert:
-    if (!dev.shifu.event.BlockEvents.dispense(source, dispensed, blockPos)) {
+    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, blockPos)) {
         this.setSuccess(false);
-        return dispensed;
+        return item;
     }
 
 # BlockDispenseArmorEvent(ブラシでアルマジロ)
@@ -193,9 +193,9 @@ file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
     for (Armadillo armadillo : armadillos) {
 insert:
-    if (!dev.shifu.event.BlockEvents.dispenseArmor(source, dispensed, armadillos.get(0))) {
+    if (!dev.shifu.event.BlockEvents.dispenseArmor(blockSource, item, armadillos.get(0))) {
         this.setSuccess(false);
-        return dispensed;
+        return item;
     }
 
 # BlockDispenseEvent(ハニカムで蝋がけ)
@@ -203,9 +203,9 @@ file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
     level.setBlockAndUpdate(blockPos, waxed.get());
 insert:
-    if (!dev.shifu.event.BlockEvents.dispense(source, dispensed, blockPos)) {
+    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, blockPos)) {
         this.setSuccess(false);
-        return dispensed;
+        return item;
     }
 
 # BlockDispenseEvent(水入り瓶で泥)
@@ -215,8 +215,8 @@ anchor:
         return this.defaultDispenseItemBehavior.dispense(source, dispensed);
     }
 insert-after:
-    if (!dev.shifu.event.BlockEvents.dispense(source, dispensed, target)) {
-        return dispensed;
+    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, blockPos)) {
+        return item;
     }
 
 # ------------------------------------------------------------ ドロッパー・ホッパー
