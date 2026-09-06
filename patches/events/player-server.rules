@@ -12,7 +12,7 @@
 # 読んだ位置: paper-server patches/sources/net/minecraft/commands/Commands.java.patch(UnknownCommandEvent)
 file: net/minecraft/commands/Commands.java
 anchor:
-    sender.sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
+    source.sendFailure(ComponentUtils.fromMessage(var7.getRawMessage()));
 insert:
     if (dev.shifu.event.PlayerEvents.silentUnknownCommand()) {
 insert-after:
@@ -20,10 +20,10 @@ insert-after:
 
 file: net/minecraft/commands/Commands.java
 anchor:
-    if (e.getInput() != null && e.getCursor() >= 0) {
+    if (var7.getInput() != null && var7.getCursor() >= 0) {
 insert:
-    if (!dev.shifu.event.PlayerEvents.silentUnknownCommand() && !(e.getInput() != null && e.getCursor() >= 0)) {
-        dev.shifu.event.PlayerEvents.unknownCommand(sender, commandString, e, null);
+    if (!dev.shifu.event.PlayerEvents.silentUnknownCommand() && !(var7.getInput() != null && var7.getCursor() >= 0)) {
+        dev.shifu.event.PlayerEvents.unknownCommand(sender, commandString, var7, null);
     }
 
 file: net/minecraft/commands/Commands.java
@@ -41,18 +41,18 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/commands/Commands.java.patch(PlayerCommandSendEvent)
 file: net/minecraft/commands/Commands.java
 anchor:
-    player.connection.send(new ClientboundCommandsPacket(root, COMMAND_NODE_INSPECTOR));
+    player.connection.send(new ClientboundCommandsPacket(rootCommandNode, COMMAND_NODE_INSPECTOR));
 insert:
-    dev.shifu.event.PlayerEvents.commandSend(player, root);
+    dev.shifu.event.PlayerEvents.commandSend(player, rootCommandNode);
 
 # WorldGameRuleChangeEvent(/gamerule)。書く行を囲む。値の差し替えは発火層が書く
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/commands/GameRuleCommand.java.patch
 file: net/minecraft/server/commands/GameRuleCommand.java
 anchor:
-    source.getLevel().getGameRules().set(gameRule, value, context.getSource().getServer());
+    commandSourceStack.getLevel().getGameRules().set(rule, argument, context.getSource().getServer());
 insert:
-    if (dev.shifu.event.PlayerEvents.gameRuleSet(gameRule, value, source)) {
+    if (dev.shifu.event.PlayerEvents.gameRuleSet(rule, argument, commandSourceStack)) {
 insert-after:
     }
 
@@ -93,9 +93,9 @@ insert-after:
 # PlayerSetSpawnEvent の理由(/spawnpoint)
 file: net/minecraft/server/commands/SetSpawnCommand.java
 anchor:
-    target.setRespawnPosition(new ServerPlayer.RespawnConfig(LevelData.RespawnData.of(dimension, pos, yaw, pitch), true), false);
+    serverPlayer.setRespawnPosition(new ServerPlayer.RespawnConfig(LevelData.RespawnData.of(resourceKey, pos, f, f1), true), false);
 insert:
-    dev.shifu.event.PlayerEvents.spawnCause(target, com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause.COMMAND);
+    dev.shifu.event.PlayerEvents.spawnCause(serverPlayer, com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause.COMMAND);
 
 # ============================================================ サーバー
 
@@ -183,8 +183,8 @@ insert-after:
 # WorldSaveEvent。保存の頭
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    if (progressListener != null) {
-    progressListener.progressStartNoAbort(Component.translatable("menu.savingLevel"));
+    if (progress != null) {
+    progress.progressStartNoAbort(Component.translatable("menu.savingLevel"));
 insert:
     dev.shifu.event.PlayerEvents.worldSave(this);
 
@@ -231,15 +231,15 @@ insert-after:
 # ServerExceptionEvent。エンティティの tick の例外。落とす挙動は変えない
 file: net/minecraft/world/level/Level.java
 anchor:
-    CrashReport report = CrashReport.forThrowable(t, "Ticking entity");
+    CrashReport crashReport = CrashReport.forThrowable(var6, "Ticking entity");
 insert:
-    dev.shifu.event.PlayerEvents.entityException(entity, t);
+    dev.shifu.event.PlayerEvents.entityException(entity, var6);
 
 file: net/minecraft/world/level/chunk/LevelChunk.java
 anchor:
-    CrashReport report = CrashReport.forThrowable(t, "Ticking block entity");
+    CrashReport crashReport = CrashReport.forThrowable(var5, "Ticking block entity");
 insert:
-    dev.shifu.event.PlayerEvents.blockEntityException(LevelChunk.this.level, this.getPos(), t);
+    dev.shifu.event.PlayerEvents.blockEntityException(LevelChunk.this.level, this.getPos(), var5);
 
 # BlockDestroyEvent。壊す効果の前。効果の差し替えは発火層が出す。落とすかは vanilla と
 # イベントの両方が真のときだけ
@@ -264,9 +264,9 @@ insert-after:
 
 file: net/minecraft/world/level/Level.java
 anchor:
-    if (dropResources) {
+    if (dropBlock) {
     BlockEntity blockEntity = blockState.hasBlockEntity() ? this.getBlockEntity(pos) : null;
-    Block.dropResources(blockState, this, pos, blockEntity, breaker, ItemStack.EMPTY);
+    Block.dropResources(blockState, this, pos, blockEntity, entity, ItemStack.EMPTY);
     }
 insert:
     if (shifuDestroy == null || shifuDestroy.willDrop()) {
@@ -278,9 +278,9 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/level/NaturalSpawner.java.patch
 file: net/minecraft/world/level/NaturalSpawner.java
 anchor:
-    return type.getCategory() != MobCategory.MISC
+    return entityType.getCategory() != MobCategory.MISC
 insert:
-    if (!dev.shifu.event.PlayerEvents.preCreatureSpawn(level, pos, type)) {
+    if (!dev.shifu.event.PlayerEvents.preCreatureSpawn(level, pos, entityType)) {
         return false;
     }
 
@@ -289,7 +289,7 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/level/BaseSpawner.java.patch
 file: net/minecraft/world/level/BaseSpawner.java
 anchor:
-    Entity entity = EntityType.loadEntityRecursive(input, level, EntitySpawnReason.SPAWNER, e -> {
+    Entity entity = EntityType.loadEntityRecursive(valueInput, level, EntitySpawnReason.SPAWNER, entity1 -> {
 insert:
     final int shifuPre = dev.shifu.event.PlayerEvents.preSpawnerSpawn(level, spawnPos, entityType.get(), pos);
     if (shifuPre != 0) {
@@ -371,15 +371,15 @@ insert:
 # 読んだ位置: CraftEventFactory.handleLoginResult
 file: net/minecraft/server/network/ServerLoginPacketListenerImpl.java
 anchor:
-    Component error = playerList.canPlayerLogin(this.connection.getRemoteAddress(), new NameAndId(profile));
+    Component component = playerList.canPlayerLogin(this.connection.getRemoteAddress(), new NameAndId(profile));
 insert-after:
-    error = dev.shifu.event.PlayerEvents.validateLogin(this.paperLoginConnection, error);
+    component = dev.shifu.event.PlayerEvents.validateLogin(this.paperLoginConnection, component);
 
 file: net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
 anchor:
-    Component loginError = playerList.canPlayerLogin(this.connection.getRemoteAddress(), new NameAndId(this.gameProfile));
+    Component component = playerList.canPlayerLogin(this.connection.getRemoteAddress(), new NameAndId(this.gameProfile));
 insert-after:
-    loginError = dev.shifu.event.PlayerEvents.validateLogin(this.paperConnection, loginError);
+    component = dev.shifu.event.PlayerEvents.validateLogin(this.paperConnection, component);
 
 # PlayerLinksSendEvent。送る前
 file: net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
@@ -446,9 +446,9 @@ insert:
 # GS4QueryEvent(FULL)でプラグインが載せたプレイヤー名の列。vanilla の局所変数へ入れ替える
 file: net/minecraft/server/rcon/thread/QueryThreadGs4.java
 anchor:
-    String[] players = this.serverInterface.getPlayerNames();
+    String[] playerNames = this.serverInterface.getPlayerNames();
 insert-after:
-    players = dev.shifu.event.PlayerEvents.queryPlayers(players);
+    playerNames = dev.shifu.event.PlayerEvents.queryPlayers(playerNames);
 
 # MapInitializeEvent。読み込んだとき(Paper は getMapData でも出す)
 file: net/minecraft/server/level/ServerLevel.java
@@ -463,7 +463,7 @@ insert:
 # 判定が false を返して if を素通りした直後に控えを見て、同じ位置で抜ける。
 file: net/minecraft/world/level/NaturalSpawner.java
 anchor:
-    if (mob.isMaxGroupSizeReached(groupSize)) {
+    if (mobForSpawn.isMaxGroupSizeReached(i3)) {
     break;
     }
     }
@@ -480,9 +480,9 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch(PlayerSetSpawnEvent)
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    if (showMessage && respawnConfig != null && !respawnConfig.isSamePosition(this.respawnConfig)) {
+    if (displayInChat && respawnConfig != null && !respawnConfig.isSamePosition(this.respawnConfig)) {
 insert:
-    if (!dev.shifu.event.PlayerEvents.setSpawn(this, respawnConfig, showMessage)) {
+    if (!dev.shifu.event.PlayerEvents.setSpawn(this, respawnConfig, displayInChat)) {
         return;
     }
 
@@ -490,7 +490,7 @@ insert:
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
     this.setRespawnPosition(
-    new ServerPlayer.RespawnConfig(LevelData.RespawnData.of(this.level().dimension(), pos, this.getYRot(), this.getXRot()), false), true
+    new ServerPlayer.RespawnConfig(LevelData.RespawnData.of(this.level().dimension(), bedPos, this.getYRot(), this.getXRot()), false), true
 insert:
     dev.shifu.event.PlayerEvents.spawnCause(this, com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause.BED);
 
@@ -514,15 +514,15 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayerGameMode.java.patch(BlockDamageEvent)
 file: net/minecraft/server/level/ServerPlayerGameMode.java
 anchor:
-    if (!blockState.isAir() && progress >= 1.0F) {
+    if (!blockState.isAir() && f >= 1.0F) {
 insert:
-    final org.bukkit.event.block.BlockDamageEvent shifuDamage = dev.shifu.event.PlayerEvents.blockDamage(this.player, pos, direction, progress >= 1.0F);
+    final org.bukkit.event.block.BlockDamageEvent shifuDamage = dev.shifu.event.PlayerEvents.blockDamage(this.player, pos, direction, f >= 1.0F);
     if (shifuDamage != null) {
         if (shifuDamage.isCancelled()) {
             return;
         }
         if (shifuDamage.getInstaBreak()) {
-            progress = 2.0F;
+            f = 2.0F;
         }
     }
 
@@ -576,9 +576,9 @@ insert-after:
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     this.player.setItemInHand(InteractionHand.OFF_HAND, this.player.getItemInHand(InteractionHand.MAIN_HAND));
-    this.player.setItemInHand(InteractionHand.MAIN_HAND, swap);
+    this.player.setItemInHand(InteractionHand.MAIN_HAND, itemInHand1);
 insert:
-    if (dev.shifu.event.PlayerEvents.swapHands(this.player, swap)) {
+    if (dev.shifu.event.PlayerEvents.swapHands(this.player, itemInHand1)) {
 insert-after:
     } else if (dev.shifu.event.PlayerEvents.swapHandsCancelled()) {
         return;
@@ -606,29 +606,29 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch(handleEditBookEvent)
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    carried.set(DataComponents.WRITABLE_BOOK_CONTENT, new WritableBookContent(pages));
+    item.set(DataComponents.WRITABLE_BOOK_CONTENT, new WritableBookContent(list));
 insert:
-    final ItemStack shifuBook = dev.shifu.event.PlayerEvents.bookBefore(carried);
+    final ItemStack shifuBook = dev.shifu.event.PlayerEvents.bookBefore(item);
 insert-after:
-    dev.shifu.event.PlayerEvents.bookEdited(this.player, slot, shifuBook, carried, false);
+    dev.shifu.event.PlayerEvents.bookEdited(this.player, slot, shifuBook, item, false);
 
 # PlayerEditBookEvent(署名)。スロットに置いたあと
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    this.player.getInventory().setItem(slot, writtenBook);
+    this.player.getInventory().setItem(index, itemStack);
 insert:
     final ItemStack shifuSigned = dev.shifu.event.PlayerEvents.bookBefore(carried);
 insert-after:
-    dev.shifu.event.PlayerEvents.bookEdited(this.player, slot, shifuSigned, writtenBook, true);
+    dev.shifu.event.PlayerEvents.bookEdited(this.player, index, shifuSigned, itemStack, true);
 
 # ============================================================ 効果・盾・エンチャント
 
 # FoodLevelChangeEvent(満腹の効果)
 file: net/minecraft/world/effect/SaturationMobEffect.java
 anchor:
-    player.getFoodData().eat(amplification + 1, 1.0F);
+    player.getFoodData().eat(amplifier + 1, 1.0F);
 insert:
-    if (dev.shifu.event.PlayerEvents.saturation(player, amplification)) {
+    if (dev.shifu.event.PlayerEvents.saturation(player, amplifier)) {
 insert-after:
     }
 

@@ -11,10 +11,10 @@
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch:441
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    this.setHealth(health + heal);
+    this.setHealth(health + amount);
 insert:
     final org.bukkit.event.entity.EntityRegainHealthEvent shifuRegain =
-            dev.shifu.event.ShifuEvents.entityRegainHealth(this, heal);
+            dev.shifu.event.ShifuEvents.entityRegainHealth(this, amount);
     if (shifuRegain == null) {
 insert-after:
     } else if (!shifuRegain.isCancelled()) {
@@ -51,28 +51,28 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch:537,551
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    this.actuallyHurt(level, source, damage - this.lastHurt);
+    this.actuallyHurt(level, damageSource, amount - this.lastHurt);
 insert:
     final org.bukkit.event.entity.EntityDamageEvent shifuHurtPartial =
-            dev.shifu.event.ShifuEvents.entityDamage(this, source, damage - this.lastHurt);
+            dev.shifu.event.ShifuEvents.entityDamage(this, damageSource, amount - this.lastHurt);
     if (shifuHurtPartial == null) {
 insert-after:
     } else if (!shifuHurtPartial.isCancelled()) {
-        this.actuallyHurt(level, source, (float) shifuHurtPartial.getDamage());
+        this.actuallyHurt(level, damageSource, (float) shifuHurtPartial.getDamage());
     } else {
         return false;
     }
 
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    this.actuallyHurt(level, source, damage);
+    this.actuallyHurt(level, damageSource, amount);
 insert:
     final org.bukkit.event.entity.EntityDamageEvent shifuHurt =
-            dev.shifu.event.ShifuEvents.entityDamage(this, source, damage);
+            dev.shifu.event.ShifuEvents.entityDamage(this, damageSource, amount);
     if (shifuHurt == null) {
 insert-after:
     } else if (!shifuHurt.isCancelled()) {
-        this.actuallyHurt(level, source, (float) shifuHurt.getDamage());
+        this.actuallyHurt(level, damageSource, (float) shifuHurt.getDamage());
     } else {
         return false;
     }
@@ -97,12 +97,12 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch:809
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    this.dropAllDeathLoot(serverLevel, source);
+    this.dropAllDeathLoot(serverLevel, damageSource);
 insert:
     final java.util.List<net.minecraft.world.entity.Entity.DefaultDrop> shifuDeathDrops =
             dev.shifu.event.ShifuEvents.beginDeathDrops();
 insert-after:
-    dev.shifu.event.ShifuEvents.entityDeath(serverLevel, this, source, shifuDeathDrops);
+    dev.shifu.event.ShifuEvents.entityDeath(serverLevel, this, damageSource, shifuDeathDrops);
 
 # EntityExplodeEvent / BlockExplodeEvent
 #
@@ -116,9 +116,9 @@ insert-after:
 #            paper-server patches/sources/net/minecraft/server/level/ServerLevel.java.patch:893
 file: net/minecraft/world/level/ServerExplosion.java
 anchor:
-    Util.shuffle(targetBlocks, this.level.random);
+    Util.shuffle(blocks, this.level.random);
 insert-after:
-    if (!dev.shifu.event.ShifuEvents.explode(this, targetBlocks)) {
+    if (!dev.shifu.event.ShifuEvents.explode(this, blocks)) {
         return;
     }
 

@@ -10,7 +10,7 @@
 # 取り消されなければ、以降は vanilla のまま。
 file: net/minecraft/server/level/ServerPlayerGameMode.java
 anchor:
-    BlockState adjustedState = block.playerWillDestroy(this.level, pos, state, this.player);
+    BlockState blockState1 = block.playerWillDestroy(this.level, pos, blockState, this.player);
 insert:
     if (!dev.shifu.event.ShifuEvents.blockBreak(this.player, pos)) {
         return false;
@@ -63,7 +63,7 @@ insert:
 # wasExploded(誘爆)
 file: net/minecraft/world/level/block/TntBlock.java
 anchor:
-    PrimedTnt primed = new PrimedTnt(level, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, explosion.getIndirectSourceEntity());
+    PrimedTnt primedTnt = new PrimedTnt(level, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, explosion.getIndirectSourceEntity());
 insert:
     if (!dev.shifu.event.ShifuEvents.tntPrimeByExplosion(level, pos, explosion)) {
         return;

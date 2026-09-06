@@ -20,29 +20,29 @@ insert-after:
 # EntityPushedByEntityAttackEvent(push の主が置かれているときだけ)
 file: net/minecraft/world/entity/Entity.java
 anchor:
-    this.setDeltaMovement(this.getDeltaMovement().add(xa, ya, za));
+    this.setDeltaMovement(this.getDeltaMovement().add(x, y, z));
     this.needsSync = true;
 insert:
-    if (dev.shifu.event.EntityEvents.pushed(this, xa, ya, za)) {
+    if (dev.shifu.event.EntityEvents.pushed(this, x, y, z)) {
 insert-after:
     }
 
 # EntityDropItemEvent(spawnAtLocation)
 file: net/minecraft/world/entity/Entity.java
 anchor:
-    level.addFreshEntity(entity);
-    return entity;
+    level.addFreshEntity(itemEntity);
+    return itemEntity;
 insert:
-    if (!dev.shifu.event.EntityEvents.dropItem(this, entity)) {
+    if (!dev.shifu.event.EntityEvents.dropItem(this, itemEntity)) {
         return null;
     }
 
 # ハサミで全部外すときの手を置く(dropAllLeashConnections に手が無い)
 file: net/minecraft/world/entity/Entity.java
 anchor:
-    if (heldItem.is(Items.SHEARS) && this.shearOffAllLeashConnections(player)) {
+    if (itemInHand.is(Items.SHEARS) && this.shearOffAllLeashConnections(player)) {
 insert:
-    if (heldItem.is(Items.SHEARS)) {
+    if (itemInHand.is(Items.SHEARS)) {
         dev.shifu.event.EntityEvents.shearHand(hand);
     }
 
@@ -50,12 +50,12 @@ insert:
 file: net/minecraft/world/entity/Entity.java
 anchor:
     if (player.hasInfiniteMaterials()) {
-        leashable.removeLeash();
+    leashable2.removeLeash();
     } else {
-        leashable.dropLeash();
+    leashable2.dropLeash();
     }
 insert:
-    final int shifuUnleash = dev.shifu.event.EntityEvents.playerUnleash(this, leashable, player, hand, !player.hasInfiniteMaterials());
+    final int shifuUnleash = dev.shifu.event.EntityEvents.playerUnleash(this, leashable2, player, hand, !player.hasInfiniteMaterials());
     if (shifuUnleash == 0) {
         return InteractionResult.PASS;
     }
@@ -66,11 +66,11 @@ insert-after:
 # PlayerUnleashEntityEvent(別の持ち主から自分へ付け替えるとき、先に外す)
 file: net/minecraft/world/entity/Entity.java
 anchor:
-    if (leashable.isLeashed()) {
-        leashable.dropLeash();
+    if (leashable2.isLeashed()) {
+    leashable2.dropLeash();
     }
 insert:
-    final int shifuReleash = dev.shifu.event.EntityEvents.playerUnleash(this, leashable, player, hand, true);
+    final int shifuReleash = dev.shifu.event.EntityEvents.playerUnleash(this, leashable2, player, hand, true);
     if (shifuReleash == 0) {
         return InteractionResult.PASS;
     }
@@ -92,9 +92,9 @@ insert-after:
 
 file: net/minecraft/world/entity/Entity.java
 anchor:
-    if (this instanceof Leashable leashableThis && leashableThis.isLeashed()) {
-        leashableThis.dropLeash();
-        dropped = true;
+    if (this instanceof Leashable leashable && leashable.isLeashed()) {
+    leashable.dropLeash();
+    flag = true;
     }
 insert:
     if (shifuSelf == 1) {
@@ -104,9 +104,9 @@ insert-after:
 # EntityAirChangeEvent
 file: net/minecraft/world/entity/Entity.java
 anchor:
-    this.entityData.set(DATA_AIR_SUPPLY_ID, supply);
+    this.entityData.set(DATA_AIR_SUPPLY_ID, airSupply);
 insert:
-    if (dev.shifu.event.EntityEvents.airChange(this, supply)) {
+    if (dev.shifu.event.EntityEvents.airChange(this, airSupply)) {
 insert-after:
     }
 
@@ -141,10 +141,10 @@ insert-after:
 file: net/minecraft/world/entity/Entity.java
 anchor:
     if (this.removalReason == null) {
-        this.removalReason = reason;
+    this.removalReason = removalReason;
     }
 insert:
-    dev.shifu.event.EntityEvents.removed(this, reason);
+    dev.shifu.event.EntityEvents.removed(this, removalReason);
 
 # ============================================================ ExperienceOrb
 
@@ -159,14 +159,14 @@ insert:
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
     if (this.followingPlayer != null) {
-        Vec3 delta = new Vec3(
-            this.followingPlayer.getX() - this.getX(),
-            this.followingPlayer.getY() + this.followingPlayer.getEyeHeight() / 2.0 - this.getY(),
-            this.followingPlayer.getZ() - this.getZ()
-        );
-        double length = delta.lengthSqr();
-        double power = 1.0 - Math.sqrt(length) / 8.0;
-        this.setDeltaMovement(this.getDeltaMovement().add(delta.normalize().scale(power * power * 0.1)));
+    Vec3 vec3 = new Vec3(
+    this.followingPlayer.getX() - this.getX(),
+    this.followingPlayer.getY() + this.followingPlayer.getEyeHeight() / 2.0 - this.getY(),
+    this.followingPlayer.getZ() - this.getZ()
+    );
+    double d = vec3.lengthSqr();
+    double d1 = 1.0 - Math.sqrt(d) / 8.0;
+    this.setDeltaMovement(this.getDeltaMovement().add(vec3.normalize().scale(d1 * d1 * 0.1)));
     }
 insert:
     boolean shifuCancelled = false;
@@ -181,18 +181,18 @@ insert-after:
 # PlayerPickupExperienceEvent、PlayerExpCooldownChangeEvent、PlayerExpChangeEvent
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
-    if (player.takeXpDelay == 0) {
-        player.takeXpDelay = 2;
-        player.take(this, 1);
-        int remaining = this.repairPlayerItems(serverPlayer, this.getValue());
-        if (remaining > 0) {
-            player.giveExperiencePoints(remaining);
-        }
-
-        this.count--;
-        if (this.count == 0) {
-            this.discard();
-        }
+    if (entity.takeXpDelay == 0) {
+    entity.takeXpDelay = 2;
+    entity.take(this, 1);
+    int i = this.repairPlayerItems(serverPlayer, this.getValue());
+    if (i > 0) {
+    entity.giveExperiencePoints(i);
+    }
+    
+    this.count--;
+    if (this.count == 0) {
+    this.discard();
+    }
     }
 insert:
     if (dev.shifu.event.EntityEvents.pickupExperience(serverPlayer, this)) {
@@ -232,34 +232,34 @@ insert-after:
 # EntityPotionEffectEvent(CLEARED)。取り消された効果は消さずに残す。
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    Map<Holder<MobEffect>, MobEffectInstance> copy = Maps.newHashMap(this.activeEffects);
+    Map<Holder<MobEffect>, MobEffectInstance> map = Maps.newHashMap(this.activeEffects);
 insert:
     final java.util.List<MobEffectInstance> shifuKept = dev.shifu.event.EntityEvents.clearEffects(this, this.activeEffects.values());
 
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    Map<Holder<MobEffect>, MobEffectInstance> copy = Maps.newHashMap(this.activeEffects);
+    Map<Holder<MobEffect>, MobEffectInstance> map = Maps.newHashMap(this.activeEffects);
     this.activeEffects.clear();
 insert-after:
-    shifuKept.forEach(shifuEffect -> copy.remove(shifuEffect.getEffect()));
+    shifuKept.forEach(shifuEffect -> map.remove(shifuEffect.getEffect()));
     shifuKept.forEach(shifuEffect -> this.activeEffects.put(shifuEffect.getEffect(), shifuEffect));
 
 # 全部取り消されたら false(Paper の !toRemove.isEmpty())
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    this.onEffectsRemoved(copy.values());
+    this.onEffectsRemoved(map.values());
 insert-after:
-    if (copy.isEmpty()) {
+    if (map.isEmpty()) {
         return false;
     }
 
 # EntityPotionEffectEvent(ADDED / CHANGED)
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    if (effect == null) {
-        this.activeEffects.put(newEffect.getEffect(), newEffect);
+    if (mobEffectInstance == null) {
+    this.activeEffects.put(effectInstance.getEffect(), effectInstance);
 insert:
-    if (!dev.shifu.event.EntityEvents.addEffect(this, effect, newEffect, source)) {
+    if (!dev.shifu.event.EntityEvents.addEffect(this, mobEffectInstance, effectInstance, source)) {
         return false;
     }
 
@@ -295,18 +295,18 @@ insert-after:
 # EntityPickupItemEvent。装備できるかは hand の shifuCanPickup で先に見る(Paper は取り消し済みで出す)。
 file: net/minecraft/world/entity/Mob.java
 anchor:
-    ItemStack equippedWithStack = this.equipItemIfPossible(level, itemStack.copy());
+    ItemStack itemStack = this.equipItemIfPossible(level, item.copy());
 insert:
-    if (dev.shifu.event.EntityEvents.pickupListening() && !dev.shifu.event.EntityEvents.mobPickupItem(this, entity, this.shifuCanPickup(itemStack))) {
+    if (dev.shifu.event.EntityEvents.pickupListening() && !dev.shifu.event.EntityEvents.mobPickupItem(this, entity, this.shifuCanPickup(item))) {
         return;
     }
 
 # EntityTransformEvent
 file: net/minecraft/world/entity/Mob.java
 anchor:
-    afterConversion.finalizeConversion(newMob);
+    afterConversion.finalizeConversion(mob);
 insert-after:
-    if (!dev.shifu.event.EntityEvents.transform(this, newMob)) {
+    if (!dev.shifu.event.EntityEvents.transform(this, mob)) {
         return null;
     }
 
@@ -329,15 +329,15 @@ insert-after:
 # 閉じ `}` を先に足し、開き `if (...) {` をあとで足す(先に開きを足すと 3 行のアンカーが崩れる)。
 file: net/minecraft/world/entity/ambient/Bat.java
 anchor:
-    if (this.random.nextInt(100) == 0 && level.getBlockState(above).isRedstoneConductor(level, above)) {
-        this.setResting(true);
+    if (this.random.nextInt(100) == 0 && level.getBlockState(blockPos1).isRedstoneConductor(level, blockPos1)) {
+    this.setResting(true);
     }
 insert-after:
     }
 
 file: net/minecraft/world/entity/ambient/Bat.java
 anchor:
-    if (this.random.nextInt(100) == 0 && level.getBlockState(above).isRedstoneConductor(level, above)) {
+    if (this.random.nextInt(100) == 0 && level.getBlockState(blockPos1).isRedstoneConductor(level, blockPos1)) {
 insert-after:
     if (dev.shifu.event.EntityEvents.batToggleSleep(this, false)) {
 
@@ -371,12 +371,12 @@ insert:
 
 file: net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
 anchor:
-    level.explode(this, damageSource, null, this.getX(), this.getY(), this.getZ(), 6.0F, false, Level.ExplosionInteraction.BLOCK);
+    level.explode(this, damageSource1, null, this.getX(), this.getY(), this.getZ(), 6.0F, false, Level.ExplosionInteraction.BLOCK);
 insert:
     if (shifuPrime == null) {
 insert-after:
     } else {
-        level.explode(this, damageSource, null, this.getX(), this.getY(), this.getZ(), shifuPrime.getRadius(), shifuPrime.getFire(), Level.ExplosionInteraction.BLOCK);
+        level.explode(this, damageSource1, null, this.getX(), this.getY(), this.getZ(), shifuPrime.getRadius(), shifuPrime.getFire(), Level.ExplosionInteraction.BLOCK);
     }
 
 # ============================================================ EnderDragon
@@ -404,7 +404,7 @@ insert:
 # EntityPushedByEntityAttackEvent の主(体当たり)
 file: net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
 anchor:
-    entity.push(xd / dd * 4.0, 0.2F, zd / dd * 4.0);
+    entity.push(d2 / max * 4.0, 0.2F, d3 / max * 4.0);
 insert:
     dev.shifu.event.EntityEvents.pushedBy(this, entity);
 
@@ -450,13 +450,13 @@ insert-after:
 # EntityDeathEvent(壊れた)。本体のアイテムも落とし物に載せるため、brokenByPlayer から控える。
 file: net/minecraft/world/entity/decoration/ArmorStand.java
 anchor:
-    Block.popResource(this.level(), this.blockPosition(), result);
+    Block.popResource(this.level(), this.blockPosition(), itemStack);
 insert:
     dev.shifu.event.EntityEvents.armorStandBeginOuter();
 
 file: net/minecraft/world/entity/decoration/ArmorStand.java
 anchor:
-    this.dropAllDeathLoot(level, source);
+    this.dropAllDeathLoot(level, damageSource);
 insert:
     final java.util.List<net.minecraft.world.entity.Entity.DefaultDrop> shifuDrops = dev.shifu.event.EntityEvents.armorStandBegin();
 
@@ -484,7 +484,7 @@ insert:
 file: net/minecraft/world/entity/decoration/BlockAttachedEntity.java
 anchor:
     this.discard();
-    this.dropItem(level, null);
+    this.dropItem(serverLevel, null);
 insert:
     if (dev.shifu.event.EntityEvents.hangingBreakTick(this)) {
 insert-after:
@@ -522,7 +522,7 @@ insert-after:
 file: net/minecraft/world/entity/decoration/LeashFenceKnotEntity.java
 anchor:
     leashable.setLeashedTo(this, true);
-    attachedMob = true;
+    flag = true;
 insert:
     if (dev.shifu.event.EntityEvents.playerLeash(leashable, this, player, hand)) {
 insert-after:
@@ -553,18 +553,18 @@ insert:
 # PrePlayerAttackEntityEvent(attack)
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-    if (!this.cannotAttack(entity)) {
+    if (!this.cannotAttack(target)) {
 insert-after:
-    if (!dev.shifu.event.EntityEvents.preAttack(this, entity)) {
+    if (!dev.shifu.event.EntityEvents.preAttack(this, target)) {
         return;
     }
 
 # 飛び道具を弾くときの EntityDamageEvent に渡す元と量を置く
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-    if (!this.deflectProjectile(entity)) {
+    if (!this.deflectProjectile(target)) {
 insert:
-    dev.shifu.event.EntityEvents.attacking(entity, damageSource, magicBoost);
+    dev.shifu.event.EntityEvents.attacking(target, damageSource, magicBoost);
 
 # PlayerAttackEntityCooldownResetEvent
 file: net/minecraft/world/entity/player/Player.java
@@ -597,7 +597,7 @@ insert-after:
 
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-    if (dealsKnockback && this.deflectProjectile(target)) {
+    if (knockback && this.deflectProjectile(target)) {
 insert:
     dev.shifu.event.EntityEvents.attacking(target, damageSource, magicBoost);
 
@@ -616,9 +616,9 @@ insert:
 # EntityExhaustionEvent
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-    this.foodData.addExhaustion(amount);
+    this.foodData.addExhaustion(exhaustion);
 insert:
-    if (dev.shifu.event.EntityEvents.exhaustion(this, amount)) {
+    if (dev.shifu.event.EntityEvents.exhaustion(this, exhaustion)) {
 insert-after:
     }
 
@@ -649,9 +649,9 @@ insert-after:
 # PlayerFishEvent(CAUGHT_FISH)。経験値はイベントの値で。
 file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
-    ItemEntity entity = new ItemEntity(this.level(), this.getX(), this.getY(), this.getZ(), itemStack);
+    ItemEntity itemEntity = new ItemEntity(this.level(), this.getX(), this.getY(), this.getZ(), itemStack);
 insert-after:
-    final org.bukkit.event.player.PlayerFishEvent shifuFish = dev.shifu.event.EntityEvents.fishCaught(this, owner, entity);
+    final org.bukkit.event.player.PlayerFishEvent shifuFish = dev.shifu.event.EntityEvents.fishCaught(this, owner, itemEntity);
     if (shifuFish != null && shifuFish.isCancelled()) {
         return 0;
     }
@@ -680,9 +680,9 @@ insert-after:
 file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
     this.discard();
-    return dmg;
+    return i;
 insert:
-    if (dmg == 0 && !dev.shifu.event.EntityEvents.fishState(this, owner, org.bukkit.event.player.PlayerFishEvent.State.REEL_IN)) {
+    if (i == 0 && !dev.shifu.event.EntityEvents.fishState(this, owner, org.bukkit.event.player.PlayerFishEvent.State.REEL_IN)) {
         return 0;
     }
 
@@ -707,9 +707,9 @@ insert:
 # PlayerPickupArrowEvent
 file: net/minecraft/world/entity/projectile/arrow/AbstractArrow.java
 anchor:
-    if (this.tryPickup(player)) {
+    if (this.tryPickup(entity)) {
 insert:
-    if (dev.shifu.event.EntityEvents.arrowPickupListening() && !dev.shifu.event.EntityEvents.pickupArrow(this, player, this.getPickupItem())) {
+    if (dev.shifu.event.EntityEvents.arrowPickupListening() && !dev.shifu.event.EntityEvents.pickupArrow(this, entity, this.getPickupItem())) {
         return;
     }
 
@@ -718,9 +718,9 @@ insert:
 # ExplosionPrimeEvent(大きな火の玉)
 file: net/minecraft/world/entity/projectile/hurtingprojectile/LargeFireball.java
 anchor:
-    this.level().explode(this, this.getX(), this.getY(), this.getZ(), this.explosionPower, grief, Level.ExplosionInteraction.MOB);
+    this.level().explode(this, this.getX(), this.getY(), this.getZ(), this.explosionPower, flag, Level.ExplosionInteraction.MOB);
 insert:
-    final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = dev.shifu.event.EntityEvents.explosionPrime(this, this.explosionPower, grief);
+    final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = dev.shifu.event.EntityEvents.explosionPrime(this, this.explosionPower, flag);
     if (shifuPrime == null) {
 insert-after:
     } else if (!shifuPrime.isCancelled()) {
@@ -751,10 +751,10 @@ insert-after:
 # BlockIgniteEvent(小さな火の玉が地面に)。既存の発火層の形に合わせ、CraftEventFactory を直に呼ぶ。
 file: net/minecraft/world/entity/projectile/hurtingprojectile/SmallFireball.java
 anchor:
-    this.level().setBlockAndUpdate(pos, BaseFireBlock.getState(this.level(), pos));
+    this.level().setBlockAndUpdate(blockPos, BaseFireBlock.getState(this.level(), blockPos));
 insert:
     if (!dev.shifu.event.ShifuEvents.listening(org.bukkit.event.block.BlockIgniteEvent.getHandlerList())
-        || !org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(this.level(), pos, this).isCancelled()) {
+        || !org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(this.level(), blockPos, this).isCancelled()) {
 insert-after:
     }
 
@@ -765,31 +765,31 @@ file: net/minecraft/world/entity/projectile/throwableitemprojectile/AbstractThro
 # 同じ行が hand の splash(...)(vanilla の onHit の本体の写し)にもあるので、
 # hitResult を使う行まで含めて 1 箇所に定める
 anchor:
-    this.onHitAsWater(level);
-    } else if (potion.hasEffects()) {
-    this.onHitAsPotion(level, potionItemStack, hitResult);
+    this.onHitAsWater(serverLevel);
+    } else if (potionContents.hasEffects()) {
+    this.onHitAsPotion(serverLevel, item, result);
 insert:
-    dev.shifu.event.EntityEvents.splashHit(hitResult);
+    dev.shifu.event.EntityEvents.splashHit(result);
 
 file: net/minecraft/world/entity/projectile/throwableitemprojectile/AbstractThrownPotion.java
 anchor:
     AABB aabb = this.getBoundingBox().inflate(4.0, 2.0, 4.0);
-
-    for (LivingEntity entity : this.level().getEntitiesOfClass(LivingEntity.class, aabb, WATER_SENSITIVE_OR_ON_FIRE)) {
-        double dist = this.distanceToSqr(entity);
-        if (dist < 16.0) {
-            if (entity.isSensitiveToWater()) {
-                entity.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()), 1.0F);
-            }
-
-            if (entity.isOnFire() && entity.isAlive()) {
-                entity.extinguishFire();
-            }
-        }
+    
+    for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, aabb, WATER_SENSITIVE_OR_ON_FIRE)) {
+    double d = this.distanceToSqr(livingEntity);
+    if (d < 16.0) {
+    if (livingEntity.isSensitiveToWater()) {
+    livingEntity.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()), 1.0F);
     }
-
+    
+    if (livingEntity.isOnFire() && livingEntity.isAlive()) {
+    livingEntity.extinguishFire();
+    }
+    }
+    }
+    
     for (Axolotl axolotl : this.level().getEntitiesOfClass(Axolotl.class, aabb)) {
-        axolotl.rehydrate();
+    axolotl.rehydrate();
     }
 insert:
     if (dev.shifu.event.EntityEvents.waterSplash(this, level)) {
@@ -799,16 +799,16 @@ insert-after:
 # PotionSplashEvent。効果を与える塊を囲む。
 file: net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownSplashPotion.java
 anchor:
-    if (!entities.isEmpty()) {
-        Entity effectSource = this.getEffectSource();
+    if (!entitiesOfClass.isEmpty()) {
+    Entity effectSource = this.getEffectSource();
 insert:
     if (!dev.shifu.event.EntityEvents.potionSplashListening()
-        || dev.shifu.event.EntityEvents.potionSplash(this, level, mobEffects, durationScale, potionAabb, entities, margin, hitResult, this.getEffectSource())) {
+        || dev.shifu.event.EntityEvents.potionSplash(this, level, mobEffects, durationScale, potionAabb, entitiesOfClass, margin, hitResult, this.getEffectSource())) {
 
 file: net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownSplashPotion.java
 anchor:
-    if (!newEffect.endsWithin(20)) {
-        entity.addEffect(newEffect, effectSource);
+    if (!mobEffectInstance1.endsWithin(20)) {
+    livingEntity.addEffect(mobEffectInstance1, effectSource);
     }
     }
     }
@@ -842,9 +842,9 @@ insert-after:
 
 file: net/minecraft/world/entity/vehicle/VehicleEntity.java
 anchor:
-    this.destroy(level, source);
+    this.destroy(level, damageSource);
 insert:
-    if (dev.shifu.event.EntityEvents.vehicleDestroy(this, source)) {
+    if (dev.shifu.event.EntityEvents.vehicleDestroy(this, damageSource)) {
 insert-after:
     } else {
         this.setDamage(40.0F);
@@ -892,7 +892,7 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/player/Player.java.patch(ExhaustionReason)
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-    this.causeFoodExhaustion(source.getFoodExhaustion());
+    this.causeFoodExhaustion(damageSource.getFoodExhaustion());
 insert:
     dev.shifu.event.EntityEvents.exhaustionReason(org.bukkit.event.entity.EntityExhaustionEvent.ExhaustionReason.DAMAGED);
 

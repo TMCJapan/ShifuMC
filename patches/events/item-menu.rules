@@ -12,7 +12,7 @@
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/AbstractContainerMenu.java.patch(InventoryDragEvent)
 file: net/minecraft/world/inventory/AbstractContainerMenu.java
 anchor:
-    for (Slot slot : this.quickcraftSlots) {
+    for (Slot slot1 : this.quickcraftSlots) {
 insert:
     final java.util.Map<Slot, ItemStack[]> shifuDragBefore = dev.shifu.event.ItemEvents.dragBefore(this.quickcraftSlots);
     final ItemStack shifuDragCarried = shifuDragBefore == null ? null : this.getCarried().copy();
@@ -39,7 +39,7 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/SmithingMenu.java.patch(callPrepareResultEvent)
 file: net/minecraft/world/inventory/SmithingMenu.java
 anchor:
-    this.hasRecipeError.set(hasRecipeError ? 1 : 0);
+    this.hasRecipeError.set(flag ? 1 : 0);
 insert-after:
     dev.shifu.event.ItemEvents.prepareResult(this, RESULT_SLOT);
 
@@ -53,7 +53,7 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/StonecutterMenu.java.patch(callPrepareResultEvent)
 file: net/minecraft/world/inventory/StonecutterMenu.java
 anchor:
-    this.setupRecipeList(input);
+    this.setupRecipeList(item);
     }
 insert-after:
     dev.shifu.event.ItemEvents.prepareResult(this, RESULT_SLOT);
@@ -163,11 +163,11 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/LoomMenu.java.patch(PlayerLoomPatternSelectEvent)
 file: net/minecraft/world/inventory/LoomMenu.java
 anchor:
-    this.selectedBannerPatternIndex.set(buttonId);
-    this.setupResultSlot(this.selectablePatterns.get(buttonId));
+    this.selectedBannerPatternIndex.set(id);
+    this.setupResultSlot(this.selectablePatterns.get(id));
 insert:
     final dev.shifu.event.ItemEvents.LoomChoice shifuLoom = dev.shifu.event.ItemEvents.loomPattern(
-            this, player, this.selectablePatterns, buttonId);
+            this, player, this.selectablePatterns, id);
     if (shifuLoom != null) {
         if (shifuLoom.cancelled()) {
             player.containerMenu.sendAllDataToRemote();
@@ -184,14 +184,14 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/StonecutterMenu.java.patch
 file: net/minecraft/world/inventory/StonecutterMenu.java
 anchor:
-    this.setupResultSlot(buttonId);
+    this.setupResultSlot(id);
 insert:
-    final int shifuRecipe = dev.shifu.event.ItemEvents.stonecutterRecipe(this, player, this.recipesForInput, buttonId);
+    final int shifuRecipe = dev.shifu.event.ItemEvents.stonecutterRecipe(this, player, this.recipesForInput, id);
     if (shifuRecipe == dev.shifu.event.ItemEvents.CANCELLED) {
         player.containerMenu.sendAllDataToRemote();
         return false;
     }
-    if (shifuRecipe != buttonId) {
+    if (shifuRecipe != id) {
         this.selectedRecipeIndex.set(shifuRecipe);
         this.setupResultSlot(shifuRecipe);
         return true;
@@ -203,12 +203,12 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/BlockItem.java.patch(BlockCanBuildEvent)
 file: net/minecraft/world/item/BlockItem.java
 anchor:
-    return (!this.mustSurvive() || stateForPlacement.canSurvive(context.getLevel(), context.getClickedPos()))
+    return (!this.mustSurvive() || state.canSurvive(context.getLevel(), context.getClickedPos()))
 insert:
     if (dev.shifu.event.ItemEvents.canBuildListening()) {
-        return dev.shifu.event.ItemEvents.canBuild(context.getLevel(), context.getClickedPos(), player, stateForPlacement,
-                (!this.mustSurvive() || stateForPlacement.canSurvive(context.getLevel(), context.getClickedPos()))
-                        && context.getLevel().isUnobstructed(stateForPlacement, context.getClickedPos(), CollisionContext.placementContext(player)),
+        return dev.shifu.event.ItemEvents.canBuild(context.getLevel(), context.getClickedPos(), player, state,
+                (!this.mustSurvive() || state.canSurvive(context.getLevel(), context.getClickedPos()))
+                        && context.getLevel().isUnobstructed(state, context.getClickedPos(), CollisionContext.placementContext(player)),
                 context.getHand());
     }
 
@@ -230,9 +230,9 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/BoatItem.java.patch
 file: net/minecraft/world/item/BoatItem.java
 anchor:
-    AbstractBoat boat = this.getBoat(level, hitResult, itemStack, player);
+    AbstractBoat boat = this.getBoat(level, playerPovHitResult, itemInHand, player);
 insert:
-    if (!dev.shifu.event.ItemEvents.boatInteract(player, (net.minecraft.world.phys.BlockHitResult) hitResult, itemStack, hand)) {
+    if (!dev.shifu.event.ItemEvents.boatInteract(player, (net.minecraft.world.phys.BlockHitResult) playerPovHitResult, itemInHand, hand)) {
         return InteractionResult.PASS;
     }
 
@@ -257,16 +257,16 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/MinecartItem.java.patch
 file: net/minecraft/world/item/MinecartItem.java
 anchor:
-    serverLevel.addFreshEntity(cart);
+    serverLevel.addFreshEntity(abstractMinecart);
 insert:
-    if (!dev.shifu.event.ItemEvents.entityPlace(level, pos, context.getClickedFace(), context.getPlayer(), cart, context.getHand())) {
+    if (!dev.shifu.event.ItemEvents.entityPlace(level, pos, context.getClickedFace(), context.getPlayer(), abstractMinecart, context.getHand())) {
         if (context.getPlayer() != null) {
             context.getPlayer().containerMenu.forceHeldSlot(context.getHand());
         }
         return InteractionResult.FAIL;
     }
     if (dev.shifu.event.ItemEvents.spawnCancelListening()) {
-        if (!serverLevel.addFreshEntity(cart)) {
+        if (!serverLevel.addFreshEntity(abstractMinecart)) {
             return InteractionResult.PASS;
         }
     } else {
@@ -279,9 +279,9 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/CrossbowItem.java.patch
 file: net/minecraft/world/item/CrossbowItem.java
 anchor:
-    if (tickPercent >= 1.0F && !isCharged(itemStack) && tryLoadProjectiles(entity, itemStack)) {
+    if (f >= 1.0F && !isCharged(stack) && tryLoadProjectiles(livingEntity, stack)) {
 insert:
-    if (tickPercent >= 1.0F && !isCharged(itemStack) && !dev.shifu.event.ItemEvents.loadCrossbow(entity, itemStack)) {
+    if (f >= 1.0F && !isCharged(stack) && !dev.shifu.event.ItemEvents.loadCrossbow(livingEntity, stack)) {
         return;
     }
 
@@ -337,7 +337,7 @@ insert-after:
 file: net/minecraft/world/item/SnowballItem.java
 anchor:
     player.awardStat(Stats.ITEM_USED.get(this));
-    itemStack.consume(1, player);
+    itemInHand.consume(1, player);
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -362,10 +362,10 @@ insert-after:
 
 file: net/minecraft/world/item/EggItem.java
 anchor:
-    Projectile.spawnProjectileFromRotation(ThrownEgg::new, serverLevel, itemStack, player, 0.0F, 1.5F, 1.0F);
+    Projectile.spawnProjectileFromRotation(ThrownEgg::new, serverLevel, itemInHand, player, 0.0F, 1.5F, 1.0F);
 insert:
     if (dev.shifu.event.ItemEvents.launchListening()) {
-        if (!dev.shifu.event.ItemEvents.launch(ThrownEgg::new, serverLevel, itemStack, player, hand, 0.0F, 1.5F, 1.0F,
+        if (!dev.shifu.event.ItemEvents.launch(ThrownEgg::new, serverLevel, itemInHand, player, hand, 0.0F, 1.5F, 1.0F,
                 SoundEvents.EGG_THROW, SoundSource.PLAYERS, this)) {
             return InteractionResult.FAIL;
         }
@@ -376,7 +376,7 @@ insert-after:
 file: net/minecraft/world/item/EggItem.java
 anchor:
     player.awardStat(Stats.ITEM_USED.get(this));
-    itemStack.consume(1, player);
+    itemInHand.consume(1, player);
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -415,7 +415,7 @@ insert-after:
 file: net/minecraft/world/item/EnderpearlItem.java
 anchor:
     player.awardStat(Stats.ITEM_USED.get(this));
-    itemStack.consume(1, player);
+    itemInHand.consume(1, player);
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -440,10 +440,10 @@ insert-after:
 
 file: net/minecraft/world/item/ExperienceBottleItem.java
 anchor:
-    Projectile.spawnProjectileFromRotation(ThrownExperienceBottle::new, serverLevel, itemStack, player, -20.0F, 0.7F, 1.0F);
+    Projectile.spawnProjectileFromRotation(ThrownExperienceBottle::new, serverLevel, itemInHand, player, -20.0F, 0.7F, 1.0F);
 insert:
     if (dev.shifu.event.ItemEvents.launchListening()) {
-        if (!dev.shifu.event.ItemEvents.launch(ThrownExperienceBottle::new, serverLevel, itemStack, player, hand, -20.0F, 0.7F, 1.0F,
+        if (!dev.shifu.event.ItemEvents.launch(ThrownExperienceBottle::new, serverLevel, itemInHand, player, hand, -20.0F, 0.7F, 1.0F,
                 SoundEvents.EXPERIENCE_BOTTLE_THROW, SoundSource.NEUTRAL, this)) {
             return InteractionResult.FAIL;
         }
@@ -454,7 +454,7 @@ insert-after:
 file: net/minecraft/world/item/ExperienceBottleItem.java
 anchor:
     player.awardStat(Stats.ITEM_USED.get(this));
-    itemStack.consume(1, player);
+    itemInHand.consume(1, player);
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -477,7 +477,7 @@ insert-after:
 file: net/minecraft/world/item/ThrowablePotionItem.java
 anchor:
     player.awardStat(Stats.ITEM_USED.get(this));
-    itemStack.consume(1, player);
+    itemInHand.consume(1, player);
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -490,22 +490,22 @@ insert-after:
 file: net/minecraft/world/item/FireworkRocketItem.java
 anchor:
     Projectile.spawnProjectile(
-        new FireworkRocketEntity(
-            level,
-            context.getPlayer(),
-            clickLocation.x + direction.getStepX() * 0.15,
-            clickLocation.y + direction.getStepY() * 0.15,
-            clickLocation.z + direction.getStepZ() * 0.15,
-            itemStack
-        ),
-        serverLevel,
-        itemStack
+    new FireworkRocketEntity(
+    level,
+    context.getPlayer(),
+    clickLocation.x + clickedFace.getStepX() * 0.15,
+    clickLocation.y + clickedFace.getStepY() * 0.15,
+    clickLocation.z + clickedFace.getStepZ() * 0.15,
+    itemInHand
+    ),
+    serverLevel,
+    itemInHand
     );
 insert:
     final boolean shifuFireworkConsume;
     if (dev.shifu.event.ItemEvents.launchListening()) {
         final Boolean shifuLaunched = dev.shifu.event.ItemEvents.launchFirework(serverLevel, context.getPlayer(), context.getHand(),
-                itemStack, clickLocation, direction);
+                itemInHand, clickLocation, clickedFace);
         if (shifuLaunched == null) {
             return InteractionResult.PASS;
         }
@@ -565,10 +565,10 @@ insert-after:
 
 file: net/minecraft/world/item/FishingRodItem.java
 anchor:
-    Projectile.spawnProjectile(new FishingHook(player, level, luck, lureSpeed), serverLevel, itemStack);
+    Projectile.spawnProjectile(new FishingHook(player, level, fishingLuckBonus, i1), serverLevel, itemInHand);
 insert:
     if (dev.shifu.event.ItemEvents.fishListening()) {
-        if (!dev.shifu.event.ItemEvents.fish(level, serverLevel, player, hand, itemStack, luck, lureSpeed)) {
+        if (!dev.shifu.event.ItemEvents.fish(level, serverLevel, player, hand, itemInHand, fishingLuckBonus, i1)) {
             return InteractionResult.PASS;
         }
     } else {
@@ -604,12 +604,12 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/ItemUtils.java.patch
 file: net/minecraft/world/item/ItemUtils.java
 anchor:
-    contents.forEach(stack -> level.addFreshEntity(new ItemEntity(level, container.getX(), container.getY(), container.getZ(), stack)));
+    contents.forEach(itemStack -> level.addFreshEntity(new ItemEntity(level, container.getX(), container.getY(), container.getZ(), itemStack)));
 insert:
     if (!dev.shifu.event.ItemEvents.containerDropListening()) {
 insert-after:
     } else {
-        contents.forEach(stack -> dev.shifu.event.ItemEvents.containerDrop(container, level, stack));
+        contents.forEach(itemStack -> dev.shifu.event.ItemEvents.containerDrop(container, level, itemStack));
     }
 
 # ---------------------------------------------------------------- リード
@@ -619,7 +619,7 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/LeadItem.java.patch
 file: net/minecraft/world/item/LeadItem.java
 anchor:
-    return bindPlayerMobs(player, level, pos);
+    return bindPlayerMobs(player, level, clickedPos);
 insert:
     dev.shifu.event.ItemEvents.leashHand(player, context.getHand());
 
@@ -636,9 +636,9 @@ insert:
 # PlayerLeashEntityEvent(1 匹ずつ)。vanilla の if の中身を囲む。
 file: net/minecraft/world/item/LeadItem.java
 anchor:
-    if (leashable.canHaveALeashAttachedTo(activeKnot)) {
+    if (leashable.canHaveALeashAttachedTo(leashFenceKnotEntity)) {
 insert-after:
-    if (dev.shifu.event.ItemEvents.leash(leashable, activeKnot, player)) {
+    if (dev.shifu.event.ItemEvents.leash(leashable, leashFenceKnotEntity, player)) {
 
 file: net/minecraft/world/item/LeadItem.java
 anchor:
@@ -653,7 +653,7 @@ insert-after:
 file: net/minecraft/world/item/MaceItem.java
 anchor:
     if (canSmashAttack(attacker)) {
-        ServerLevel level = (ServerLevel)attacker.level();
+    ServerLevel serverLevel = (ServerLevel)attacker.level();
 insert:
     if (dev.shifu.event.ItemEvents.smashListening()
             && !dev.shifu.event.ItemEvents.smashAttack(itemStack, mob, attacker, canSmashAttack(attacker))) {
@@ -666,12 +666,12 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/NameTagItem.java.patch
 file: net/minecraft/world/item/NameTagItem.java
 anchor:
-    target.setCustomName(customName);
+    target.setCustomName(component);
     if (target instanceof Mob mob) {
-        mob.setPersistenceRequired();
+    mob.setPersistenceRequired();
     }
 insert:
-    final io.papermc.paper.event.player.PlayerNameEntityEvent shifuName = dev.shifu.event.ItemEvents.nameEntity(player, target, customName);
+    final io.papermc.paper.event.player.PlayerNameEntityEvent shifuName = dev.shifu.event.ItemEvents.nameEntity(player, target, component);
     if (shifuName != null) {
         if (shifuName.isCancelled()) {
             return InteractionResult.PASS;
@@ -687,20 +687,20 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/ItemStack.java.patch(PlayerItemDamageEvent)
 file: net/minecraft/world/item/ItemStack.java
 anchor:
-    int newAmount = this.processDurabilityChange(amount, level, player);
+    int i = this.processDurabilityChange(damage, level, player);
 insert-after:
-    if (newAmount > 0 && player != null) {
-        newAmount = dev.shifu.event.ItemEvents.itemDamage(this, player, newAmount, amount);
+    if (i > 0 && player != null) {
+        i = dev.shifu.event.ItemEvents.itemDamage(this, player, i, damage);
     }
 
 file: net/minecraft/world/item/ItemStack.java
 anchor:
-    int newDamage = Math.min(this.getDamageValue() + newAmount, this.getMaxDamage() - 1);
+    int min = Math.min(this.getDamageValue() + i, this.getMaxDamage() - 1);
 insert-after:
-    if (newDamage - this.getDamageValue() > 0) {
-        final int shifuDamage = dev.shifu.event.ItemEvents.itemDamage(this, serverPlayer, newDamage - this.getDamageValue(), amount);
+    if (min - this.getDamageValue() > 0) {
+        final int shifuDamage = dev.shifu.event.ItemEvents.itemDamage(this, serverPlayer, min - this.getDamageValue(), amount);
         if (shifuDamage == 0) {
             return;
         }
-        newDamage = Math.min(this.getDamageValue() + shifuDamage, this.getMaxDamage() - 1);
+        min = Math.min(this.getDamageValue() + shifuDamage, this.getMaxDamage() - 1);
     }

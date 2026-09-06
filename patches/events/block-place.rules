@@ -30,7 +30,7 @@ insert:
 
 file: net/minecraft/world/item/BlockItem.java
 anchor:
-    SoundType soundType = placedState.getSoundType();
+    SoundType soundType = blockState.getSoundType();
 insert:
     if (shifuReplaced != null && level instanceof net.minecraft.server.level.ServerLevel shifuLevel
             && !dev.shifu.event.ShifuEvents.blockPlace(
