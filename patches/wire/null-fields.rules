@@ -34,14 +34,14 @@ file: net/minecraft/world/inventory/BeaconMenu.java
 anchor:
     super(MenuType.BEACON, containerId);
 insert-after:
-    this.inventory = (net.minecraft.world.entity.player.Inventory) inventory;
+    this.inventory = (net.minecraft.world.entity.player.Inventory) container;
 
 # BrewingStandMenu.inventory(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/BrewingStandMenu.java
 anchor:
     super(MenuType.BREWING_STAND, containerId);
 insert-after:
-    this.inventory = inventory;
+    this.inventory = playerInventory;
 
 # CartographyTableMenu.player(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/CartographyTableMenu.java
@@ -62,7 +62,7 @@ file: net/minecraft/world/inventory/EnchantmentMenu.java
 anchor:
     this.addDataSlot(DataSlot.shared(this.levelClue, 2));
 insert-after:
-    this.player = (org.bukkit.entity.Player) inventory.player.getBukkitEntity();
+    this.player = (org.bukkit.entity.Player) playerInventory.player.getBukkitEntity();
 
 # GrindstoneMenu.player(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/GrindstoneMenu.java
@@ -97,4 +97,4 @@ file: net/minecraft/world/inventory/StonecutterMenu.java
 anchor:
     this.addDataSlot(this.selectedRecipeIndex);
 insert-after:
-    this.player = (org.bukkit.entity.Player) inventory.player.getBukkitEntity();
+    this.player = (org.bukkit.entity.Player) playerInventory.player.getBukkitEntity();

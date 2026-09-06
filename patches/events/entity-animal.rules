@@ -867,7 +867,7 @@ anchor:
     raider.setTarget(this.mob.getTarget());
     }
 insert:
-    dev.shifu.event.EntityEvents.targetReasonUntilDone(org.bukkit.event.raider.EntityTargetEvent.TargetReason.FOLLOW_LEADER);
+    dev.shifu.event.EntityEvents.targetReasonUntilDone(org.bukkit.event.entity.EntityTargetEvent.TargetReason.FOLLOW_LEADER);
 insert-after:
     dev.shifu.event.EntityEvents.targetReasonDone();
 
@@ -879,7 +879,7 @@ anchor:
     raider.setAggressive(true);
     }
 insert:
-    dev.shifu.event.EntityEvents.targetReasonUntilDone(org.bukkit.event.raider.EntityTargetEvent.TargetReason.FOLLOW_LEADER);
+    dev.shifu.event.EntityEvents.targetReasonUntilDone(org.bukkit.event.entity.EntityTargetEvent.TargetReason.FOLLOW_LEADER);
 insert-after:
     dev.shifu.event.EntityEvents.targetReasonDone();
 

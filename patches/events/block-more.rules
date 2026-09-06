@@ -749,8 +749,8 @@ file: net/minecraft/world/level/gameevent/vibrations/VibrationSystem.java
 anchor:
     if (!vibrationUser.canReceiveVibration(level, BlockPos.containing(pos), gameEvent, context)) {
 insert:
-    if (dev.shifu.gameEvent.BlockEvents.listeningReceiveGameEvent()
-            && !dev.shifu.gameEvent.BlockEvents.receiveGameEvent(level, gameEvent, context, destination,
+    if (dev.shifu.event.BlockEvents.listeningReceiveGameEvent()
+            && !dev.shifu.event.BlockEvents.receiveGameEvent(level, gameEvent, context, destination,
                     vibrationUser.canReceiveVibration(level, BlockPos.containing(pos), gameEvent, context))) {
         return false;
     }

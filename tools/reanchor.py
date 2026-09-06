@@ -132,9 +132,19 @@ def rename_map(old_lines, new_lines):
 
 
 def apply_names(line, mapping):
+    """局所変数の名前だけを置き換える。
+
+    直前が `.` の語は触らない。パッケージ名やメンバー名まで書き換えてしまうため
+    (`dev.shifu.event` の `event` を別の名前にすると、その行はもう通らない)。
+    """
     parts = WORD.split(line)
 
     for i in range(1, len(parts), 2):
+        before = parts[i - 1]
+
+        if before.endswith("."):
+            continue
+
         parts[i] = mapping.get(parts[i], parts[i])
 
     return "".join(parts)
