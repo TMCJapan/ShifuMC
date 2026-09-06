@@ -10,9 +10,9 @@
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/TamableAnimal.java.patch(EntityToggleSitEvent)
 file: net/minecraft/world/entity/TamableAnimal.java
 anchor:
-    public void setInSittingPose(final boolean value) {
+    public void setInSittingPose(boolean sitting) {
 insert-after:
-    if (!dev.shifu.event.AnimalEvents.toggleSit(this, value)) {
+    if (!dev.shifu.event.AnimalEvents.toggleSit(this, sitting)) {
         return;
     }
 
@@ -196,8 +196,8 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/feline/Cat.java.patch(callEntityTameEvent)
 file: net/minecraft/world/entity/animal/feline/Cat.java
 anchor:
-    private void tryToTame(final Player player) {
-        if (this.random.nextInt(3) == 0) {
+    private void tryToTame(Player player) {
+    if (this.random.nextInt(3) == 0) {
 insert-after:
     if (!dev.shifu.event.AnimalEvents.tame(this, player)) {
         this.level().broadcastEntityEvent(this, EntityEvent.TAMING_FAILED);
@@ -207,8 +207,8 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/wolf/Wolf.java.patch(callEntityTameEvent)
 file: net/minecraft/world/entity/animal/wolf/Wolf.java
 anchor:
-    private void tryToTame(final Player player) {
-        if (this.random.nextInt(3) == 0) {
+    private void tryToTame(Player player) {
+    if (this.random.nextInt(3) == 0) {
 insert-after:
     if (!dev.shifu.event.AnimalEvents.tame(this, player)) {
         this.level().broadcastEntityEvent(this, EntityEvent.TAMING_FAILED);
@@ -220,8 +220,8 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/nautilus/AbstractNautilus.java.patch
 file: net/minecraft/world/entity/animal/nautilus/AbstractNautilus.java
 anchor:
-    private void tryToTame(final Player player) {
-        if (this.random.nextInt(3) == 0) {
+    private void tryToTame(Player player) {
+    if (this.random.nextInt(3) == 0) {
 insert-after:
     if (!dev.shifu.event.AnimalEvents.tame(this, player)) {
         this.level().broadcastEntityEvent(this, EntityEvent.TAMING_FAILED);

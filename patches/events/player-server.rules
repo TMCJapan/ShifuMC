@@ -334,7 +334,7 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/level/border/WorldBorder.java.patch
 file: net/minecraft/world/level/border/WorldBorder.java
 anchor:
-    public void setCenter(final double x, final double z) {
+    public void setCenter(double x, double z) {
 insert-after:
     if (!dev.shifu.event.PlayerEvents.borderCenter(this, x, z)) {
         return;
@@ -342,7 +342,7 @@ insert-after:
 
 file: net/minecraft/world/level/border/WorldBorder.java
 anchor:
-    public void setSize(final double size) {
+    public void setSize(double size) {
 insert-after:
     if (!dev.shifu.event.PlayerEvents.borderSize(this, size)) {
         return;
@@ -536,7 +536,7 @@ insert-after:
 # ClientTickEndEvent
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    public void handleClientTickEnd(final ServerboundClientTickEndPacket packet) {
+    public void handleClientTickEnd(ServerboundClientTickEndPacket packet) {
     PacketUtils.ensureRunningOnSameThread(packet, this, this.player.level());
 insert-after:
     dev.shifu.event.PlayerEvents.clientTickEnd(this.player);
@@ -587,7 +587,7 @@ insert-after:
 # PlayerCommandPreprocessEvent。解析の前
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    private void performUnsignedChatCommand(final String command) {
+    private void performUnsignedChatCommand(String command) {
 insert-after:
     if (!dev.shifu.event.PlayerEvents.commandPreprocess(this, command)) {
         return;
@@ -595,7 +595,7 @@ insert-after:
 
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    private void performSignedChatCommand(final ServerboundChatCommandSignedPacket packet, final LastSeenMessages lastSeenMessages) {
+    private void performSignedChatCommand(ServerboundChatCommandSignedPacket packet, LastSeenMessages lastSeenMessages) {
 insert-after:
     if (!dev.shifu.event.PlayerEvents.commandPreprocessSigned(this, packet.command())) {
         return;

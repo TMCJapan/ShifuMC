@@ -623,15 +623,10 @@ anchor:
 insert:
     dev.shifu.event.ItemEvents.leashHand(player, context.getHand());
 
-# HangingPlaceEvent(柵に新しく結び目を作るとき)。取り消しは結び目を消して PASS。
-file: net/minecraft/world/item/LeadItem.java
-anchor:
-    boolean anyLeashed = false;
-insert:
-    if (existingKnot.isEmpty() && !dev.shifu.event.ItemEvents.knotPlace(activeKnot, player, level, pos)) {
-        activeKnot.discard();
-        return InteractionResult.PASS;
-    }
+# HangingPlaceEvent(柵に新しく結び目を作るとき)は 1.21.11 では出せない。
+# vanilla の getOrCreateKnot は「新しく作ったか」を返さず、Paper は
+# MutableBoolean の出力引数を足して持ち帰っている。署名を変えないと同じ位置には置けない。
+# 置くなら LeashFenceKnotEntity 側の、作る枝が見えるところになる。
 
 # PlayerLeashEntityEvent(1 匹ずつ)。vanilla の if の中身を囲む。
 file: net/minecraft/world/item/LeadItem.java
@@ -642,7 +637,7 @@ insert-after:
 
 file: net/minecraft/world/item/LeadItem.java
 anchor:
-    anyLeashed = true;
+    flag = true;
 insert-after:
     }
 

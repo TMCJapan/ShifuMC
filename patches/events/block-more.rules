@@ -449,7 +449,7 @@ insert:
 # BlockFadeEvent(氷が溶ける)
 file: net/minecraft/world/level/block/IceBlock.java
 anchor:
-    protected void melt(final BlockState state, final Level level, final BlockPos pos) {
+    protected void melt(BlockState state, Level level, BlockPos pos) {
 insert-after:
     if (!dev.shifu.event.BlockEvents.iceMelt(level, pos)) {
         return;
@@ -614,10 +614,10 @@ insert-after:
 
 file: net/minecraft/world/level/block/ComposterBlock.java
 anchor:
-    public static BlockState extractProduce(final Entity sourceEntity, final BlockState state, final Level level, final BlockPos pos) {
+    public static BlockState extractProduce(Entity entity, BlockState state, Level level, BlockPos pos) {
 insert-after:
-    if (sourceEntity != null && !(sourceEntity instanceof Player)
-            && !dev.shifu.event.BlockEvents.entityChangeBlock(sourceEntity, pos, state.setValue(LEVEL, 0))) {
+    if (entity != null && !(entity instanceof Player)
+            && !dev.shifu.event.BlockEvents.entityChangeBlock(entity, pos, state.setValue(LEVEL, 0))) {
         return state;
     }
 
@@ -908,7 +908,7 @@ insert:
 
 file: net/minecraft/world/level/block/entity/SignBlockEntity.java
 anchor:
-    private SignText setMessages(final Player player, final List<FilteredText> lines, SignText text) {
+    private SignText setMessages(Player player, List<FilteredText> filteredText, SignText text) {
 insert-after:
     final SignText shifuOriginalText = text;
 

@@ -40,6 +40,7 @@ shim を当てたあとの行番号は動くし、Minecraft の更新でも動�
 """
 
 import os
+import re
 import sys
 
 
@@ -152,6 +153,26 @@ def find_all(lines, anchor, count=1):
     return [(start, start + len(want) - 1) for start in hits]
 
 
+STRING = re.compile(r'"(?:[^"\\]|\\.)*"' + r"|'(?:[^'\\]|\\.)*'")
+
+
+def brace_delta(lines):
+    """差し込む行の中括弧の差。
+
+    vanilla の文を囲む形は `insert` に `{`、`insert-after` に `}` を置く。
+    片方だけが当たると釣り合いが崩れ、ファイルが構文として壊れる
+    (--report は規則を 1 件ずつ落とすので、対の片方だけが残ることがある)。
+    ファイル単位で足せば 0 になるはずなので、それで気付ける。
+    """
+    total = 0
+
+    for line in lines:
+        text = STRING.sub('""', line).split("//")[0]
+        total += text.count("{") - text.count("}")
+
+    return total
+
+
 def pad_of(line):
     return " " * (len(line) - len(line.lstrip()))
 
@@ -243,6 +264,19 @@ def main():
         except LookupError as problem:
             print(f"{target}: アンカーが{problem}", file=sys.stderr)
             return 1
+
+        delta = sum(brace_delta(rule.before) + brace_delta(rule.after) for rule in good)
+
+        if delta != 0:
+            # 囲む形の片方だけが当たった。このまま書くとファイルが壊れる。
+            failed.append(f"{target}: 中括弧が {delta:+d} 釣り合わない。"
+                          "囲む形の片方だけが当たっている(対の相手を直すこと)")
+
+            if not report:
+                print(f"{target}: 中括弧が {delta:+d} 釣り合わない", file=sys.stderr)
+                return 1
+
+            continue
 
         with open(path, "w", encoding="utf-8", newline="\n") as handle:
             handle.write("\n".join(result))
