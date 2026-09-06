@@ -3,19 +3,19 @@
 # WitchConsumePotionEvent
 file: net/minecraft/world/entity/monster/Witch.java
 anchor:
-    if (itemStack.is(Items.POTION) && potion != null) {
+    if (mainHandItem.is(Items.POTION) && potionContents != null) {
 insert:
     // Paper start - WitchConsumePotionEvent
-    if (itemStack.is(Items.POTION)) {
-        com.destroystokyo.paper.event.entity.WitchConsumePotionEvent event = new com.destroystokyo.paper.event.entity.WitchConsumePotionEvent((org.bukkit.entity.Witch) this.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(itemStack));
-        potion = event.callEvent() ? org.bukkit.craftbukkit.inventory.CraftItemStack.unwrap(event.getPotion()).get(DataComponents.POTION_CONTENTS) : null;
+    if (mainHandItem.is(Items.POTION)) {
+        com.destroystokyo.paper.event.entity.WitchConsumePotionEvent event = new com.destroystokyo.paper.event.entity.WitchConsumePotionEvent((org.bukkit.entity.Witch) this.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(mainHandItem));
+        potionContents = event.callEvent() ? org.bukkit.craftbukkit.inventory.CraftItemStack.unwrap(event.getPotion()).get(DataComponents.POTION_CONTENTS) : null;
     }
     // Paper end - WitchConsumePotionEvent
 
 # WitchThrowPotionEvent
 file: net/minecraft/world/entity/monster/Witch.java
 anchor:
-    Projectile.spawnProjectileUsingShoot(
+    Projectile.spawnProjectileUsingShoot(ThrownSplashPotion::new, serverLevel, itemStack, this, d, d1 + squareRoot * 0.2, d2, 0.75F, 8.0F);
 insert:
     // Paper start - WitchThrowPotionEvent
     com.destroystokyo.paper.event.entity.WitchThrowPotionEvent event = new com.destroystokyo.paper.event.entity.WitchThrowPotionEvent((org.bukkit.entity.Witch) this.getBukkitEntity(), (org.bukkit.entity.LivingEntity) target.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(itemStack));

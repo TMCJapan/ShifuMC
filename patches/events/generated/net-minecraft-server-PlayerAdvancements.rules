@@ -3,11 +3,11 @@
 # PlayerAdvancementCriterionGrantEvent
 file: net/minecraft/server/PlayerAdvancements.java
 anchor:
-    this.unregisterListeners(holder);
+    this.unregisterListeners(advancement);
 insert:
     // Paper start - Add PlayerAdvancementCriterionGrantEvent
-    if (!new com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent(this.player.getBukkitEntity(), holder.toBukkit(), criterion).callEvent()) {
-        progress.revokeProgress(criterion);
+    if (!new com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent(this.player.getBukkitEntity(), advancement.toBukkit(), criterionKey).callEvent()) {
+        orStartProgress.revokeProgress(criterionKey);
         return false;
     }
     // Paper end - Add PlayerAdvancementCriterionGrantEvent
@@ -15,19 +15,14 @@ insert:
 # PlayerAdvancementDoneEvent
 file: net/minecraft/server/PlayerAdvancements.java
 anchor:
-    holder.value().rewards().grant(this.player);
+    advancement.value().rewards().grant(this.player);
 insert:
     // Paper start - Add Adventure message to PlayerAdvancementDoneEvent
-    // Paper は flatMap のラムダで書いているが、ここに足すと vanilla の
-    // ifPresent(display -> ...) が lambda$award$1 に繰り下がる。番号で狙う mixin
-    // (styled-chat の PlayerAdvancementsMixin)が当たらなくなるので、ラムダを使わずに書く。
-    net.kyori.adventure.text.Component message = null;
-    if (holder.value().display().isPresent()) {
-        final net.minecraft.advancements.DisplayInfo shifuInfo = holder.value().display().get();
-        if (shifuInfo.shouldAnnounceChat()) {
-            message = io.papermc.paper.adventure.PaperAdventure.asAdventure(shifuInfo.getType().createAnnouncement(holder, this.player));
-        }
-    }
-    final org.bukkit.event.player.PlayerAdvancementDoneEvent event = new org.bukkit.event.player.PlayerAdvancementDoneEvent(this.player.getBukkitEntity(), holder.toBukkit(), message);
+    final net.kyori.adventure.text.Component message = advancement.value().display().flatMap(info -> {
+        return java.util.Optional.ofNullable(
+            info.shouldAnnounceChat() ? io.papermc.paper.adventure.PaperAdventure.asAdventure(info.getType().createAnnouncement(advancement, this.player)) : null
+        );
+    }).orElse(null);
+    final org.bukkit.event.player.PlayerAdvancementDoneEvent event = new org.bukkit.event.player.PlayerAdvancementDoneEvent(this.player.getBukkitEntity(), advancement.toBukkit(), message);
     this.player.level().getCraftServer().getPluginManager().callEvent(event); // CraftBukkit
     // Paper end

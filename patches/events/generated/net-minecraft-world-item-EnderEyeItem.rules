@@ -3,10 +3,10 @@
 # callEntityChangeBlockEvent
 file: net/minecraft/world/item/EnderEyeItem.java
 anchor:
-    Block.pushEntitiesUp(targetState, newState, level, pos);
+    Block.pushEntitiesUp(blockState, blockState1, level, clickedPos);
 insert:
     // Paper start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(context.getPlayer(), pos, newState)) {
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(context.getPlayer(), clickedPos, blockState1)) {
         return InteractionResult.PASS;
     }
     // Paper end

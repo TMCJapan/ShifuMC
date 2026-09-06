@@ -3,6 +3,6 @@
 # EntityEffectTickEvent
 file: net/minecraft/world/effect/MobEffect.java
 anchor:
-    this.applyEffectTick(level, mob, amplification);
+    this.applyEffectTick(level, entity, amplifier);
 insert:
-    if (!new io.papermc.paper.event.entity.EntityEffectTickEvent(mob.getBukkitLivingEntity(), org.bukkit.craftbukkit.potion.CraftPotionEffectType.minecraftToBukkit(this), amplification).callEvent()) { return; } // Paper - Add EntityEffectTickEvent
+    if (!new io.papermc.paper.event.entity.EntityEffectTickEvent(entity.getBukkitLivingEntity(), org.bukkit.craftbukkit.potion.CraftPotionEffectType.minecraftToBukkit(this), amplifier).callEvent()) { return; } // Paper - Add EntityEffectTickEvent

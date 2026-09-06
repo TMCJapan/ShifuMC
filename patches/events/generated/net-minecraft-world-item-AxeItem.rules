@@ -3,10 +3,10 @@
 # callEntityChangeBlockEvent
 file: net/minecraft/world/item/AxeItem.java
 anchor:
-    if (player instanceof ServerPlayer serverPlayer) {
+    if (player instanceof ServerPlayer) {
 insert:
     // Paper start - EntityChangeBlockEvent
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(player, pos, newBlock.get())) {
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(player, clickedPos, optional.get())) {
         return InteractionResult.PASS;
     }
     // Paper end

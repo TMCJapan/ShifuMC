@@ -3,10 +3,10 @@
 # callVaultDisplayItemEvent
 file: net/minecraft/world/level/block/entity/vault/VaultBlockEntity.java
 anchor:
-    sharedData.setDisplayItem(displayItem);
+    sharedData.setDisplayItem(randomDisplayItemFromLootTable);
 insert:
     // CraftBukkit start
-    org.bukkit.event.block.VaultDisplayItemEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callVaultDisplayItemEvent(serverLevel, pos, displayItem);
+    org.bukkit.event.block.VaultDisplayItemEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callVaultDisplayItemEvent(level, pos, randomDisplayItemFromLootTable);
     if (event.isCancelled()) return;
-    displayItem = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getDisplayItem());
+    randomDisplayItemFromLootTable = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getDisplayItem());
     // CraftBukkit end

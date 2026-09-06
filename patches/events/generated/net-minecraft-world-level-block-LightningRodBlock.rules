@@ -1,27 +1,19 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
-# callBinaryRedstoneChange
+# BlockRedstoneEvent
 file: net/minecraft/world/level/block/LightningRodBlock.java
 anchor:
     level.setBlock(pos, state.setValue(POWERED, true), Block.UPDATE_ALL);
 insert:
-    // Paper start - Call BlockRedstoneEvent
-    if (!state.getValue(POWERED)) {
-        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, true)) {
-            return;
-        }
-    }
-    // Paper end - Call BlockRedstoneEvent
+    // CraftBukkit start
+    boolean powered = state.getValue(LightningRodBlock.POWERED);
+    int old = (powered) ? 15 : 0;
+    int current = (!powered) ? 15 : 0;
 
-# callBinaryRedstoneChange
-file: net/minecraft/world/level/block/LightningRodBlock.java
-anchor:
-    level.setBlock(pos, state.setValue(POWERED, false), Block.UPDATE_ALL);
-insert:
-    // Paper start - Call BlockRedstoneEvent
-    if (state.getValue(POWERED)) {
-        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, false)) {
-            return;
-        }
+    org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(org.bukkit.craftbukkit.block.CraftBlock.at(level, pos), old, current);
+    level.getCraftServer().getPluginManager().callEvent(eventRedstone);
+
+    if (eventRedstone.getNewCurrent() <= 0) {
+        return;
     }
-    // Paper end - Call BlockRedstoneEvent
+    // CraftBukkit end

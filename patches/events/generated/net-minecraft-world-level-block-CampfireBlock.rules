@@ -10,10 +10,10 @@ insert:
 # callBlockIgniteEvent
 file: net/minecraft/world/level/block/CampfireBlock.java
 anchor:
-    level.setBlock(pos, state.setValue(BlockStateProperties.LIT, true), Block.UPDATE_ALL_IMMEDIATE);
+    level.setBlock(blockPos, state.setValue(BlockStateProperties.LIT, true), Block.UPDATE_ALL_IMMEDIATE);
 insert:
     // CraftBukkit start
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, pos, projectile).isCancelled()) {
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, blockPos, projectile).isCancelled()) {
         return;
     }
     // CraftBukkit end

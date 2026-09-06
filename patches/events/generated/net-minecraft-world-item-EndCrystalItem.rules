@@ -3,10 +3,10 @@
 # callEntityPlaceEvent
 file: net/minecraft/world/item/EndCrystalItem.java
 anchor:
-    level.addFreshEntity(crystal);
+    level.addFreshEntity(endCrystal);
 insert:
     // CraftBukkit start
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPlaceEvent(context, crystal).isCancelled()) {
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPlaceEvent(context, endCrystal).isCancelled()) {
         if (context.getPlayer() != null) context.getPlayer().containerMenu.sendAllDataToRemote(); // Paper - Fix inventory desync
         return InteractionResult.FAIL;
     }

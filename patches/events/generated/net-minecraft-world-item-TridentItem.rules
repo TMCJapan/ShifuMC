@@ -1,8 +1,30 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
+# PlayerLaunchProjectileEvent
+file: net/minecraft/world/item/TridentItem.java
+anchor:
+    if (player.hasInfiniteMaterials()) {
+insert:
+    // Paper start - PlayerLaunchProjectileEvent
+    com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent event = new com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent((org.bukkit.entity.Player) player.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack), (org.bukkit.entity.Projectile) tridentDelayed.projectile().getBukkitEntity());
+    if (!event.callEvent() || !tridentDelayed.attemptSpawn()) {
+        // CraftBukkit start
+        // Paper end - PlayerLaunchProjectileEvent
+        return false;
+    }
+    ThrownTrident thrownTrident = tridentDelayed.projectile(); // Paper - PlayerLaunchProjectileEvent
+    if (event.shouldConsume()) {
+        itemStack.hurtWithoutBreaking(1, player); // Paper - PlayerLaunchProjectileEvent - use itemStack; pickup item damage
+    }
+    thrownTrident.pickupItemStack = itemStack.copy(); // SPIGOT-4511 update since damage call moved - use itemStack; count = 1
+    if (event.shouldConsume()) {
+        stack.consume(1, player);
+    }
+    // CraftBukkit end
+
 # callPlayerRiptideEvent
 file: net/minecraft/world/item/TridentItem.java
 anchor:
-    player.push(xd, yd, zd);
+    player.push(f, f1, f2);
 insert:
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerRiptideEvent(player, itemStack, xd, yd, zd)) return false; // Paper - Add player riptide event
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerRiptideEvent(player, stack, f, f1, f2)) return false; // Paper - Add player riptide event

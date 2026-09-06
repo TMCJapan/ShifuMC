@@ -7,11 +7,11 @@ anchor:
 insert:
     // CraftBukkit start
     org.bukkit.block.Block from = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
-    org.bukkit.block.Block to = org.bukkit.craftbukkit.block.CraftBlock.at(level, testPos);
+    org.bukkit.block.Block to = org.bukkit.craftbukkit.block.CraftBlock.at(level, blockPos);
     org.bukkit.event.block.BlockFromToEvent event = new org.bukkit.event.block.BlockFromToEvent(from, to);
     if (!event.callEvent()) {
         return;
     }
 
-    testPos = new BlockPos(event.getToBlock().getX(), event.getToBlock().getY(), event.getToBlock().getZ());
+    blockPos = new BlockPos(event.getToBlock().getX(), event.getToBlock().getY(), event.getToBlock().getZ());
     // CraftBukkit end

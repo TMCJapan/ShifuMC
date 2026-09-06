@@ -3,12 +3,12 @@
 # callCrafterCraftEvent
 file: net/minecraft/world/level/block/CrafterBlock.java
 anchor:
-    if (results.isEmpty()) {
+    if (itemStack.isEmpty()) {
 insert:
     // CraftBukkit start
-    org.bukkit.event.block.CrafterCraftEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callCrafterCraftEvent(pos, level, results, pickedRecipe);
+    org.bukkit.event.block.CrafterCraftEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callCrafterCraftEvent(pos, level, itemStack, recipeHolder);
     if (event.isCancelled()) {
         return;
     }
-    results = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getResult());
+    itemStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getResult());
     // CraftBukkit end

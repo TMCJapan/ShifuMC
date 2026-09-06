@@ -3,6 +3,6 @@
 # callPreCraftEvent
 file: net/minecraft/world/inventory/CraftingMenu.java
 anchor:
-    resultSlots.setItem(0, result);
+    resultSlots.setItem(0, itemStack);
 insert:
-    result = org.bukkit.craftbukkit.event.CraftEventFactory.callPreCraftEvent(container, resultSlots, result, menu.getBukkitView(), maybeRecipe.map(RecipeHolder::value).orElse(null) instanceof net.minecraft.world.item.crafting.RepairItemRecipe); // CraftBukkit
+    itemStack = org.bukkit.craftbukkit.event.CraftEventFactory.callPreCraftEvent(craftSlots, resultSlots, itemStack, menu.getBukkitView(), recipeFor.map(RecipeHolder::value).orElse(null) instanceof net.minecraft.world.item.crafting.RepairItemRecipe); // CraftBukkit

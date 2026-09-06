@@ -3,13 +3,13 @@
 # BeaconActivatedEvent, BeaconDeactivatedEvent
 file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
 anchor:
-    if (entity.lastCheckY >= lastSetBlock) {
+    if (blockEntity.lastCheckY >= height) {
 insert:
     // Paper start - beacon activation/deactivation events
-    if (previousLevels <= 0 && entity.levels > 0) {
+    if (originalLevels <= 0 && blockEntity.levels > 0) {
         org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
         new io.papermc.paper.event.block.BeaconActivatedEvent(block).callEvent();
-    } else if (previousLevels > 0 && entity.levels <= 0) {
+    } else if (originalLevels > 0 && blockEntity.levels <= 0) {
         org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
         new io.papermc.paper.event.block.BeaconDeactivatedEvent(block).callEvent();
     }

@@ -1,0 +1,59 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# WorldBorderCenterChangeEvent
+file: net/minecraft/world/level/border/WorldBorder.java
+anchor:
+    this.centerX = x;
+insert:
+    // Paper start - Add worldborder events
+    if (this.world != null) {
+        io.papermc.paper.event.world.border.WorldBorderCenterChangeEvent event = new io.papermc.paper.event.world.border.WorldBorderCenterChangeEvent(world.getWorld(), world.getWorld().getWorldBorder(), new org.bukkit.Location(world.getWorld(), this.getCenterX(), 0, this.getCenterZ()), new org.bukkit.Location(world.getWorld(), x, 0, z));
+        if (!event.callEvent()) return;
+        x = event.getNewCenter().getX();
+        z = event.getNewCenter().getZ();
+    }
+    // Paper end - Add worldborder events
+
+# WorldBorderBoundsChangeEvent
+file: net/minecraft/world/level/border/WorldBorder.java
+anchor:
+    this.extent = new WorldBorder.StaticBorderExtent(size);
+insert:
+    // Paper start - Add worldborder events
+    if (this.world != null) {
+        io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent event = new io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent(world.getWorld(), world.getWorld().getWorldBorder(), io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.Type.INSTANT_MOVE, getSize(), size, 0);
+        if (!event.callEvent()) return;
+        if (event.getType() == io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.Type.STARTED_MOVE && event.getDurationTicks() > 0) { // If changed to a timed transition
+            lerpSizeBetween(event.getOldSize(), event.getNewSize(), event.getDurationTicks(), this.world.getGameTime());
+            return;
+        }
+        size = event.getNewSize();
+    }
+    // Paper end - Add worldborder events
+
+# WorldBorderBoundsChangeEvent
+file: net/minecraft/world/level/border/WorldBorder.java
+anchor:
+    this.extent = (WorldBorder.BorderExtent)(oldSize == newSize
+insert:
+    // Paper start - Add worldborder events
+    if (this.world != null) {
+        io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.Type type;
+        if (oldSize == newSize) { // new size = old size
+            type = io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.Type.INSTANT_MOVE; // Use INSTANT_MOVE because below it creates a Static border if they are equal.
+        } else {
+            type = io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.Type.STARTED_MOVE;
+        }
+        io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent event = new io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent(world.getWorld(), world.getWorld().getWorldBorder(), type, oldSize, newSize, time);
+        if (!event.callEvent()) return;
+        newSize = event.getNewSize();
+        time = event.getDurationTicks();
+    }
+    // Paper end - Add worldborder events
+
+# WorldBorderBoundsChangeFinishEvent
+file: net/minecraft/world/level/border/WorldBorder.java
+anchor:
+    WorldBorder.this.setDirty();
+insert:
+    if (world != null) new io.papermc.paper.event.world.border.WorldBorderBoundsChangeFinishEvent(world.getWorld(), world.getWorld().getWorldBorder(), this.from, this.to, this.lerpDuration).callEvent(); // Paper - Add worldborder events

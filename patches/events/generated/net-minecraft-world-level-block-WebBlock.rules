@@ -3,6 +3,6 @@
 # EntityInsideBlockEvent
 file: net/minecraft/world/level/block/WebBlock.java
 anchor:
-    Vec3 speedMultiplier = new Vec3(0.25, 0.05F, 0.25);
+    Vec3 vec3 = new Vec3(0.25, 0.05F, 0.25);
 insert:
     if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent

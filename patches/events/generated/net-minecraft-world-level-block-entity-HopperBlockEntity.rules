@@ -1,0 +1,15 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# InventoryPickupItemEvent
+file: net/minecraft/world/level/block/entity/HopperBlockEntity.java
+anchor:
+    ItemStack itemStack = item.getItem().copy();
+insert:
+    // CraftBukkit start
+    org.bukkit.event.inventory.InventoryPickupItemEvent event = new org.bukkit.event.inventory.InventoryPickupItemEvent(
+        container.getOwner().getInventory(), (org.bukkit.entity.Item) item.getBukkitEntity()
+    );
+    if (!event.callEvent()) {
+        return false;
+    }
+    // CraftBukkit end

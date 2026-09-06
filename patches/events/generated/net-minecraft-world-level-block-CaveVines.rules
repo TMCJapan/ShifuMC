@@ -6,7 +6,7 @@ anchor:
     Block.dropFromBlockInteractLootTable(
 insert:
     // CraftBukkit start - call entity change block event
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(sourceEntity, pos, state.setValue(CaveVines.BERRIES, false))) {
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(entity, pos, state.setValue(CaveVines.BERRIES, false))) {
         return InteractionResult.SUCCESS;
     }
     // CraftBukkit end - call entity change block event
@@ -15,10 +15,10 @@ insert:
 # callPlayerHarvestBlockEvent
 file: net/minecraft/world/level/block/CaveVines.java
 anchor:
-    float pitch = Mth.randomBetween(serverLevel.getRandom(), 0.8F, 1.2F);
+    float f = Mth.randomBetween(serverLevel.random, 0.8F, 1.2F);
 insert:
     // Paper start - call player harvest block event
-    if (sourceEntity instanceof net.minecraft.world.entity.player.Player player) {
+    if (entity instanceof net.minecraft.world.entity.player.Player player) {
         org.bukkit.event.player.PlayerHarvestBlockEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerHarvestBlockEvent(
             level, pos, player, net.minecraft.world.InteractionHand.MAIN_HAND, drops
         );

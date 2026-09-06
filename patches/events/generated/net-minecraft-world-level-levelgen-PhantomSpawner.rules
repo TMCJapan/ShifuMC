@@ -1,0 +1,16 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# PhantomPreSpawnEvent
+file: net/minecraft/world/level/levelgen/PhantomSpawner.java
+anchor:
+    Phantom phantom = EntityType.PHANTOM.create(level, EntitySpawnReason.NATURAL);
+insert:
+    // Paper start - PhantomPreSpawnEvent
+    com.destroystokyo.paper.event.entity.PhantomPreSpawnEvent event = new com.destroystokyo.paper.event.entity.PhantomPreSpawnEvent(org.bukkit.craftbukkit.util.CraftLocation.toBukkit(blockPos1, level), serverPlayer.getBukkitEntity(), org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL);
+    if (!event.callEvent()) {
+        if (event.shouldAbortSpawn()) {
+            break;
+        }
+        continue;
+    }
+    // Paper end - PhantomPreSpawnEvent

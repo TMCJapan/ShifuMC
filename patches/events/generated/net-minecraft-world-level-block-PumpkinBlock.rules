@@ -1,0 +1,24 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# PlayerShearBlockEvent
+file: net/minecraft/world/level/block/PumpkinBlock.java
+anchor:
+    level.playSound(null, pos, SoundEvents.PUMPKIN_CARVE, SoundSource.BLOCKS, 1.0F, 1.0F);
+insert:
+    // Paper start - Add PlayerShearBlockEvent
+    io.papermc.paper.event.block.PlayerShearBlockEvent event = new io.papermc.paper.event.block.PlayerShearBlockEvent(
+        (org.bukkit.entity.Player) player.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos), org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack), org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand), drops);
+    if (!event.callEvent()) {
+        return InteractionResult.PASS;
+    }
+    for (org.bukkit.inventory.ItemStack itemStack : event.getDrops()) {
+        // moved from above
+        ItemEntity itemEntity = new ItemEntity(
+            level, pos.getX() + 0.5 + direction1.getStepX() * 0.65, pos.getY() + 0.1, pos.getZ() + 0.5 + direction1.getStepZ() * 0.65, org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(itemStack)
+        );
+        itemEntity.setDeltaMovement(
+            0.05 * direction1.getStepX() + level.random.nextDouble() * 0.02, 0.05, 0.05 * direction1.getStepZ() + level.random.nextDouble() * 0.02
+        );
+        level.addFreshEntity(itemEntity);
+    }
+    // Paper end - Add PlayerShearBlockEvent

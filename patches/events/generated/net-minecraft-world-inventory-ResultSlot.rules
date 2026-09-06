@@ -3,10 +3,11 @@
 # ItemCraftedEvent
 file: net/minecraft/world/inventory/ResultSlot.java
 anchor:
-    this.checkTakeAchievements(carried);
+    this.checkTakeAchievements(stack);
+    CraftingInput.Positioned positionedCraftInput = this.craftSlots.asPositionedCraftInput();
 insert:
     // Paper start - add ItemCraftedEvent
-    if (!carried.isEmpty()) {
-        new io.papermc.paper.event.inventory.ItemCraftedEvent((org.bukkit.entity.Player) player.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(carried)).callEvent();
+    if (!stack.isEmpty()) {
+        new io.papermc.paper.event.inventory.ItemCraftedEvent((org.bukkit.entity.Player) player.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(stack)).callEvent();
     }
     // Paper end - add ItemCraftedEvent

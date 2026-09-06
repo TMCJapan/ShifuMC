@@ -1,0 +1,114 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# PlayerJoinEvent
+file: net/minecraft/server/players/PlayerList.java
+anchor:
+    this.server.getCustomBossEvents().onPlayerConnect(player);
+insert:
+    this.server.getCustomBossEvents().onPlayerConnect(player); // see commented out section below serverLevel.addPlayerJoin(player);
+    // Paper end - Fire PlayerJoinEvent when Player is actually ready
+    player.initInventoryMenu();
+    // CraftBukkit start
+    org.bukkit.craftbukkit.entity.CraftPlayer bukkitPlayer = player.getBukkitEntity();
+
+    // Ensure that player inventory is populated with its viewer
+    player.containerMenu.transferTo(player.containerMenu, bukkitPlayer);
+
+    org.bukkit.event.player.PlayerJoinEvent playerJoinEvent = new org.bukkit.event.player.PlayerJoinEvent(bukkitPlayer, io.papermc.paper.adventure.PaperAdventure.asAdventure(mutableComponent)); // Paper - Adventure
+    this.cserver.getPluginManager().callEvent(playerJoinEvent);
+
+    if (!player.connection.isAcceptingMessages()) {
+        return;
+    }
+
+    final net.kyori.adventure.text.Component jm = playerJoinEvent.joinMessage();
+
+    if (jm != null && !jm.equals(net.kyori.adventure.text.Component.empty())) { // Paper - Adventure
+        joinMessage = io.papermc.paper.adventure.PaperAdventure.asVanilla(jm); // Paper - Adventure
+        this.server.getPlayerList().broadcastSystemMessage(joinMessage, false); // Paper - Adventure
+    }
+    // CraftBukkit end
+
+    // CraftBukkit start - sendAll above replaced with this loop
+    ClientboundPlayerInfoUpdatePacket packet = ClientboundPlayerInfoUpdatePacket.createPlayerInitializing(List.of(player)); // Paper - Add Listing API for Player
+
+    final List<ServerPlayer> onlinePlayers = Lists.newArrayListWithExpectedSize(this.players.size() - 1); // Paper - Use single player info update packet on join
+    for (int i = 0; i < this.players.size(); ++i) {
+        ServerPlayer entityplayer1 = (ServerPlayer) this.players.get(i);
+
+        if (entityplayer1.getBukkitEntity().canSee(bukkitPlayer)) {
+            // Paper start - Add Listing API for Player
+            if (entityplayer1.getBukkitEntity().isListed(bukkitPlayer)) {
+                // Paper end - Add Listing API for Player
+                entityplayer1.connection.send(packet);
+                // Paper start - Add Listing API for Player
+            } else {
+                entityplayer1.connection.send(ClientboundPlayerInfoUpdatePacket.createSinglePlayerInitializing(player, false));
+            }
+            // Paper end - Add Listing API for Player
+        }
+
+        if (entityplayer1 == player || !bukkitPlayer.canSee(entityplayer1.getBukkitEntity())) { // Paper - Use single player info update packet on join; Don't include joining player
+            continue;
+        }
+
+        onlinePlayers.add(entityplayer1); // Paper - Use single player info update packet on join
+    }
+    // Paper start - Use single player info update packet on join
+    if (!onlinePlayers.isEmpty()) {
+        player.connection.send(ClientboundPlayerInfoUpdatePacket.createPlayerInitializing(onlinePlayers, player)); // Paper - Add Listing API for Player
+    }
+    // Paper end - Use single player info update packet on join
+    player.sentListPacket = true;
+    player.suppressTrackerForLogin = false; // Paper - Fire PlayerJoinEvent when Player is actually ready
+    ((ServerLevel)player.level()).getChunkSource().chunkMap.addEntity(player); // Paper - Fire PlayerJoinEvent when Player is actually ready; track entity now
+    // CraftBukkit end
+
+    //player.refreshEntityData(player); // CraftBukkit - BungeeCord#2321, send complete data to self on spawn // Paper - THIS IS NOT NEEDED ANYMORE
+
+    this.sendLevelInfo(player, serverLevel);
+
+    // CraftBukkit start - Only add if the player wasn't moved in the event
+    if (player.level() == serverLevel && !serverLevel.players().contains(player)) {
+        serverLevel.addNewPlayer(player);
+insert-after:
+    }
+
+    serverLevel = player.level(); // CraftBukkit - Update in case join event changed it
+    // CraftBukkit end
+
+# PlayerQuitEvent
+file: net/minecraft/server/players/PlayerList.java
+anchor:
+    this.save(player);
+insert:
+    // CraftBukkit start - Quitting must be before we do final save of data, in case plugins need to modify it
+    // See SPIGOT-5799, SPIGOT-6145
+    if (player.containerMenu != player.inventoryMenu) {
+        player.closeContainer(org.bukkit.event.inventory.InventoryCloseEvent.Reason.DISCONNECT); // Paper - Inventory close reason
+    }
+
+    org.bukkit.event.player.PlayerQuitEvent playerQuitEvent = new org.bukkit.event.player.PlayerQuitEvent(player.getBukkitEntity(), leaveMessage, player.quitReason); // Paper - Adventure & Add API for quit reason
+    this.cserver.getPluginManager().callEvent(playerQuitEvent);
+    player.getBukkitEntity().disconnect();
+
+    if (this.server.isSameThread()) player.doTick(); // SPIGOT-924 // Paper - Improved watchdog support; don't tick during emergency shutdowns
+    // CraftBukkit end
+
+    // Paper start - Configurable player collision; Remove from collideRule team if needed
+    if (this.collideRuleTeamName != null) {
+        final net.minecraft.world.scores.Scoreboard scoreBoard = this.server.getLevel(Level.OVERWORLD).getScoreboard();
+        final PlayerTeam team = scoreBoard.getPlayersTeam(this.collideRuleTeamName);
+        if (player.getTeam() == team && team != null) {
+            scoreBoard.removePlayerFromTeam(player.getScoreboardName(), team);
+        }
+    }
+    // Paper end - Configurable player collision
+
+    // Paper - Drop carried item when player has disconnected
+    if (!player.containerMenu.getCarried().isEmpty()) {
+        net.minecraft.world.item.ItemStack carried = player.containerMenu.getCarried();
+        player.containerMenu.setCarried(net.minecraft.world.item.ItemStack.EMPTY);
+        player.drop(carried, false);
+    }
+    // Paper end - Drop carried item when player has disconnected

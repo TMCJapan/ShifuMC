@@ -1,12 +1,16 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
-# callBinaryRedstoneChange
+# BlockRedstoneEvent
 file: net/minecraft/world/level/block/CommandBlock.java
 anchor:
-    commandBlock.setPowered(isPowered);
+    if (powered != isPowered) {
 insert:
-    // Paper start - Call BlockRedstoneEvent
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, isPowered)) {
-        return;
-    }
-    // Paper end - Call BlockRedstoneEvent
+    // CraftBukkit start
+    org.bukkit.block.Block bukkitBlock = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+    int old = isPowered ? 15 : 0;
+    int current = powered ? 15 : 0;
+
+    org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(bukkitBlock, old, current);
+    level.getCraftServer().getPluginManager().callEvent(eventRedstone);
+    powered = eventRedstone.getNewCurrent() > 0;
+    // CraftBukkit end

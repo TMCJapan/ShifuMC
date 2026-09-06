@@ -6,23 +6,23 @@ anchor:
     try {
 insert:
     // CraftBukkit start
-    org.bukkit.block.Block bukkitBlock = org.bukkit.craftbukkit.block.CraftBlock.at(source.level(), source.pos());
-    org.bukkit.craftbukkit.inventory.CraftItemStack craftItem = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(dispensed.copyWithCount(1));
+    org.bukkit.block.Block bukkitBlock = org.bukkit.craftbukkit.block.CraftBlock.at(blockSource.level(), blockSource.pos());
+    org.bukkit.craftbukkit.inventory.CraftItemStack craftItem = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(item.copyWithCount(1));
 
-    org.bukkit.event.block.BlockDispenseEvent event = new org.bukkit.event.block.BlockDispenseEvent(bukkitBlock, craftItem.clone(), org.bukkit.craftbukkit.util.CraftVector.toBukkit(relativePos));
-    source.level().getCraftServer().getPluginManager().callEvent(event);
+    org.bukkit.event.block.BlockDispenseEvent event = new org.bukkit.event.block.BlockDispenseEvent(bukkitBlock, craftItem.clone(), org.bukkit.craftbukkit.util.CraftVector.toBukkit(blockPos));
+    blockSource.level().getCraftServer().getPluginManager().callEvent(event);
 
     if (event.isCancelled()) {
-        return dispensed;
+        return item;
     }
 
     if (!event.getItem().equals(craftItem)) {
         // Chain to handler for new item
         ItemStack eventStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItem());
-        DispenseItemBehavior dispenseBehavior = DispenserBlock.getDispenseBehavior(source, eventStack);
+        DispenseItemBehavior dispenseBehavior = DispenserBlock.getDispenseBehavior(blockSource, eventStack);
         if (dispenseBehavior != DispenseItemBehavior.NOOP && dispenseBehavior != this) {
-            dispenseBehavior.dispense(source, eventStack);
-            return dispensed;
+            dispenseBehavior.dispense(blockSource, eventStack);
+            return item;
         }
     }
     // CraftBukkit end

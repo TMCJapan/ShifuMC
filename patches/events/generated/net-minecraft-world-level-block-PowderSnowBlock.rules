@@ -17,10 +17,10 @@ insert:
 # callEntityChangeBlockEvent
 file: net/minecraft/world/level/block/PowderSnowBlock.java
 anchor:
-    level.destroyBlock(position, false);
+    level.destroyBlock(blockPos, false);
 insert:
     // CraftBukkit start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(e, pos, Blocks.AIR.defaultBlockState(), !(serverLevel.getGameRules().get(GameRules.MOB_GRIEFING) || e instanceof Player))) {
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(entity1, pos, Blocks.AIR.defaultBlockState(), !(serverLevel.getGameRules().get(GameRules.MOB_GRIEFING) || entity1 instanceof Player))) {
         return;
     }
     // CraftBukkit end

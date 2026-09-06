@@ -3,11 +3,11 @@
 # PlayerFlowerPotManipulateEvent
 file: net/minecraft/world/level/block/FlowerPotBlock.java
 anchor:
-    level.setBlock(pos, newContents, Block.UPDATE_ALL);
+    level.setBlock(pos, blockState, Block.UPDATE_ALL);
 insert:
     // Paper start - Add PlayerFlowerPotManipulateEvent
     org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
-    org.bukkit.inventory.ItemStack placedStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(itemStack);
+    org.bukkit.inventory.ItemStack placedStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(stack);
 
     io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent event = new io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent((org.bukkit.entity.Player) player.getBukkitEntity(), block, placedStack, true);
     if (!event.callEvent()) {
@@ -21,11 +21,11 @@ insert:
 # PlayerFlowerPotManipulateEvent
 file: net/minecraft/world/level/block/FlowerPotBlock.java
 anchor:
-    if (!player.addItem(plant)) {
+    if (!player.addItem(itemStack)) {
 insert:
     // Paper start - Add PlayerFlowerPotManipulateEvent
     org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
-    org.bukkit.inventory.ItemStack pottedStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(plant);
+    org.bukkit.inventory.ItemStack pottedStack = new org.bukkit.inventory.ItemStack(org.bukkit.craftbukkit.block.CraftBlockType.minecraftToBukkit(this.potted));
 
     io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent event = new io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent((org.bukkit.entity.Player) player.getBukkitEntity(), block, pottedStack, false);
     if (!event.callEvent()) {

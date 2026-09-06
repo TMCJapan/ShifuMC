@@ -1,0 +1,41 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# PufferFishStateChangeEvent
+file: net/minecraft/world/entity/animal/fish/Pufferfish.java
+anchor:
+    this.makeSound(SoundEvents.PUFFER_FISH_BLOW_UP);
+    this.setPuffState(STATE_MID);
+insert:
+    if (new io.papermc.paper.event.entity.PufferFishStateChangeEvent((org.bukkit.entity.PufferFish) getBukkitEntity(), STATE_MID).callEvent()) { // Paper - Add PufferFishStateChangeEvent
+insert-after:
+    } else { increase = false; } // Paper - Add PufferFishStateChangeEvent
+
+# PufferFishStateChangeEvent
+file: net/minecraft/world/entity/animal/fish/Pufferfish.java
+anchor:
+    this.makeSound(SoundEvents.PUFFER_FISH_BLOW_UP);
+    this.setPuffState(STATE_FULL);
+insert:
+    if (new io.papermc.paper.event.entity.PufferFishStateChangeEvent((org.bukkit.entity.PufferFish) getBukkitEntity(), STATE_FULL).callEvent()) { // Paper - Add PufferFishStateChangeEvent
+insert-after:
+    } else { increase = false; } // Paper - Add PufferFishStateChangeEvent
+
+# PufferFishStateChangeEvent
+file: net/minecraft/world/entity/animal/fish/Pufferfish.java
+anchor:
+    this.makeSound(SoundEvents.PUFFER_FISH_BLOW_OUT);
+    this.setPuffState(STATE_MID);
+insert:
+    if (new io.papermc.paper.event.entity.PufferFishStateChangeEvent((org.bukkit.entity.PufferFish) getBukkitEntity(), STATE_MID).callEvent()) { // Paper - Add PufferFishStateChangeEvent
+insert-after:
+    } else { increase = false; } // Paper - Add PufferFishStateChangeEvent
+
+# PufferFishStateChangeEvent
+file: net/minecraft/world/entity/animal/fish/Pufferfish.java
+anchor:
+    this.makeSound(SoundEvents.PUFFER_FISH_BLOW_OUT);
+    this.setPuffState(STATE_SMALL);
+insert:
+    if (new io.papermc.paper.event.entity.PufferFishStateChangeEvent((org.bukkit.entity.PufferFish) getBukkitEntity(), STATE_SMALL).callEvent()) { // Paper - Add PufferFishStateChangeEvent
+insert-after:
+    } else { increase = false; } // Paper - Add PufferFishStateChangeEvent

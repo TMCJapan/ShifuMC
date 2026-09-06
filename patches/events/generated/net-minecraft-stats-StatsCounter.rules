@@ -3,10 +3,10 @@
 # handleStatisticsIncrease
 file: net/minecraft/stats/StatsCounter.java
 anchor:
-    this.setValue(player, stat, result);
+    this.setValue(player, stat, i);
 insert:
     // CraftBukkit start - fire Statistic events
-    org.bukkit.event.Cancellable cancellable = org.bukkit.craftbukkit.event.CraftEventFactory.handleStatisticsIncrease(player, stat, this.getValue(stat), result);
+    org.bukkit.event.Cancellable cancellable = org.bukkit.craftbukkit.event.CraftEventFactory.handleStatisticsIncrease(player, stat, this.getValue(stat), i);
     if (cancellable != null && cancellable.isCancelled()) {
         return;
     }

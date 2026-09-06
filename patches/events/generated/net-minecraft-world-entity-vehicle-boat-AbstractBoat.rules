@@ -52,18 +52,3 @@ insert:
     }
     this.lastLocation = vehicle.getLocation();
     // CraftBukkit end
-
-# EntityUnleashEvent
-file: net/minecraft/world/entity/vehicle/boat/AbstractBoat.java
-anchor:
-    this.dropLeash();
-insert:
-    // Paper start - Fire EntityUnleashEvent on boat destruction
-    final org.bukkit.event.entity.EntityUnleashEvent event = new org.bukkit.event.entity.EntityUnleashEvent(this.getBukkitEntity(), org.bukkit.event.entity.EntityUnleashEvent.UnleashReason.LEASHED_GONE, true);
-    event.callEvent();
-    if (event.isDropLeash()) {
-insert-after:
-    } else {
-        this.removeLeash();
-    }
-    // Paper end - Fire EntityUnleashEvent on boat destruction

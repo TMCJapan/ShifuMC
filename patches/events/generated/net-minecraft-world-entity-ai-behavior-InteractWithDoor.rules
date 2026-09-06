@@ -3,10 +3,10 @@
 # EntityInteractEvent
 file: net/minecraft/world/entity/ai/behavior/InteractWithDoor.java
 anchor:
-    fromBlock.setOpen(body, level, fromState, fromPos, true);
+    doorBlock.setOpen(entity, level, blockState, blockPos, true);
 insert:
     // CraftBukkit start - entities opening doors
-    org.bukkit.event.entity.EntityInteractEvent event = new org.bukkit.event.entity.EntityInteractEvent(body.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(body.level(), fromPos));
+    org.bukkit.event.entity.EntityInteractEvent event = new org.bukkit.event.entity.EntityInteractEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(entity.level(), blockPos));
     if (!event.callEvent()) {
         return false;
     }
@@ -15,10 +15,10 @@ insert:
 # EntityInteractEvent
 file: net/minecraft/world/entity/ai/behavior/InteractWithDoor.java
 anchor:
-    door.setOpen(body, level, toState, toPos, true);
+    doorBlock1.setOpen(entity, level, blockState1, blockPos1, true);
 insert:
     // CraftBukkit start - entities opening doors
-    org.bukkit.event.entity.EntityInteractEvent event = new org.bukkit.event.entity.EntityInteractEvent(body.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(body.level(), toPos));
+    org.bukkit.event.entity.EntityInteractEvent event = new org.bukkit.event.entity.EntityInteractEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(entity.level(), blockPos1));
     if (!event.callEvent()) {
         return false;
     }

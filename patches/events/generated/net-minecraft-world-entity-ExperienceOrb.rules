@@ -14,15 +14,15 @@ insert:
 # callPlayerItemMendEvent
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
-    itemStack.setDamageValue(itemStack.getDamageValue() - repair);
+    itemStack.setDamageValue(itemStack.getDamageValue() - min);
 insert:
     // CraftBukkit start
     // Paper start - mending event
-    final int consumedExperience = repair > 0 ? repair * amount / toRepairFromXpAmount : 0;
-    org.bukkit.event.player.PlayerItemMendEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerItemMendEvent(player, this, itemStack, selected.get().inSlot(), repair, consumedExperience);
+    final int consumedExperience = min > 0 ? min * value / i : 0;
+    org.bukkit.event.player.PlayerItemMendEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerItemMendEvent(player, this, itemStack, randomItemWith.get().inSlot(), min, consumedExperience);
     // Paper end - mending event
-    repair = event.getRepairAmount();
+    min = event.getRepairAmount();
     if (event.isCancelled()) {
-        return amount;
+        return value;
     }
     // CraftBukkit end

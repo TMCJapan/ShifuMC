@@ -26,12 +26,101 @@ insert:
     }
     // Paper end - PlayerToggleSneakEvent
 
+# PlayerMoveEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player.level().getChunkSource().move(this.player);
+    Vec3 vec3 = new Vec3(rootVehicle.getX() - x, rootVehicle.getY() - y, rootVehicle.getZ() - z);
+insert:
+    // CraftBukkit start - fire PlayerMoveEvent TODO: this should be removed.
+    this.player.absSnapTo(d, d1, d2, this.player.getYRot(), this.player.getXRot()); // Paper - TODO: This breaks alot of stuff
+    org.bukkit.entity.Player player = this.getCraftPlayer();
+    if (!this.hasMoved) {
+        this.lastPosX = prevX;
+        this.lastPosY = prevY;
+        this.lastPosZ = prevZ;
+        this.lastYaw = prevYaw;
+        this.lastPitch = prevPitch;
+        this.hasMoved = true;
+    }
+    Location from = new Location(player.getWorld(), this.lastPosX, this.lastPosY, this.lastPosZ, this.lastYaw, this.lastPitch); // Get the Players previous Event location.
+    Location to = CraftLocation.toBukkit(packet.position(), player.getWorld(), packet.yRot(), packet.xRot());
+
+    // Prevent 40 event-calls for less than a single pixel of movement >.>
+    double delta = Mth.square(this.lastPosX - to.getX()) + Mth.square(this.lastPosY - to.getY()) + Mth.square(this.lastPosZ - to.getZ());
+    float deltaAngle = Math.abs(this.lastYaw - to.getYaw()) + Math.abs(this.lastPitch - to.getPitch());
+
+    if ((delta > 1f / 256 || deltaAngle > 10f) && !this.player.isImmobile()) {
+        this.lastPosX = to.getX();
+        this.lastPosY = to.getY();
+        this.lastPosZ = to.getZ();
+        this.lastYaw = to.getYaw();
+        this.lastPitch = to.getPitch();
+
+        Location oldTo = to.clone();
+        PlayerMoveEvent event = new PlayerMoveEvent(player, from, to);
+        this.cserver.getPluginManager().callEvent(event);
+
+        // If the event is cancelled we move the player back to their old location.
+        if (event.isCancelled()) {
+            this.internalTeleport(from);
+            return;
+        }
+
+        // If a Plugin has changed the To destination then we teleport the Player
+        // there to avoid any 'Moved wrongly' or 'Moved too quickly' errors.
+        // We only do this if the Event was not cancelled.
+        if (!oldTo.equals(event.getTo()) && !event.isCancelled()) {
+            this.player.getBukkitEntity().teleport(event.getTo(), PlayerTeleportEvent.TeleportCause.PLUGIN);
+            return;
+        }
+
+        // Check to see if the Players Location has some how changed during the call of the event.
+        // This can happen due to a plugin teleporting the player instead of using .setTo()
+        if (!from.equals(this.getCraftPlayer().getLocation()) && this.justTeleported) {
+            this.justTeleported = false;
+            return;
+        }
+    }
+    // CraftBukkit end
+
 # callRecipeBookSettingsEvent
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     this.player.getRecipeBook().setBookSetting(packet.getBookType(), packet.isOpen(), packet.isFiltering());
 insert:
     CraftEventFactory.callRecipeBookSettingsEvent(this.player, packet.getBookType(), packet.isOpen(), packet.isFiltering()); // CraftBukkit
+
+# PlayerPickBlockEvent, PlayerPickEntityEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    if (i != -1) {
+insert:
+    // Paper start - Add PlayerPickItemEvent
+    final int sourceSlot = i;
+    final int targetSlot = Inventory.isHotbarSlot(sourceSlot) ? sourceSlot : inventory.getSuitableHotbarSlot();
+    final org.bukkit.entity.Player bukkitPlayer = this.player.getBukkitEntity();
+    final io.papermc.paper.event.player.PlayerPickItemEvent event = entity != null
+        ? new io.papermc.paper.event.player.PlayerPickEntityEvent(bukkitPlayer, entity.getBukkitEntity(), includeData, targetSlot, sourceSlot)
+        : new io.papermc.paper.event.player.PlayerPickBlockEvent(bukkitPlayer, org.bukkit.craftbukkit.block.CraftBlock.at(this.player.level(), blockPos), includeData, targetSlot, sourceSlot);
+    if (!event.callEvent()) {
+        return;
+    }
+    i = event.getSourceSlot();
+    // Paper end - Add PlayerPickItemEvent
+
+# callTradeSelectEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    if (!merchantMenu.stillValid(this.player)) {
+insert:
+    // CraftBukkit start
+    final org.bukkit.event.inventory.TradeSelectEvent tradeSelectEvent = CraftEventFactory.callTradeSelectEvent(item, merchantMenu);
+    if (tradeSelectEvent.isCancelled()) {
+        this.player.containerMenu.sendAllDataToRemote();
+        return;
+    }
+    // CraftBukkit end
 
 # PlayerJumpEvent
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
@@ -40,8 +129,21 @@ anchor:
 insert:
     // Paper start - Add PlayerJumpEvent
     org.bukkit.entity.Player player = this.getCraftPlayer();
-    Location from = new Location(player.getWorld(), this.lastPosX, this.lastPosY, this.lastPosZ, this.lastYRot, this.lastXRot); // Get the Players previous Event location.
-    Location to = new Location(player.getWorld(), targetX, targetY, targetZ, targetYRot, targetXRot);
+    Location from = new Location(player.getWorld(), this.lastPosX, this.lastPosY, this.lastPosZ, this.lastYaw, this.lastPitch); // Get the Players previous Event location.
+    Location to = player.getLocation().clone(); // Start off the To location as the Players current location.
+
+    // If the packet contains movement information then we update the To location with the correct XYZ.
+    if (packet.hasPos) {
+        to.setX(packet.x);
+        to.setY(packet.y);
+        to.setZ(packet.z);
+    }
+
+    // If the packet contains look information then we update the To location with the correct Yaw & Pitch.
+    if (packet.hasRot) {
+        to.setYaw(packet.yRot);
+        to.setPitch(packet.xRot);
+    }
 
     com.destroystokyo.paper.event.player.PlayerJumpEvent event = new com.destroystokyo.paper.event.player.PlayerJumpEvent(player, from, to);
 
@@ -57,24 +159,34 @@ insert-after:
 # callPlayerInteractEvent
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    if (this.player.gameMode.useItem(this.player, level, itemStack, hand) instanceof InteractionResult.Success success
+    if (this.player.gameMode.useItem(this.player, serverLevel, itemInHand, hand) instanceof InteractionResult.Success success
 insert:
     // CraftBukkit start
     // Raytrace to look for 'rogue armswings'
-    Vec3 from = this.player.getEyePosition();
-    Vec3 delta = this.player.getViewVector(1.0F).scale(this.player.blockInteractionRange());
-    Vec3 to = from.add(delta);
+    double x = this.player.getX();
+    double eyeY = this.player.getEyeY();
+    double z = this.player.getZ();
+    Vec3 from = new Vec3(x, eyeY, z);
+
+    float f3 = Mth.cos(-f * 0.017453292F - 3.1415927F);
+    float f4 = Mth.sin(-f * 0.017453292F - 3.1415927F);
+    float f5 = -Mth.cos(-f1 * 0.017453292F);
+    float f6 = Mth.sin(-f1 * 0.017453292F);
+    float f7 = f4 * f5;
+    float f8 = f3 * f5;
+    double d3 = this.player.blockInteractionRange();
+    Vec3 to = from.add((double) f7 * d3, (double) f6 * d3, (double) f8 * d3);
     BlockHitResult hitResult = this.player.level().clip(new net.minecraft.world.level.ClipContext(from, to, net.minecraft.world.level.ClipContext.Block.OUTLINE, net.minecraft.world.level.ClipContext.Fluid.NONE, this.player));
 
     boolean cancelled;
     if (hitResult == null || hitResult.getType() != HitResult.Type.BLOCK) {
-        org.bukkit.event.player.PlayerInteractEvent event = CraftEventFactory.callPlayerInteractEvent(this.player, Action.RIGHT_CLICK_AIR, itemStack, hand);
+        org.bukkit.event.player.PlayerInteractEvent event = CraftEventFactory.callPlayerInteractEvent(this.player, Action.RIGHT_CLICK_AIR, itemInHand, hand);
         cancelled = event.useItemInHand() == Event.Result.DENY;
     } else {
-        if (this.player.gameMode.firedInteract && this.player.gameMode.interactPosition.equals(hitResult.getBlockPos()) && this.player.gameMode.interactHand == hand && ItemStack.isSameItemSameComponents(this.player.gameMode.interactItemStack, itemStack)) {
+        if (this.player.gameMode.firedInteract && this.player.gameMode.interactPosition.equals(hitResult.getBlockPos()) && this.player.gameMode.interactHand == hand && ItemStack.isSameItemSameComponents(this.player.gameMode.interactItemStack, itemInHand)) {
             cancelled = this.player.gameMode.interactResult;
         } else {
-            org.bukkit.event.player.PlayerInteractEvent event = CraftEventFactory.callPlayerInteractEvent(this.player, Action.RIGHT_CLICK_BLOCK, hitResult.getBlockPos(), hitResult.getDirection(), itemStack, true, hand, hitResult.getLocation());
+            org.bukkit.event.player.PlayerInteractEvent event = CraftEventFactory.callPlayerInteractEvent(this.player, Action.RIGHT_CLICK_BLOCK, hitResult.getBlockPos(), hitResult.getDirection(), itemInHand, true, hand, hitResult.getLocation());
             cancelled = event.useItemInHand() == Event.Result.DENY;
         }
         this.player.gameMode.firedInteract = false;
@@ -83,7 +195,7 @@ insert:
     if (cancelled) {
         this.player.resyncUsingItem(this.player); // Paper - Properly cancel usable items
         // Paper start - Fix inventory desync; SPIGOT-2524
-        if (io.papermc.paper.util.MCUtil.clientPredictsInteraction(this.player, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), itemStack)) {
+        if (io.papermc.paper.util.MCUtil.clientPredictsInteraction(this.player, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), itemInHand)) {
             this.player.containerMenu.sendAllDataToRemote();
         } else {
             this.player.containerMenu.forceHeldSlotAndArmor(hand);
@@ -91,8 +203,8 @@ insert:
         // Paper end - Fix inventory desync
         return;
     }
-    itemStack = this.player.getItemInHand(hand); // Update in case it was changed in the event
-    if (itemStack.isEmpty()) {
+    itemInHand = this.player.getItemInHand(hand); // Update in case it was changed in the event
+    if (itemInHand.isEmpty()) {
         return;
     }
     // CraftBukkit end
@@ -116,17 +228,37 @@ insert:
 # PlayerCommandPreprocessEvent
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    ParseResults<CommandSourceStack> command = this.parseCommand(packet.command());
+    ParseResults<CommandSourceStack> parseResults = this.parseCommand(command);
 insert:
     // CraftBukkit start
-    String commandString = "/" + packet.command();
+    String prefixedCommand = "/" + command;
     if (org.spigotmc.SpigotConfig.logCommands) { // Paper - Add missing SpigotConfig logCommands check
-        LOGGER.info("{} issued server command: {}", this.player.getScoreboardName(), commandString);
+        LOGGER.info("{} issued server command: {}", this.player.getScoreboardName(), prefixedCommand);
+    }
+
+    PlayerCommandPreprocessEvent event = new PlayerCommandPreprocessEvent(this.getCraftPlayer(), prefixedCommand, new org.bukkit.craftbukkit.util.LazyPlayerSet(this.server));
+    this.cserver.getPluginManager().callEvent(event);
+
+    if (event.isCancelled()) {
+        return;
+    }
+    command = event.getMessage().substring(1);
+    // CraftBukkit end
+
+# PlayerCommandPreprocessEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    ParseResults<CommandSourceStack> parseResults = this.parseCommand(packet.command());
+insert:
+    // CraftBukkit start
+    String command = "/" + packet.command();
+    if (org.spigotmc.SpigotConfig.logCommands) { // Paper - Add missing SpigotConfig logCommands check
+        LOGGER.info("{} issued server command: {}", this.player.getScoreboardName(), command);
     } // Paper - Add missing SpigotConfig logCommands check
 
-    PlayerCommandPreprocessEvent event = new PlayerCommandPreprocessEvent(this.getCraftPlayer(), commandString, new org.bukkit.craftbukkit.util.LazyPlayerSet(this.server));
+    PlayerCommandPreprocessEvent event = new PlayerCommandPreprocessEvent(this.getCraftPlayer(), command, new org.bukkit.craftbukkit.util.LazyPlayerSet(this.server));
     this.cserver.getPluginManager().callEvent(event);
-    commandString = event.getMessage().substring(1);
+    command = event.getMessage().substring(1);
 
 
 # PlayerArmSwingEvent, callPlayerInteractEvent
@@ -135,11 +267,17 @@ anchor:
     this.player.swing(packet.getHand());
 insert:
     // CraftBukkit start - Raytrace to look for 'rogue armswings'
-    Location origin = CraftLocation.toBukkit(this.player.getEyePosition(), this.player.level(), this.player.getYRot(), this.player.getXRot());
-    double maxRange = Math.max(this.player.blockInteractionRange(), this.player.entityInteractionRange()); // todo flawed
+    float f1 = this.player.getXRot();
+    float f2 = this.player.getYRot();
+    double d0 = this.player.getX();
+    double d1 = this.player.getY() + (double) this.player.getEyeHeight();
+    double d2 = this.player.getZ();
+    Location origin = new Location(this.player.level().getWorld(), d0, d1, d2, f2, f1);
+
+    double d3 = Math.max(this.player.blockInteractionRange(), this.player.entityInteractionRange());
     // SPIGOT-5607: Only call interact event if no block or entity is being clicked. Use bukkit ray trace method, because it handles blocks and entities at the same time
     // SPIGOT-7429: Make sure to call PlayerInteractEvent for spectators and non-pickable entities
-    org.bukkit.util.RayTraceResult result = this.player.level().getWorld().rayTrace(origin, origin.getDirection(), maxRange, org.bukkit.FluidCollisionMode.NEVER, false, 0.0, entity -> { // Paper - Call interact event; change raySize from 0.1 to 0.0
+    org.bukkit.util.RayTraceResult result = this.player.level().getWorld().rayTrace(origin, origin.getDirection(), d3, org.bukkit.FluidCollisionMode.NEVER, false, 0.0, entity -> { // Paper - Call interact event; change raySize from 0.1 to 0.0
         Entity handle = ((CraftEntity) entity).getHandle();
         return entity != this.player.getBukkitEntity() && this.player.getBukkitEntity().canSee(entity) && !handle.isSpectator() && handle.isPickable() && !handle.isPassengerOfSameVehicle(this.player);
     });
@@ -161,13 +299,342 @@ insert:
     if (event.isCancelled()) return;
     // CraftBukkit end
 
+# PlayerToggleSprintEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player.resetLastActionTime();
+    switch (packet.getAction()) {
+insert:
+    // CraftBukkit start
+    if (this.player.isRemoved()) return;
+    switch (packet.getAction()) {
+        case START_SPRINTING:
+        case STOP_SPRINTING: {
+            PlayerToggleSprintEvent event = new PlayerToggleSprintEvent(this.getCraftPlayer(), packet.getAction() == ServerboundPlayerCommandPacket.Action.START_SPRINTING);
+            this.cserver.getPluginManager().callEvent(event);
+
+            if (event.isCancelled()) {
+                return;
+            }
+            break;
+        }
+    }
+    // CraftBukkit end
+
+# handleInventoryCloseEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player.doCloseContainer();
+insert:
+
+    if (this.player.isImmobile()) return; // CraftBukkit
+    CraftEventFactory.handleInventoryCloseEvent(this.player, reason); // CraftBukkit // Paper
+
+# CartographyItemEvent, CraftItemEvent, InventoryClickEvent, SmithItemEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player.containerMenu.clicked(slotNum, packet.buttonNum(), packet.clickType(), this.player);
+insert:
+    // CraftBukkit start - Call InventoryClickEvent
+    if (slotNum < -1 && slotNum != net.minecraft.world.inventory.AbstractContainerMenu.SLOT_CLICKED_OUTSIDE) {
+        return;
+    }
+
+    org.bukkit.inventory.InventoryView inventory = this.player.containerMenu.getBukkitView();
+    SlotType type = inventory.getSlotType(slotNum);
+
+    InventoryClickEvent event;
+    ClickType click = ClickType.UNKNOWN;
+    InventoryAction action = InventoryAction.UNKNOWN;
+
+    switch (packet.clickType()) {
+        case PICKUP:
+            if (packet.buttonNum() == 0) {
+                click = ClickType.LEFT;
+            } else if (packet.buttonNum() == 1) {
+                click = ClickType.RIGHT;
+            }
+            if (packet.buttonNum() == 0 || packet.buttonNum() == 1) {
+                action = InventoryAction.NOTHING; // Don't want to repeat ourselves
+                if (slotNum == net.minecraft.world.inventory.AbstractContainerMenu.SLOT_CLICKED_OUTSIDE) {
+                    if (!this.player.containerMenu.getCarried().isEmpty()) {
+                        action = packet.buttonNum() == 0 ? InventoryAction.DROP_ALL_CURSOR : InventoryAction.DROP_ONE_CURSOR;
+                    }
+                } else if (slotNum < 0)  {
+                    action = InventoryAction.NOTHING;
+                } else {
+                    Slot slot = this.player.containerMenu.getSlot(slotNum);
+                    if (slot != null) {
+                        ItemStack clickedItem = slot.getItem();
+                        ItemStack cursor = this.player.containerMenu.getCarried();
+                        if (clickedItem.isEmpty()) {
+                            if (!cursor.isEmpty()) {
+                                if (cursor.getItem() instanceof net.minecraft.world.item.BundleItem && cursor.has(DataComponents.BUNDLE_CONTENTS) && packet.buttonNum() != 0) {
+                                    action = cursor.get(DataComponents.BUNDLE_CONTENTS).isEmpty() ? InventoryAction.NOTHING : InventoryAction.PLACE_FROM_BUNDLE;
+                                } else {
+                                    action = packet.buttonNum() == 0 ? InventoryAction.PLACE_ALL : InventoryAction.PLACE_ONE;
+                                }
+                            }
+                        } else if (slot.mayPickup(this.player)) {
+                            if (cursor.isEmpty()) {
+                                if (slot.getItem().getItem() instanceof net.minecraft.world.item.BundleItem && slot.getItem().has(DataComponents.BUNDLE_CONTENTS) && packet.buttonNum() != 0) {
+                                    action = slot.getItem().get(DataComponents.BUNDLE_CONTENTS).isEmpty() ? InventoryAction.NOTHING : InventoryAction.PICKUP_FROM_BUNDLE;
+                                } else {
+                                    action = packet.buttonNum() == 0 ? InventoryAction.PICKUP_ALL : InventoryAction.PICKUP_HALF;
+                                }
+                            } else if (slot.mayPlace(cursor)) {
+                                if (ItemStack.isSameItemSameComponents(clickedItem, cursor)) {
+                                    int toPlace = packet.buttonNum() == 0 ? cursor.getCount() : 1;
+                                    toPlace = Math.min(toPlace, clickedItem.getMaxStackSize() - clickedItem.getCount());
+                                    toPlace = Math.min(toPlace, slot.container.getMaxStackSize() - clickedItem.getCount());
+                                    if (toPlace == 1) {
+                                        action = InventoryAction.PLACE_ONE;
+                                    } else if (toPlace == cursor.getCount()) {
+                                        action = InventoryAction.PLACE_ALL;
+                                    } else if (toPlace < 0) {
+                                        action = toPlace != -1 ? InventoryAction.PICKUP_SOME : InventoryAction.PICKUP_ONE; // this happens with oversized stacks
+                                    } else if (toPlace != 0) {
+                                        action = InventoryAction.PLACE_SOME;
+                                    }
+                                } else if (cursor.getCount() <= slot.getMaxStackSize()) {
+                                    if (cursor.getItem() instanceof net.minecraft.world.item.BundleItem && cursor.has(DataComponents.BUNDLE_CONTENTS) && packet.buttonNum() == 0) {
+                                        int toPickup = cursor.get(DataComponents.BUNDLE_CONTENTS).getMaxAmountToAdd(slot.getItem());
+                                        if (toPickup >= slot.getItem().getCount()) {
+                                            action = InventoryAction.PICKUP_ALL_INTO_BUNDLE;
+                                        } else if (toPickup == 0) {
+                                            action = InventoryAction.NOTHING;
+                                        } else {
+                                            action = InventoryAction.PICKUP_SOME_INTO_BUNDLE;
+                                        }
+                                    } else if (slot.getItem().getItem() instanceof net.minecraft.world.item.BundleItem && slot.getItem().has(DataComponents.BUNDLE_CONTENTS) && packet.buttonNum() == 0) {
+                                        int toPickup = slot.getItem().get(DataComponents.BUNDLE_CONTENTS).getMaxAmountToAdd(cursor);
+                                        if (toPickup >= cursor.getCount()) {
+                                            action = InventoryAction.PLACE_ALL_INTO_BUNDLE;
+                                        } else if (toPickup == 0) {
+                                            action = InventoryAction.NOTHING;
+                                        } else {
+                                            action = InventoryAction.PLACE_SOME_INTO_BUNDLE;
+                                        }
+                                    } else {
+                                        action = InventoryAction.SWAP_WITH_CURSOR;
+                                    }
+                                }
+                            } else if (ItemStack.isSameItemSameComponents(cursor, clickedItem)) {
+                                if (clickedItem.getCount() >= 0) {
+                                    if (clickedItem.getCount() + cursor.getCount() <= cursor.getMaxStackSize()) {
+                                        // As of 1.5, this is result slots only
+                                        action = InventoryAction.PICKUP_ALL;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            break;
+        // TODO check on updates
+        case QUICK_MOVE:
+            if (packet.buttonNum() == 0) {
+                click = ClickType.SHIFT_LEFT;
+            } else if (packet.buttonNum() == 1) {
+                click = ClickType.SHIFT_RIGHT;
+            }
+            if (packet.buttonNum() == 0 || packet.buttonNum() == 1) {
+                if (slotNum < 0) {
+                    action = InventoryAction.NOTHING;
+                } else {
+                    Slot slot = this.player.containerMenu.getSlot(slotNum);
+                    if (slot != null && slot.mayPickup(this.player) && slot.hasItem()) {
+                        action = InventoryAction.MOVE_TO_OTHER_INVENTORY;
+                    } else {
+                        action = InventoryAction.NOTHING;
+                    }
+                }
+            }
+            break;
+        case SWAP:
+            if ((packet.buttonNum() >= 0 && packet.buttonNum() < 9) || packet.buttonNum() == Inventory.SLOT_OFFHAND) {
+                // Paper start - Add slot sanity checks to container clicks
+                if (slotNum < 0) {
+                    action = InventoryAction.NOTHING;
+                    break;
+                }
+                // Paper end - Add slot sanity checks to container clicks
+                click = (packet.buttonNum() == Inventory.SLOT_OFFHAND) ? ClickType.SWAP_OFFHAND : ClickType.NUMBER_KEY;
+                Slot clickedSlot = this.player.containerMenu.getSlot(slotNum);
+                if (clickedSlot.mayPickup(this.player)) {
+                    ItemStack hotbar = this.player.getInventory().getItem(packet.buttonNum());
+                    if ((!hotbar.isEmpty() && clickedSlot.mayPlace(hotbar)) || (hotbar.isEmpty() && clickedSlot.hasItem())) { // Paper - modernify this logic (no such thing as a "hotbar move and readd"
+                        action = InventoryAction.HOTBAR_SWAP;
+                    } else {
+                        action = InventoryAction.NOTHING;
+                    }
+                } else {
+                    action = InventoryAction.NOTHING;
+                }
+            }
+            break;
+        case CLONE:
+            if (packet.buttonNum() == 2) {
+                click = ClickType.MIDDLE;
+                if (slotNum < 0) {
+                    action = InventoryAction.NOTHING;
+                } else {
+                    Slot slot = this.player.containerMenu.getSlot(slotNum);
+                    if (slot != null && slot.hasItem() && this.player.getAbilities().instabuild && this.player.containerMenu.getCarried().isEmpty()) {
+                        action = InventoryAction.CLONE_STACK;
+                    } else {
+                        action = InventoryAction.NOTHING;
+                    }
+                }
+            } else {
+                click = ClickType.UNKNOWN;
+                action = InventoryAction.UNKNOWN;
+            }
+            break;
+        case THROW:
+            if (slotNum >= 0) {
+                if (packet.buttonNum() == 0) {
+                    click = ClickType.DROP;
+                    Slot slot = this.player.containerMenu.getSlot(slotNum);
+                    if (slot != null && slot.hasItem() && slot.mayPickup(this.player) && !slot.getItem().isEmpty() && slot.getItem().getItem() != Items.AIR) {
+                        action = InventoryAction.DROP_ONE_SLOT;
+                    } else {
+                        action = InventoryAction.NOTHING;
+                    }
+                } else if (packet.buttonNum() == 1) {
+                    click = ClickType.CONTROL_DROP;
+                    Slot slot = this.player.containerMenu.getSlot(slotNum);
+                    if (slot != null && slot.hasItem() && slot.mayPickup(this.player) && !slot.getItem().isEmpty() && slot.getItem().getItem() != Items.AIR) {
+                        action = InventoryAction.DROP_ALL_SLOT;
+                    } else {
+                        action = InventoryAction.NOTHING;
+                    }
+                }
+            } else {
+                // Sane default (because this happens when they are holding nothing. Don't ask why.)
+                click = ClickType.LEFT;
+                if (packet.buttonNum() == 1) {
+                    click = ClickType.RIGHT;
+                }
+                action = InventoryAction.NOTHING;
+            }
+            break;
+        case QUICK_CRAFT:
+            // Paper start - Fix CraftBukkit drag system
+            net.minecraft.world.inventory.AbstractContainerMenu containerMenu = this.player.containerMenu;
+            int currentStatus = this.player.containerMenu.quickcraftStatus;
+            int newStatus = net.minecraft.world.inventory.AbstractContainerMenu.getQuickcraftHeader(packet.buttonNum());
+            if ((currentStatus != 1 || newStatus != 2 && currentStatus != newStatus)) {
+            } else if (containerMenu.getCarried().isEmpty()) {
+            } else if (newStatus == 0) {
+            } else if (newStatus == 1) {
+            } else if (newStatus == 2) {
+                if (!this.player.containerMenu.quickcraftSlots.isEmpty()) {
+                    if (this.player.containerMenu.quickcraftSlots.size() == 1) {
+                        int index = containerMenu.quickcraftSlots.iterator().next().index;
+                        containerMenu.resetQuickCraft();
+                        this.handleContainerClick(new ServerboundContainerClickPacket(packet.containerId(), packet.stateId(), (short) index, (byte) containerMenu.quickcraftType, net.minecraft.world.inventory.ClickType.PICKUP, packet.changedSlots(), packet.carriedItem()));
+                        return;
+                    }
+                }
+            }
+            // Paper end - Fix CraftBukkit drag system
+insert-after:
+            break;
+        case PICKUP_ALL:
+            click = ClickType.DOUBLE_CLICK;
+            action = InventoryAction.NOTHING;
+            if (slotNum >= 0 && !this.player.containerMenu.getCarried().isEmpty()) {
+                ItemStack cursor = this.player.containerMenu.getCarried();
+                action = InventoryAction.NOTHING;
+                // Quick check for if we have any of the item
+                if (inventory.getTopInventory().contains(org.bukkit.craftbukkit.inventory.CraftItemType.minecraftToBukkit(cursor.getItem())) || inventory.getBottomInventory().contains(org.bukkit.craftbukkit.inventory.CraftItemType.minecraftToBukkit(cursor.getItem()))) {
+                    action = InventoryAction.COLLECT_TO_CURSOR;
+                }
+            }
+            break;
+        default:
+            break;
+    }
+
+    if (packet.clickType() != net.minecraft.world.inventory.ClickType.QUICK_CRAFT) {
+        // If a non quick craft packet is emitted by the client while in quick crafting, the server will reset quick crafting and
+        // discard any further packet action.
+        if (this.player.containerMenu.quickcraftStatus != 0) {
+            action = InventoryAction.NOTHING;
+        }
+
+        if (click == ClickType.NUMBER_KEY) {
+            event = new InventoryClickEvent(inventory, type, slotNum, click, action, packet.buttonNum());
+        } else {
+            event = new InventoryClickEvent(inventory, type, slotNum, click, action);
+        }
+
+        org.bukkit.inventory.Inventory top = inventory.getTopInventory();
+        if (slotNum == 0 && top instanceof final org.bukkit.inventory.CraftingInventory craftingInv) {
+            org.bukkit.inventory.Recipe recipe = craftingInv.getRecipe();
+            if (recipe != null) {
+                if (click == ClickType.NUMBER_KEY) {
+                    event = new CraftItemEvent(recipe, inventory, type, slotNum, click, action, packet.buttonNum());
+                } else {
+                    event = new CraftItemEvent(recipe, inventory, type, slotNum, click, action);
+                }
+            }
+        }
+
+        if (slotNum == 3 && top instanceof final org.bukkit.inventory.SmithingInventory smithingInv) {
+            org.bukkit.inventory.ItemStack result = smithingInv.getResult();
+            if (result != null) {
+                if (click == ClickType.NUMBER_KEY) {
+                    event = new SmithItemEvent(inventory, type, slotNum, click, action, packet.buttonNum());
+                } else {
+                    event = new SmithItemEvent(inventory, type, slotNum, click, action);
+                }
+            }
+        }
+
+        // Paper start - cartography item event
+        if (slotNum == net.minecraft.world.inventory.CartographyTableMenu.RESULT_SLOT && top instanceof org.bukkit.inventory.CartographyInventory cartographyInventory) {
+            org.bukkit.inventory.ItemStack result = cartographyInventory.getResult();
+            if (result != null && !result.isEmpty()) {
+                if (click == ClickType.NUMBER_KEY) {
+                    event = new io.papermc.paper.event.player.CartographyItemEvent(inventory, type, slotNum, click, action, packet.buttonNum());
+                } else {
+                    event = new io.papermc.paper.event.player.CartographyItemEvent(inventory, type, slotNum, click, action);
+                }
+            }
+        }
+        // Paper end - cartography item event
+
+        event.setCancelled(cancelled);
+        net.minecraft.world.inventory.AbstractContainerMenu oldContainer = this.player.containerMenu; // SPIGOT-1224
+        this.cserver.getPluginManager().callEvent(event);
+        if (this.player.containerMenu != oldContainer) {
+            this.player.containerMenu.resumeRemoteUpdates();
+            this.player.containerMenu.broadcastFullState();
+            return;
+        }
+
+        if (event.getResult() != org.bukkit.event.Event.Result.DENY) { // if denied, synchronizing is fully handled by broadcastChanges at the end
+            this.player.containerMenu.clicked(slotNum, packet.buttonNum(), packet.clickType(), this.player);
+        }
+
+        if (event instanceof CraftItemEvent || event instanceof SmithItemEvent) {
+            // Need to update the inventory on crafting to
+            // correctly support custom recipes
+            this.player.containerMenu.sendAllDataToRemote();
+        }
+    }
+    // CraftBukkit end
+
 # PlayerRecipeBookClickEvent, callRecipeBookClickEvent
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     RecipeBookMenu.PostPlaceAction postPlaceAction = recipeBookMenu.handlePlacement(
 insert:
     // Paper start - Add PlayerRecipeBookClickEvent
-    NamespacedKey recipeName = org.bukkit.craftbukkit.util.CraftNamespacedKey.fromMinecraft(recipe.id().identifier());
+    NamespacedKey recipeName = org.bukkit.craftbukkit.util.CraftNamespacedKey.fromMinecraft(recipeHolder.id().identifier());
     boolean makeAll = packet.useMaxItems();
     com.destroystokyo.paper.event.player.PlayerRecipeBookClickEvent paperEvent = new com.destroystokyo.paper.event.player.PlayerRecipeBookClickEvent(
         this.player.getBukkitEntity(), recipeName, makeAll
@@ -180,12 +647,12 @@ insert:
     if (org.bukkit.event.player.PlayerRecipeBookClickEvent.getHandlerList().getRegisteredListeners().length > 0) {
         // Paper end - Add PlayerRecipeBookClickEvent
         // CraftBukkit start - implement PlayerRecipeBookClickEvent
-        org.bukkit.inventory.Recipe bukkitRecipe = this.cserver.getRecipe(recipeName); // Paper - Add PlayerRecipeBookClickEvent - forward to legacy event
-        if (bukkitRecipe == null) {
+        org.bukkit.inventory.Recipe recipe = this.cserver.getRecipe(recipeName); // Paper - Add PlayerRecipeBookClickEvent - forward to legacy event
+        if (recipe == null) {
             return;
         }
         // Paper start - Add PlayerRecipeBookClickEvent - forward to legacy event
-        org.bukkit.event.player.PlayerRecipeBookClickEvent event = CraftEventFactory.callRecipeBookClickEvent(this.player, bukkitRecipe, makeAll);
+        org.bukkit.event.player.PlayerRecipeBookClickEvent event = CraftEventFactory.callRecipeBookClickEvent(this.player, recipe, makeAll);
         recipeName = ((org.bukkit.Keyed) event.getRecipe()).getKey();
         makeAll = event.isShiftClick();
     }
@@ -195,23 +662,66 @@ insert:
     // Paper end - Add PlayerRecipeBookClickEvent - forward to legacy event
 
     // Cast to keyed should be safe as the recipe will never be a MerchantRecipe.
-    recipe = this.server.getRecipeManager().byKey(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.RECIPE, org.bukkit.craftbukkit.util.CraftNamespacedKey.toMinecraft(recipeName))).orElse(null); // Paper - Add PlayerRecipeBookClickEvent - forward to legacy event
-    if (recipe == null) {
+    recipeHolder = this.server.getRecipeManager().byKey(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.RECIPE, org.bukkit.craftbukkit.util.CraftNamespacedKey.toMinecraft(recipeName))).orElse(null); // Paper - Add PlayerRecipeBookClickEvent - forward to legacy event
+    if (recipeHolder == null) {
         return;
     }
 
 
+# InventoryCreativeEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    if (flag1 && flag2) {
+insert:
+    if (flag || (flag1 && !ItemStack.matches(this.player.inventoryMenu.getSlot(packet.slotNum()).getItem(), packet.itemStack()))) { // Insist on valid slot
+        // CraftBukkit start - Call click event
+        org.bukkit.inventory.InventoryView inventory = this.player.inventoryMenu.getBukkitView();
+        org.bukkit.inventory.ItemStack item = CraftItemStack.asBukkitCopy(packet.itemStack());
+
+        SlotType type = SlotType.QUICKBAR;
+        if (flag) {
+            type = SlotType.OUTSIDE;
+        } else if (packet.slotNum() < 36) {
+            if (packet.slotNum() >= 5 && packet.slotNum() < 9) {
+                type = SlotType.ARMOR;
+            } else {
+                type = SlotType.CONTAINER;
+            }
+        }
+        InventoryCreativeEvent event = new InventoryCreativeEvent(inventory, type, flag ? net.minecraft.world.inventory.AbstractContainerMenu.SLOT_CLICKED_OUTSIDE : packet.slotNum(), item);
+        this.cserver.getPluginManager().callEvent(event);
+
+        itemStack = CraftItemStack.asNMSCopy(event.getCursor());
+
+        switch (event.getResult()) {
+            case ALLOW:
+                // Plugin cleared the id / stacksize checks
+                flag2 = true;
+                break;
+            case DEFAULT:
+                break;
+            case DENY:
+                // Reset the slot
+                if (packet.slotNum() >= 0) {
+                    this.player.connection.send(new net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket(this.player.inventoryMenu.containerId, this.player.inventoryMenu.incrementStateId(), packet.slotNum(), this.player.inventoryMenu.getSlot(packet.slotNum()).getItem()));
+                    this.player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetCursorItemPacket(ItemStack.EMPTY.copy())); // Paper - correctly set cursor
+                }
+                return;
+        }
+    }
+    // CraftBukkit end
+
 # UncheckedSignChangeEvent
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    if (!(level.getBlockEntity(pos) instanceof SignBlockEntity sign)) {
+    if (!(serverLevel.getBlockEntity(pos) instanceof SignBlockEntity signBlockEntity)) {
 insert:
     // Paper start - Add API for client-side signs
     if (!new io.papermc.paper.event.packet.UncheckedSignChangeEvent(
         this.player.getBukkitEntity(),
         io.papermc.paper.util.MCUtil.toPosition(pos),
         packet.isFrontText() ? org.bukkit.block.sign.Side.FRONT : org.bukkit.block.sign.Side.BACK,
-        lines.stream().<net.kyori.adventure.text.Component>map(line -> net.kyori.adventure.text.Component.text(line.raw())).toList())
+        filteredText.stream().<net.kyori.adventure.text.Component>map(line -> net.kyori.adventure.text.Component.text(line.raw())).toList())
         .callEvent()) {
         return;
     }

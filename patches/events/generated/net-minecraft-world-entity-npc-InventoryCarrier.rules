@@ -1,0 +1,14 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityPickupItemEvent
+file: net/minecraft/world/entity/npc/InventoryCarrier.java
+anchor:
+    mob.onItemPickup(itemEntity);
+insert:
+    // CraftBukkit start
+    ItemStack remaining = new SimpleContainer(inventory).addItem(item);
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPickupItemEvent(mob, itemEntity, remaining.getCount()).isCancelled()) {
+        return;
+    }
+    // CraftBukkit end
+

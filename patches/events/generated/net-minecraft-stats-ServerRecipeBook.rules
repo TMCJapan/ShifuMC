@@ -3,9 +3,9 @@
 # callPlayerRecipeListUpdateEvent
 file: net/minecraft/stats/ServerRecipeBook.java
 anchor:
-    this.add(id);
+    this.add(resourceKey);
 insert:
     // Paper start - PlayerRecipeDiscoverEvent event
-    final org.bukkit.event.player.PlayerRecipeDiscoverEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerRecipeListUpdateEvent(player, recipe);
+    final org.bukkit.event.player.PlayerRecipeDiscoverEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerRecipeListUpdateEvent(player, recipeHolder);
     if (event.isCancelled()) continue;
     // Paper end - PlayerRecipeDiscoverEvent event

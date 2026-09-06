@@ -3,10 +3,10 @@
 # callEntityPlaceEvent
 file: net/minecraft/world/item/ArmorStandItem.java
 anchor:
-    serverLevel.addFreshEntityWithPassengers(entity);
+    serverLevel.addFreshEntityWithPassengers(armorStand);
 insert:
     // CraftBukkit start
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPlaceEvent(context, entity).isCancelled()) {
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPlaceEvent(context, armorStand).isCancelled()) {
         if (context.getPlayer() != null) context.getPlayer().containerMenu.sendAllDataToRemote(); // Paper - Fix inventory desync
         return InteractionResult.FAIL;
     }

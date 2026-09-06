@@ -3,19 +3,38 @@
 # WorldSaveEvent
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    if (progressListener != null) {
-        progressListener.progressStartNoAbort(Component.translatable("menu.savingLevel"));
+    if (progress != null) {
+        progress.progressStartNoAbort(Component.translatable("menu.savingLevel"));
 insert:
-    new org.bukkit.event.world.WorldSaveEvent(this.getWorld()).callEvent(); // CraftBukkit
+    org.bukkit.Bukkit.getPluginManager().callEvent(new org.bukkit.event.world.WorldSaveEvent(this.getWorld())); // CraftBukkit
+
+# doEntityAddEventCalling
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    return this.entityManager.addNewEntity(entity);
+insert:
+    if (entity instanceof net.minecraft.world.entity.item.ItemEntity itemEntity && itemEntity.getItem().isEmpty()) return false; // Paper - Prevent empty items from being added
+    // Paper start - capture all item additions to the world
+    if (captureDrops != null && entity instanceof net.minecraft.world.entity.item.ItemEntity) {
+        captureDrops.add((net.minecraft.world.entity.item.ItemEntity) entity);
+        return true;
+    }
+    // Paper end - capture all item additions to the world
+    // SPIGOT-6415: Don't call spawn event when reason is null. For example when an entity teleports to a new world.
+    if (spawnReason != null && !org.bukkit.craftbukkit.event.CraftEventFactory.doEntityAddEventCalling(this, entity, spawnReason)) {
+        return false;
+    }
+    // CraftBukkit end
+
 
 # BlockBreakProgressUpdateEvent
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    for (ServerPlayer player : this.server.getPlayerList().getPlayers()) {
+    for (ServerPlayer serverPlayer : this.server.getPlayerList().getPlayers()) {
 insert:
     // CraftBukkit start
     Player breakerPlayer = null;
-    Entity entity = this.getEntity(id);
+    Entity entity = this.getEntity(breakerId);
     if (entity instanceof Player) breakerPlayer = (Player) entity;
     // CraftBukkit end
 
@@ -24,7 +43,7 @@ insert:
     // Hence, do not call the event.
     if (entity != null) {
         float progressFloat = Mth.clamp(progress, 0, 10) / 10.0f;
-        org.bukkit.craftbukkit.block.CraftBlock bukkitBlock = org.bukkit.craftbukkit.block.CraftBlock.at(this, blockPos);
+        org.bukkit.craftbukkit.block.CraftBlock bukkitBlock = org.bukkit.craftbukkit.block.CraftBlock.at(this, pos);
         new io.papermc.paper.event.block.BlockBreakProgressUpdateEvent(bukkitBlock, progressFloat, entity.getBukkitEntity())
             .callEvent();
     }
@@ -33,10 +52,10 @@ insert:
 # MapInitializeEvent
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    this.getServer().getDataStorage().set(MapItemSavedData.type(id), data);
+    this.getServer().overworld().getDataStorage().set(MapItemSavedData.type(mapId), data);
 insert:
     // CraftBukkit start
-    data.id = id;
+    data.id = mapId;
     org.bukkit.event.server.MapInitializeEvent event = new org.bukkit.event.server.MapInitializeEvent(data.mapView);
     event.callEvent();
     // CraftBukkit end

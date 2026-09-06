@@ -1,0 +1,18 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# SlimeSplitEvent
+file: net/minecraft/world/entity/monster/Slime.java
+anchor:
+    for (int i2 = 0; i2 < i1; i2++) {
+insert:
+    // CraftBukkit start
+    org.bukkit.event.entity.SlimeSplitEvent event = new org.bukkit.event.entity.SlimeSplitEvent((org.bukkit.entity.Slime) this.getBukkitEntity(), i1);
+    if (event.callEvent() && event.getCount() > 0) {
+        i1 = event.getCount();
+    } else {
+        super.remove(reason, eventCause); // CraftBukkit - add Bukkit remove cause
+        return;
+    }
+
+    java.util.List<LivingEntity> slimes = new java.util.ArrayList<>(i1);
+    // CraftBukkit end

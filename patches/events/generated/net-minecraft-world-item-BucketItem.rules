@@ -3,15 +3,31 @@
 # callPlayerBucketFillEvent
 file: net/minecraft/world/item/BucketItem.java
 anchor:
-    ItemStack taken = bucketPickupBlock.pickupBlock(player, level, pos, blockState);
+    ItemStack itemStack = bucketPickup.pickupBlock(player, level, blockPos, blockState);
 insert:
     // CraftBukkit start
-    ItemStack dummyFluid = bucketPickupBlock.pickupBlock(player, org.bukkit.craftbukkit.util.DummyLevelAccessor.INSTANCE, pos, blockState);
+    ItemStack dummyFluid = bucketPickup.pickupBlock(player, org.bukkit.craftbukkit.util.DummyGeneratorAccess.INSTANCE, blockPos, blockState);
     if (dummyFluid.isEmpty()) return InteractionResult.FAIL; // Don't fire event if the bucket won't be filled.
-    org.bukkit.event.player.PlayerBucketFillEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerBucketFillEvent(level, player, pos, pos, hitResult.getDirection(), itemStack, dummyFluid.getItem(), hand);
+    org.bukkit.event.player.PlayerBucketFillEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerBucketFillEvent(level, player, blockPos, blockPos, playerPovHitResult.getDirection(), itemInHand, dummyFluid.getItem(), hand);
 
     if (event.isCancelled()) {
         player.containerMenu.sendAllDataToRemote(); // SPIGOT-4541
         return InteractionResult.FAIL;
+    }
+    // CraftBukkit end
+
+# callPlayerBucketEmptyEvent
+file: net/minecraft/world/item/BucketItem.java
+anchor:
+    if (!flag2) {
+insert:
+    // CraftBukkit start
+    if (flag2 && entity instanceof Player player) {
+        org.bukkit.event.player.PlayerBucketEmptyEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerBucketEmptyEvent(level, player, pos, clicked, direction, itemstack, hand);
+        if (event.isCancelled()) {
+            player.containerMenu.sendAllDataToRemote(); // SPIGOT-4541
+            return false;
+        }
+        itemLeftInHandAfterPlayerBucketEmptyEvent = event.getItemStack() != null ? event.getItemStack().equals(org.bukkit.craftbukkit.inventory.CraftItemStack.asNewCraftStack(net.minecraft.world.item.Items.BUCKET)) ? null : org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItemStack()) : ItemStack.EMPTY; // Paper - Fix PlayerBucketEmptyEvent result itemstack
     }
     // CraftBukkit end

@@ -3,9 +3,9 @@
 # EntityToggleSitEvent
 file: net/minecraft/world/entity/animal/panda/Panda.java
 anchor:
-    this.setFlag(FLAG_SIT, value);
+    this.setFlag(FLAG_SIT, sitting);
 insert:
-    if (!new io.papermc.paper.event.entity.EntityToggleSitEvent(this.getBukkitEntity(), value).callEvent()) return; // Paper - Add EntityToggleSitEvent
+    if (!new io.papermc.paper.event.entity.EntityToggleSitEvent(this.getBukkitEntity(), sitting).callEvent()) return; // Paper - Add EntityToggleSitEvent
 
 # EntityJumpEvent
 file: net/minecraft/world/entity/animal/panda/Panda.java

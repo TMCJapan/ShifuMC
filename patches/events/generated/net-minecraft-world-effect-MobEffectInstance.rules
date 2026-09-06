@@ -1,8 +1,0 @@
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
-
-# EntityEffectTickEvent
-file: net/minecraft/world/effect/MobEffectInstance.java
-anchor:
-    && !this.effect.value().applyEffectTick(serverLevel, target, this.amplifier)) {
-insert:
-    && new io.papermc.paper.event.entity.EntityEffectTickEvent(target.getBukkitLivingEntity(), org.bukkit.craftbukkit.potion.CraftPotionEffectType.minecraftHolderToBukkit(this.effect), this.amplifier).callEvent() // Paper - Add EntityEffectTickEvent

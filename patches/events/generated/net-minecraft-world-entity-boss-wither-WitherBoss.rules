@@ -3,17 +3,17 @@
 # callEntityTargetLivingEvent
 file: net/minecraft/world/entity/boss/wither/WitherBoss.java
 anchor:
-    this.setAlternativeTarget(i, selected.getId());
+    this.setAlternativeTarget(ix, livingEntity1.getId());
 insert:
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTargetLivingEvent(this, selected, org.bukkit.event.entity.EntityTargetEvent.TargetReason.CLOSEST_ENTITY).isCancelled()) continue; // CraftBukkit
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTargetLivingEvent(this, livingEntity1, org.bukkit.event.entity.EntityTargetEvent.TargetReason.CLOSEST_ENTITY).isCancelled()) continue; // CraftBukkit
 
 # callEntityChangeBlockEvent
 file: net/minecraft/world/entity/boss/wither/WitherBoss.java
 anchor:
-    destroyed = level.destroyBlock(blockPos, true, this) || destroyed;
+    flag = level.destroyBlock(blockPos, true, this) || flag;
 insert:
     // CraftBukkit start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(this, blockPos, state.getFluidState().createLegacyBlock())) { // Paper - fix wrong block state
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(this, blockPos, blockState.getFluidState().createLegacyBlock())) { // Paper - fix wrong block state
         continue;
     }
     // CraftBukkit end

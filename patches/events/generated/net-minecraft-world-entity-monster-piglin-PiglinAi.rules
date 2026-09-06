@@ -3,7 +3,7 @@
 # callEntityPickupItemEvent
 file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
 anchor:
-    if (itemEntity.getItem().is(Items.GOLD_NUGGET)) {
+    ItemStack item;
 insert:
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPickupItemEvent(body, itemEntity, itemEntity.getItem().is(Items.GOLD_NUGGET) ? 0 : itemEntity.getItem().getCount() - 1).isCancelled()) return; // Paper
-    body.onItemPickup(itemEntity); // Paper - moved from Piglin#pickUpItem - call prior to item entity modification
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPickupItemEvent(piglin, itemEntity, itemEntity.getItem().is(Items.GOLD_NUGGET) ? 0 : itemEntity.getItem().getCount() - 1).isCancelled()) return; // Paper
+    piglin.onItemPickup(itemEntity); // Paper - moved from Piglin#pickUpItem - call prior to item entity modification

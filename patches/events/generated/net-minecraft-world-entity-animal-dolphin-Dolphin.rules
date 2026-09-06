@@ -7,5 +7,5 @@ anchor:
 insert:
     // CraftBukkit start - call EntityPickupItemEvent
     if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPickupItemEvent(this, entity, 0).isCancelled()) return;
-    itemStack = entity.getItem(); // CraftBukkit- update ItemStack from event
+    item = entity.getItem(); // CraftBukkit- update ItemStack from event
     // CraftBukkit end

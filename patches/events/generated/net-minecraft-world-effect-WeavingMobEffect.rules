@@ -1,0 +1,8 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityChangeBlockEvent
+file: net/minecraft/world/effect/WeavingMobEffect.java
+anchor:
+    level.setBlock(blockPosx, Blocks.COBWEB.defaultBlockState(), Block.UPDATE_ALL);
+insert:
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(entity, blockPosx, Blocks.COBWEB.defaultBlockState())) continue; // Paper - Fire EntityChangeBlockEvent in more places

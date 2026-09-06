@@ -3,10 +3,10 @@
 # callEntityChangeBlockEvent
 file: net/minecraft/world/level/block/DecoratedPotBlock.java
 anchor:
-    level.setBlock(pos, state.setValue(CRACKED, true), Block.UPDATE_NONE);
+    level.setBlock(blockPos, state.setValue(CRACKED, true), Block.UPDATE_NONE);
 insert:
     // CraftBukkit start - call EntityChangeBlockEvent
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(projectile, pos, this.getFluidState(state).createLegacyBlock())) {
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(projectile, blockPos, this.getFluidState(state).createLegacyBlock())) {
         return;
     }
     // CraftBukkit end

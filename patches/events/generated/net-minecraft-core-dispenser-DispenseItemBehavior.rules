@@ -3,18 +3,19 @@
 # BlockDispenseEvent
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    PostSpawnProcessor<ArmorStand> postSpawnConfig = EntityType.appendDefaultStackConfig(
+    try {
 insert:
     // CraftBukkit start
-    ItemStack singleItemStack = dispensed.copyWithCount(1);
-    org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(serverLevel, source.pos());
+    ServerLevel serverLevel = blockSource.level();
+    ItemStack singleItemStack = item.copyWithCount(1);
+    org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(serverLevel, blockSource.pos());
     org.bukkit.craftbukkit.inventory.CraftItemStack craftItem = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(singleItemStack);
 
     org.bukkit.event.block.BlockDispenseEvent event = new org.bukkit.event.block.BlockDispenseEvent(block, craftItem.clone(), new org.bukkit.util.Vector(0, 0, 0));
     serverLevel.getCraftServer().getPluginManager().callEvent(event);
 
     if (event.isCancelled()) {
-        return dispensed;
+        return item;
     }
 
     boolean shrink = true;
@@ -22,10 +23,43 @@ insert:
         shrink = false;
         // Chain to handler for new item
         ItemStack eventStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItem());
-        DispenseItemBehavior dispenseBehavior = DispenserBlock.getDispenseBehavior(source, eventStack);
+        DispenseItemBehavior dispenseBehavior = DispenserBlock.getDispenseBehavior(blockSource, eventStack);
         if (dispenseBehavior != DispenseItemBehavior.NOOP && dispenseBehavior != this) {
-            dispenseBehavior.dispense(source, eventStack);
-            return dispensed;
+            dispenseBehavior.dispense(blockSource, eventStack);
+            return item;
+        }
+        // Paper start - track changed items in the dispense event
+        singleItemStack = org.bukkit.craftbukkit.inventory.CraftItemStack.unwrap(event.getItem()); // unwrap is safe because the stack won't be modified
+        type = ((SpawnEggItem) singleItemStack.getItem()).getType(singleItemStack);
+        // Paper end - track changed item from dispense event
+    }
+
+# BlockDispenseEvent
+file: net/minecraft/core/dispenser/DispenseItemBehavior.java
+anchor:
+    Consumer<ArmorStand> consumer = EntityType.appendDefaultStackConfig(
+insert:
+    // CraftBukkit start
+    ItemStack singleItemStack = item.copyWithCount(1);
+    org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(serverLevel, blockSource.pos());
+    org.bukkit.craftbukkit.inventory.CraftItemStack craftItem = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(singleItemStack);
+
+    org.bukkit.event.block.BlockDispenseEvent event = new org.bukkit.event.block.BlockDispenseEvent(block, craftItem.clone(), new org.bukkit.util.Vector(0, 0, 0));
+    serverLevel.getCraftServer().getPluginManager().callEvent(event);
+
+    if (event.isCancelled()) {
+        return item;
+    }
+
+    boolean shrink = true;
+    if (!event.getItem().equals(craftItem)) {
+        shrink = false;
+        // Chain to handler for new item
+        ItemStack eventStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItem());
+        DispenseItemBehavior dispenseBehavior = DispenserBlock.getDispenseBehavior(blockSource, eventStack);
+        if (dispenseBehavior != DispenseItemBehavior.NOOP && dispenseBehavior != this) {
+            dispenseBehavior.dispense(blockSource, eventStack);
+            return item;
         }
     }
     // CraftBukkit end
@@ -35,41 +69,41 @@ insert:
 # BlockDispenseEvent
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (bucket.emptyContents(null, level, target, null)) {
+    if (dispensibleContainerItem.emptyContents(null, level, blockPos, null)) {
 insert:
     // CraftBukkit start
-    BlockState state = level.getBlockState(target);
-    ItemStack dispensedItem = dispensed; // Paper - track changed item from the dispense event
+    BlockState state = level.getBlockState(blockPos);
+    ItemStack dispensedItem = item; // Paper - track changed item from the dispense event
     // Paper start - correctly check if the bucket place will succeed
     /* Taken from SolidBucketItem#emptyContents */
-    boolean willEmptyContentsSolidBucketItem = bucket instanceof net.minecraft.world.item.SolidBucketItem && level.isInWorldBounds(target) && state.isAir();
+    boolean willEmptyContentsSolidBucketItem = dispensibleContainerItem instanceof net.minecraft.world.item.SolidBucketItem && level.isInWorldBounds(blockPos) && state.isAir();
     /* Taken from BucketItem#emptyContents */
-    boolean willEmptyBucketItem = bucket instanceof final net.minecraft.world.item.BucketItem bucketItem && bucketItem.getContent() instanceof net.minecraft.world.level.material.FlowingFluid && (state.isAir() || state.canBeReplaced(bucketItem.getContent()) || (state.getBlock() instanceof net.minecraft.world.level.block.LiquidBlockContainer liquidBlockContainer && liquidBlockContainer.canPlaceLiquid(null, level, target, state, bucketItem.getContent())));
+    boolean willEmptyBucketItem = dispensibleContainerItem instanceof final net.minecraft.world.item.BucketItem bucketItem && bucketItem.content instanceof net.minecraft.world.level.material.FlowingFluid && (state.isAir() || state.canBeReplaced(bucketItem.content) || (state.getBlock() instanceof net.minecraft.world.level.block.LiquidBlockContainer liquidBlockContainer && liquidBlockContainer.canPlaceLiquid(null, level, blockPos, state, bucketItem.content)));
     if (willEmptyContentsSolidBucketItem || willEmptyBucketItem) {
     // Paper end - correctly check if the bucket place will succeed
-        org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, source.pos());
-        org.bukkit.craftbukkit.inventory.CraftItemStack craftItem = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(dispensed.copyWithCount(1)); // Paper - single item in event
+        org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, blockSource.pos());
+        org.bukkit.craftbukkit.inventory.CraftItemStack craftItem = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(item.copyWithCount(1)); // Paper - single item in event
 
-        org.bukkit.event.block.BlockDispenseEvent event = new org.bukkit.event.block.BlockDispenseEvent(block, craftItem.clone(), org.bukkit.craftbukkit.util.CraftVector.toBukkit(target));
+        org.bukkit.event.block.BlockDispenseEvent event = new org.bukkit.event.block.BlockDispenseEvent(block, craftItem.clone(), org.bukkit.craftbukkit.util.CraftVector.toBukkit(blockPos));
         level.getCraftServer().getPluginManager().callEvent(event);
 
         if (event.isCancelled()) {
-            return dispensed;
+            return item;
         }
 
         if (!event.getItem().equals(craftItem)) {
             // Chain to handler for new item
             ItemStack eventStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItem());
-            DispenseItemBehavior dispenseBehavior = DispenserBlock.getDispenseBehavior(source, eventStack);
+            DispenseItemBehavior dispenseBehavior = DispenserBlock.getDispenseBehavior(blockSource, eventStack);
             if (dispenseBehavior != DispenseItemBehavior.NOOP && dispenseBehavior != this) {
-                dispenseBehavior.dispense(source, eventStack);
-                return dispensed;
+                dispenseBehavior.dispense(blockSource, eventStack);
+                return item;
             }
         }
 
         // Paper start - track changed item from dispense event
         dispensedItem = org.bukkit.craftbukkit.inventory.CraftItemStack.unwrap(event.getItem()); // unwrap is safe here as the stack isn't mutated
-        bucket = (DispensibleContainerItem)dispensedItem.getItem();
+        dispensibleContainerItem = (DispensibleContainerItem) dispensedItem.getItem();
         // Paper end - track changed item from dispense event
     }
     // CraftBukkit end
@@ -78,23 +112,63 @@ insert:
 # handleBlockDispenseEvent
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    return this.consumeWithRemainder(source, dispensed, new ItemStack(targetType));
+    return this.consumeWithRemainder(blockSource, item, new ItemStack(item1));
 insert:
     // Paper start - Call BlockDispenseEvent
-    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(source, target, dispensed, this);
+    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this);
     if (result != null) {
         return result;
     }
     // Paper end - Call BlockDispenseEvent
-    pickup = bucket.pickupBlock(null, level, target, blockState); // CraftBukkit - from above
+    itemStack = bucketPickup.pickupBlock(null, levelAccessor, blockPos, blockState); // CraftBukkit - from above
 
 # handleBlockDispenseEvent
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (level.isEmptyBlock(target) && WitherSkullBlock.canSpawnMob(level, target, dispensed)) {
+    BlockState blockState = serverLevel.getBlockState(blockPos);
+    if (BaseFireBlock.canBePlacedAt(serverLevel, blockPos, direction)) {
 insert:
     // Paper start - Call BlockDispenseEvent
-    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(source, target, dispensed, this);
+    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this);
+    if (result != null) {
+        this.setSuccess(false);
+        return result;
+    }
+    // Paper end - Call BlockDispenseEvent
+
+# callBlockIgniteEvent
+file: net/minecraft/core/dispenser/DispenseItemBehavior.java
+anchor:
+    serverLevel.setBlockAndUpdate(blockPos, BaseFireBlock.getState(serverLevel, blockPos));
+    serverLevel.gameEvent(null, GameEvent.BLOCK_PLACE, blockPos);
+insert:
+    // CraftBukkit start - Ignition by dispensing flint and steel
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(serverLevel, blockPos, blockSource.pos()).isCancelled()) {
+insert-after:
+    }
+    // CraftBukkit end
+
+# handleBlockDispenseEvent
+file: net/minecraft/core/dispenser/DispenseItemBehavior.java
+anchor:
+    if (!BoneMealItem.growCrop(item, level, blockPos) && !BoneMealItem.growWaterPlant(item, level, blockPos, null)) {
+insert:
+    // Paper start - Call BlockDispenseEvent
+    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this);
+    if (result != null) {
+        this.setSuccess(false);
+        return result;
+    }
+    // Paper end - Call BlockDispenseEvent
+    level.captureTreeGeneration = true; // CraftBukkit
+
+# handleBlockDispenseEvent
+file: net/minecraft/core/dispenser/DispenseItemBehavior.java
+anchor:
+    if (level.isEmptyBlock(blockPos) && WitherSkullBlock.canSpawnMob(level, blockPos, item)) {
+insert:
+    // Paper start - Call BlockDispenseEvent
+    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this);
     if (result != null) {
         this.setSuccess(false);
         return result;
@@ -104,10 +178,10 @@ insert:
 # handleBlockDispenseEvent
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (level.isEmptyBlock(target) && pumpkinBlock.canSpawnGolem(level, target)) {
+    if (level.isEmptyBlock(blockPos) && carvedPumpkinBlock.canSpawnGolem(level, blockPos)) {
 insert:
     // Paper start - Call BlockDispenseEvent
-    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(source, target, dispensed, this);
+    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this);
     if (result != null) {
         this.setSuccess(false);
         return result;
@@ -117,10 +191,10 @@ insert:
 # handleBlockDispenseEvent
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (state.is(BlockTags.BEEHIVES, s -> s.hasProperty(BeehiveBlock.HONEY_LEVEL) && s.getBlock() instanceof BeehiveBlock)
+    if (blockState.is(
 insert:
     // Paper start - Call BlockDispenseEvent
-    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(source, target, dispensed, this);
+    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this);
     if (result != null) {
         return result;
     }
@@ -129,10 +203,10 @@ insert:
 # handleBlockDispenseEvent
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    RespawnAnchorBlock.charge(null, level, pos, blockState);
+    RespawnAnchorBlock.charge(null, level, blockPos, blockState);
 insert:
     // Paper start - Call BlockDispenseEvent
-    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(source, pos, dispensed, this);
+    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this);
     if (result != null) {
         this.setSuccess(false);
         return result;
@@ -142,27 +216,27 @@ insert:
 # BlockDispenseArmorEvent
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    for (Armadillo armadillo : armadillos) {
+    for (Armadillo armadillo : entitiesOfClass) {
 insert:
     // CraftBukkit start
-    org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, source.pos());
-    org.bukkit.craftbukkit.inventory.CraftItemStack craftItem = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(dispensed); // Paper - ignore stack size on damageable items
+    org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(serverLevel, blockSource.pos());
+    org.bukkit.craftbukkit.inventory.CraftItemStack craftItem = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(item); // Paper - ignore stack size on damageable items
 
-    org.bukkit.event.block.BlockDispenseEvent event = new org.bukkit.event.block.BlockDispenseArmorEvent(block, craftItem.clone(), armadillos.get(0).getBukkitLivingEntity());
-    level.getCraftServer().getPluginManager().callEvent(event);
+    org.bukkit.event.block.BlockDispenseEvent event = new org.bukkit.event.block.BlockDispenseArmorEvent(block, craftItem.clone(), entitiesOfClass.get(0).getBukkitLivingEntity());
+    serverLevel.getCraftServer().getPluginManager().callEvent(event);
 
     if (event.isCancelled()) {
         this.setSuccess(false);
-        return dispensed;
+        return item;
     }
 
     if (!event.getItem().equals(craftItem)) {
         // Chain to handler for new item
         ItemStack eventStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItem());
-        DispenseItemBehavior dispenseBehavior = DispenserBlock.getDispenseBehavior(source, eventStack);
+        DispenseItemBehavior dispenseBehavior = DispenserBlock.getDispenseBehavior(blockSource, eventStack);
         if (dispenseBehavior != DispenseItemBehavior.NOOP && dispenseBehavior != this) {
-            dispenseBehavior.dispense(source, eventStack);
-            return dispensed;
+            dispenseBehavior.dispense(blockSource, eventStack);
+            return item;
         }
     }
     // CraftBukkit end
@@ -170,10 +244,10 @@ insert:
 # handleBlockDispenseEvent
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    level.setBlockAndUpdate(pos, maybeWaxed.get());
+    level.setBlockAndUpdate(blockPos, waxed.get());
 insert:
     // Paper start - Call BlockDispenseEvent
-    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(source, pos, dispensed, this);
+    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this);
     if (result != null) {
         this.setSuccess(false);
         return result;
@@ -183,11 +257,10 @@ insert:
 # handleBlockDispenseEvent
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (!level.isClientSide()) {
-        RandomSource random = level.getRandom();
+    if (!serverLevel.isClientSide()) {
 insert:
     // Paper start - Call BlockDispenseEvent
-    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(source, target, dispensed, this);
+    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos1, item, this);
     if (result != null) {
         return result;
     }

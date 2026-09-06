@@ -3,10 +3,10 @@
 # callEntityChangeBlockEvent
 file: net/minecraft/world/entity/monster/Ravager.java
 anchor:
-    destroyedBlock = serverLevel.destroyBlock(pos, true, this) || destroyedBlock;
+    flag = serverLevel.destroyBlock(blockPos, true, this) || flag;
 insert:
     // CraftBukkit start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(this, pos, state.getFluidState().createLegacyBlock())) { // Paper - fix wrong block state
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(this, blockPos, blockState.getFluidState().createLegacyBlock())) { // Paper - fix wrong block state
         continue;
     }
     // CraftBukkit end

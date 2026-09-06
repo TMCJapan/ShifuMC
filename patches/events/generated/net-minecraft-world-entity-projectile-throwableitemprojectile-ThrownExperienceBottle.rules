@@ -3,9 +3,9 @@
 # callExpBottleEvent
 file: net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownExperienceBottle.java
 anchor:
-    if (hitResult instanceof BlockHitResult blockHitResult) {
+    if (result instanceof BlockHitResult blockHitResult) {
 insert:
     // Paper start - exp bottle event
-    org.bukkit.event.entity.ExpBottleEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callExpBottleEvent(this, hitResult, xpCount);
-    xpCount = event.getExperience();
+    org.bukkit.event.entity.ExpBottleEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callExpBottleEvent(this, result, i);
+    i = event.getExperience();
     // Paper end - exp bottle event

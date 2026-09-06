@@ -10,10 +10,27 @@ insert:
 # ServerTickEndEvent
 file: net/minecraft/server/MinecraftServer.java
 anchor:
-    profiler.push("tallying");
+    profilerFiller.push("tallying");
 insert:
     // Paper start - Server Tick Events
     long endTime = System.nanoTime();
     long remaining = this.nextTickTimeNanos - endTime;
     new com.destroystokyo.paper.event.server.ServerTickEndEvent(this.tickCount, ((double)(endTime - this.currentTickStart) / 1000000D), remaining).callEvent();
     // Paper end - Server Tick Events
+
+# ServerResourcesReloadedEvent
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    },
+insert:
+    org.bukkit.craftbukkit.block.data.CraftBlockData.reloadCache(); // Paper - cache block data strings; they can be defined by datapacks so refresh it here
+    // Paper start - brigadier command API
+    io.papermc.paper.command.brigadier.PaperCommands.INSTANCE.setValid(); // reset invalid state for event fire below
+    io.papermc.paper.plugin.lifecycle.event.LifecycleEventRunner.INSTANCE.callReloadableRegistrarEvent(io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents.COMMANDS, io.papermc.paper.command.brigadier.PaperCommands.INSTANCE, org.bukkit.plugin.Plugin.class, io.papermc.paper.plugin.lifecycle.event.registrar.ReloadableRegistrarEvent.Cause.RELOAD); // call commands event for regular plugins
+    final org.bukkit.craftbukkit.help.SimpleHelpMap helpMap = (org.bukkit.craftbukkit.help.SimpleHelpMap) this.server.getHelpMap();
+    helpMap.clear();
+    helpMap.initializeGeneralTopics();
+    helpMap.initializeCommands();
+    this.server.syncCommands(); // Refresh commands after event
+    // Paper end
+    new io.papermc.paper.event.server.ServerResourcesReloadedEvent(cause).callEvent(); // Paper - Add ServerResourcesReloadedEvent; fire after everything has been reloaded

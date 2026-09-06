@@ -30,6 +30,6 @@ insert:
     com.destroystokyo.paper.event.server.GS4QueryEvent.QueryType queryType =
         com.destroystokyo.paper.event.server.GS4QueryEvent.QueryType.FULL;
     com.destroystokyo.paper.event.server.GS4QueryEvent queryEvent =
-        new com.destroystokyo.paper.event.server.GS4QueryEvent(queryType, packet.getAddress(), queryResponse);
+        new com.destroystokyo.paper.event.server.GS4QueryEvent(queryType, requestPacket.getAddress(), queryResponse);
     queryEvent.callEvent();
     queryResponse = queryEvent.getResponse();

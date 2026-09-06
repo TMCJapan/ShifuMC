@@ -1,5 +1,25 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
+# BlockBurnEvent, callTNTPrimeEvent
+file: net/minecraft/world/level/block/FireBlock.java
+anchor:
+    if (random.nextInt(age + 10) < 5 && !level.isRainingAt(pos)) {
+insert:
+
+    // CraftBukkit start
+    org.bukkit.block.Block burnBlock = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+    org.bukkit.block.Block sourceBlock = org.bukkit.craftbukkit.block.CraftBlock.at(level, sourcePos);
+
+    org.bukkit.event.block.BlockBurnEvent event = new org.bukkit.event.block.BlockBurnEvent(burnBlock, sourceBlock);
+    if (!event.callEvent()) {
+        return;
+    }
+
+    if (blockState.getBlock() instanceof TntBlock && !org.bukkit.craftbukkit.event.CraftEventFactory.callTNTPrimeEvent(level, pos, org.bukkit.event.block.TNTPrimeEvent.PrimeCause.FIRE, null, sourcePos)) {
+        return;
+    }
+    // CraftBukkit end
+
 # TNTPrimeEvent
 file: net/minecraft/world/level/block/FireBlock.java
 anchor:

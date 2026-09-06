@@ -1,7 +1,7 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # callEntityChangeBlockEvent
-file: net/minecraft/world/level/block/SpeleothemBlock.java
+file: net/minecraft/world/level/block/PointedDripstoneBlock.java
 anchor:
     level.destroyBlock(blockPos, true);
 insert:

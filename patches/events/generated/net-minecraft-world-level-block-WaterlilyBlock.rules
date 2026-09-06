@@ -1,14 +1,14 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # EntityInsideBlockEvent
-file: net/minecraft/world/level/block/LilyPadBlock.java
+file: net/minecraft/world/level/block/WaterlilyBlock.java
 anchor:
-    super.entityInside(state, level, pos, entity, effectApplier, isPrecise);
+    super.entityInside(state, level, pos, entity, effectApplier, pastEdges);
 insert:
     if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
 
 # callEntityChangeBlockEvent
-file: net/minecraft/world/level/block/LilyPadBlock.java
+file: net/minecraft/world/level/block/WaterlilyBlock.java
 anchor:
     level.destroyBlock(new BlockPos(pos), true, entity);
 insert:

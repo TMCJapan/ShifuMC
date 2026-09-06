@@ -3,7 +3,8 @@
 # callBlockPhysicsEvent
 file: net/minecraft/world/level/block/DoublePlantBlock.java
 anchor:
-    DoubleBlockHalf part = state.getValue(HALF);
+    DoubleBlockHalf doubleBlockHalf = state.getValue(HALF);
+    if (doubleBlockHalf == DoubleBlockHalf.UPPER) {
 insert:
     // CraftBukkit start
     if (((net.minecraft.server.level.ServerLevel)level).hasPhysicsEvent && org.bukkit.craftbukkit.event.CraftEventFactory.callBlockPhysicsEvent(level, pos).isCancelled()) { // Paper

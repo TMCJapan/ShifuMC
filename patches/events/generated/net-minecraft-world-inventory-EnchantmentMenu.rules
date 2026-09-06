@@ -6,15 +6,15 @@ anchor:
     this.broadcastChanges();
 insert:
     // CraftBukkit start
-    org.bukkit.craftbukkit.inventory.CraftItemStack craftItemStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(itemStack);
+    org.bukkit.craftbukkit.inventory.CraftItemStack craftItemStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(item);
     org.bukkit.enchantments.EnchantmentOffer[] offers = new org.bukkit.enchantments.EnchantmentOffer[3];
     for (int j = 0; j < 3; ++j) {
-        org.bukkit.enchantments.Enchantment enchantment = (this.enchantClue[j] >= 0) ? org.bukkit.craftbukkit.enchantments.CraftEnchantment.minecraftHolderToBukkit(holders.byId(this.enchantClue[j])) : null;
+        org.bukkit.enchantments.Enchantment enchantment = (this.enchantClue[j] >= 0) ? org.bukkit.craftbukkit.enchantments.CraftEnchantment.minecraftHolderToBukkit(holderIdMap.byId(this.enchantClue[j])) : null;
         offers[j] = (enchantment != null) ? new org.bukkit.enchantments.EnchantmentOffer(enchantment, this.levelClue[j], this.costs[j]) : null;
     }
 
-    org.bukkit.event.enchantment.PrepareItemEnchantEvent event = new org.bukkit.event.enchantment.PrepareItemEnchantEvent(this.player, this.getBukkitView(), this.access.getLocation().getBlock(), craftItemStack, offers, bookcases);
-    event.setCancelled(!itemStack.isEnchantable());
+    org.bukkit.event.enchantment.PrepareItemEnchantEvent event = new org.bukkit.event.enchantment.PrepareItemEnchantEvent(this.player, this.getBukkitView(), this.access.getLocation().getBlock(), craftItemStack, offers, i1);
+    event.setCancelled(!item.isEnchantable());
     level.getCraftServer().getPluginManager().callEvent(event);
 
     if (event.isCancelled()) {
@@ -30,7 +30,7 @@ insert:
         org.bukkit.enchantments.EnchantmentOffer offer = event.getOffers()[j];
         if (offer != null) {
             this.costs[j] = offer.getCost();
-            this.enchantClue[j] = holders.getId(org.bukkit.craftbukkit.enchantments.CraftEnchantment
+            this.enchantClue[j] = holderIdMap.getId(org.bukkit.craftbukkit.enchantments.CraftEnchantment
                 .bukkitToMinecraftHolder(offer.getEnchantment()));
             this.levelClue[j] = offer.getEnchantmentLevel();
         } else {

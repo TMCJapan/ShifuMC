@@ -3,7 +3,7 @@
 # callEntityPickupItemEvent
 file: net/minecraft/world/entity/raid/Raider.java
 anchor:
-    EquipmentSlot slot = EquipmentSlot.HEAD;
+    EquipmentSlot equipmentSlot = EquipmentSlot.HEAD;
 insert:
     // Paper start - EntityPickupItemEvent fixes
     if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPickupItemEvent(this, entity, 0).isCancelled()) {

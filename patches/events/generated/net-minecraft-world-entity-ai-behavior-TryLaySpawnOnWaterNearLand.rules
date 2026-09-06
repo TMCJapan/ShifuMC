@@ -1,0 +1,13 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityChangeBlockEvent
+file: net/minecraft/world/entity/ai/behavior/TryLaySpawnOnWaterNearLand.java
+anchor:
+    level.setBlock(blockPos2, blockState, Block.UPDATE_ALL);
+insert:
+    // CraftBukkit start
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(entity, blockPos2, blockState)) {
+        isPregnant.erase();
+        return true;
+    }
+    // CraftBukkit end

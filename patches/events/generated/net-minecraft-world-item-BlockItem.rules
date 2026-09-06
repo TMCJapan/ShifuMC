@@ -1,0 +1,18 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callBlockPlaceEvent
+file: net/minecraft/world/item/BlockItem.java
+anchor:
+    if (player instanceof ServerPlayer) {
+insert:
+    // CraftBukkit start
+    if (bukkitState != null) {
+        org.bukkit.event.block.BlockPlaceEvent placeEvent = org.bukkit.craftbukkit.event.CraftEventFactory.callBlockPlaceEvent((net.minecraft.server.level.ServerLevel) level, player, blockPlaceContext.getHand(), bukkitState, clickedPos);
+        if (placeEvent != null && (placeEvent.isCancelled() || !placeEvent.canBuild())) {
+            ((org.bukkit.craftbukkit.block.CraftBlockState) bukkitState).revertPlace();
+
+            player.containerMenu.forceHeldSlot(blockPlaceContext.getHand());
+            return InteractionResult.FAIL;
+        }
+    }
+    // CraftBukkit end

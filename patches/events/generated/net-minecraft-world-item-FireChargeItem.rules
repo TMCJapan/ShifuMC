@@ -3,11 +3,11 @@
 # callBlockIgniteEvent
 file: net/minecraft/world/item/FireChargeItem.java
 anchor:
-    this.playSound(level, pos);
-    level.setBlockAndUpdate(pos, BaseFireBlock.getState(level, pos));
+    this.playSound(level, clickedPos);
+    level.setBlockAndUpdate(clickedPos, BaseFireBlock.getState(level, clickedPos));
 insert:
     // CraftBukkit start - fire BlockIgniteEvent
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, pos, org.bukkit.event.block.BlockIgniteEvent.IgniteCause.FIREBALL, context.getPlayer()).isCancelled()) {
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, clickedPos, org.bukkit.event.block.BlockIgniteEvent.IgniteCause.FIREBALL, context.getPlayer()).isCancelled()) {
         if (!context.getPlayer().getAbilities().instabuild) {
             context.getItemInHand().shrink(1);
         }
@@ -18,11 +18,11 @@ insert:
 # callBlockIgniteEvent
 file: net/minecraft/world/item/FireChargeItem.java
 anchor:
-    this.playSound(level, pos);
-    level.setBlockAndUpdate(pos, blockState.setValue(BlockStateProperties.LIT, true));
+    this.playSound(level, clickedPos);
+    level.setBlockAndUpdate(clickedPos, blockState.setValue(BlockStateProperties.LIT, true));
 insert:
     // CraftBukkit start - fire BlockIgniteEvent
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, pos, org.bukkit.event.block.BlockIgniteEvent.IgniteCause.FIREBALL, context.getPlayer()).isCancelled()) {
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, clickedPos, org.bukkit.event.block.BlockIgniteEvent.IgniteCause.FIREBALL, context.getPlayer()).isCancelled()) {
         if (!context.getPlayer().getAbilities().instabuild) {
             context.getItemInHand().shrink(1);
         }

@@ -3,6 +3,6 @@
 # sourceBlockOverride
 file: net/minecraft/world/level/block/entity/SculkCatalystBlockEntity.java
 anchor:
-    entity.catalystListener.getSculkSpreader().updateCursors(level, pos, level.getRandom(), true);
+    sculkCatalyst.catalystListener.getSculkSpreader().updateCursors(level, pos, level.getRandom(), true);
 insert:
-    org.bukkit.craftbukkit.event.CraftEventFactory.sourceBlockOverride = pos; // CraftBukkit - SPIGOT-7068: Add source block override, not the most elegant way but better than passing down a BlockPos up to five methods deep.
+    org.bukkit.craftbukkit.event.CraftEventFactory.sourceBlockOverride = sculkCatalyst.getBlockPos(); // CraftBukkit - SPIGOT-7068: Add source block override, not the most elegant way but better than passing down a BlockPosition up to five methods deep.

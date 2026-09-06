@@ -9,10 +9,10 @@ anchor:
 insert:
     // CraftBukkit start
     float power;
-    if (jumpScale >= 90) {
+    if (jumpPower >= 90) {
         power = 1.0F;
     } else {
-        power = 0.4F + 0.4F * (float) jumpScale / 90.0F;
+        power = 0.4F + 0.4F * (float) jumpPower / 90.0F;
     }
     if (!org.bukkit.craftbukkit.event.CraftEventFactory.callHorseJumpEvent(this, power)) {
         return;

@@ -1,13 +1,37 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
+# StructuresLocateEvent
+file: net/minecraft/world/level/chunk/ChunkGenerator.java
+anchor:
+    ChunkGeneratorStructureState generatorState = level.getChunkSource().getGeneratorState();
+insert:
+    // Paper start - StructuresLocateEvent
+    final org.bukkit.World bukkitWorld = level.getWorld();
+    final org.bukkit.Location origin = org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level);
+    final List<org.bukkit.generator.structure.Structure> apiStructures = structure.stream().map(org.bukkit.craftbukkit.generator.structure.CraftStructure::minecraftHolderToBukkit).toList();
+    if (!apiStructures.isEmpty()) {
+        final io.papermc.paper.event.world.StructuresLocateEvent event = new io.papermc.paper.event.world.StructuresLocateEvent(bukkitWorld, origin, apiStructures, radius, skipKnownStructures);
+        if (!event.callEvent()) {
+            return null;
+        }
+        if (event.getResult() != null) {
+            return Pair.of(io.papermc.paper.util.MCUtil.toBlockPos(event.getResult().pos()), org.bukkit.craftbukkit.generator.structure.CraftStructure.bukkitToMinecraftHolder(event.getResult().structure()));
+        }
+        pos = org.bukkit.craftbukkit.util.CraftLocation.toBlockPosition(event.getOrigin());
+        radius = event.getRadius();
+        skipKnownStructures = event.shouldFindUnexplored();
+        structure = HolderSet.direct(org.bukkit.craftbukkit.generator.structure.CraftStructure::bukkitToMinecraftHolder, event.getStructures());
+    }
+    // Paper end
+
 # AsyncStructureSpawnEvent
 file: net/minecraft/world/level/chunk/ChunkGenerator.java
 anchor:
-    structureManager.setStartForStructure(sectionPos, structure, start, centerChunk);
+    structureManager.setStartForStructure(sectionPos, structure, structureStart, chunk);
 insert:
     // CraftBukkit start
-    BoundingBox box = start.getBoundingBox();
-    org.bukkit.event.world.AsyncStructureSpawnEvent event = new org.bukkit.event.world.AsyncStructureSpawnEvent(structureManager.level.getMinecraftWorld().getWorld(), org.bukkit.craftbukkit.generator.structure.CraftStructure.minecraftToBukkit(structure), new org.bukkit.util.BoundingBox(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ()), sourceChunkPos.x(), sourceChunkPos.z());
+    BoundingBox box = structureStart.getBoundingBox();
+    org.bukkit.event.world.AsyncStructureSpawnEvent event = new org.bukkit.event.world.AsyncStructureSpawnEvent(structureManager.level.getMinecraftWorld().getWorld(), org.bukkit.craftbukkit.generator.structure.CraftStructure.minecraftToBukkit(structure), new org.bukkit.util.BoundingBox(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ()), chunkPos.x, chunkPos.z);
     org.bukkit.Bukkit.getPluginManager().callEvent(event);
     if (event.isCancelled()) {
         return true;

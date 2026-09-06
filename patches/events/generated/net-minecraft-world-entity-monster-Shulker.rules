@@ -3,14 +3,14 @@
 # callEntityTeleportEvent
 file: net/minecraft/world/entity/monster/Shulker.java
 anchor:
-    if (attachmentDirection != null) {
+    if (direction != null) {
         this.unRide();
 insert:
     // CraftBukkit start
-    org.bukkit.event.entity.EntityTeleportEvent teleportEvent = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTeleportEvent(this, target.getX(), target.getY(), target.getZ());
+    org.bukkit.event.entity.EntityTeleportEvent teleportEvent = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTeleportEvent(this, blockPos1.getX(), blockPos1.getY(), blockPos1.getZ());
     if (teleportEvent.isCancelled() || teleportEvent.getTo() == null) { // Paper
         return false;
     } else {
-        target = org.bukkit.craftbukkit.util.CraftLocation.toBlockPos(teleportEvent.getTo());
+        blockPos1 = org.bukkit.craftbukkit.util.CraftLocation.toBlockPosition(teleportEvent.getTo());
     }
     // CraftBukkit end

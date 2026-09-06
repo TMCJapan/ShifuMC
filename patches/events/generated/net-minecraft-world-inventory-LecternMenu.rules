@@ -3,11 +3,12 @@
 # PlayerTakeLecternBookEvent
 file: net/minecraft/world/inventory/LecternMenu.java
 anchor:
-    ItemStack book = this.lectern.removeItemNoUpdate(0);
+    ItemStack itemStack = this.lectern.removeItemNoUpdate(0);
 insert:
     // CraftBukkit start - Event for taking the book
     org.bukkit.event.player.PlayerTakeLecternBookEvent event = new org.bukkit.event.player.PlayerTakeLecternBookEvent(this.player, this.getBukkitView().getTopInventory().getHolder());
-    if (!event.callEvent()) {
+    org.bukkit.Bukkit.getServer().getPluginManager().callEvent(event);
+    if (event.isCancelled()) {
         return false;
     }
     // CraftBukkit end

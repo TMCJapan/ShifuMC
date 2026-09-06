@@ -3,8 +3,9 @@
 # callPlayerLevelChangeEvent
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    } catch (Throwable t) {
+    } catch (Throwable var4) {
 insert:
+
     // CraftBukkit start - initialize oldLevel, fire PlayerLevelChangeEvent, and tick client-sided world border
     if (this.oldLevel == -1) {
         this.oldLevel = this.experienceLevel;
@@ -19,6 +20,22 @@ insert:
         ((org.bukkit.craftbukkit.CraftWorldBorder) this.getBukkitEntity().getWorldBorder()).getHandle().tick();
     }
     // CraftBukkit end
+
+# PlayerChangedWorldEvent
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+        return this;
+    }
+insert:
+    // CraftBukkit start
+    org.bukkit.event.player.PlayerChangedWorldEvent changeEvent = new org.bukkit.event.player.PlayerChangedWorldEvent(this.getBukkitEntity(), serverLevel.getWorld());
+    this.level().getCraftServer().getPluginManager().callEvent(changeEvent);
+    // CraftBukkit end
+    // Paper start - Reset shield blocking on dimension change
+    if (this.isBlocking()) {
+        this.stopUsingItem();
+    }
+    // Paper end - Reset shield blocking on dimension change
 
 # PlayerBedLeaveEvent
 file: net/minecraft/server/level/ServerPlayer.java
@@ -38,26 +55,26 @@ insert:
 # callInventoryOpenEventWithTitle
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    if (menu == null) {
+    if (abstractContainerMenu == null) {
 insert:
     Component title = null; // Paper - Add titleOverride to InventoryOpenEvent
     // CraftBukkit start - Inventory open hook
-    if (menu != null) {
-        menu.setTitle(provider.getDisplayName());
+    if (abstractContainerMenu != null) {
+        abstractContainerMenu.setTitle(menu.getDisplayName());
 
         boolean cancelled = false;
         // Paper start - Add titleOverride to InventoryOpenEvent
-        final com.mojang.datafixers.util.Pair<net.kyori.adventure.text.Component, AbstractContainerMenu> result = org.bukkit.craftbukkit.event.CraftEventFactory.callInventoryOpenEventWithTitle(this, menu, cancelled);
-        menu = result.getSecond();
+        final com.mojang.datafixers.util.Pair<net.kyori.adventure.text.Component, AbstractContainerMenu> result = org.bukkit.craftbukkit.event.CraftEventFactory.callInventoryOpenEventWithTitle(this, abstractContainerMenu, cancelled);
+        abstractContainerMenu = result.getSecond();
         title = io.papermc.paper.adventure.PaperAdventure.asVanilla(result.getFirst());
         // Paper end - Add titleOverride to InventoryOpenEvent
-        if (menu == null && !cancelled) { // Let pre-cancelled events fall through
+        if (abstractContainerMenu == null && !cancelled) { // Let pre-cancelled events fall through
             // SPIGOT-5263 - close chest if cancelled
-            if (provider instanceof Container container) {
+            if (menu instanceof Container container) {
                 container.stopOpen(this);
-            } else if (provider instanceof org.bukkit.craftbukkit.inventory.CraftInventoryDoubleChest.Provider doubleChestProvider) {
+            } else if (menu instanceof net.minecraft.world.level.block.ChestBlock.DoubleInventory doubleInventory) {
                 // SPIGOT-5355 - double chests too :(
-                doubleChestProvider.container.stopOpen(this);
+                doubleInventory.container.stopOpen(this);
                 // Paper start - Fix InventoryOpenEvent cancellation
             } else if (!this.enderChestInventory.isActiveChest(null)) {
                 this.enderChestInventory.stopOpen(this);
@@ -71,19 +88,19 @@ insert:
 # PlayerStartSpectatingEntityEvent, PlayerStopSpectatingEntityEvent
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    if (this.camera.level() instanceof ServerLevel level) {
+    if (this.camera.level() instanceof ServerLevel serverLevel) {
 insert:
     // Paper start - Add PlayerStartSpectatingEntityEvent and PlayerStopSpectatingEntity
     if (this.camera == this) {
-        com.destroystokyo.paper.event.player.PlayerStopSpectatingEntityEvent spectateEvent = new com.destroystokyo.paper.event.player.PlayerStopSpectatingEntityEvent(this.getBukkitEntity(), oldCamera.getBukkitEntity());
-        if (!spectateEvent.callEvent()) {
-            this.camera = oldCamera; // rollback camera entity again
+        com.destroystokyo.paper.event.player.PlayerStopSpectatingEntityEvent playerStopSpectatingEntityEvent = new com.destroystokyo.paper.event.player.PlayerStopSpectatingEntityEvent(this.getBukkitEntity(), camera.getBukkitEntity());
+        if (!playerStopSpectatingEntityEvent.callEvent()) {
+            this.camera = camera; // rollback camera entity again
             return;
         }
     } else {
-        com.destroystokyo.paper.event.player.PlayerStartSpectatingEntityEvent spectateEvent = new com.destroystokyo.paper.event.player.PlayerStartSpectatingEntityEvent(this.getBukkitEntity(), oldCamera.getBukkitEntity(), newCamera.getBukkitEntity());
-        if (!spectateEvent.callEvent()) {
-            this.camera = oldCamera; // rollback camera entity again
+        com.destroystokyo.paper.event.player.PlayerStartSpectatingEntityEvent playerStartSpectatingEntityEvent = new com.destroystokyo.paper.event.player.PlayerStartSpectatingEntityEvent(this.getBukkitEntity(), camera.getBukkitEntity(), entityToSpectate.getBukkitEntity());
+        if (!playerStartSpectatingEntityEvent.callEvent()) {
+            this.camera = camera; // rollback camera entity again
             return;
         }
     }

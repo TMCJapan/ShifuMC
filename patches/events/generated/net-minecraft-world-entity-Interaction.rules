@@ -6,8 +6,8 @@ anchor:
     this.attack = new Interaction.PlayerAction(player.getUUID(), this.level().getGameTime());
 insert:
     // CraftBukkit start
-    DamageSource damageSource = player.damageSources().generic().eventEntityDamager(source);
-    org.bukkit.event.entity.EntityDamageEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callNonLivingEntityDamageEvent(this, damageSource, 1.0F, false);
+    DamageSource source = player.damageSources().generic().eventEntityDamager(entity);
+    org.bukkit.event.entity.EntityDamageEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callNonLivingEntityDamageEvent(this, source, 1.0F, false);
     if (event.isCancelled()) {
         return true;
     }

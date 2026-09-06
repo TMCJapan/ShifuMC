@@ -8,7 +8,7 @@ insert:
     // Paper start - Expand EntityUnleashEvent
     EntityUnleashEvent event = new EntityUnleashEvent(this.getBukkitEntity(), EntityUnleashEvent.UnleashReason.UNKNOWN, true);
     if (!event.callEvent()) {
-        return result;
+        return flag;
     }
     if (event.isDropLeash()) {
 insert-after:

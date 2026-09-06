@@ -3,10 +3,10 @@
 # callEntityChangeBlockEvent
 file: net/minecraft/world/entity/monster/Silverfish.java
 anchor:
-    level.setBlock(pos, InfestedBlock.infestedStateByHost(blockState), Block.UPDATE_ALL);
+    levelAccessor.setBlock(blockPos, InfestedBlock.infestedStateByHost(blockState), Block.UPDATE_ALL);
 insert:
     // CraftBukkit start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(this.mob, pos, InfestedBlock.infestedStateByHost(blockState))) {
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(this.mob, blockPos, InfestedBlock.infestedStateByHost(blockState))) {
         return;
     }
     // CraftBukkit end
@@ -17,8 +17,8 @@ anchor:
     if (getServerLevel(level).getGameRules().get(GameRules.MOB_GRIEFING)) {
 insert:
     // CraftBukkit start
-    BlockState afterState = getServerLevel(level).getGameRules().get(GameRules.MOB_GRIEFING) ? blockState.getFluidState().createLegacyBlock() : infestedBlock.hostStateByInfested(level.getBlockState(testPos)); // Paper - fix wrong block state
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(this.silverfish, testPos, afterState)) { // Paper - fix wrong block state
+    BlockState afterState = getServerLevel(level).getGameRules().get(GameRules.MOB_GRIEFING) ? blockState.getFluidState().createLegacyBlock() : ((InfestedBlock) block).hostStateByInfested(level.getBlockState(blockPos1)); // Paper - fix wrong block state
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(this.silverfish, blockPos1, afterState)) { // Paper - fix wrong block state
         continue;
     }
     // CraftBukkit end

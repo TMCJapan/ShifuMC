@@ -3,10 +3,10 @@
 # callBinaryRedstoneChange
 file: net/minecraft/world/level/block/ShelfBlock.java
 anchor:
-    BlockState newState = state.setValue(POWERED, signal);
+    BlockState blockState = state.setValue(POWERED, hasNeighborSignal);
 insert:
     // Paper start - Call BlockRedstoneEvent
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, signal)) {
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, hasNeighborSignal)) {
         return;
     }
     // Paper end - Call BlockRedstoneEvent

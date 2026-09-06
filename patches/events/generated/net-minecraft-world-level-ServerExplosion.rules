@@ -3,13 +3,13 @@
 # callEntityKnockbackEvent
 file: net/minecraft/world/level/ServerExplosion.java
 anchor:
-    entity.push(knockback);
+    entity.push(vec32);
 insert:
     // CraftBukkit start - Call EntityKnockbackEvent
     if (entity instanceof LivingEntity) {
         // Paper start - knockback events
-        io.papermc.paper.event.entity.EntityKnockbackEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityKnockbackEvent((org.bukkit.craftbukkit.entity.CraftLivingEntity) entity.getBukkitEntity(), this.source, this.damageSource.getEntity() != null ? this.damageSource.getEntity() : this.source, io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.EXPLOSION, knockbackPower, knockback);
-        knockback = event.isCancelled() ? Vec3.ZERO : org.bukkit.craftbukkit.util.CraftVector.toVec3(event.getKnockback());
+        io.papermc.paper.event.entity.EntityKnockbackEvent event = CraftEventFactory.callEntityKnockbackEvent((org.bukkit.craftbukkit.entity.CraftLivingEntity) entity.getBukkitEntity(), this.source, this.damageSource.getEntity() != null ? this.damageSource.getEntity() : this.source, io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.EXPLOSION, d2, vec32);
+        vec32 = event.isCancelled() ? Vec3.ZERO : org.bukkit.craftbukkit.util.CraftVector.toVec3(event.getKnockback());
         // Paper end - knockback events
     }
     // CraftBukkit end
@@ -17,16 +17,16 @@ insert:
 # callTNTPrimeEvent
 file: net/minecraft/world/level/ServerExplosion.java
 anchor:
-    this.level.getBlockState(pos).onExplosionHit(this.level, pos, this, (stackx, position) -> addOrAppendStack(stacks, stackx, position));
+    this.level
 insert:
     // CraftBukkit start - TNTPrimeEvent
-    BlockState state = this.level.getBlockState(pos);
+    BlockState state = this.level.getBlockState(blockPos);
     Block block = state.getBlock();
     if (level.getGameRules().get(GameRules.TNT_EXPLODES) && block instanceof net.minecraft.world.level.block.TntBlock) {
         Entity sourceEntity = this.source == null ? null : this.source;
         BlockPos sourceBlock = sourceEntity == null ? BlockPos.containing(this.center) : null;
-        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callTNTPrimeEvent(this.level, pos, org.bukkit.event.block.TNTPrimeEvent.PrimeCause.EXPLOSION, sourceEntity, sourceBlock)) {
-            this.level.sendBlockUpdated(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), state, Block.UPDATE_ALL); // Update the block on the client
+        if (!CraftEventFactory.callTNTPrimeEvent(this.level, blockPos, org.bukkit.event.block.TNTPrimeEvent.PrimeCause.EXPLOSION, sourceEntity, sourceBlock)) {
+            this.level.sendBlockUpdated(blockPos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), state, Block.UPDATE_ALL); // Update the block on the client
             continue;
         }
     }
@@ -36,10 +36,10 @@ insert:
 # callBlockIgniteEvent
 file: net/minecraft/world/level/ServerExplosion.java
 anchor:
-    this.level.setBlockAndUpdate(pos, BaseFireBlock.getState(this.level, pos));
+    this.level.setBlockAndUpdate(blockPos, BaseFireBlock.getState(this.level, blockPos));
 insert:
     // CraftBukkit start - Ignition by explosion
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(this.level, pos, this).isCancelled()) {
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(this.level, blockPos, this).isCancelled()) {
 insert-after:
     }
     // CraftBukkit end

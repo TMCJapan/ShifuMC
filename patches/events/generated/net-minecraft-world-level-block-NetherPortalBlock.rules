@@ -21,13 +21,13 @@ insert:
 # EntityPortalReadyEvent
 file: net/minecraft/world/level/block/NetherPortalBlock.java
 anchor:
-    if (newLevel == null) {
+    if (level1 == null) {
 insert:
     // Paper start - Add EntityPortalReadyEvent
-    io.papermc.paper.event.entity.EntityPortalReadyEvent portalReadyEvent = new io.papermc.paper.event.entity.EntityPortalReadyEvent(entity.getBukkitEntity(), newLevel == null ? null : newLevel.getWorld(), org.bukkit.PortalType.NETHER);
+    io.papermc.paper.event.entity.EntityPortalReadyEvent portalReadyEvent = new io.papermc.paper.event.entity.EntityPortalReadyEvent(entity.getBukkitEntity(), level1 == null ? null : level1.getWorld(), org.bukkit.PortalType.NETHER);
     if (!portalReadyEvent.callEvent()) {
         entity.portalProcess = null;
         return null;
     }
-    newLevel = portalReadyEvent.getTargetWorld() == null ? null : ((org.bukkit.craftbukkit.CraftWorld) portalReadyEvent.getTargetWorld()).getHandle();
+    level1 = portalReadyEvent.getTargetWorld() == null ? null : ((org.bukkit.craftbukkit.CraftWorld) portalReadyEvent.getTargetWorld()).getHandle();
     // Paper end - Add EntityPortalReadyEvent

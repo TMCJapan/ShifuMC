@@ -6,7 +6,7 @@ anchor:
     this.shrink(1);
 insert:
     // CraftBukkit start - Check for item breaking
-    if (this.getCount() == 1 && player instanceof final ServerPlayer serverPlayer) { // Paper - Add EntityDamageItemEvent
+    if (this.count == 1 && player instanceof final ServerPlayer serverPlayer) { // Paper - Add EntityDamageItemEvent
         org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerItemBreakEvent(serverPlayer, this); // Paper - Add EntityDamageItemEvent
     }
     // CraftBukkit end

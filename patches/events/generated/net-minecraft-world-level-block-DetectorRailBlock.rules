@@ -7,16 +7,18 @@ anchor:
 insert:
     if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
 
-# callBinaryRedstoneChange
+# BlockRedstoneEvent
 file: net/minecraft/world/level/block/DetectorRailBlock.java
 anchor:
-    if (shouldBePressed && !wasPressed) {
+    if (flag && !poweredValue) {
 insert:
+    // CraftBukkit start
+    if (poweredValue != flag) {
+        org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
 
-    // Paper start - Call BlockRedstoneEvent
-    if (wasPressed != shouldBePressed) {
-        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, shouldBePressed)) {
-            return;
-        }
+        org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(block, flag ? 15 : 0, flag ? 15 : 0);
+        level.getCraftServer().getPluginManager().callEvent(eventRedstone);
+
+        flag = eventRedstone.getNewCurrent() > 0;
     }
-    // Paper end - Call BlockRedstoneEvent
+    // CraftBukkit end

@@ -3,7 +3,7 @@
 # BlockFromToEvent
 file: net/minecraft/world/level/material/FlowingFluid.java
 anchor:
-    this.spreadTo(level, belowPos, belowState, Direction.DOWN, newBelowFluid);
+    this.spreadTo(level, blockPos, blockState, Direction.DOWN, newLiquid);
 insert:
     // CraftBukkit start
     org.bukkit.block.Block source = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
@@ -18,27 +18,27 @@ insert:
 # callFluidLevelChangeEvent
 file: net/minecraft/world/level/material/FlowingFluid.java
 anchor:
-        level.setBlock(pos, blockState, Block.UPDATE_ALL);
-    } else if (newFluidState != fluidState) {
+        level.setBlock(pos, state, Block.UPDATE_ALL);
+    } else if (newLiquid != fluidState) {
 insert:
     // CraftBukkit start
-    org.bukkit.event.block.FluidLevelChangeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callFluidLevelChangeEvent(level, pos, blockState);
+    org.bukkit.event.block.FluidLevelChangeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callFluidLevelChangeEvent(level, pos, state);
     if (event.isCancelled()) {
         return;
     }
-    blockState = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
+    state = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
     // CraftBukkit end
 
 # callFluidLevelChangeEvent
 file: net/minecraft/world/level/material/FlowingFluid.java
 anchor:
-    level.setBlock(pos, blockState, Block.UPDATE_ALL);
-    level.scheduleTick(pos, fluidState.getType(), tickDelay);
+    level.setBlock(pos, state, Block.UPDATE_ALL);
+    level.scheduleTick(pos, newLiquid.getType(), spreadDelay);
 insert:
     // CraftBukkit start
-    org.bukkit.event.block.FluidLevelChangeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callFluidLevelChangeEvent(level, pos, blockState);
+    org.bukkit.event.block.FluidLevelChangeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callFluidLevelChangeEvent(level, pos, state);
     if (event.isCancelled()) {
         return;
     }
-    blockState = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
+    state = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getNewData()).getState();
     // CraftBukkit end

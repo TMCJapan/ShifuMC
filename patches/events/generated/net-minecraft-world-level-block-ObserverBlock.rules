@@ -1,23 +1,23 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
-# callBinaryRedstoneChange
+# callRedstoneChange
 file: net/minecraft/world/level/block/ObserverBlock.java
 anchor:
     level.setBlock(pos, state.setValue(POWERED, false), Block.UPDATE_CLIENTS);
 insert:
-    // Paper start - Call BlockRedstoneEvent
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, false)) {
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, 15, 0).getNewCurrent() != 0) {
         return;
     }
-    // Paper end - Call BlockRedstoneEvent
+    // CraftBukkit end
 
-# callBinaryRedstoneChange
+# callRedstoneChange
 file: net/minecraft/world/level/block/ObserverBlock.java
 anchor:
     level.setBlock(pos, state.setValue(POWERED, true), Block.UPDATE_CLIENTS);
 insert:
-    // Paper start - Call BlockRedstoneEvent
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, true)) {
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, 0, 15).getNewCurrent() != 15) {
         return;
     }
-    // Paper end - Call BlockRedstoneEvent
+    // CraftBukkit end

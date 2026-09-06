@@ -1,12 +1,18 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
-# callBinaryRedstoneChange
+# BlockRedstoneEvent
 file: net/minecraft/world/level/block/FenceGateBlock.java
 anchor:
-    level.setBlock(pos, state.setValue(POWERED, hasPower).setValue(OPEN, hasPower), Block.UPDATE_CLIENTS);
+    if (state.getValue(POWERED) != hasNeighborSignal) {
 insert:
-    // Paper start - Call BlockRedstoneEvent
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, hasPower)) {
-        return;
+    // CraftBukkit start
+    boolean oldPowered = state.getValue(FenceGateBlock.POWERED);
+    if (oldPowered != hasNeighborSignal) {
+        int newPower = hasNeighborSignal ? 15 : 0;
+        int oldPower = oldPowered ? 15 : 0;
+        org.bukkit.block.Block bukkitBlock = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+        org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(bukkitBlock, oldPower, newPower);
+        level.getCraftServer().getPluginManager().callEvent(eventRedstone);
+        hasNeighborSignal = eventRedstone.getNewCurrent() > 0;
     }
-    // Paper end - Call BlockRedstoneEvent
+    // CraftBukkit end

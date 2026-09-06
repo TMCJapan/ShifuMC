@@ -3,14 +3,14 @@
 # TargetHitEvent
 file: net/minecraft/world/level/block/TargetBlock.java
 anchor:
-    if (!level.getBlockTicks().hasScheduledTick(hitResult.getBlockPos(), state.getBlock())) {
+    if (!level.getBlockTicks().hasScheduledTick(hit.getBlockPos(), state.getBlock())) {
 insert:
     // Paper start - Add TargetHitEvent
     boolean shouldAward = false;
-    if (entity instanceof Projectile) {
-        final org.bukkit.craftbukkit.block.CraftBlock craftBlock = org.bukkit.craftbukkit.block.CraftBlock.at(level, hitResult.getBlockPos());
-        final org.bukkit.block.BlockFace blockFace = org.bukkit.craftbukkit.block.CraftBlock.notchToBlockFace(hitResult.getDirection());
-        final io.papermc.paper.event.block.TargetHitEvent targetHitEvent = new io.papermc.paper.event.block.TargetHitEvent((org.bukkit.entity.Projectile) entity.getBukkitEntity(), craftBlock, blockFace, redstoneStrength);
+    if (projectile instanceof Projectile) {
+        final org.bukkit.craftbukkit.block.CraftBlock craftBlock = org.bukkit.craftbukkit.block.CraftBlock.at(level, hit.getBlockPos());
+        final org.bukkit.block.BlockFace blockFace = org.bukkit.craftbukkit.block.CraftBlock.notchToBlockFace(hit.getDirection());
+        final io.papermc.paper.event.block.TargetHitEvent targetHitEvent = new io.papermc.paper.event.block.TargetHitEvent((org.bukkit.entity.Projectile) projectile.getBukkitEntity(), craftBlock, blockFace, redstoneStrength);
         if (targetHitEvent.callEvent()) {
             redstoneStrength = targetHitEvent.getSignalStrength();
             shouldAward = true;
@@ -19,15 +19,3 @@ insert:
         }
     }
     // Paper end - Add TargetHitEvent
-
-# callRedstoneChange
-file: net/minecraft/world/level/block/TargetBlock.java
-anchor:
-    level.setBlock(pos, state.setValue(OUTPUT_POWER, 0), Block.UPDATE_ALL);
-insert:
-    // Paper start - Call BlockRedstoneEvent
-    org.bukkit.event.block.BlockRedstoneEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, state.getValue(OUTPUT_POWER), 0);
-    if (event.getNewCurrent() > 0) {
-        return;
-    }
-    // Paper end - Call BlockRedstoneEvent

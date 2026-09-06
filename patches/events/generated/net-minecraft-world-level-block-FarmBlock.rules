@@ -1,7 +1,7 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # EntityInteractEvent, callEntityChangeBlockEvent, callPlayerInteractEvent
-file: net/minecraft/world/level/block/FarmlandBlock.java
+file: net/minecraft/world/level/block/FarmBlock.java
 anchor:
     turnToDirt(entity, state, level, pos);
 insert:

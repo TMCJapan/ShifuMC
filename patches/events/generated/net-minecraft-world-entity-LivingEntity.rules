@@ -6,16 +6,63 @@ anchor:
     iterator.remove();
 insert:
     // CraftBukkit start
-    EntityPotionEffectEvent event = CraftEventFactory.callEntityPotionEffectChangeEvent(this, effect, null, org.bukkit.event.entity.EntityPotionEffectEvent.Cause.EXPIRATION);
+    EntityPotionEffectEvent event = CraftEventFactory.callEntityPotionEffectChangeEvent(this, mobEffectInstance, null, org.bukkit.event.entity.EntityPotionEffectEvent.Cause.EXPIRATION);
     if (event.isCancelled()) {
         continue;
     }
     // CraftBukkit end
 
+# callEntityPotionEffectChangeEvent
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    if (mobEffectInstance == null) {
+        this.activeEffects.put(effectInstance.getEffect(), effectInstance);
+insert:
+    // CraftBukkit start
+    boolean override = false;
+    // Paper start - Properly update hidden effects
+    boolean addAsHiddenEffect = false;
+    if (mobEffectInstance != null) {
+        override = new MobEffectInstance(mobEffectInstance).update(effectInstance);
+        addAsHiddenEffect = mobEffectInstance.getAmplifier() > effectInstance.getAmplifier() && mobEffectInstance.isShorterDurationThan(effectInstance);
+    // Paper end - Properly update hidden effects
+    }
+
+    if (fireEvent) { // Paper - Don't fire sync event during generation
+    EntityPotionEffectEvent event = CraftEventFactory.callEntityPotionEffectChangeEvent(this, mobEffectInstance, effectInstance, cause, override);
+    override = event.isOverride(); // Paper - Don't fire sync event during generation
+    if (event.isCancelled()) {
+        return false;
+    }
+    } // Paper - Don't fire sync event during generation
+    // CraftBukkit end
+
+# EntityResurrectEvent
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    itemInHand.shrink(1);
+insert:
+            // itemInHand.shrink(1); // CraftBukkit
+            break;
+        }
+    }
+
+    final org.bukkit.inventory.EquipmentSlot handSlot = (hand != null) ? org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand) : null;
+    final EntityResurrectEvent event = new EntityResurrectEvent((org.bukkit.entity.LivingEntity) this.getBukkitEntity(), handSlot);
+    event.setCancelled(itemStack == null);
+    this.level().getCraftServer().getPluginManager().callEvent(event);
+    if (event.isCancelled()) {
+        // Set death protection to null as the event was cancelled. Prevent any attempt at resurrection.
+        deathProtection = null;
+    } else {
+        if (!itemInHand.isEmpty() && itemStack != null) { // Paper - only reduce item if actual totem was found
+
 # EntityDropItemEvent
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    this.level().addFreshEntity(itemEntity);
+            this.level().addFreshEntity(itemEntity);
+        }
+    }
 insert:
     // CraftBukkit start
     org.bukkit.event.entity.EntityDropItemEvent event = new org.bukkit.event.entity.EntityDropItemEvent(this.getBukkitEntity(), (org.bukkit.entity.Item) itemEntity.getBukkitEntity());
@@ -27,13 +74,13 @@ insert:
 # PlayerArmorChangeEvent
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    if (changedItems == null) {
+    if (map == null) {
 insert:
     // Paper start - EntityEquipmentChangedEvent, PlayerArmorChangeEvent
-    final org.bukkit.inventory.ItemStack oldItem = CraftItemStack.asBukkitCopy(previous);
-    final org.bukkit.inventory.ItemStack newItem = CraftItemStack.asBukkitCopy(current);
-    if (this instanceof ServerPlayer && slot.getType() == EquipmentSlot.Type.HUMANOID_ARMOR) {
-        new com.destroystokyo.paper.event.player.PlayerArmorChangeEvent((org.bukkit.entity.Player)this.getBukkitEntity(), com.destroystokyo.paper.event.player.PlayerArmorChangeEvent.SlotType.valueOf(slot.name()), oldItem, newItem).callEvent();
+    final org.bukkit.inventory.ItemStack oldItem = CraftItemStack.asBukkitCopy(itemStack);
+    final org.bukkit.inventory.ItemStack newItem = CraftItemStack.asBukkitCopy(itemBySlot);
+    if (this instanceof ServerPlayer && equipmentSlot.getType() == EquipmentSlot.Type.HUMANOID_ARMOR) {
+        new com.destroystokyo.paper.event.player.PlayerArmorChangeEvent((org.bukkit.entity.Player) this.getBukkitEntity(), com.destroystokyo.paper.event.player.PlayerArmorChangeEvent.SlotType.valueOf(equipmentSlot.name()), oldItem, newItem).callEvent();
     }
     // Paper end - EntityEquipmentChangedEvent, PlayerArmorChangeEvent
 
@@ -64,6 +111,21 @@ anchor:
     return;
 insert:
     if (this.getSharedFlag(Entity.FLAG_FALL_FLYING) && !CraftEventFactory.callToggleGlideEvent(this, false).isCancelled()) // CraftBukkit
+
+# EntityAttemptSpinAttackEvent
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    this.doAutoAttackOnTouch((LivingEntity)entity);
+insert:
+    // Paper start - entity attempt spin attack event / hidden entities - skip hidden entities
+    if (!new io.papermc.paper.event.entity.EntityAttemptSpinAttackEvent(
+        getBukkitLivingEntity(),
+        ((LivingEntity) entity).getBukkitLivingEntity()
+    ).callEvent()) {
+        ++skippedAttackedEntitiesCounter;
+        continue;
+    }
+    // Paper end - entity attempt spin attack event / hidden entities - skip hidden entities
 
 # PlayerStopUsingItemEvent
 file: net/minecraft/world/entity/LivingEntity.java

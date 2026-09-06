@@ -1,0 +1,17 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# WardenAngerChangeEvent
+file: net/minecraft/world/entity/monster/warden/Warden.java
+anchor:
+    WardenAi.setDigCooldown(this);
+    boolean flag = !(this.getTarget() instanceof Player);
+insert:
+    // Paper start - Add WardenAngerChangeEvent
+    int activeAnger = this.angerManagement.getActiveAnger(entity);
+    io.papermc.paper.event.entity.WardenAngerChangeEvent event = new io.papermc.paper.event.entity.WardenAngerChangeEvent((org.bukkit.entity.Warden) this.getBukkitEntity(), entity.getBukkitEntity(), activeAnger, Math.min(150, activeAnger + offset));
+    this.level().getCraftServer().getPluginManager().callEvent(event);
+    if (event.isCancelled()) {
+        return;
+    }
+    offset = event.getNewAnger() - activeAnger;
+    // Paper end - Add WardenAngerChangeEvent

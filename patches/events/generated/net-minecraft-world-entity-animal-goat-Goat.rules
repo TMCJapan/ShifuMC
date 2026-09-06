@@ -6,7 +6,7 @@ anchor:
     player.playSound(this.getMilkingSound(), 1.0F, 1.0F);
 insert:
     // CraftBukkit start - Got milk?
-    org.bukkit.event.player.PlayerBucketFillEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerBucketFillEvent(player.level(), player, this.blockPosition(), this.blockPosition(), null, heldItem, Items.MILK_BUCKET, hand);
+    org.bukkit.event.player.PlayerBucketFillEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerBucketFillEvent(player.level(), player, this.blockPosition(), this.blockPosition(), null, itemInHand, Items.MILK_BUCKET, hand);
 
     if (event.isCancelled()) {
         player.containerMenu.sendAllDataToRemote(); // Paper - Fix inventory desync

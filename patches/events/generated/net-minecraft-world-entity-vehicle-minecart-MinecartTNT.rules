@@ -3,16 +3,16 @@
 # ExplosionPrimeEvent
 file: net/minecraft/world/entity/vehicle/minecart/MinecartTNT.java
 anchor:
-    level.explode(
+    serverLevel.explode(
 insert:
     // CraftBukkit start
     org.bukkit.event.entity.ExplosionPrimeEvent event = new org.bukkit.event.entity.ExplosionPrimeEvent(
         this.getBukkitEntity(),
-        (float) (this.explosionPowerBase + this.explosionSpeedFactor * this.random.nextDouble() * 1.5 * speed),
+        (float) (this.explosionPowerBase + this.explosionSpeedFactor * this.random.nextDouble() * 1.5 * min),
         this.isIncendiary
     );
     if (!event.callEvent()) {
-        this.fuse = net.minecraft.world.entity.item.PrimedTnt.NO_FUSE;
+        this.fuse = -1;
         return;
     }
     // CraftBukkit end
