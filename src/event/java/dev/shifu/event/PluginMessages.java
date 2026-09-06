@@ -144,7 +144,7 @@ public final class PluginMessages {
         }
 
         if (packet.payload() instanceof BrandPayload brand) {
-            listener.clientBrand = brand.brand();
+            listener.playerBrand = brand.brand();
 
             return;
         }

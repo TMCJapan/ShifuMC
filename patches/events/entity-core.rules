@@ -861,21 +861,6 @@ insert:
         return false;
     }
 
-# EntityIgniteEvent(TNT 付きトロッコ)
-file: net/minecraft/world/entity/vehicle/minecart/MinecartTNT.java
-anchor:
-    this.fuse = 80;
-insert:
-    final int shifuFuse = dev.shifu.event.EntityEvents.igniteFuse(this, 80);
-    if (shifuFuse == net.minecraft.world.entity.item.PrimedTnt.NO_FUSE) {
-        return;
-    }
-    if (shifuFuse == 80) {
-insert-after:
-    } else {
-        this.fuse = shifuFuse;
-    }
-
 # EntityCombustByBlockEvent に載せる「燃やしたブロック」を覚える。
 # Paper は Entity.lastLavaContact という欄に同じものを入れる。入れるのは登録があるときだけ。
 #

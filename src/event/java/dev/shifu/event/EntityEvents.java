@@ -267,7 +267,7 @@ public final class EntityEvents {
         }
 
         return new HangingBreakByEntityEvent(hanging, bolt.getBukkitEntity(),
-                new CraftDamageSource(entity.damageSources().lightningBolt())).callEvent();
+                HangingBreakEvent.RemoveCause.ENTITY).callEvent();
     }
 
     // ------------------------------------------------------------ 押し
@@ -500,7 +500,7 @@ public final class EntityEvents {
 
         final boolean drop = level.getGameRules().get(GameRules.ENTITY_DROPS);
         final EntityUnleashEvent event = new EntityUnleashEvent(entity.getBukkitEntity(),
-                entity.isAlive() ? EntityUnleashEvent.UnleashReason.HOLDER_GONE : EntityUnleashEvent.UnleashReason.LEASHED_GONE,
+                EntityUnleashEvent.UnleashReason.HOLDER_GONE,
                 drop);
         event.callEvent();
 
@@ -775,7 +775,7 @@ public final class EntityEvents {
 
         final boolean override = old != null && new MobEffectInstance(old).update(added);
 
-        return !CraftEventFactory.callEntityPotionEffectChangeEvent(entity, old, added, source, cause, null, override).isCancelled();
+        return !CraftEventFactory.callEntityPotionEffectChangeEvent(entity, old, added, cause, null, override).isCancelled();
     }
 
     /** EntityPotionEffectEvent(REMOVED)。{@code removeEffectNoUpdate} で消す直前。 */
@@ -854,6 +854,22 @@ public final class EntityEvents {
     }
 
     /**
+     * 標的を忘れた理由。1.21.11 の {@code CraftEventFactory} には無いので同じ判定をここに置く
+     * (26.2 では {@code getForgotTargetReason})。
+     */
+    private static EntityTargetEvent.TargetReason forgotTargetReason(final Mob mob, final LivingEntity previous) {
+        if (previous != null && !previous.isAlive()) {
+            return EntityTargetEvent.TargetReason.TARGET_DIED;
+        }
+
+        if (previous != null && !mob.canAttack(previous)) {
+            return EntityTargetEvent.TargetReason.TARGET_INVALID;
+        }
+
+        return EntityTargetEvent.TargetReason.FORGOT_TARGET;
+    }
+
+    /**
      * EntityTargetLivingEntityEvent。{@code Mob.setTarget} の代入を囲む。
      * 同じ相手なら出さない(Paper と同じ)。理由が置かれていなければ、外すときは
      * {@code getForgotTargetReason}、それ以外は UNKNOWN。
@@ -873,7 +889,7 @@ public final class EntityEvents {
             return true;
         }
 
-        final LivingEntity current = mob.getTargetUnchecked();
+        final LivingEntity current = mob.getTarget();
 
         if (Objects.equals(current, target)) {
             return true;
@@ -883,7 +899,7 @@ public final class EntityEvents {
 
         if (target == null && (reason == null || reason == EntityTargetEvent.TargetReason.FORGOT_TARGET
                 || reason == EntityTargetEvent.TargetReason.UNKNOWN)) {
-            reason = CraftEventFactory.getForgotTargetReason(mob, current, false);
+            reason = forgotTargetReason(mob, current);
         } else if (reason == null) {
             reason = EntityTargetEvent.TargetReason.UNKNOWN;
         }
@@ -1479,8 +1495,8 @@ public final class EntityEvents {
             for (MobEffectInstance effectInstance : mobEffects) {
                 final Holder<MobEffect> effect = effectInstance.getEffect();
 
-                if (effect.value().isInstantaneous()) {
-                    effect.value().applyInstantaneousEffect(level, potion, potion.getOwner(), entity, effectInstance.getAmplifier(), scale);
+                if (effect.value().isInstantenous()) {
+                    effect.value().applyInstantenousEffect(level, potion, potion.getOwner(), entity, effectInstance.getAmplifier(), scale);
                 } else {
                     final int duration = effectInstance.mapDuration(d -> (int) (scale * d * durationScale + 0.5));
                     final MobEffectInstance newEffect = new MobEffectInstance(
@@ -1515,7 +1531,7 @@ public final class EntityEvents {
         }
 
         return new VehicleDamageEvent((org.bukkit.entity.Vehicle) vehicle.getBukkitEntity(),
-                new CraftDamageSource(source), attackerOf(source), damage).callEvent();
+                attackerOf(source), damage).callEvent();
     }
 
     /** VehicleDestroyEvent。{@code discard} / {@code destroy} を囲む。取り消されたら傷を 40 にして true を返す(Paper)。 */
@@ -1525,7 +1541,7 @@ public final class EntityEvents {
         }
 
         return new VehicleDestroyEvent((org.bukkit.entity.Vehicle) vehicle.getBukkitEntity(),
-                new CraftDamageSource(source), attackerOf(source)).callEvent();
+                attackerOf(source)).callEvent();
     }
 
     public static boolean vehicleCollideListening() {
@@ -1537,12 +1553,6 @@ public final class EntityEvents {
         return new VehicleEntityCollisionEvent((org.bukkit.entity.Vehicle) vehicle.getBukkitEntity(), other.getBukkitEntity()).callEvent();
     }
 
-    /**
-     * EntityIgniteEvent。{@code MinecartTNT.primeFuse} で導火線を入れる前。
-     *
-     * @return 入れる長さ。取り消されたら {@code PrimedTnt.NO_FUSE}。登録が無ければ渡された値のまま
-     */
-    public static int igniteFuse(final Entity entity, final int fuseTime) {
-        return CraftEventFactory.callEntityIgniteEvent(entity, fuseTime);
-    }
+    // io.papermc.paper.event.entity.EntityIgniteEvent は 26.x で入った Paper のイベントで、
+    // 1.21.11 の API には無い。
 }

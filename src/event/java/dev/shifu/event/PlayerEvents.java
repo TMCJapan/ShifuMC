@@ -36,7 +36,7 @@ import net.minecraft.server.ServerLinks;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.border.WorldBorder;
-import net.minecraft.world.level.dimension.end.EnderDragonFight;
+import net.minecraft.world.level.dimension.end.EndDragonFight;
 import net.minecraft.world.level.levelgen.feature.EndPodiumFeature;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.FluidState;
@@ -514,7 +514,7 @@ public final class PlayerEvents {
             return;
         }
 
-        final MapItemSavedData data = level.getServer().getDataStorage().get(MapItemSavedData.type(id));
+        final MapItemSavedData data = level.getServer().overworld().getDataStorage().get(MapItemSavedData.type(id));
 
         if (data == null || !initializedMaps.add(id)) {
             return;
@@ -594,7 +594,7 @@ public final class PlayerEvents {
 
         final int xp = state.getBlock().getExpDrop(state, (ServerLevel) level, pos, ItemStack.EMPTY, true);
         final com.destroystokyo.paper.event.block.BlockDestroyEvent event = new com.destroystokyo.paper.event.block.BlockDestroyEvent(
-                CraftBlock.at(level, pos), fluid.createLegacyBlock().asBlockData(), state.asBlockData(), xp, drop);
+                CraftBlock.at(level, pos), org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(fluid.createLegacyBlock()), state.asBlockData(), xp, drop);
         event.callEvent();
 
         return event;
@@ -688,10 +688,10 @@ public final class PlayerEvents {
      * DragonEggFormEvent。vanilla の「初回だけ卵を置く」の代わりに、Paper と同じく毎回発火する。
      * 2 回目以降は取り消し済みで出し、プラグインが戻せば置く。
      */
-    public static void dragonEggForm(final EnderDragonFight fight, final ServerLevel level, final BlockPos origin, final boolean previouslyKilled) {
+    public static void dragonEggForm(final EndDragonFight fight, final ServerLevel level, final BlockPos origin, final boolean previouslyKilled) {
         final BlockPos eggPos = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, EndPodiumFeature.getLocation(origin));
         final CraftBlockState eggState = CraftBlockStates.getBlockState(level, eggPos);
-        eggState.setBlock(Blocks.DRAGON_EGG.defaultBlockState());
+        eggState.setData(Blocks.DRAGON_EGG.defaultBlockState());
         final io.papermc.paper.event.block.DragonEggFormEvent event = new io.papermc.paper.event.block.DragonEggFormEvent(
                 CraftBlock.at(level, eggPos), eggState, new org.bukkit.craftbukkit.boss.CraftDragonBattle(fight));
 
@@ -1165,7 +1165,7 @@ public final class PlayerEvents {
             replaced = event.getLocation() == null ? null : new ServerPlayer.RespawnConfig(
                     LevelData.RespawnData.of(
                             ((org.bukkit.craftbukkit.CraftWorld) event.getLocation().getWorld()).getHandle().dimension(),
-                            CraftLocation.toBlockPos(event.getLocation()), event.getLocation().getYaw(), event.getLocation().getPitch()),
+                            CraftLocation.toBlockPosition(event.getLocation()), event.getLocation().getYaw(), event.getLocation().getPitch()),
                     event.isForced());
         }
 

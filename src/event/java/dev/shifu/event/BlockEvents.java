@@ -432,7 +432,7 @@ public final class BlockEvents {
         }
 
         final CraftBlockState snapshot = CraftBlockStates.getBlockState(world, pos);
-        snapshot.setBlock(newState);
+        snapshot.setData(newState);
 
         return new org.bukkit.event.block.BlockFormEvent(snapshot.getBlock(), snapshot).callEvent();
     }
@@ -476,7 +476,7 @@ public final class BlockEvents {
         }
 
         final CraftBlockState snapshot = CraftBlockStates.getBlockState(level, to);
-        snapshot.setBlock(fire);
+        snapshot.setData(fire);
 
         return new org.bukkit.event.block.BlockSpreadEvent(snapshot.getBlock(), bukkit(level, from), snapshot).callEvent();
     }
@@ -1426,8 +1426,8 @@ public final class BlockEvents {
         }
 
         return new io.papermc.paper.event.block.VaultChangeStateEvent(bukkit(level, pos), associated,
-                org.bukkit.craftbukkit.block.data.CraftBlockData.fromVanilla(from, org.bukkit.block.data.type.Vault.State.class),
-                org.bukkit.craftbukkit.block.data.CraftBlockData.fromVanilla(to, org.bukkit.block.data.type.Vault.State.class)).callEvent();
+                org.bukkit.craftbukkit.block.data.CraftBlockData.toBukkit(from, org.bukkit.block.data.type.Vault.State.class),
+                org.bukkit.craftbukkit.block.data.CraftBlockData.toBukkit(to, org.bukkit.block.data.type.Vault.State.class)).callEvent();
     }
 
     /**
@@ -1554,7 +1554,7 @@ public final class BlockEvents {
         }
 
         final CraftBlockState snapshot = CraftBlockStates.getBlockState(level, pos);
-        snapshot.setBlock(newState);
+        snapshot.setData(newState);
 
         return new org.bukkit.event.block.BlockSpreadEvent(snapshot.getBlock(), bukkit(level, source), snapshot).callEvent();
     }
@@ -1570,7 +1570,7 @@ public final class BlockEvents {
         }
 
         final CraftBlockState snapshot = CraftBlockStates.getBlockState(level, pos);
-        snapshot.setBlock(newState);
+        snapshot.setData(newState);
 
         return new org.bukkit.event.block.BlockGrowEvent(snapshot.getBlock(), snapshot).callEvent();
     }

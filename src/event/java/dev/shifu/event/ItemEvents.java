@@ -446,7 +446,7 @@ public final class ItemEvents {
         final org.bukkit.event.block.BlockCanBuildEvent event = new org.bukkit.event.block.BlockCanBuildEvent(
                 CraftBlock.at(level, pos),
                 player instanceof ServerPlayer serverPlayer ? serverPlayer.getBukkitEntity() : null,
-                state.asBlockData(), vanilla, CraftEquipmentSlot.getHand(hand));
+                org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(state), vanilla, CraftEquipmentSlot.getHand(hand));
         event.callEvent();
 
         return event.isBuildable();

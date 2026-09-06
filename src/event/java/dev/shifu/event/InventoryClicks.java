@@ -7,7 +7,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.CartographyTableMenu;
-import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.BundleItem;
 import net.minecraft.world.item.ItemStack;
@@ -39,7 +38,7 @@ final class InventoryClicks {
     static InventoryClickEvent build(final ServerPlayer player, final ServerboundContainerClickPacket packet, final int slotIndex) {
         final AbstractContainerMenu menu = player.containerMenu;
 
-        if (packet.containerInput() == ContainerInput.QUICK_CRAFT) {
+        if (packet.clickType() == net.minecraft.world.inventory.ClickType.QUICK_CRAFT) {
             return null;
         }
 
@@ -53,7 +52,7 @@ final class InventoryClicks {
         ClickType click = ClickType.UNKNOWN;
         InventoryAction action = InventoryAction.UNKNOWN;
 
-        switch (packet.containerInput()) {
+        switch (packet.clickType()) {
             case PICKUP:
                 if (button == 0) {
                     click = ClickType.LEFT;
