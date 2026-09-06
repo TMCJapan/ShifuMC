@@ -1,8 +1,0 @@
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
-
-# EntityInsideBlockEvent
-file: net/minecraft/world/level/block/HopperBlock.java
-anchor:
-    BlockEntity blockEntity = level.getBlockEntity(pos);
-insert:
-    if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent

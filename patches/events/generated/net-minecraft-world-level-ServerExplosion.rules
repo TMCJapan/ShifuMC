@@ -14,25 +14,6 @@ insert:
     }
     // CraftBukkit end
 
-# callTNTPrimeEvent
-file: net/minecraft/world/level/ServerExplosion.java
-anchor:
-    this.level
-insert:
-    // CraftBukkit start - TNTPrimeEvent
-    BlockState state = this.level.getBlockState(blockPos);
-    Block block = state.getBlock();
-    if (level.getGameRules().get(GameRules.TNT_EXPLODES) && block instanceof net.minecraft.world.level.block.TntBlock) {
-        Entity sourceEntity = this.source == null ? null : this.source;
-        BlockPos sourceBlock = sourceEntity == null ? BlockPos.containing(this.center) : null;
-        if (!CraftEventFactory.callTNTPrimeEvent(this.level, blockPos, org.bukkit.event.block.TNTPrimeEvent.PrimeCause.EXPLOSION, sourceEntity, sourceBlock)) {
-            this.level.sendBlockUpdated(blockPos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), state, Block.UPDATE_ALL); // Update the block on the client
-            continue;
-        }
-    }
-    // CraftBukkit end
-
-
 # callBlockIgniteEvent
 file: net/minecraft/world/level/ServerExplosion.java
 anchor:

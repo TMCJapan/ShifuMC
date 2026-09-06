@@ -8,25 +8,6 @@ anchor:
 insert:
     org.bukkit.Bukkit.getPluginManager().callEvent(new org.bukkit.event.world.WorldSaveEvent(this.getWorld())); // CraftBukkit
 
-# doEntityAddEventCalling
-file: net/minecraft/server/level/ServerLevel.java
-anchor:
-    return this.entityManager.addNewEntity(entity);
-insert:
-    if (entity instanceof net.minecraft.world.entity.item.ItemEntity itemEntity && itemEntity.getItem().isEmpty()) return false; // Paper - Prevent empty items from being added
-    // Paper start - capture all item additions to the world
-    if (captureDrops != null && entity instanceof net.minecraft.world.entity.item.ItemEntity) {
-        captureDrops.add((net.minecraft.world.entity.item.ItemEntity) entity);
-        return true;
-    }
-    // Paper end - capture all item additions to the world
-    // SPIGOT-6415: Don't call spawn event when reason is null. For example when an entity teleports to a new world.
-    if (spawnReason != null && !org.bukkit.craftbukkit.event.CraftEventFactory.doEntityAddEventCalling(this, entity, spawnReason)) {
-        return false;
-    }
-    // CraftBukkit end
-
-
 # BlockBreakProgressUpdateEvent
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
@@ -48,14 +29,3 @@ insert:
             .callEvent();
     }
     // Paper end - Add BlockBreakProgressUpdateEvent
-
-# MapInitializeEvent
-file: net/minecraft/server/level/ServerLevel.java
-anchor:
-    this.getServer().overworld().getDataStorage().set(MapItemSavedData.type(mapId), data);
-insert:
-    // CraftBukkit start
-    data.id = mapId;
-    org.bukkit.event.server.MapInitializeEvent event = new org.bukkit.event.server.MapInitializeEvent(data.mapView);
-    event.callEvent();
-    // CraftBukkit end

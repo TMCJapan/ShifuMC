@@ -1,21 +1,5 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
-# AnvilDamagedEvent
-file: net/minecraft/world/inventory/AnvilMenu.java
-anchor:
-    if (blockState1 == null) {
-insert:
-    // Paper start - AnvilDamageEvent
-    com.destroystokyo.paper.event.block.AnvilDamagedEvent event = new com.destroystokyo.paper.event.block.AnvilDamagedEvent(getBukkitView(), blockState1 != null ? org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(blockState1) : null);
-    if (!event.callEvent()) {
-        return;
-    } else if (event.getDamageState() == com.destroystokyo.paper.event.block.AnvilDamagedEvent.DamageState.BROKEN) {
-        blockState1 = null;
-    } else {
-        blockState1 = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getDamageState().getMaterial().createBlockData()).getState().setValue(AnvilBlock.FACING, blockState.getValue(AnvilBlock.FACING));
-    }
-    // Paper end - AnvilDamageEvent
-
 # callPrepareResultEvent
 file: net/minecraft/world/inventory/AnvilMenu.java
 anchor:

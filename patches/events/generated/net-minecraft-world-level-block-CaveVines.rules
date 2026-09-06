@@ -11,26 +11,3 @@ insert:
     }
     // CraftBukkit end - call entity change block event
     java.util.List<net.minecraft.world.item.ItemStack> drops = new java.util.ArrayList<>(); // Paper - call player harvest block event - store drops from loottable
-
-# callPlayerHarvestBlockEvent
-file: net/minecraft/world/level/block/CaveVines.java
-anchor:
-    float f = Mth.randomBetween(serverLevel.random, 0.8F, 1.2F);
-insert:
-    // Paper start - call player harvest block event
-    if (entity instanceof net.minecraft.world.entity.player.Player player) {
-        org.bukkit.event.player.PlayerHarvestBlockEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerHarvestBlockEvent(
-            level, pos, player, net.minecraft.world.InteractionHand.MAIN_HAND, drops
-        );
-        if (event.isCancelled()) {
-            return InteractionResult.SUCCESS; // We need to return a success either way, because making it PASS or FAIL will result in a bug where cancelling while harvesting w/ block in hand places block
-        }
-        for (org.bukkit.inventory.ItemStack itemStack : event.getItemsHarvested()) {
-            Block.popResource(level, pos, org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(itemStack));
-        }
-    } else {
-        for (net.minecraft.world.item.ItemStack itemStack : drops) {
-            Block.popResource(level, pos, itemStack);
-        }
-    }
-    // Paper end - call player harvest block event

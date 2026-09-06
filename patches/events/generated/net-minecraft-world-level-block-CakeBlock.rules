@@ -11,17 +11,3 @@ insert:
         return InteractionResult.TRY_WITH_EMPTY_HAND;
     }
     // Paper end - call change block event
-
-# callEntityChangeBlockEvent
-file: net/minecraft/world/level/block/CakeBlock.java
-anchor:
-    player.awardStat(Stats.EAT_CAKE_SLICE);
-insert:
-    // Paper start - call change block event
-    int bitesValue = state.getValue(CakeBlock.BITES);
-    final BlockState newState = bitesValue < MAX_BITES ? state.setValue(CakeBlock.BITES, bitesValue + 1) : level.getFluidState(pos).createLegacyBlock();
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(player, pos, newState)) {
-        ((net.minecraft.server.level.ServerPlayer) player).getBukkitEntity().sendHealthUpdate();
-        return InteractionResult.PASS; // return a non-consume result to cake blocks don't drop their candles
-    }
-    // Paper end - call change block event
