@@ -8,12 +8,6 @@
 
 # 組み込みのレジストリ(patches/sources/.../BuiltInRegistries.java.patch @@ -392)
 file: net/minecraft/core/registries/BuiltInRegistries.java
-anchor:
-    Identifier key = name.identifier();
-    LOADERS.put(key, () -> loader.run(registry));
-insert:
-    io.papermc.paper.registry.PaperRegistryAccess.instance().registerRegistry(registry);
-
 # 組み込みのレジストリを凍結するとき(同 @@ -399)。
 # Paper は if の外、ラムダの末尾に置く。アンカーの終わりが if の閉じ括弧なので
 # その後ろに入れる。
@@ -25,11 +19,6 @@ insert-after:
 
 # データパックから読むレジストリ(patches/sources/.../RegistryLoadTask.java.patch @@ -39)
 file: net/minecraft/resources/RegistryLoadTask.java
-anchor:
-    this.concurrentRegistrationGetter = new ConcurrentHolderGetter<>(this.registryWriteLock, this.registry.createRegistrationLookup());
-insert-after:
-    io.papermc.paper.registry.PaperRegistryAccess.instance().registerRegistry(this.registry);
-
 # 読み直せるレジストリ(patches/sources/.../ReloadableServerRegistries.java.patch)
 file: net/minecraft/server/ReloadableServerRegistries.java
 anchor:

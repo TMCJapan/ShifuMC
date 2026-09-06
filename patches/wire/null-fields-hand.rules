@@ -35,31 +35,24 @@ insert:
 # 読んだ位置: patches/sources/net/minecraft/server/level/ServerLevel.java.patch(getMapData / setMapData)
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    return this.getServer().getDataStorage().get(MapItemSavedData.type(id));
+    return this.getServer().overworld().getDataStorage().get(MapItemSavedData.type(mapId));
 insert:
     {
-        final MapItemSavedData shifuMap = this.getServer().getDataStorage().get(MapItemSavedData.type(id));
+        final MapItemSavedData shifuMap = this.getServer().overworld().getDataStorage().get(MapItemSavedData.type(mapId));
         if (shifuMap != null && shifuMap.id == null) {
-            shifuMap.id = id;
+            shifuMap.id = mapId;
         }
     }
 
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    this.getServer().getDataStorage().set(MapItemSavedData.type(id), data);
+    this.getServer().overworld().getDataStorage().set(MapItemSavedData.type(mapId), data);
 insert:
-    data.id = id;
+    data.id = mapId;
 
 # LootTable.craftLootTable(データパックの検証のとき)
 # 読んだ位置: patches/sources/net/minecraft/world/level/storage/loot/LootDataType.java.patch
 file: net/minecraft/world/level/storage/loot/LootDataType.java
-anchor:
-    value.validate(rootContext);
-insert-after:
-    if (value instanceof LootTable lootTable) {
-        lootTable.craftLootTable = new org.bukkit.craftbukkit.CraftLootTable(org.bukkit.craftbukkit.util.CraftNamespacedKey.fromMinecraft(key.identifier()), lootTable);
-    }
-
 # TransientCraftingContainer.resultInventory(作業台の結果欄。CraftInventoryCrafting が読む)
 # 読んだ位置: patches/sources/net/minecraft/world/inventory/AbstractCraftingMenu.java.patch
 file: net/minecraft/world/inventory/AbstractCraftingMenu.java

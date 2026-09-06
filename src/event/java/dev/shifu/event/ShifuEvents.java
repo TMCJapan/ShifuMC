@@ -305,6 +305,34 @@ public final class ShifuEvents {
     }
 
     /**
+     * 落とす物を実際に落とす。
+     *
+     * <p>プラグインが差し替えたものは Bukkit の側から、触っていないものは
+     * vanilla が作った NMS の {@code ItemStack} のまま落とす({@code runConsumer} の判定)。
+     *
+     * <p>Paper の {@code CraftEventFactory} にも同じ形のメソッドがあるが、
+     * 私有で、バージョンによって有ったり無かったりする(1.21.11 には無い)。
+     * ここに置けばどのバージョンでも同じものを使える。
+     */
+    private static void dropAllItems(final List<Entity.DefaultDrop> drops,
+            final java.util.function.Consumer<net.minecraft.world.item.ItemStack> fallback) {
+        for (Entity.DefaultDrop drop : drops) {
+            if (drop == null) {
+                continue;
+            }
+
+            final org.bukkit.inventory.ItemStack stack = drop.stack();
+
+            if (stack.isEmpty()) {
+                continue;
+            }
+
+            drop.runConsumer(item -> fallback.accept(
+                    org.bukkit.craftbukkit.inventory.CraftItemStack.unwrap(item)));
+        }
+    }
+
+    /**
      * 控えた経験値オーブを世界へ出す。
      *
      * <p>プラグインが量を変えていなければ vanilla が作ったオーブをそのまま入れる。
@@ -358,14 +386,14 @@ public final class ShifuEvents {
         event.callEvent();
 
         if (event.isCancelled()) {
-            CraftEventFactory.dropAllItems(drops, item -> victim.spawnAtLocation(level, item));
+            dropAllItems(drops, item -> victim.spawnAtLocation(level, item));
             releaseExperience(victim, current, experience);
 
             return;
         }
 
         victim.expToDrop = event.getDroppedExp();
-        CraftEventFactory.dropAllItems(drops, item -> victim.spawnAtLocation(level, item));
+        dropAllItems(drops, item -> victim.spawnAtLocation(level, item));
         releaseExperience(victim, current, event.getDroppedExp());
     }
 
@@ -1099,7 +1127,7 @@ public final class ShifuEvents {
             player.getBukkitEntity().getInventory().addItem(stack);
         }
 
-        CraftEventFactory.dropAllItems(drops, item -> player.drop(item, true, false));
+        dropAllItems(drops, item -> player.drop(item, true, false));
         releaseExperience(player, current, event.getDroppedExp());
         announceDeath(player, event);
 

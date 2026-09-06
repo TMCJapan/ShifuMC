@@ -4,12 +4,12 @@ file: org/bukkit/craftbukkit/boss/CraftDragonBattle.java
 
 replace:
         public boolean spawnNewGateway() {
-            return this.handle.spawnNewGateway();
+            return this.handle.spawnNewGatewayIfPossible();
         }
 with:
         public boolean spawnNewGateway() {
-            // vanilla の spawnNewGateway() は void。Paper は「ゲートウェイを 1 つ出せたか」を返す。
-            // vanilla の中身は gateways が空でなければ 1 つ取り出して出す、だけなので、
+            // vanilla に spawnNewGatewayIfPossible は無い。spawnNewGateway() は void で、
+            // 中身は gateways が空でなければ 1 つ取り出して出す、だけなので、
             // 呼ぶ前に空かどうかを見れば同じ答えになる。gateways は public。
             if (this.handle.gateways.isEmpty()) {
                 return false;
@@ -19,15 +19,11 @@ with:
         }
 
 replace:
-                return this.handle.respawnDragon(
-                    Lists.transform(filteredCrystals, crystal -> ((CraftEnderCrystal) crystal).getHandle())
-                );
+            return this.handle.respawnDragon(list.stream().map(enderCrystal -> ((CraftEnderCrystal) enderCrystal).getHandle()).collect(Collectors.toList()));
 with:
-                // vanilla の respawnDragon は void。Paper は「復活を始めたか」を返す。
-                // vanilla の中身は入り口の if (dragonKilled && respawnStage == null) が全部で、
-                // 中に入れば必ず respawnStage = START まで行くので、呼ぶ前に条件を見る。
-                final boolean started = this.handle.dragonKilled && this.handle.respawnStage == null;
-                this.handle.respawnDragon(
-                    Lists.transform(filteredCrystals, crystal -> ((CraftEnderCrystal) crystal).getHandle())
-                );
-                return started;
+            // vanilla の respawnDragon は void。Paper は「復活を始めたか」を返す。
+            // vanilla の中身は入り口の if (dragonKilled && respawnStage == null) が全部で、
+            // 中に入れば必ず respawnStage = START まで行くので、呼ぶ前に条件を見る。
+            final boolean started = this.handle.dragonKilled && this.handle.respawnStage == null;
+            this.handle.respawnDragon(list.stream().map(enderCrystal -> ((CraftEnderCrystal) enderCrystal).getHandle()).collect(Collectors.toList()));
+            return started;

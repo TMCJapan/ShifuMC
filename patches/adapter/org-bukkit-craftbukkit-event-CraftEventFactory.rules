@@ -25,16 +25,11 @@ with:
 # Shifu の発火層(dev.shifu.event.ShifuEvents)が死亡イベントを自分で組み立てる。
 # 落ちる経験値を vanilla が実際に出したオーブの合計にするため、
 # callEntityDeathEvent / callPlayerDeathEvent(getExpReward を読む)は使わない。
-# 中で使っている 3 つを公開する。
+# 中で使っている 2 つを公開する(落とす処理は発火層が持つ)。
 replace:
     private static final java.util.function.Function<org.bukkit.inventory.ItemStack, Entity.DefaultDrop> FROM_FUNCTION = stack -> {
 with:
     public static final java.util.function.Function<org.bukkit.inventory.ItemStack, Entity.DefaultDrop> FROM_FUNCTION = stack -> { // Shifu - 発火層から使う
-
-replace:
-    private static void dropAllItems(List<Entity.DefaultDrop> drops, Consumer<ItemStack> fallback) {
-with:
-    public static void dropAllItems(List<Entity.DefaultDrop> drops, Consumer<ItemStack> fallback) { // Shifu - 発火層から使う
 
 replace:
     private static void populateFields(net.minecraft.world.entity.LivingEntity victim, EntityDeathEvent event) {

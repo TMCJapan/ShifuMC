@@ -5,11 +5,6 @@
 # (patches/anon/discarded-payload.rules)、その控えをこの handler が接続ごとの列へ移す。
 # プラグインが無ければ控えを取らないので、この handler は何もしない。
 file: net/minecraft/network/Connection.java
-anchor:
-        }).addLast(HandlerNames.PACKET_HANDLER, this);
-insert-after:
-    dev.shifu.event.PluginMessages.install(pipeline, this);
-
 # 接続が閉じたら、その接続の控えとチャンネルを忘れる
 file: net/minecraft/network/Connection.java
 anchor:

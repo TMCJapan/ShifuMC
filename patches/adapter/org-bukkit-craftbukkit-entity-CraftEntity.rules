@@ -4,8 +4,7 @@ file: org/bukkit/craftbukkit/entity/CraftEntity.java
 
 replace:
                 TeleportTransition.DO_NOTHING,
-                cause,
-                TeleportTransition.PassengerTeleportationMode.POSITION_RIDER
+                cause
 with:
                 TeleportTransition.DO_NOTHING
 
