@@ -3,15 +3,5 @@
 // DedicatedServer.motd
     private net.kyori.adventure.text.Component motd; // Paper - Adventure
 
-// DedicatedServer.getTPS
-    private static double getTPS(final ca.spottedleaf.common.time.TickData tickData, final long tickInterval) {
-        final Double avg = tickData.getTPSAverage(null, tickInterval);
-        if (avg == null) {
-            return 1.0E9 / (double)tickInterval;
-        }
-
-        return avg;
-    }
-
 // MinecraftServer.hasStopped
     private boolean hasStopped = false;

@@ -513,47 +513,7 @@ public final class BlockEvents {
         return new org.bukkit.event.block.BlockBurnEvent(bukkit(level, pos), source == null ? null : bukkit(level, source)).callEvent();
     }
 
-    /**
-     * EntityConstructEvent(カボチャでゴーレムを作る)。vanilla は模様のブロックを消してから
-     * 生き物を足すので、消す前に控えを取り、足す直前に発火して、取り消されたら控えに戻す。
-     */
-    private static List<CraftBlockState> golemPattern;
-
-    public static void golemBefore(final Level level, final net.minecraft.world.level.block.state.pattern.BlockPattern.BlockPatternMatch match) {
-        if (!listening(io.papermc.paper.event.entity.EntityConstructEvent.getHandlerList())) {
-            return;
-        }
-
-        final List<CraftBlockState> before = new ArrayList<>();
-
-        for (final org.bukkit.block.Block block : CraftBlock.getMatchingBlocks(level, match)) {
-            before.add((CraftBlockState) block.getState());
-        }
-
-        golemPattern = before;
-    }
-
-    /**
-     * @return 足してよいか。取り消されたら模様のブロックを戻す
-     */
-    public static boolean construct(final Entity golem, final Level level, final net.minecraft.world.level.block.state.pattern.BlockPattern.BlockPatternMatch match) {
-        final List<CraftBlockState> before = golemPattern;
-        golemPattern = null;
-
-        if (before == null || !listening(io.papermc.paper.event.entity.EntityConstructEvent.getHandlerList())) {
-            return true;
-        }
-
-        if (new io.papermc.paper.event.entity.EntityConstructEvent(golem.getBukkitEntity(), CraftBlock.getMatchingBlocks(level, match)).callEvent()) {
-            return true;
-        }
-
-        for (final CraftBlockState state : before) {
-            state.place(Block.UPDATE_ALL);
-        }
-
-        return false;
-    }
+    // EntityConstructEvent は 26.x で入った Paper のイベントで、1.21.11 の API には無い。
 
     // ------------------------------------------------------------ コンポスター
 

@@ -563,21 +563,6 @@ insert:
         return InteractionResult.PASS;
     }
 
-# EntityConstructEvent(ゴーレムを組む)
-file: net/minecraft/world/level/block/CarvedPumpkinBlock.java
-anchor:
-    clearPatternBlocks(level, patternMatch);
-insert:
-    dev.shifu.event.BlockEvents.golemBefore(level, patternMatch);
-
-file: net/minecraft/world/level/block/CarvedPumpkinBlock.java
-anchor:
-    level.addFreshEntity(golem);
-insert:
-    if (dev.shifu.event.BlockEvents.construct(golem, level, match)) {
-insert-after:
-    }
-
 # CompostItemEvent / EntityCompostItemEvent / EntityChangeBlockEvent(コンポスター)
 file: net/minecraft/world/level/block/ComposterBlock.java
 anchor:

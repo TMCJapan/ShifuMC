@@ -82,13 +82,13 @@ insert-after:
 # 取り消された個体は並びから外し、dropped は残った並びから決め直す。
 file: net/minecraft/world/entity/Entity.java
 anchor:
-    boolean dropped = !leashables.isEmpty();
+    boolean flag = !list.isEmpty();
 insert:
     final int shifuSelf = dev.shifu.event.EntityEvents.unleashSelf(this, player);
-    leashables = dev.shifu.event.EntityEvents.unleashEach(leashables, player);
+    list = dev.shifu.event.EntityEvents.unleashEach(list, player);
     final boolean shifuHandled = dev.shifu.event.EntityEvents.takeUnleashHandled();
 insert-after:
-    dropped = dropped || shifuHandled;
+    flag = flag || shifuHandled;
 
 file: net/minecraft/world/entity/Entity.java
 anchor:
@@ -115,7 +115,7 @@ file: net/minecraft/world/entity/Entity.java
 anchor:
     this.igniteForSeconds(8.0F);
 insert:
-    if (dev.shifu.event.EntityEvents.lightningCombust(this, lightningBolt)) {
+    if (dev.shifu.event.EntityEvents.lightningCombust(this, lightning)) {
 insert-after:
     }
 
@@ -123,7 +123,7 @@ file: net/minecraft/world/entity/Entity.java
 anchor:
     this.hurtServer(level, this.damageSources().lightningBolt(), 5.0F);
 insert:
-    if (dev.shifu.event.EntityEvents.lightningHanging(this, lightningBolt)) {
+    if (dev.shifu.event.EntityEvents.lightningHanging(this, lightning)) {
 insert-after:
     }
 
@@ -259,7 +259,7 @@ anchor:
     if (mobEffectInstance == null) {
     this.activeEffects.put(effectInstance.getEffect(), effectInstance);
 insert:
-    if (!dev.shifu.event.EntityEvents.addEffect(this, mobEffectInstance, effectInstance, source)) {
+    if (!dev.shifu.event.EntityEvents.addEffect(this, mobEffectInstance, effectInstance, entity)) {
         return false;
     }
 
@@ -564,14 +564,14 @@ file: net/minecraft/world/entity/player/Player.java
 anchor:
     if (!this.deflectProjectile(target)) {
 insert:
-    dev.shifu.event.EntityEvents.attacking(target, damageSource, magicBoost);
+    dev.shifu.event.EntityEvents.attacking(target, damageSource, f1);
 
 # PlayerAttackEntityCooldownResetEvent
 file: net/minecraft/world/entity/player/Player.java
 anchor:
     this.onAttack();
 insert:
-    if (dev.shifu.event.EntityEvents.attackCooldownReset(this, entity)) {
+    if (dev.shifu.event.EntityEvents.attackCooldownReset(this, target)) {
 insert-after:
     } else {
         super.onAttack();
@@ -599,7 +599,7 @@ file: net/minecraft/world/entity/player/Player.java
 anchor:
     if (knockback && this.deflectProjectile(target)) {
 insert:
-    dev.shifu.event.EntityEvents.attacking(target, damageSource, magicBoost);
+    dev.shifu.event.EntityEvents.attacking(target, damageSource, f);
 
 # EntityDamageEvent(飛び道具を弾く)。deflect の前に出す。
 file: net/minecraft/world/entity/player/Player.java

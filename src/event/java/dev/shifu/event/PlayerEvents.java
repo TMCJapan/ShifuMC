@@ -945,23 +945,7 @@ public final class PlayerEvents {
         });
     }
 
-    /**
-     * PlayerCodeOfConductSendEvent。送る文が決まったあと。Paper は文が無くても発火するが、
-     * Shifu はあるときだけ。null を返したら送らない。
-     */
-    public static String codeOfConduct(final ServerConfigurationPacketListenerImpl listener, final String text) {
-        if (!listening(io.papermc.paper.event.connection.configuration.PlayerCodeOfConductSendEvent.getHandlerList())) {
-            return text;
-        }
-
-        return onServerThread(() -> {
-            final io.papermc.paper.event.connection.configuration.PlayerCodeOfConductSendEvent event =
-                    new io.papermc.paper.event.connection.configuration.PlayerCodeOfConductSendEvent(listener.paperConnection, text);
-            event.callEvent();
-
-            return event.getCodeOfConduct();
-        });
-    }
+    // PlayerCodeOfConductSendEvent は 26.x で入った Paper のイベントで、1.21.11 の API には無い。
 
     // ------------------------------------------------------------ プレイヤーの packet
 
@@ -1315,17 +1299,7 @@ public final class PlayerEvents {
         return event.callEvent() ? event.getCooldown() : -1;
     }
 
-    /** EntityLungeEvent。突きの効果を当てる前。取り消しだけ効く(強さは lambda の中で決まる)。 */
-    public static int lungePower(final Entity user, final int level) {
-        if (!(user instanceof LivingEntity living) || !listening(io.papermc.paper.event.entity.EntityLungeEvent.getHandlerList())) {
-            return level;
-        }
-
-        final io.papermc.paper.event.entity.EntityLungeEvent event = new io.papermc.paper.event.entity.EntityLungeEvent(
-                living.getBukkitLivingEntity(), level);
-
-        return event.callEvent() ? event.getLungePower() : Integer.MIN_VALUE;
-    }
+    // EntityLungeEvent は 26.x で入った Paper のイベントで、1.21.11 の API には無い。
 
     /**
      * EntityCombustByEntityEvent / EntityCombustEvent(火属性のエンチャント)。燃やす前。

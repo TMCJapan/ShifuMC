@@ -215,7 +215,7 @@ insert:
     final java.util.List<net.minecraft.world.entity.Entity.DefaultDrop> shifuDeathDrops =
             shifuDeath ? dev.shifu.event.ShifuEvents.beginPlayerDeath(this) : null;
 insert-after:
-    if (!dev.shifu.event.ShifuEvents.playerDeath(this, damageSource, shifuDeathDrops, showDeathMessage)) {
+    if (!dev.shifu.event.ShifuEvents.playerDeath(this, damageSource, shifuDeathDrops, flag)) {
         return;
     }
 
@@ -377,7 +377,7 @@ file: net/minecraft/world/entity/LivingEntity.java
 anchor:
     ItemStack itemStack = this.useItem.finishUsingItem(this.level(), this);
 insert:
-    if (!dev.shifu.event.ShifuEvents.itemConsume(this, hand)) {
+    if (!dev.shifu.event.ShifuEvents.itemConsume(this, usedItemHand)) {
         return;
     }
 

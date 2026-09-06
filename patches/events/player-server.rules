@@ -179,8 +179,8 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerLevel.java.patch(TimeSkipEvent)
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    if (this.getGameRules().get(GameRules.ADVANCE_TIME)) {
-insert:
+    if (this.sleepStatus.areEnoughSleeping(i) && this.sleepStatus.areEnoughDeepSleeping(i, this.players)) {
+insert-after:
     boolean shifuWake = true;
     final long shifuNight = dev.shifu.event.PlayerEvents.nightBefore(this);
 
@@ -238,7 +238,7 @@ anchor:
     }
 insert:
     final com.destroystokyo.paper.event.block.BlockDestroyEvent shifuDestroy =
-            dev.shifu.event.PlayerEvents.blockDestroy(this, pos, blockState, fluidState, dropResources);
+            dev.shifu.event.PlayerEvents.blockDestroy(this, pos, blockState, fluidState, dropBlock);
     if (shifuDestroy != null && shifuDestroy.isCancelled()) {
         return false;
     }
@@ -374,16 +374,6 @@ anchor:
 insert-after:
     serverLinks = dev.shifu.event.PlayerEvents.linksSend(this, serverLinks);
 
-# PlayerCodeOfConductSendEvent。文が決まったあと(lambda の中)
-file: net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
-anchor:
-    return codeOfConduct;
-insert:
-    codeOfConduct = dev.shifu.event.PlayerEvents.codeOfConduct(this, codeOfConduct);
-    if (codeOfConduct == null) {
-        this.finishCurrentTask(ServerCodeOfConductConfigurationTask.TYPE);
-    }
-
 # ProfileWhitelistVerifyEvent。isWhiteListed の判定の代わり
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/players/PlayerList.java.patch(isWhiteListedLogin)
@@ -441,7 +431,7 @@ file: net/minecraft/server/level/ServerLevel.java
 anchor:
     return this.getServer().overworld().getDataStorage().get(MapItemSavedData.type(mapId));
 insert:
-    dev.shifu.event.PlayerEvents.mapLoaded(this, id);
+    dev.shifu.event.PlayerEvents.mapLoaded(this, mapId);
 
 # PreCreatureSpawnEvent の shouldAbortSpawn。位置の判定のあと、この回の湧きをやめる。
 #
@@ -635,28 +625,6 @@ insert-after:
         player.getCooldowns().addCooldown(blockingWith, shifuCooldown);
     }
 
-# EntityLungeEvent。突きの効果を囲む。
-#
-# 強さが差し替えられたときは vanilla の行を飛ばして、同じ効果を新しい強さで当てる
-# (hand の shifuLunge。vanilla の enchantmentLevel は引数なので代入できない)。
-# 取り消しなら何もしない。登録が無ければ vanilla の行だけが走る。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/enchantment/Enchantment.java.patch
-file: net/minecraft/world/item/enchantment/Enchantment.java
-anchor:
-    applyEffects(
-    this.getEffects(EnchantmentEffectComponents.POST_PIERCING_ATTACK),
-    entityContext(serverLevel, enchantmentLevel, user, user.position()),
-    e -> e.apply(serverLevel, enchantmentLevel, item, user, user.position())
-    );
-insert:
-    final int shifuLunge = dev.shifu.event.PlayerEvents.lungePower(user, enchantmentLevel);
-    if (shifuLunge == enchantmentLevel) {
-insert-after:
-    } else if (shifuLunge != Integer.MIN_VALUE) {
-        this.shifuLunge(serverLevel, shifuLunge, item, user);
-    }
-
 # EntityCombustByEntityEvent / EntityCombustEvent(火属性)
 file: net/minecraft/world/item/enchantment/effects/Ignite.java
 anchor:
@@ -698,4 +666,4 @@ file: net/minecraft/world/entity/player/Player.java
 anchor:
             blocksAttacks.disable(level, this, secondsToDisableBlocking, itemBlockingWith);
 insert:
-    dev.shifu.event.PlayerEvents.shieldAttacker(attacker);
+    dev.shifu.event.PlayerEvents.shieldAttacker(entity);

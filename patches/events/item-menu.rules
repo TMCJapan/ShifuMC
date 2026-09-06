@@ -693,7 +693,7 @@ anchor:
     int min = Math.min(this.getDamageValue() + i, this.getMaxDamage() - 1);
 insert-after:
     if (min - this.getDamageValue() > 0) {
-        final int shifuDamage = dev.shifu.event.ItemEvents.itemDamage(this, serverPlayer, min - this.getDamageValue(), amount);
+        final int shifuDamage = dev.shifu.event.ItemEvents.itemDamage(this, serverPlayer, min - this.getDamageValue(), damage);
         if (shifuDamage == 0) {
             return;
         }
