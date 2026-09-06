@@ -41,7 +41,7 @@ file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     this.player.absSnapTo(targetX, targetY, targetZ, targetYRot, targetXRot);
 insert:
-    if (!dev.shifu.event.ShifuEvents.playerMove(this, startX, startY, startZ, targetX, targetY, targetZ, targetYRot, targetXRot)) {
+    if (!dev.shifu.event.ShifuEvents.playerMove(this, x, y, z, d, d1, d2, f, f1)) {
         return;
     }
 

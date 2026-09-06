@@ -152,15 +152,15 @@ anchor:
 insert:
     final boolean shifuBreedListening = dev.shifu.event.AnimalEvents.breedListening();
     final int shifuSourceAge = shifuBreedListening ? parent.getAge() : 0;
-    final int shifuTargetAge = shifuBreedListening ? target.getAge() : 0;
+    final int shifuTargetAge = shifuBreedListening ? partner.getAge() : 0;
 
 file: net/minecraft/world/entity/ai/behavior/VillagerMakeLove.java
 anchor:
     level.addFreshEntityWithPassengers(breedOffspring);
 insert:
-    if (!dev.shifu.event.AnimalEvents.villagerBreed(breedOffspring, source, target)) {
-        source.setAge(shifuSourceAge);
-        target.setAge(shifuTargetAge);
+    if (!dev.shifu.event.AnimalEvents.villagerBreed(breedOffspring, parent, partner)) {
+        parent.setAge(shifuSourceAge);
+        partner.setAge(shifuTargetAge);
         return Optional.empty();
     }
 

@@ -508,7 +508,7 @@ insert:
     if (dev.shifu.event.BlockEvents.listeningForm() && touchesLiquid(level, pos)
             && level instanceof net.minecraft.world.level.LevelAccessor shifuLevel
             && !dev.shifu.event.BlockEvents.formReturn(shifuLevel, pos, this.concrete.defaultBlockState())) {
-        return super.updateShape(state, level, ticks, pos, directionToNeighbour, neighbourPos, neighbourState, random);
+        return super.updateShape(state, level, scheduledTickAccess, pos, direction, neighborPos, neighborState, random);
     }
 
 # BlockPhysicsEvent(草花が支えを失う)
@@ -517,7 +517,7 @@ anchor:
     return !state.canSurvive(level, pos)
 insert:
     if (!dev.shifu.event.BlockEvents.vegetationPhysics(state, level, pos)) {
-        return super.updateShape(state, level, ticks, pos, directionToNeighbour, neighbourPos, neighbourState, random);
+        return super.updateShape(state, level, scheduledTickAccess, pos, direction, neighborPos, neighborState, random);
     }
 
 # SpongeAbsorbEvent
@@ -572,9 +572,9 @@ insert-after:
 
 file: net/minecraft/world/level/block/ComposterBlock.java
 anchor:
-    int newLevel = fillLevel + 1;
-    BlockState newState = state.setValue(LEVEL, newLevel);
-    level.setBlock(pos, newState, Block.UPDATE_ALL);
+    int i = levelValue + 1;
+    BlockState blockState = state.setValue(LEVEL, i);
+    level.setBlock(pos, blockState, Block.UPDATE_ALL);
 insert:
     if (!dev.shifu.event.BlockEvents.compostItem(sourceEntity, level, pos, itemStack, state, true)) {
         return state;

@@ -671,7 +671,7 @@ insert-after:
 file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
     if (this.onGround()) {
-        dmg = 2;
+    i = 2;
 insert-after:
     if (!dev.shifu.event.EntityEvents.fishState(this, owner, org.bukkit.event.player.PlayerFishEvent.State.IN_GROUND)) {
         return 0;
@@ -803,7 +803,7 @@ anchor:
     Entity effectSource = this.getEffectSource();
 insert:
     if (!dev.shifu.event.EntityEvents.potionSplashListening()
-        || dev.shifu.event.EntityEvents.potionSplash(this, level, mobEffects, durationScale, potionAabb, entitiesOfClass, margin, hitResult, this.getEffectSource())) {
+        || dev.shifu.event.EntityEvents.potionSplash(this, level, allEffects, orDefault, aabb, entitiesOfClass, f, hitResult, this.getEffectSource())) {
 
 file: net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownSplashPotion.java
 anchor:

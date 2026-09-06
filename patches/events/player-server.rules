@@ -277,9 +277,9 @@ file: net/minecraft/world/level/BaseSpawner.java
 anchor:
     Entity entity = EntityType.loadEntityRecursive(valueInput, level, EntitySpawnReason.SPAWNER, entity1 -> {
 insert:
-    final int shifuPre = dev.shifu.event.PlayerEvents.preSpawnerSpawn(level, spawnPos, entityType.get(), pos);
+    final int shifuPre = dev.shifu.event.PlayerEvents.preSpawnerSpawn(level, vec3, optional.get(), pos);
     if (shifuPre != 0) {
-        delay = true;
+        flag = true;
         if (shifuPre == 2) {
             break;
         }
@@ -292,7 +292,7 @@ anchor:
     if (!level.tryAddFreshEntityWithPassengers(entity)) {
 insert:
     if (!dev.shifu.event.PlayerEvents.spawnerSpawn(entity, pos)) {
-        delay = true;
+        flag = true;
         continue;
     }
 
@@ -533,7 +533,7 @@ file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     this.player.jumpFromGround();
 insert:
-    if (!dev.shifu.event.PlayerEvents.jump(this, startX, startY, startZ, targetX, targetY, targetZ, targetYRot, targetXRot)) {
+    if (!dev.shifu.event.PlayerEvents.jump(this, x, y, z, d, d1, d2, f, f1)) {
         return;
     }
 
@@ -544,7 +544,7 @@ file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     vehicle.absSnapTo(targetX, targetY, targetZ, targetYRot, targetXRot);
 insert-after:
-    if (!dev.shifu.event.PlayerEvents.vehicleMove(this, targetX, targetY, targetZ, targetYRot, targetXRot)) {
+    if (!dev.shifu.event.PlayerEvents.vehicleMove(this, d, d1, d2, f, f1)) {
         return;
     }
 
@@ -586,14 +586,14 @@ anchor:
 insert:
     final ItemStack shifuBook = dev.shifu.event.PlayerEvents.bookBefore(item);
 insert-after:
-    dev.shifu.event.PlayerEvents.bookEdited(this.player, slot, shifuBook, item, false);
+    dev.shifu.event.PlayerEvents.bookEdited(this.player, index, shifuBook, item, false);
 
 # PlayerEditBookEvent(署名)。スロットに置いたあと
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     this.player.getInventory().setItem(index, itemStack);
 insert:
-    final ItemStack shifuSigned = dev.shifu.event.PlayerEvents.bookBefore(carried);
+    final ItemStack shifuSigned = dev.shifu.event.PlayerEvents.bookBefore(item);
 insert-after:
     dev.shifu.event.PlayerEvents.bookEdited(this.player, index, shifuSigned, itemStack, true);
 

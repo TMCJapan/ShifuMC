@@ -529,15 +529,15 @@ insert-after:
 file: net/minecraft/world/item/FireworkRocketItem.java
 anchor:
     if (player.dropAllLeashConnections(null)) {
-        level.playSound(null, player, SoundEvents.LEAD_BREAK, SoundSource.NEUTRAL, 1.0F, 1.0F);
+    level.playSound(null, player, SoundEvents.LEAD_BREAK, SoundSource.NEUTRAL, 1.0F, 1.0F);
     }
-
-    Projectile.spawnProjectile(new FireworkRocketEntity(level, itemStack, player), serverLevel, itemStack);
-    itemStack.consume(1, player);
+    
+    Projectile.spawnProjectile(new FireworkRocketEntity(level, itemInHand, player), serverLevel, itemInHand);
+    itemInHand.consume(1, player);
     player.awardStat(Stats.ITEM_USED.get(this));
 insert:
     if (dev.shifu.event.ItemEvents.elytraBoostListening()) {
-        dev.shifu.event.ItemEvents.elytraBoost(level, serverLevel, player, hand, itemStack, this);
+        dev.shifu.event.ItemEvents.elytraBoost(level, serverLevel, player, hand, itemInHand, this);
     } else {
 insert-after:
     }
