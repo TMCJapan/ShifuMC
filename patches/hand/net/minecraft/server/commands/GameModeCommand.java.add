@@ -1,9 +1,1 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
-
-// GameModeCommand.setGameMode
-    // cause は PlayerGameModeChangeEvent の理由。発火層に置いてから vanilla の版へ渡す。
-    public static boolean setGameMode(final CommandSourceStack source, final ServerPlayer player, final GameType type,
-                                      final org.bukkit.event.player.PlayerGameModeChangeEvent.Cause cause) {
-        dev.shifu.event.ShifuEvents.gameModeCause(player, cause);
-        return GameModeCommand.setGameMode(source, player, type);
-    }

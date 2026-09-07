@@ -1,18 +1,1 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
-
-// IceBlock.afterDestroy
-    // Paper は playerDestroy の super 呼び出し後をこちらへ切り出している。vanilla の playerDestroy は
-    // 触らないので同じ式をここに書く。呼ばれるのは片方だけで、氷を溶かす処理が二重に走ることはない。
-    public void afterDestroy(final Level level, final BlockPos pos, final ItemStack destroyedWith) {
-        if (!EnchantmentHelper.hasTag(destroyedWith, EnchantmentTags.PREVENTS_ICE_MELTING)) {
-            if (level.environmentAttributes().getValue(EnvironmentAttributes.WATER_EVAPORATES, pos)) {
-                level.removeBlock(pos, false);
-                return;
-            }
-
-            BlockState belowState = level.getBlockState(pos.below());
-            if (belowState.blocksMotion() || belowState.liquid()) {
-                level.setBlockAndUpdate(pos, meltsInto());
-            }
-        }
-    }

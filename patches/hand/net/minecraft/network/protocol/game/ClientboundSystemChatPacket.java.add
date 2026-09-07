@@ -1,11 +1,1 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
-
-// ClientboundSystemChatPacket.ClientboundSystemChatPacket
-    // Spigot と Paper が足している構築子。どちらも Component に直してから正式な構築子へ渡すだけ。
-    public ClientboundSystemChatPacket(final net.md_5.bungee.api.chat.BaseComponent[] content, final boolean overlay) {
-        this(org.bukkit.craftbukkit.util.CraftChatMessage.bungeeToVanilla(content), overlay);
-    }
-
-    public ClientboundSystemChatPacket(final net.kyori.adventure.text.Component content, final boolean overlay) {
-        this(io.papermc.paper.adventure.PaperAdventure.asVanilla(content), overlay);
-    }

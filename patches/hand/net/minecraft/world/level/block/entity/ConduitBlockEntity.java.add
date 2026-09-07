@@ -5,23 +5,3 @@
     public static int getRange(final List<BlockPos> effectBlocks) {
         return effectBlocks.size() / 7 * 16;
     }
-
-// ConduitBlockEntity.updateAndAttackTarget
-    // damageTarget は CraftConduit#setTarget が「対象を差し替えるだけで殴らない」ために足した引数。
-    // true のときは vanilla の版へ渡すだけ。false のときだけ、vanilla の本体から攻撃(音と
-    // hurtServer)を除いた対象更新の部分と同じ式を書く。攻撃の側は vanilla にしか無いので二重にならない。
-    public static void updateAndAttackTarget(
-        final ServerLevel level, final BlockPos worldPosition, final BlockState blockState, final ConduitBlockEntity entity,
-        final boolean isActive, final boolean damageTarget
-    ) {
-        if (damageTarget) {
-            updateAndAttackTarget(level, worldPosition, blockState, entity, isActive);
-            return;
-        }
-
-        EntityReference<LivingEntity> newDestroyTarget = updateDestroyTarget(entity.destroyTarget, level, worldPosition, isActive);
-        if (!Objects.equals(newDestroyTarget, entity.destroyTarget)) {
-            entity.destroyTarget = newDestroyTarget;
-            level.sendBlockUpdated(worldPosition, blockState, blockState, Block.UPDATE_CLIENTS);
-        }
-    }

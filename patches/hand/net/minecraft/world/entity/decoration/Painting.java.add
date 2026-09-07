@@ -1,19 +1,1 @@
 // 自前で書いた追加。vanilla の本体には触らず、同じ計算を static で持つ。
-
-// Painting.calculateBoundingBoxStatic
-    // vanilla の calculateBoundingBox(Painting.java:152) と同じ式。絵柄をインスタンスから
-    // 読む代わりに幅と高さを受け取る。offsetForPaintingSize は private のまま使えないので、
-    // 同じ式(Painting.java:168)を直に書く。vanilla の版は触らない。
-    public static AABB calculateBoundingBoxStatic(final BlockPos pos, final Direction direction,
-                                                  final int width, final int height) {
-        Vec3 attachedToWall = Vec3.atCenterOf(pos).relative(direction, -0.46875);
-        double horizontalOffset = width % 2 == 0 ? 0.5 : 0.0;
-        double verticalOffset = height % 2 == 0 ? 0.5 : 0.0;
-        Direction left = direction.getCounterClockWise();
-        Vec3 position = attachedToWall.relative(left, horizontalOffset).relative(Direction.UP, verticalOffset);
-        Direction.Axis axis = direction.getAxis();
-        double xSize = axis == Direction.Axis.X ? 0.0625 : width;
-        double ySize = height;
-        double zSize = axis == Direction.Axis.Z ? 0.0625 : width;
-        return AABB.ofSize(position, xSize, ySize, zSize);
-    }

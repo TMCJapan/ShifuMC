@@ -35,39 +35,6 @@
         this.setItemSlot(slot, itemStack);
     }
 
-// LivingEntity.getExpReward
-    // Paper は dropExperience を「量を返す」形に書き換えているが、こちらは足すだけ。
-    // 条件は vanilla の dropExperience(LivingEntity.java:1524) と同じものを読むだけで、
-    // 経験値の生成はしない。vanilla の drop 経路は触らない。
-    public int getExpReward(final ServerLevel level, final @Nullable Entity killer) {
-        if (!this.wasExperienceConsumed()
-            && (
-                this.isAlwaysExperienceDropper()
-                    || this.lastHurtByPlayerMemoryTime > 0 && this.shouldDropExperience() && level.getGameRules().get(GameRules.MOB_DROPS)
-            )) {
-            return this.getExperienceReward(level, killer);
-        }
-
-        return 0;
-    }
-
-// LivingEntity.drop
-    // Paper の Extend dropItem API。callEvent は PlayerDropItemEvent を出すための旗で、
-    // vanilla の drop はイベントを持たないので使わない。
-    // entityOperation は落ちた ItemEntity に対する手続き。Paper は addFreshEntity の前に呼ぶが、
-    // vanilla の drop を二重に書かないため、こちらは vanilla の drop が返した後に呼ぶ。
-    public @Nullable ItemEntity drop(final ItemStack itemStack, final boolean randomly, final boolean thrownFromHand,
-                                     final boolean callEvent,
-                                     final @Nullable Consumer<org.bukkit.entity.Item> entityOperation) {
-        final ItemEntity entity = this.drop(itemStack, randomly, thrownFromHand);
-
-        if (entity != null && entityOperation != null) {
-            entityOperation.accept((org.bukkit.entity.Item) entity.getBukkitEntity());
-        }
-
-        return entity;
-    }
-
 // LivingEntity.craftAttributes
     // Paper は構築子の中で this.attributes の次にこれを作るが、vanilla の構築子は触らない。
     // 欄の初期化子は構築子の本体より先に走るので、そこで作ると this.attributes がまだ null。

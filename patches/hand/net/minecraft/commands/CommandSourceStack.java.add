@@ -9,36 +9,6 @@
         return this;
     }
 
-// CommandSourceStack.withLocation
-    // Paper の "Expose 'with' functions from the CommandSourceStack" と同じ。
-    // vanilla の withPosition / withRotation / withLevel と同じ構築子で作り直す。
-    // 読んだ位置: patches/sources/net/minecraft/commands/CommandSourceStack.java.patch:23
-    public CommandSourceStack withLocation(final org.bukkit.Location location) {
-        // Paper は「同じ位置なら自分を返す」を getLocation() で見るが、それは API の
-        // interface の default。Shifu の NMS は API を実装しないので、位置と向きで直に見る
-        return this.getPosition().x == location.x() && this.getPosition().y == location.y()
-                && this.getPosition().z == location.z()
-                && this.getRotation().x == location.getPitch() && this.getRotation().y == location.getYaw()
-                && this.getLevel() == ((org.bukkit.craftbukkit.CraftWorld) location.getWorld()).getHandle()
-            ? this
-            : new CommandSourceStack(
-            this.source,
-            new Vec3(location.x(), location.y(), location.z()),
-            new Vec2(location.getPitch(), location.getYaw()),
-            ((org.bukkit.craftbukkit.CraftWorld) location.getWorld()).getHandle(),
-            this.permissions,
-            this.textName,
-            this.displayName,
-            this.server,
-            this.entity,
-            this.silent,
-            this.resultCallback,
-            this.anchor,
-            this.signingContext,
-            this.chatMessageChainer
-        );
-    }
-
 // CommandSourceStack.shifuApiSource
     // Paper の brigadier API に渡すときに包んだもの(dev.shifu.command.ApiSource)。
     // 同じ source を何度包んでも同じオブジェクトになるように、ここに覚えておく。

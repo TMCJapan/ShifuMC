@@ -7,12 +7,3 @@
     // 目印に copyDataComponents と書いた時点で make_shim はこの名前を足さなくなるので、
     // 初期化子だけを書くと代入する相手が居なくなる。
     private final boolean copyDataComponents = true;
-
-// SmithingTransformRecipe.SmithingTransformRecipe
-    // Paper が足した「データコンポーネントを引き継ぐか」の引数。vanilla の assemble は
-    // 常に TransmuteResult.create を通るので、受け取った値は使わず vanilla の
-    // 4 引数の構築子へ渡すだけにする。欄は final なので、this(...) の後では
-    // 代入できない(javac: 変数は既に代入されている可能性がある)。初期化子の塊で埋めてある。
-    public SmithingTransformRecipe(final Optional<Ingredient> template, final Ingredient base, final Optional<Ingredient> addition, final TransmuteResult result, final boolean copyDataComponents) {
-        this(template, base, addition, result);
-    }

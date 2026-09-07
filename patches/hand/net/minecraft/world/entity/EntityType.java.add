@@ -1,10 +1,1 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
-
-// EntityType.isTypeAllowedInPeaceful
-    // Paper は vanilla の isAllowedInPeaceful() を isTypeAllowedInPeaceful() に改名し、
-    // 元の名前を「個体ごとの上書きを見る版」に付け替えている(EntityType.java.patch:150)。
-    // 改名は追加では届かないので、Paper が呼ぶ側の名前だけを足して vanilla の版へ渡す。
-    // Mob.shouldDespawnInPeaceful がこれを呼ぶ。
-    public final boolean isTypeAllowedInPeaceful() {
-        return this.isAllowedInPeaceful();
-    }

@@ -1,17 +1,5 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
 
-// PlayerList.sendPlayerPermissionLevel
-    // recalculatePermissions は Bukkit の権限を計算し直すかどうかの旗。
-    // vanilla に計算の経路が無いので渡さない。
-    public void sendPlayerPermissionLevel(final ServerPlayer player, final boolean recalculatePermissions) {
-        this.sendPlayerPermissionLevel(player);
-    }
-
-    public void sendPlayerPermissionLevel(final ServerPlayer player, final LevelBasedPermissionSet permissions,
-                                          final boolean recalculatePermissions) {
-        this.sendPlayerPermissionLevel(player, permissions);
-    }
-
 // PlayerList.reloadAdvancementData
     // Paper は reloadResources を 3 つに割っている。vanilla の本体
     // (PlayerList.java:855)から、進捗を読み直す部分だけを写す。
@@ -20,37 +8,6 @@
         for (PlayerAdvancements advancements : this.advancements.values()) {
             advancements.reload(this.server.getAdvancements());
         }
-    }
-
-// PlayerList.reloadRecipes
-    // 同じく、レシピを送り直す部分だけを写したもの。
-    public void reloadRecipes() {
-        RecipeManager recipeManager = this.server.getRecipeManager();
-        ClientboundUpdateRecipesPacket recipes = new ClientboundUpdateRecipesPacket(
-            recipeManager.getSynchronizedItemProperties(), recipeManager.getSynchronizedStonecutterRecipes()
-        );
-
-        for (ServerPlayer player : this.players) {
-            player.connection.send(recipes);
-            player.getRecipeBook().sendInitialRecipeBook(player);
-        }
-    }
-
-// PlayerList.respawn
-    // respawnReason は PlayerRespawnEvent を組み立てるためのもの。vanilla はイベントを
-    // 発火しないので渡さない。
-    public ServerPlayer respawn(final ServerPlayer serverPlayer, final boolean keepAllPlayerData, final Entity.RemovalReason removalReason,
-                                final org.bukkit.event.player.PlayerRespawnEvent.RespawnReason respawnReason) {
-        return this.respawn(serverPlayer, keepAllPlayerData, removalReason);
-    }
-
-// PlayerList.getPlayerStats
-    // CraftOfflinePlayer がログインしていないプロファイルの統計を読む。
-    // vanilla の getPlayerStats(Player) は this.stats に載せるが、そこに載るのは
-    // ログイン中の player だけ。オフラインの分を載せると vanilla に無い項目が残るので、
-    // Paper と同じく cache には触らず、その場で読むだけにする。
-    public ServerStatsCounter getPlayerStats(final GameProfile gameProfile) {
-        return new ServerStatsCounter(this.server, this.locateStatsFile(gameProfile));
     }
 
 // PlayerList.broadcastChatMessage

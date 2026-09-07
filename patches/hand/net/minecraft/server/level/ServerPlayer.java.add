@@ -7,17 +7,6 @@
         this.sendChatMessage(message, filtered, chatType);
     }
 
-// ServerPlayer.setRespawnPosition
-    // 理由(cause)を発火層に置いてから vanilla の版へ渡す。発火は vanilla の版の頭
-    // (PlayerEvents.setSpawn)。返り値は「取り消されなかったか」。
-    public boolean setRespawnPosition(final ServerPlayer.RespawnConfig respawnConfig, final boolean showMessage,
-                                      final com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause cause) {
-        dev.shifu.event.PlayerEvents.spawnCause(this, cause);
-        final ServerPlayer.RespawnConfig before = this.respawnConfig;
-        this.setRespawnPosition(respawnConfig, showMessage);
-        return before != this.respawnConfig || respawnConfig == before;
-    }
-
 // ServerPlayer.shifuNextContainerCounter
     // vanilla の nextContainerCounter() は void。アダプタ層は進めた番号を値で使う。
     // vanilla の版を呼んでから containerCounter を読むだけにする。番号の進め方は変えない。
@@ -35,56 +24,6 @@
                             final net.kyori.adventure.text.Component message) {
         dev.shifu.event.ShifuEvents.gameModeCause(this, cause);
         this.setGameMode(mode);
-    }
-
-// ServerPlayer.releaseShoulderEntity
-    // vanilla の respawnEntityOnShoulder(ServerPlayer.java:823)と同じ手順を 1 度だけ書いたもの。
-    // 湧かせた Entity を返す口が要るが、vanilla の版は private void で返り値が取れず、
-    // 呼んだうえで別に湧かせると二重に湧く。vanilla の版は呼ばない。
-    private @Nullable Entity releaseShoulderEntity(final CompoundTag tag) {
-        ServerLevel serverLevel = this.level();
-        if (!tag.isEmpty()) {
-            try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(this.problemPath(), LOGGER)) {
-                return EntityType.create(
-                        TagValueInput.create(reporter.forChild(() -> ".shoulder"), serverLevel.registryAccess(), tag),
-                        serverLevel,
-                        EntitySpawnReason.LOAD
-                    )
-                    .map(entity -> {
-                        if (entity instanceof TamableAnimal tamed) {
-                            tamed.setOwner(this);
-                        }
-
-                        entity.setPos(this.getX(), this.getY() + 0.7F, this.getZ());
-                        return serverLevel.addWithUUID(entity) ? entity : null;
-                    })
-                    .orElse(null);
-            }
-        }
-
-        return null;
-    }
-
-// ServerPlayer.releaseLeftShoulderEntity
-    // Paper の release entity api。左肩の中身を湧かせて、湧いたら肩を空にする。
-    public @Nullable Entity releaseLeftShoulderEntity() {
-        Entity entity = this.releaseShoulderEntity(this.getShoulderEntityLeft());
-        if (entity != null) {
-            this.setShoulderEntityLeft(new CompoundTag());
-        }
-
-        return entity;
-    }
-
-// ServerPlayer.releaseRightShoulderEntity
-    // 右肩の版。
-    public @Nullable Entity releaseRightShoulderEntity() {
-        Entity entity = this.releaseShoulderEntity(this.getShoulderEntityRight());
-        if (entity != null) {
-            this.setShoulderEntityRight(new CompoundTag());
-        }
-
-        return entity;
     }
 
 // ServerPlayer.shifuDeathEvent

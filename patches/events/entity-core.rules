@@ -288,17 +288,6 @@ insert-after:
 # EntityDeathEvent(kill)
 file: net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
 anchor:
-    this.remove(Entity.RemovalReason.KILLED);
-    this.gameEvent(GameEvent.ENTITY_DIE);
-    if (this.dragonFight != null) {
-insert:
-    if (!dev.shifu.event.EntityEvents.dragonKill(level, this)) {
-        return;
-    }
-
-# EntityPushedByEntityAttackEvent の主(体当たり)
-file: net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
-anchor:
     entity.push(f / h * 4.0, 0.2F, g / h * 4.0);
 insert:
     dev.shifu.event.EntityEvents.pushedBy(this, entity);
@@ -353,18 +342,6 @@ anchor:
 insert:
     final java.util.List<net.minecraft.world.entity.Entity.DefaultDrop> shifuDrops = dev.shifu.event.EntityEvents.armorStandBegin();
 
-file: net/minecraft/world/entity/decoration/ArmorStand.java
-anchor:
-    this.remove(Entity.RemovalReason.KILLED);
-    this.gameEvent(GameEvent.ENTITY_DIE);
-insert:
-    if (!dev.shifu.event.EntityEvents.armorStandKill(level, this)) {
-        return;
-    }
-
-# ============================================================ BlockAttachedEntity
-
-# HangingBreakEvent(支えを失った)
 file: net/minecraft/world/entity/decoration/BlockAttachedEntity.java
 anchor:
     this.discard();

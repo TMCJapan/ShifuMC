@@ -1,34 +1,5 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
 
-// BlockEntity.applyComponentsSet
-    // Paper は vanilla の applyComponents の本体をこちらへ切り出し、拾った型の集合を返す形にしている。
-    // vanilla の applyComponents は触らないので、同じ本体をここに書き直す。呼ばれるのは片方だけで、
-    // applyImplicitComponents が二重に走ることはない。
-    public final Set<DataComponentType<?>> applyComponentsSet(final DataComponentMap prototype, final DataComponentPatch patch) {
-        final Set<DataComponentType<?>> implicitComponents = new HashSet<>();
-        implicitComponents.add(DataComponents.BLOCK_ENTITY_DATA);
-        implicitComponents.add(DataComponents.BLOCK_STATE);
-        final DataComponentMap fullView = PatchedDataComponentMap.fromPatch(prototype, patch);
-        this.applyImplicitComponents(new DataComponentGetter() {
-            @Override
-            public <T> @Nullable T get(final DataComponentType<? extends T> type) {
-                implicitComponents.add(type);
-                return fullView.get(type);
-            }
-
-            @Override
-            public <T> T getOrDefault(final DataComponentType<? extends T> type, final T defaultValue) {
-                implicitComponents.add(type);
-                return fullView.getOrDefault(type, defaultValue);
-            }
-        });
-        DataComponentPatch newPatch = patch.forget(implicitComponents::contains);
-        this.components = newPatch.split().added();
-        // applyImplicitComponents が BLOCK_ENTITY_DATA を足すことは無いので、返す集合からは外す。
-        implicitComponents.remove(DataComponents.BLOCK_ENTITY_DATA);
-        return implicitComponents;
-    }
-
 // BlockEntity.persistentDataContainer
     // Paper は構築子で作る。vanilla の構築子は触らないので初期化子で作る。
     // Paper が NBT(PublicBukkitValues)に保存・復元する分は入れていない(データ形式が vanilla と変わるため)。

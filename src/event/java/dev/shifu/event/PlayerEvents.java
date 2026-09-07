@@ -610,34 +610,6 @@ public final class PlayerEvents {
     // ------------------------------------------------------------ プレイヤーの packet
 
 
-    /**
-     * PlayerJumpEvent。{@code jumpFromGround} の直前。取り消されたら from へ戻して packet を捨てる。
-     * from は接続が控えている直前の発火位置(PlayerMoveEvent と同じ)。
-     *
-     * 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch(PlayerJumpEvent)
-     */
-    public static boolean jump(final ServerGamePacketListenerImpl connection,
-                               final double startX, final double startY, final double startZ,
-                               final double targetX, final double targetY, final double targetZ,
-                               final float targetYRot, final float targetXRot) {
-        if (!listening(com.destroystokyo.paper.event.player.PlayerJumpEvent.getHandlerList())) {
-            return true;
-        }
-
-        final ServerPlayer player = connection.player;
-        final Location from = connection.shifuMoveFrom(startX, startY, startZ, player.getYRot(), player.getXRot());
-        final Location to = new Location(player.level().getWorld(), targetX, targetY, targetZ, targetYRot, targetXRot);
-        final com.destroystokyo.paper.event.player.PlayerJumpEvent event = new com.destroystokyo.paper.event.player.PlayerJumpEvent(
-                player.getBukkitEntity(), from, to);
-
-        if (event.callEvent()) {
-            return true;
-        }
-
-        connection.internalTeleport(event.getFrom());
-
-        return false;
-    }
 
 
     private static boolean swapCancelled;

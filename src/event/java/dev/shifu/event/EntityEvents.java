@@ -743,26 +743,7 @@ public final class EntityEvents {
         return false;
     }
 
-    /**
-     * EntityDeathEvent(落とし物の無い死。{@code kill} から)。Paper の {@code callEntityDeathEvent(level, victim, source)}
-     * と同じものを組むが、Paper が続けて鳴らす死亡音は鳴らさない(vanilla の kill は鳴らさない)。
-     */
-    private static boolean deathAllowed(final ServerLevel level, final LivingEntity victim, final DamageSource source) {
-        if (!listening(EntityDeathEvent.getHandlerList())) {
-            return true;
-        }
 
-        final EntityDeathEvent event = new EntityDeathEvent((org.bukkit.entity.LivingEntity) victim.getBukkitEntity(),
-                new CraftDamageSource(source), new ArrayList<>(0), victim.getExpReward(level, source.getEntity()));
-        CraftEventFactory.populateFields(victim, event);
-
-        return event.callEvent();
-    }
-
-    /** EntityDeathEvent。{@code EnderDragon.kill} の {@code remove} の前。 */
-    public static boolean dragonKill(final ServerLevel level, final LivingEntity dragon) {
-        return deathAllowed(level, dragon, dragon.damageSources().genericKill());
-    }
 
     // ------------------------------------------------------------ 防具立て
 
@@ -789,22 +770,6 @@ public final class EntityEvents {
     }
 
 
-    /**
-     * EntityDeathEvent(壊れずに消える {@code ArmorStand.kill})。直前に {@code brokenByAnything} が
-     * 出していれば出さない(Paper の {@code callEvent=false})。
-     */
-    public static boolean armorStandKill(final ServerLevel level, final ArmorStand stand) {
-        final DamageSource source = armorStandSource;
-        armorStandSource = null;
-
-        if (armorStandDeathFired == stand) {
-            armorStandDeathFired = null;
-
-            return true;
-        }
-
-        return deathAllowed(level, stand, source != null ? source : stand.damageSources().genericKill());
-    }
 
     // ------------------------------------------------------------ 額縁・絵・アイテム
 

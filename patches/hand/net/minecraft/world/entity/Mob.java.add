@@ -12,26 +12,6 @@
         return true;
     }
 
-// Mob.shifuCanPickup
-    // equipItemIfPossible が「拾う」と判定するかを、状態を変えずに同じ順で計算する。
-    // EntityPickupItemEvent の既定(拾えない物は取り消し済みで出す)に使う。
-    public boolean shifuCanPickup(final ItemStack itemStack) {
-        EquipmentSlot slot = this.getEquipmentSlotForItem(itemStack);
-        if (!this.isEquippableInSlot(itemStack, slot)) {
-            return false;
-        }
-
-        ItemStack current = this.getItemBySlot(slot);
-        boolean canReplace = this.canReplaceCurrentItem(itemStack, current, slot);
-        if (slot.isArmor() && !canReplace) {
-            slot = EquipmentSlot.MAINHAND;
-            current = this.getItemBySlot(slot);
-            canReplace = current.isEmpty();
-        }
-
-        return canReplace && this.canHoldItem(itemStack);
-    }
-
 // Mob.setPersistenceRequired
     // CraftLivingEntity.setRemoveWhenFarAway が真偽値で切り替える。
     // vanilla の版は引数を取らず、常に true にする。欄は persistenceRequired。

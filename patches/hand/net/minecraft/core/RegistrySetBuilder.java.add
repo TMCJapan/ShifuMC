@@ -5,9 +5,3 @@
         public Optional<T> getValueForCopying(final ResourceKey<T> resourceKey) {
             return this.get(resourceKey).map(Holder.Reference::value);
         }
-
-// EmptyTagLookupWrapper<T>.getValueForCopying
-        @Override
-        public Optional<T> getValueForCopying(final ResourceKey<T> resourceKey) {
-            return this.parent().getValueForCopying(resourceKey);
-        }

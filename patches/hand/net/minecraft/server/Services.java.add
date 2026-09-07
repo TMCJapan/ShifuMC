@@ -1,17 +1,1 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
-
-// Services.paper
-    // Paper は record の成分に @Nullable PaperServices paper を足し、paper() でそれを返す
-    // (Services.java.patch の @@ -18 の hunk)。record の成分もインスタンスフィールドも
-    // 足せないので、成分を読む形にはできない。
-    // アダプタ層が paper() から取るのは filledProfileCache() だけ:
-    //   CraftPlayerProfile.java:237,259,300 と CraftSkull.java:91。
-    //   configurations() を services().paper() 経由で読む場所は無い(ReloadCommand.java:28 と
-    //   CraftServer.java:987,2726 は MinecraftServer.paperConfigurations を直に読んでいる)。
-    // なので PaperFilledProfileCache だけを持つ 1 個を static で持ち、それを返す。
-    // PaperConfigurations は CLI の設定ファイルから作るもので、ここでは作れないので null。
-    private static final Services.PaperServices SHIFU_PAPER = new Services.PaperServices(null, new io.papermc.paper.profile.PaperFilledProfileCache());
-
-    public Services.PaperServices paper() {
-        return Services.SHIFU_PAPER;
-    }

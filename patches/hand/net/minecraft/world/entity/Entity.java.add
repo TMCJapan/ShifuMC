@@ -8,15 +8,6 @@
         this.discard();
     }
 
-// Entity.saveAsPassenger
-    // Paper の Raw entity serialization API 用の 3 つの旗。
-    // vanilla の書き出しは旗を持たないので、常に vanilla と同じ内容を書く。
-    // includeAll=false(座標を除く)と forceSerialization=true は反映されない。
-    public boolean saveAsPassenger(final ValueOutput output, final boolean includeAll,
-                                   final boolean includeNonSaveable, final boolean forceSerialization) {
-        return this.saveAsPassenger(output);
-    }
-
 // Entity.getEncodeId
     // Paper の Raw entity serialization API 用。includeNonSaveable=true のとき
     // canSerialize() の検査を飛ばす。vanilla の getEncodeId は状態を変えないので、
@@ -30,15 +21,6 @@
 
         // 1.21.11 の vanilla に typeHolder() は無い。EntityType から Identifier を引く
         return net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(this.getType()).toString();
-    }
-
-// Entity.setRemoved
-    // Bukkit の削除理由を発火層に置いてから、vanilla の setRemoved へ渡す。
-    // EntityRemoveEvent は vanilla の setRemoved の先頭で出る(patches/events/entity-core.rules)。
-    public final void setRemoved(final Entity.RemovalReason reason,
-                                 final org.bukkit.event.entity.EntityRemoveEvent.@Nullable Cause cause) {
-        dev.shifu.event.EntityEvents.removeCause(cause);
-        this.setRemoved(reason);
     }
 
 // Entity.shifuAdoptBukkitEntity

@@ -34,12 +34,3 @@
 
         this.entries.clear();
     }
-
-// CombatTracker.paperCombatTracker
-    // Paper は CombatTracker(LivingEntity) の中で代入するが、vanilla の構築子は触らない。
-    // 目印に paperCombatTracker と書いた時点で make_shim はこの名前を足さなくなるので、
-    // 宣言そのものをここに書いて初期化子で埋める。
-    // PaperCombatTrackerWrapper は handle を持つだけの record なので、
-    // 初期化子が構築子本体の this.mob の設定より前に走っても読むものが無い。
-    public final io.papermc.paper.world.damagesource.PaperCombatTrackerWrapper paperCombatTracker =
-        new io.papermc.paper.world.damagesource.PaperCombatTrackerWrapper(this);

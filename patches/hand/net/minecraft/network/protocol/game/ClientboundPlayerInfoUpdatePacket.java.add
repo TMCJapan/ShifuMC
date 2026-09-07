@@ -13,28 +13,3 @@
         this.actions = actions;
         this.entries = List.of(entry);
     }
-
-// Entry.Entry
-    // updateListed が使う版。UUID と listed 以外は canonical コンストラクタへ
-    // 既定値を渡す。値は Paper のパッチと同じ。
-    Entry(final UUID profileId, final boolean listed) {
-        this(profileId, null, listed, 0, GameType.DEFAULT_MODE, null, true, 0, null);
-    }
-
-    // createPlayerInitializing が使う版。vanilla の Entry(ServerPlayer) は
-    // listed に true を固定するので、そこだけ引数にした形を別に足す。
-    // vanilla の Entry(ServerPlayer) は 1 行も触らない。読むのは同じ getter だけで、
-    // どれも状態を変えないので二重に走っても vanilla の命令列は変わらない。
-    private Entry(final ServerPlayer player, final boolean listed) {
-        this(
-            player.getUUID(),
-            player.getGameProfile(),
-            listed,
-            player.connection.latency(),
-            player.gameMode(),
-            player.getTabListDisplayName(),
-            player.isModelPartShown(PlayerModelPart.HAT),
-            player.getTabListOrder(),
-            Optionull.map(player.getChatSession(), RemoteChatSession::asData)
-        );
-    }

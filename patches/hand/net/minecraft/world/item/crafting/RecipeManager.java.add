@@ -1,16 +1,1 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
-
-// RecipeManager.finalizeRecipeLoading
-    // Paper は finalizeRecipeLoading(FeatureFlagSet) の中で受け取った旗を欄に控え、
-    // 引数無しの版でそれを使い直す(RecipeManager.java.patch:14,24)。控えるのは
-    // vanilla のメソッドの中なので、追加では届かない。同じ値をサーバーから取る。
-    public void finalizeRecipeLoading() {
-        final net.minecraft.server.MinecraftServer server = net.minecraft.server.MinecraftServer.getServer();
-
-        if (server == null) {
-            return;
-        }
-
-        this.finalizeRecipeLoading(server.getWorldData().enabledFeatures());
-        server.getPlayerList().reloadResources();
-    }
