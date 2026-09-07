@@ -1,0 +1,152 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// RenamerImpl.run
+    // Paper はプラグイン再マップ(ReobfServer)でサーバー自身を掛け直すために、
+    // run(File, File) に remappingSelf を足して 3 つ変えている
+    // (patches/sources/net/neoforged/art/internal/RenamerImpl.java.patch):
+    //   1. 入口を readAllBytes(in, size) から InputStream.readAllBytes() に替える
+    //   2. META-INF の下の .class をクラスとして扱わない
+    //   3. 名前が重なったとき、例外を投げずに先勝ちで落とす
+    // 元の run(File, File) の書き換えは追加では届かないので、3 引数の版として写す。
+    // ART は Minecraft のコードではないので、挙動の一致の条件には掛からない。
+    // 2 引数の版は vanilla のまま置いてあり、ここからは呼ばない。
+    public void run(File input, File output, boolean remappingSelf) {
+        if (!this.setup)
+            this.setup();
+
+        if (Boolean.getBoolean(ProgressReporter.ENABLED_PROPERTY)) {
+            try {
+                PROGRESS.setMaxProgress(JarUtils.getFileCountInZip(input));
+            } catch (IOException e) {
+                logger.accept("Failed to read zip file count: " + e);
+            }
+        }
+
+        input = Objects.requireNonNull(input).getAbsoluteFile();
+        output = Objects.requireNonNull(output).getAbsoluteFile();
+
+        if (!input.exists())
+            throw new IllegalArgumentException("Input file not found: " + input.getAbsolutePath());
+
+        logger.accept("Reading Input: " + input.getAbsolutePath());
+        PROGRESS.setStep("Reading input jar");
+        List<Entry> oldEntries = new ArrayList<>();
+        try (ZipFile in = new ZipFile(input)) {
+            int amount = 0;
+            for (Enumeration<? extends ZipEntry> entries = in.entries(); entries.hasMoreElements();) {
+                final ZipEntry e = entries.nextElement();
+                if (e.isDirectory())
+                    continue;
+                String name = e.getName();
+                byte[] data;
+                try (InputStream entryInput = in.getInputStream(e)) {
+                    data = entryInput.readAllBytes();
+                }
+
+                if (name.endsWith(".class") && !name.contains("META-INF/"))
+                    oldEntries.add(ClassEntry.create(name, e.getTime(), data));
+                else if (name.equals(MANIFEST_NAME))
+                    oldEntries.add(ManifestEntry.create(e.getTime(), data));
+                else if (name.equals("javadoctor.json"))
+                    oldEntries.add(Transformer.JavadoctorEntry.create(e.getTime(), data));
+                else
+                    oldEntries.add(ResourceEntry.create(name, e.getTime(), data));
+
+                if ((++amount) % 10 == 0) {
+                    PROGRESS.setProgress(amount);
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Could not parse input: " + input.getAbsolutePath(), e);
+        }
+
+        this.sortedClassProvider.clearCache();
+        ArrayList<ClassProvider> classProviders = new ArrayList<>(this.classProviders);
+        classProviders.add(0, this.libraryClasses);
+        this.sortedClassProvider.classProviders = classProviders;
+
+        AsyncHelper async = new AsyncHelper(threads);
+        try {
+            PROGRESS.setProgress(0);
+            PROGRESS.setIndeterminate(true);
+            PROGRESS.setStep("Processing entries");
+
+            List<ClassEntry> ourClasses = oldEntries.stream()
+                .filter(e -> e instanceof ClassEntry && !e.getName().startsWith("META-INF/"))
+                .map(ClassEntry.class::cast)
+                .collect(Collectors.toList());
+
+            logger.accept("Adding input to inheritance map");
+            ClassProvider.Builder inputClassesBuilder = ClassProvider.builder();
+            async.consumeAll(ourClasses, ClassEntry::getClassName, c ->
+                inputClassesBuilder.addClass(c.getName().substring(0, c.getName().length() - 6), c.getData())
+            );
+            classProviders.add(0, inputClassesBuilder.build());
+
+            logger.accept("Processing entries");
+            List<Entry> newEntries = async.invokeAll(oldEntries, Entry::getName, this::processEntry);
+
+            logger.accept("Adding extras");
+            List<Entry> finalNewEntries = newEntries;
+            transformers.forEach(t -> finalNewEntries.addAll(t.getExtras()));
+
+            Set<String> seen = new HashSet<>();
+            if (remappingSelf) {
+                List<Entry> deduplicated = new ArrayList<>();
+                for (final Entry e : newEntries) {
+                    if (seen.add(e.getName())) {
+                        deduplicated.add(e);
+                    }
+                }
+                newEntries = deduplicated;
+            } else {
+                String dupes = newEntries.stream().map(Entry::getName)
+                    .filter(n -> !seen.add(n))
+                    .sorted()
+                    .collect(Collectors.joining(", "));
+                if (!dupes.isEmpty())
+                    throw new IllegalStateException("Duplicate entries detected: " + dupes);
+            }
+
+            logger.accept("Sorting");
+            Collections.sort(newEntries, this::compare);
+
+            if (!output.getParentFile().exists())
+                output.getParentFile().mkdirs();
+
+            seen.clear();
+
+            PROGRESS.setMaxProgress(newEntries.size());
+            PROGRESS.setStep("Writing output");
+
+            logger.accept("Writing Output: " + output.getAbsolutePath());
+            try (OutputStream fos = new BufferedOutputStream(Files.newOutputStream(output.toPath()));
+                 ZipOutputStream zos = new ZipOutputStream(fos)) {
+
+                int amount = 0;
+                for (Entry e : newEntries) {
+                    String name = e.getName();
+                    int idx = name.lastIndexOf('/');
+                    if (idx != -1)
+                        addDirectory(zos, seen, name.substring(0, idx));
+
+                    logger.accept("  " + name);
+                    ZipEntry entry = new ZipEntry(name);
+                    entry.setTime(e.getTime());
+                    zos.putNextEntry(entry);
+                    zos.write(e.getData());
+                    zos.closeEntry();
+
+                    if ((++amount) % 10 == 0) {
+                        PROGRESS.setProgress(amount);
+                    }
+                }
+
+                PROGRESS.setProgress(amount);
+            } catch (IOException e) {
+                throw new RuntimeException("Could not write output to file: " + output.getAbsolutePath(), e);
+            }
+        } finally {
+            async.shutdown();
+        }
+    }

@@ -1,8 +1,9 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
 
-// MinecraftServer.halt
-    // isRestarting は Spigot の再起動処理用の旗。vanilla に再起動の経路は無いので渡さない。
-    public void halt(final boolean wait, final boolean isRestarting) {
+// MinecraftServer.safeShutdown
+    // Paper は vanilla の halt(boolean) を safeShutdown(boolean) に改名し、
+    // 再起動用の旗を足した 2 引数の版を足している。vanilla に再起動の経路は無いので渡さない。
+    public void safeShutdown(final boolean wait, final boolean isRestarting) {
         this.halt(wait);
     }
 

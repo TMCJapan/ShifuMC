@@ -1,0 +1,83 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// AsyncAppenderEventDispatcher.FlushEvent
+    // AsyncAppender.flush の受け側。Paper の版をそのまま写した。
+    private static final class FlushEvent extends Log4jLogEvent {
+
+        private final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+
+        private void done() {
+            this.latch.countDown();
+        }
+
+        private boolean await(final long timeoutMillis) throws InterruptedException {
+            if (timeoutMillis <= 0L) {
+                this.latch.await();
+                return true;
+            }
+
+            return this.latch.await(timeoutMillis, java.util.concurrent.TimeUnit.MILLISECONDS);
+        }
+    }
+
+// AsyncAppenderEventDispatcher.flushAppenderOutputStreams
+    private void flushAppenderOutputStreams() {
+        for (int appenderIndex = 0; appenderIndex < appenders.size(); appenderIndex++) {
+            flushAppender(appenders.get(appenderIndex));
+        }
+
+        if (errorAppender != null) {
+            flushAppender(errorAppender);
+        }
+    }
+
+// AsyncAppenderEventDispatcher.flushAppender
+    private void flushAppender(final AppenderControl appenderControl) {
+        final Appender appender = appenderControl.getAppender();
+
+        if (appender instanceof AbstractOutputStreamAppender<?> outputStreamAppender) {
+            outputStreamAppender.getManager().flush();
+        }
+    }
+
+// AsyncAppenderEventDispatcher.flush
+    boolean flush(final long timeoutMillis) throws InterruptedException {
+        if (stoppedRef.get()) {
+            flushAppenderOutputStreams();
+            return true;
+        }
+
+        // 走り出していなければ待っても進まない
+        if (Thread.State.NEW.equals(getState())) {
+            return false;
+        }
+
+        final FlushEvent flushEvent = new FlushEvent();
+
+        final long startNanos = timeoutMillis > 0L ? System.nanoTime() : 0L;
+        final boolean enqueued;
+
+        if (timeoutMillis <= 0L) {
+            queue.put(flushEvent);
+            enqueued = true;
+        } else {
+            enqueued = queue.offer(flushEvent, timeoutMillis, java.util.concurrent.TimeUnit.MILLISECONDS);
+        }
+
+        if (!enqueued) {
+            return false;
+        }
+
+        if (timeoutMillis <= 0L) {
+            return flushEvent.await(0L);
+        }
+
+        final long elapsedMillis = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+        final long remainingMillis = timeoutMillis - elapsedMillis;
+
+        if (remainingMillis <= 0L) {
+            return false;
+        }
+
+        return flushEvent.await(remainingMillis);
+    }

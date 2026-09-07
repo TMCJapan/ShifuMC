@@ -1,0 +1,22 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// AsyncAppender.flush
+    // Paper が足すもの(patches/features/0032-Add-explicit-flush-support-to-Log4j-AsyncAppender.patch)。
+    // PaperPluginInstanceManager がプラグインを外す前にログを吐き切るのに呼ぶ。
+    // log4j は Minecraft のコードではないので、挙動の一致の条件には掛からない。
+    // 中身は Paper と同じ。積んだ FlushEvent が処理されるまで待つ。
+    public boolean flush(final long timeout, final TimeUnit timeUnit) {
+        if (!isStarted() || dispatcher == null) {
+            return true;
+        }
+
+        final long timeoutMillis = timeout <= 0L ? 0L : timeUnit.toMillis(timeout);
+
+        try {
+            return dispatcher.flush(timeoutMillis);
+        } catch (final InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+            LOGGER.warn("Interrupted while flushing AsyncAppender {}", getName());
+            return false;
+        }
+    }

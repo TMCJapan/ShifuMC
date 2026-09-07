@@ -594,7 +594,7 @@ public final class PlayerEvents {
 
         final int xp = state.getBlock().getExpDrop(state, (ServerLevel) level, pos, ItemStack.EMPTY, true);
         final com.destroystokyo.paper.event.block.BlockDestroyEvent event = new com.destroystokyo.paper.event.block.BlockDestroyEvent(
-                CraftBlock.at(level, pos), org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(fluid.createLegacyBlock()), state.asBlockData(), xp, drop);
+                CraftBlock.at(level, pos), org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(fluid.createLegacyBlock()), org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(state), xp, drop);
         event.callEvent();
 
         return event;

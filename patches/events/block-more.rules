@@ -750,7 +750,7 @@ anchor:
     if (!vibrationUser.canReceiveVibration(level, BlockPos.containing(pos), gameEvent, context)) {
 insert:
     if (dev.shifu.event.BlockEvents.listeningReceiveGameEvent()
-            && !dev.shifu.event.BlockEvents.receiveGameEvent(level, gameEvent, context, destination,
+            && !dev.shifu.event.BlockEvents.receiveGameEvent(level, gameEvent, context, vec3,
                     vibrationUser.canReceiveVibration(level, BlockPos.containing(pos), gameEvent, context))) {
         return false;
     }
@@ -1090,7 +1090,7 @@ file: net/minecraft/world/level/block/LayeredCauldronBlock.java
 anchor:
     this.handleEntityOnFireInside(state, level, blockPos);
 insert:
-    dev.shifu.event.BlockEvents.cauldronCause(e, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.EXTINGUISH);
+    dev.shifu.event.BlockEvents.cauldronCause(entity1, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.EXTINGUISH);
 
 file: net/minecraft/world/level/block/LayeredCauldronBlock.java
 anchor:
@@ -1126,7 +1126,7 @@ file: net/minecraft/world/level/block/SculkVeinBlock.java
 anchor:
     if (shouldConvertBlocks && this.attemptPlaceSculk(spreader, level, cursor.getPos(), random)) {
 insert:
-    dev.shifu.event.BlockEvents.spreadSource(originPos);
+    dev.shifu.event.BlockEvents.spreadSource(pos);
 
 file: net/minecraft/world/level/block/SculkVeinBlock.java
 anchor:

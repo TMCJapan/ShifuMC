@@ -241,7 +241,7 @@ file: net/minecraft/world/item/BoatItem.java
 anchor:
     level.addFreshEntity(boat);
 insert:
-    if (!dev.shifu.event.ItemEvents.entityPlace(level, ((net.minecraft.world.phys.BlockHitResult) hitResult).getBlockPos(),
+    if (!dev.shifu.event.ItemEvents.entityPlace(level, ((net.minecraft.world.phys.BlockHitResult) playerPovHitResult).getBlockPos(),
             player.getDirection(), player, boat, hand)) {
         return InteractionResult.FAIL;
     }
@@ -260,7 +260,7 @@ file: net/minecraft/world/item/MinecartItem.java
 anchor:
     serverLevel.addFreshEntity(abstractMinecart);
 insert:
-    if (!dev.shifu.event.ItemEvents.entityPlace(level, pos, context.getClickedFace(), context.getPlayer(), abstractMinecart, context.getHand())) {
+    if (!dev.shifu.event.ItemEvents.entityPlace(level, clickedPos, context.getClickedFace(), context.getPlayer(), abstractMinecart, context.getHand())) {
         if (context.getPlayer() != null) {
             context.getPlayer().containerMenu.forceHeldSlot(context.getHand());
         }

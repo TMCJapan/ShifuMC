@@ -27,7 +27,7 @@ file: net/minecraft/world/level/block/TntBlock.java
 anchor:
     if (level instanceof ServerLevel serverLevel && serverLevel.getGameRules().get(GameRules.TNT_EXPLODES)) {
 insert-after:
-    if (!dev.shifu.event.ShifuEvents.tntPrime(level, pos, source)) {
+    if (!dev.shifu.event.ShifuEvents.tntPrime(level, pos, entity)) {
         return false;
     }
 

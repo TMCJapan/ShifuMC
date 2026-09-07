@@ -1,0 +1,31 @@
+# AsyncAppender.flush が積む FlushEvent を、取り出す 2 か所で拾う。
+#
+# 本体は patches/hand の同名ファイル。ここは vanilla(log4j)のループへの差し込み。
+# FlushEvent は AsyncAppender.flush からしか作られないので、
+# それを呼ばないかぎり通る道は変わらない。
+#
+# 読んだ位置: paper-server patches/features/0032-Add-explicit-flush-support-to-Log4j-AsyncAppender.patch
+
+file: org/apache/logging/log4j/core/appender/AsyncAppenderEventDispatcher.java
+anchor:
+    if (event == STOP_EVENT) {
+    break;
+    }
+insert-after:
+    if (event instanceof FlushEvent flushEvent) {
+        this.flushAppenderOutputStreams();
+        flushEvent.done();
+        continue;
+    }
+
+file: org/apache/logging/log4j/core/appender/AsyncAppenderEventDispatcher.java
+anchor:
+    if (event == STOP_EVENT) {
+    continue;
+    }
+insert-after:
+    if (event instanceof FlushEvent flushEvent) {
+        this.flushAppenderOutputStreams();
+        flushEvent.done();
+        continue;
+    }

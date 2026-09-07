@@ -19,8 +19,8 @@
 
 file: net/minecraft/world/item/BlockItem.java
 anchor:
-    } else if (!this.placeBlock(blockPlaceContext, placementState)) {
-insert:
+    BlockState placementState = this.getPlacementState(blockPlaceContext);
+insert-after:
     final org.bukkit.block.BlockState shifuReplaced =
             dev.shifu.event.ShifuEvents.blockPlaceListening()
                     ? org.bukkit.craftbukkit.block.CraftBlock.at(

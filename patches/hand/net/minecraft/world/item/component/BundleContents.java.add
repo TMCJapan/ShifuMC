@@ -6,13 +6,7 @@
     // Paper は外側と Mutable の 2 つに分けているが、読むだけの計算なので 1 つにまとめた。
     // vanilla の Mutable.getMaxAmountToAdd(Fraction) と同じ式で、何も書き換えない。
     public int getMaxAmountToAdd(final ItemStack stack) {
-        final DataResult<Fraction> weight = this.weight();
+        final Fraction remainingWeight = Fraction.ONE.subtract(this.weight());
 
-        if (weight.isError()) {
-            return 0;
-        }
-
-        final Fraction remainingWeight = Fraction.ONE.subtract(weight.getOrThrow());
-
-        return Math.max(remainingWeight.divideBy(BundleContents.getWeight(stack).getOrThrow()).intValue(), 0);
+        return Math.max(remainingWeight.divideBy(BundleContents.getWeight(stack)).intValue(), 0);
     }

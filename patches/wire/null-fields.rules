@@ -90,7 +90,7 @@ file: net/minecraft/world/inventory/MerchantMenu.java
 anchor:
     this.addSlot(new MerchantResultSlot(playerInventory.player, trader, this.tradeContainer, 2, 220, 37));
 insert-after:
-    this.playerInventory = playerInventory;
+    this.inventory = playerInventory;
 
 # StonecutterMenu.player(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/StonecutterMenu.java

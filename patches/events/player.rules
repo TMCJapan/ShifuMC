@@ -215,7 +215,8 @@ insert:
     final java.util.List<net.minecraft.world.entity.Entity.DefaultDrop> shifuDeathDrops =
             shifuDeath ? dev.shifu.event.ShifuEvents.beginPlayerDeath(this) : null;
 insert-after:
-    if (!dev.shifu.event.ShifuEvents.playerDeath(this, damageSource, shifuDeathDrops, flag)) {
+    if (!dev.shifu.event.ShifuEvents.playerDeath(this, damageSource, shifuDeathDrops,
+            this.level().getGameRules().get(GameRules.SHOW_DEATH_MESSAGES))) {
         return;
     }
 

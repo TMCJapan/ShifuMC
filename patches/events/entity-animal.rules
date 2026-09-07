@@ -566,7 +566,7 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/raid/Raids.java.patch(callRaidTriggerEvent)
 file: net/minecraft/world/entity/raid/Raids.java
 anchor:
-    Raid raid = this.getOrCreateRaid(level, raidCenterPos);
+    Raid raid = this.getOrCreateRaid(serverLevel, blockPos);
 insert-after:
     final boolean shifuNewRaid = dev.shifu.event.AnimalEvents.raidTriggerListening()
             && !raid.isStarted() && !this.raidMap.containsValue(raid);

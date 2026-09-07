@@ -466,7 +466,7 @@ anchor:
     }
     }
 insert-after:
-    dev.shifu.event.EntityEvents.armorStandDeath(level, this, source, shifuDrops);
+    dev.shifu.event.EntityEvents.armorStandDeath(level, this, damageSource, shifuDrops);
 
 # EntityDeathEvent(kill)。直前に壊れて出していれば出さない。
 file: net/minecraft/world/entity/decoration/ArmorStand.java

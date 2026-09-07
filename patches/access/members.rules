@@ -94,3 +94,17 @@ file: net/minecraft/server/level/ChunkLevel.java
 line:
     private static final int FULL_CHUNK_LEVEL = 33;
 
+# Paper のプラグイン再マップ(ReobfServer)が実装クラスを直に閉じる
+file: net/neoforged/art/internal/RenamerImpl.java
+line:
+class RenamerImpl implements Renamer {
+
+# PaperWorldLoader が新しい世界のデータを作る
+file: net/minecraft/server/Main.java
+line:
+    private static WorldLoader.DataLoadOutput<WorldData> createNewWorldData(
+
+# CraftMannequin が取れる姿勢の一覧を読む
+file: net/minecraft/world/entity/decoration/Mannequin.java
+line:
+    private static final Set<Pose> VALID_POSES = Set.of(Pose.STANDING, Pose.CROUCHING, Pose.SWIMMING, Pose.FALL_FLYING, Pose.SLEEPING);
