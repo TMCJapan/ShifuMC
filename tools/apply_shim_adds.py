@@ -54,6 +54,35 @@ def parse(text):
     return groups
 
 
+def existing(lines, body, name):
+    """その型の直下に既にある、その名前の宣言の鍵。
+
+    鍵は `make_shim.key_of` と同じ「名前 + 引数の型」。
+    メソッドの中の局所変数を数えないよう、字下げが直下のものだけを見る。
+    """
+    start, end, depth = body
+    out = set()
+    number = start
+
+    while number <= end:
+        line = lines[number]
+
+        if ms.indent(line) != depth or not line.strip():
+            number += 1
+            continue
+
+        for pattern in (fs.DECL, fs.FIELD, fs.TYPE_NAME, fs.IFACE, fs.PLAIN_FIELD):
+            match = pattern.match(line)
+
+            if match and match.group(1) == name:
+                out.add(ms.key_of(name, lines[number:number + 4]))
+                break
+
+        number += 1
+
+    return out
+
+
 def body_for(lines, owner):
     """その所有クラスの本体。見つからなければ一番外側。"""
     bodies = fs.type_bodies(lines)
@@ -166,8 +195,13 @@ def main():
                     continue
 
                 # shim が既に足していれば二重になる。名前で見ると、
-                # 引数だけ違う版を「既にある」と誤って弾いてしまうので、
-                # 宣言の行そのものが同じかどうかで見る。
+                # 引数だけ違う版を「既にある」と誤って弾いてしまう。
+                # **行そのもので見るのも足りない。**引数の名前や `final` は
+                # 版で変わるので、同じメソッドでも文字列は一致しない
+                # (1.20.6 の vanilla は `setSpawnSettings(boolean spawnMonsters,
+                # boolean spawnAnimals)`、手書きの追加は
+                # `setSpawnSettings(final boolean spawnEnemies, ...)`)。
+                # 名前と引数の型で見る。
                 # コメントと注釈は宣言ではない。`@Override` を宣言とみなすと、
                 # それはどのファイルにもあるので塊が 1 つも入らなくなる。
                 head = next((text.strip() for text in block
@@ -175,11 +209,7 @@ def main():
                              and not text.strip().startswith("//")
                              and not text.strip().startswith("@")), None)
 
-                # make_shim は初期化子の無い final から final を外して入れるので、
-                # 元の形のままでは一致しない。外した形でも照合する。
-                heads = {head, ms.unfinal([head])[0].strip()} if head else set()
-
-                if heads and any(text.strip() in heads for text in lines):
+                if head and ms.key_of(member, block) in existing(lines, body, member):
                     continue
 
                 # 初期化子の無い final は代入する場所が無い。final を外す。

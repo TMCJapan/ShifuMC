@@ -40,78 +40,8 @@ fs = ms.fs
 
 # 宣言の行から名前を取る。make_shim が使っているものと同じ。
 PATTERNS = (fs.DECL, fs.FIELD, fs.TYPE_NAME, fs.IFACE, fs.PLAIN_FIELD)
-ARGS = re.compile(r"\(([^()]*)\)")
-FINAL = re.compile(r"\bfinal\s+")
 # 型だけを残す。`final ItemStack stack` -> `ItemStack`
 ARG = re.compile(r"^(.*?[\w\]>])\s+\w+$")
-
-
-ANNOTATION = re.compile(r"^\s*@[\w.]+(?:\([^()]*\))?\s*")
-
-
-def head_of(block):
-    """宣言の頭。折り返していれば繋いで、本体や初期化子の手前で切る。"""
-    text = ""
-
-    for line in block:
-        clean = fs.STRING.sub('""', line).split("//")[0]
-        text += " " + clean
-
-        if "{" in clean or ";" in clean:
-            break
-
-    text = " ".join(text.split())
-    cuts = [at for at in (text.find("{"), text.find(";")) if at >= 0]
-
-    return text[:min(cuts)] if cuts else text
-
-
-def key_of(name, block):
-    """宣言の鍵。
-
-    欄は名前だけ。**初期化子まで鍵にすると、逆コンパイラの方言の差
-    (`1.0D` と `1.0`)で「Paper にしか無い」に化ける。**
-    メソッドは名前と引数の型。引数の名前と `final` は版で変わるので落とす。
-    """
-    text = FINAL.sub("", head_of(block))
-
-    while True:
-        cut = ANNOTATION.match(text)
-
-        if not cut:
-            break
-
-        text = text[cut.end():]
-
-    equals = text.find("=")
-    paren = text.find("(")
-
-    # 初期化子の中の呼び出しをメソッドの引数と読まない
-    if paren < 0 or (0 <= equals < paren):
-        return name
-
-    depth = 0
-
-    for at in range(paren, len(text)):
-        depth += (text[at] == "(") - (text[at] == ")")
-
-        if depth == 0:
-            break
-    else:
-        return name
-
-    args = []
-
-    for one in text[paren + 1:at].split(","):
-        one = one.strip()
-
-        if not one:
-            continue
-
-        hit = ARG.match(one)
-        args.append((hit.group(1) if hit else one).replace(" ", ""))
-
-    return f"{name}({','.join(args)})"
 
 
 def members(lines):
@@ -155,7 +85,7 @@ def members(lines):
                 number += 1
                 continue
 
-            key = (owner, key_of(name, block))
+            key = (owner, ms.key_of(name, block))
 
             if key not in out:
                 out[key] = (name, block)
