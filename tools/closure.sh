@@ -13,7 +13,7 @@ INIT=$(cygpath -w "$SHIFU/tools/maxerrs.gradle")
 
 # gradle はエラーを Windows のパスで出す。読みやすくするために前置きを落とす。
 # 区切りは / と \ が混ざるので、正規表現の . で受ける。
-SRC_PREFIX=$(cygpath -m "$PW/paper-server/src/" | tr '/' '.')
+SRC_PREFIX=$(cygpath -m "$(dirname "$(dirname "$ADAPTER")")/" | tr '/' '.')
 
 # ツールの出力先。リポジトリには入っていないので作る。
 # 要求リストが無い状態から始めると、closure.sh が不動点まで回して組み直す。
@@ -27,42 +27,41 @@ for round in 1 2 3 4 5 6 7 8 9 10; do
     git reset --hard "$SHIFU_BASE" -q
     git clean -fdq
     
-    # データも Paper のパッチが当たった状態で置かれている。resources は別のリポジトリ。
-    # 岩盤生成を paper:optionally_flat_bedrock_condition_source に差し替え、
-    # 戦利品表から set_damage を 1 件落としている。どちらも vanilla の挙動が変わる。
-    git -C "$RESOURCES" reset --hard "$SHIFU_BASE_RESOURCES" -q
+    # Paper 側を素の状態に戻す。アダプタ層の書き換えと、vanilla の挙動が変わるデータ。
+    # 何を戻すかは版の並べ方で違うので、env.sh の関数に置いてある。
+    shifu_reset_paper
     # Paper が丸ごと足すファイル。元の行が無いので挙動には触れない。
-    python "$SHIFU/tools/add_new_files.py" "$PW/paper-server/patches/sources" . 2>/dev/null
-    python "$SHIFU/tools/make_shim.py" "$PW/paper-server/patches/sources" . "$REQ" | tail -2
+    python "$SHIFU/tools/add_new_files.py" "$SOURCES" . 2>/dev/null
+    python "$SHIFU/tools/make_shim.py" "$SOURCES" . "$REQ" | tail -2
 
     # 自前で書いた追加。Paper のパッチから取れなかった分。
     # shim は write_members.py が書き出す(上書きされる)。hand は手で書く。
     # 可視性だけを広げる。修飾子 1 語だけで、命令列は変わらない。
-    python "$SHIFU/tools/widen_access.py" "$SHIFU/patches/access" .
+    python "$SHIFU/tools/widen_access.py" "$SHIFU/patches/access" . $ACCESS_FLAGS
     python "$SHIFU/tools/apply_shim_adds.py" "$SHIFU/patches/shim" . "$SHIFU/patches/hand" "$SHIFU/patches/access" | tail -1
     python "$SHIFU/tools/apply_shim_adds.py" "$SHIFU/patches/hand" . | tail -1
 
     # イベント発火層。自前のコードを置いて、vanilla の呼び出し箇所に差し込む。
     # アダプタ層の書き換え。vanilla ではないので挙動の条件には掛からない。
-    # src/minecraft/java は別のリポジトリなので、上の git reset では戻らない。
-    # 前の回の書き換えが残っていると当て直せないので、ここで戻す。
-    git -C "$PW" checkout -- paper-server/src/main/java
-    python "$SHIFU/tools/patch_adapter.py" "$SHIFU/patches/adapter" "$PW/paper-server/src/main/java"
+    python "$SHIFU/tools/patch_adapter.py" "$SHIFU/patches/adapter" "$ADAPTER" $ACCESS_FLAGS
 
-    mkdir -p "$PW/paper-server/src/main/java/dev/shifu/event"
-    cp "$SHIFU/src/event/java/dev/shifu/event/"*.java        "$PW/paper-server/src/main/java/dev/shifu/event/"
-    mkdir -p "$PW/paper-server/src/main/java/dev/shifu/command"
-    cp "$SHIFU/src/event/java/dev/shifu/command/"*.java      "$PW/paper-server/src/main/java/dev/shifu/command/"
+    mkdir -p "$ADAPTER/dev/shifu/event"
+    cp "$SHIFU/src/event/java/dev/shifu/event/"*.java        "$ADAPTER/dev/shifu/event/"
+    mkdir -p "$ADAPTER/dev/shifu/command"
+    cp "$SHIFU/src/event/java/dev/shifu/command/"*.java      "$ADAPTER/dev/shifu/command/"
     # vanilla の中の無名クラスへの追加。型の名前が無いので hand では届かない。
-    python "$SHIFU/tools/apply_events.py" "$SHIFU/patches/anon" . 無名クラスへの追加
+    python "$SHIFU/tools/apply_events.py" "$SHIFU/patches/anon" . 無名クラスへの追加 $EVENTS_FLAGS
     # Paper が vanilla のメソッドの中で行う代入。Bukkit 層の配線。
-    python "$SHIFU/tools/apply_events.py" "$SHIFU/patches/wire" . 配線
+    python "$SHIFU/tools/apply_events.py" "$SHIFU/patches/wire" . 配線 $EVENTS_FLAGS
     python "$SHIFU/tools/apply_events.py" "$SHIFU/patches/events" . $EVENTS_FLAGS
     # 逆コンパイルで消えた局所変数を戻す(tools/make_decompile_rules.py)
     if [ -z "${SHIFU_NO_DECOMPILE:-}" ]; then
-        python "$SHIFU/tools/patch_adapter.py" "$SHIFU/patches/decompile" . | tail -1
-        python "$SHIFU/tools/patch_adapter.py" "$SHIFU/patches/expr" . | tail -1
+        python "$SHIFU/tools/patch_adapter.py" "$SHIFU/patches/decompile" . $ACCESS_FLAGS | tail -1
+        python "$SHIFU/tools/patch_adapter.py" "$SHIFU/patches/expr" . $ACCESS_FLAGS | tail -1
     fi
+
+    # classic は NMS もアダプタ層と同じソースセットなので、当て終わった木を写す。
+    shifu_stage_tree
 
     cd "$PW"
     "$GRADLEW" --no-daemon -I "$INIT" ":paper-server:compileJava" \
@@ -94,6 +93,6 @@ for round in 1 2 3 4 5 6 7 8 9 10; do
 
     cd "$SHIFU"
     cp "$REQ" "$REQ.bak"
-    python tools/required_members.py "$GAP" "$TREE" "$PW/paper-server/src/main/java" >> "$REQ"
+    python tools/required_members.py "$GAP" "$TREE" "$ADAPTER" >> "$REQ"
     echo "round $round: required now $(grep -cE '^    (method|variable|class|access|abstract) ' "$REQ")"
 done

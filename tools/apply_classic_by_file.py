@@ -3,6 +3,9 @@
 
     python tools/apply_classic_by_file.py <パッチの置き場> <当てる git リポジトリ>
 
+**当てる前に `git reset --hard <素の状態>` しておくこと。**当たらなかったものを
+やり直すときにファイルを索引から戻すので、索引が当て終わった状態だと戻せない。
+
 `tools/apply_classic_patches.py` はパッチを 1 件ずつ `git am` に渡す。1053 件の
 積み順がリポジトリから読めないので、どう並べても 2 割で止まる。
 
