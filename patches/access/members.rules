@@ -94,7 +94,3 @@ file: net/minecraft/server/level/ChunkLevel.java
 line:
     private static final int FULL_CHUNK_LEVEL = 33;
 
-# CraftLivingEntity.setRemoveWhenFarAway が呼ぶ
-file: net/minecraft/world/entity/Mob.java
-line:
-    public void setPersistenceRequired() {

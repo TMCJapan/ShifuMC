@@ -31,3 +31,11 @@
 
         return canReplace && this.canHoldItem(itemStack);
     }
+
+// Mob.setPersistenceRequired
+    // CraftLivingEntity.setRemoveWhenFarAway が真偽値で切り替える。
+    // vanilla の版は引数を取らず、常に true にする。欄は persistenceRequired。
+    // 読んだ位置: patches/sources/net/minecraft/world/entity/Mob.java.patch:40
+    public void setPersistenceRequired(final boolean persistenceRequired) {
+        this.persistenceRequired = persistenceRequired;
+    }
