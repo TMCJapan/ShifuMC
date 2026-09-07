@@ -5,6 +5,7 @@
 # 変えたいときは環境変数か tools/env.local.sh(git 管理外)で上書きする。
 #
 #   SHIFU_PAPER  Paper のクローン        既定: リポジトリの親ディレクトリの .pw
+#   SHIFU_TREE   vanilla のソースの木    既定: $PW/paper-server/src/minecraft/java
 #   SHIFU_BASE   vanilla の基点コミット  既定: tools/build/base-commit.txt、無ければ 6d83d4b
 #   JAVA_HOME    JDK 25                 環境のものを使う。未設定なら止まる
 #   MC_VERSION   Minecraft の版         既定: Paper のクローンの gradle.properties
@@ -60,8 +61,11 @@ case "$(uname -s)" in
     *)                    GRADLEW=./gradlew ;;
 esac
 
-TREE=$PW/paper-server/src/minecraft/java
-RESOURCES=$PW/paper-server/src/minecraft/resources
+# 1.21.4 より前は paper-server が無く、Windows では Paper-Server と同じ場所を指す。
+# その版では SHIFU_TREE で別の場所を渡す。
+TREE=${SHIFU_TREE:-$PW/paper-server/src/minecraft/java}
+RESOURCES=${SHIFU_RESOURCES:-$PW/paper-server/src/minecraft/resources}
+export SHIFU_TREE=$TREE
 
 # vanilla の基点。バージョンごとに違うので、そのクローンの履歴から拾う。
 # 履歴がまだ無いとき(setup.sh を回す前)だけ base-commit.txt を見る。
