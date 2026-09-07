@@ -14,15 +14,3 @@ insert:
     );
     if (event != null && event.isCancelled()) continue; // If the event was called and cancelled, skip this.
     // Paper end - PlayerLeashEvent
-
-# callPlayerLeashEntityEvent
-file: net/minecraft/world/entity/Entity.java
-anchor:
-    leashable2.setLeashedTo(player, true);
-insert:
-    // Paper start - EntityLeashEvent
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerLeashEntityEvent(this, player, player, hand).isCancelled()) {
-        ((ServerPlayer) player).connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityLinkPacket(this, leashable2.getLeashHolder()));
-        return InteractionResult.PASS;
-    }
-    // Paper end - EntityLeashEvent

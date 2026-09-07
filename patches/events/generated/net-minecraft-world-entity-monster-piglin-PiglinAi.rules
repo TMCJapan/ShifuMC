@@ -1,9 +1,0 @@
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
-
-# callEntityPickupItemEvent
-file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
-anchor:
-    ItemStack itemStack;
-insert:
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPickupItemEvent(piglin, itemEntity, itemEntity.getItem().is(Items.GOLD_NUGGET) ? 0 : itemEntity.getItem().getCount() - 1).isCancelled()) return; // Paper
-    piglin.onItemPickup(itemEntity); // Paper - moved from Piglin#pickUpItem - call prior to itemStack entity modification
