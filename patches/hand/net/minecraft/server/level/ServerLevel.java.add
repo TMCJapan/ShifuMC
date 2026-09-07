@@ -88,78 +88,62 @@
     // vanilla の 10 引数の版から作られた世界では null のまま。
     private ResourceKey<LevelStem> typeKey;
 
-// ServerLevel.bukkitName
-    // typeKey と同じ理由で final を外す。CraftWorld.getName() がここを直に読む。
-    public String bukkitName;
-
 // ServerLevel.uuid
-    // typeKey と同じ理由で final を外す。CraftWorld.getUID() がここを直に読む。
+    // Paper は levelStorageAccess の場所から作る。CraftWorld.getUID() が直に読む。
     public UUID uuid;
 
-// ServerLevel.worldGenSettings
-    // typeKey と同じ理由で final を外す。CraftWorld の canGenerateStructures /
-    // isBonusChestEnabled がここを直に読む。
-    public WorldGenSettings worldGenSettings;
+// ServerLevel.levelStorageAccess
+    // Paper が構築子で入れる。CraftWorld と CraftServer が直に読む。
+    public LevelStorageSource.LevelStorageAccess levelStorageAccess;
+
+// ServerLevel.levelLoadListener
+    // Paper が構築子で入れる。世界の読み込みの進み具合を出す。
+    public net.minecraft.server.level.progress.LevelLoadListener levelLoadListener;
 
 // ServerLevel.ServerLevel
-    // Paper が増やした 6 引数を受ける版。CraftServer.createWorld から呼ばれる。
-    // vanilla の 10 引数の版へ this(...) で渡してから、増えた分をフィールドへ入れる。
+    // Paper が増やした 3 引数を受ける版。CraftServer.createWorld から呼ばれる。
+    // vanilla の 11 引数の版へ this(...) で渡してから、増えた分を欄へ入れる。
     // vanilla の構築子の行は 1 行も触っていない。
     //
-    // 4 番目は Paper と同じく loadedWorldData.levelOverrides() を渡す。
-    // PaperLevelOverrides は ServerLevelData の実装なのでそのまま入る。
-    //
-    // savedDataStorage は使わない。vanilla の ServerChunkCache が
-    // getDimensionPath(dimension)/data に対して SavedDataStorage をもう 1 つ作るので、
-    // 渡された方へ書くと同じフォルダを 2 つの管理が持つことになる。
-    // environment と biomeProvider も使わない。入れ先は Level の world (CraftWorld) だが、
+    // environment と biomeProvider は使わない。入れ先は Level の world (CraftWorld) だが、
     // それは Level で private final に宣言されていて ServerLevel からは触れない。
+    // Level の構築子の末尾(配線)で作るときに、次元から決めた environment を渡している。
     public ServerLevel(final MinecraftServer server,
-                       final Executor executor,
-                       final LevelStorageSource.LevelStorageAccess levelStorage,
-                       final WorldGenSettings worldGenSettings,
+                       final Executor dispatcher,
+                       final LevelStorageSource.LevelStorageAccess levelStorageAccess,
+                       final ServerLevelData serverLevelData,
                        final ResourceKey<Level> dimension,
                        final LevelStem levelStem,
                        final boolean isDebug,
                        final long biomeZoomSeed,
                        final List<CustomSpawner> customSpawners,
                        final boolean tickTime,
-                       final ResourceKey<LevelStem> typeKey,
+                       final @Nullable RandomSequences randomSequences,
                        final org.bukkit.World.Environment environment,
                        final org.bukkit.generator.@Nullable ChunkGenerator generator,
-                       final org.bukkit.generator.@Nullable BiomeProvider biomeProvider,
-                       final SavedDataStorage savedDataStorage,
-                       final io.papermc.paper.world.PaperWorldLoader.LoadedWorldData loadedWorldData) {
-        this(server, executor, levelStorage, loadedWorldData.levelOverrides(), dimension, levelStem, isDebug, biomeZoomSeed, customSpawners, tickTime);
-        this.typeKey = typeKey;
-        this.bukkitName = loadedWorldData.bukkitName();
-        this.uuid = loadedWorldData.uuid();
-        this.shifuCreateConfigs(levelStorage);
-        this.worldGenSettings = worldGenSettings;
+                       final org.bukkit.generator.@Nullable BiomeProvider biomeProvider) {
+        this(server, dispatcher, levelStorageAccess, serverLevelData, dimension, levelStem,
+                isDebug, biomeZoomSeed, customSpawners, tickTime, randomSequences);
         this.generator = generator;
-
-        if (loadedWorldData.pdc() != null) {
-            this.persistentDataContainer.putAll(loadedWorldData.pdc().persistentData().toTagCompound());
-        }
     }
 
 // ServerLevel.shifuCreateConfigs
-    // Paper は Level の構築子で spigotConfig と paperConfig を作る。そこでは bukkitName が
-    // まだ無いので、bukkitName が入った直後(vanilla の構築子では配線、
-    // 16 引数の版ではその本体)から呼ぶ。SpigotConfig.init と
-    // initializeWorldDefaultsConfiguration が先に済んでいること(DedicatedServer.initServer の配線)。
-    // 読んだ位置: patches/sources/net/minecraft/world/level/Level.java.patch:91,
-    //            patches/sources/net/minecraft/server/level/ServerLevel.java.patch:174
-    public void shifuCreateConfigs(final LevelStorageSource.LevelStorageAccess levelStorage) {
-        final org.bukkit.NamespacedKey worldKey = org.bukkit.craftbukkit.util.CraftNamespacedKey.fromMinecraft(this.dimension().identifier());
-        this.spigotConfig = new org.spigotmc.SpigotWorldConfig(this.bukkitName, worldKey);
+    // Paper は Level の構築子で spigotConfig と paperConfig を作る。vanilla の構築子は
+    // 触れないので、ServerLevel の構築子の末尾(配線)から呼ぶ。
+    // SpigotConfig.init と initializeWorldDefaultsConfiguration が先に済んでいること
+    // (DedicatedServer.initServer の配線)。
+    // 読んだ位置: patches/sources/net/minecraft/world/level/Level.java.patch:89,
+    //            patches/sources/net/minecraft/server/level/ServerLevel.java.patch:157
+    public void shifuCreateConfigs(final LevelStorageSource.LevelStorageAccess levelStorageAccess) {
+        this.spigotConfig = new org.spigotmc.SpigotWorldConfig(this.serverLevelData.getLevelName());
         this.paperConfig = this.server.paperConfigurations.createWorldConfig(
                 io.papermc.paper.configuration.PaperConfigurations.createWorldContextMap(
-                        levelStorage.getDimensionPath(this.dimension()),
+                        levelStorageAccess.levelDirectory.path(),
+                        this.serverLevelData.getLevelName(),
                         this.dimension().identifier(),
                         this.spigotConfig,
                         this.server.registryAccess(),
-                        this.getGameRules()));
+                        this.serverLevelData.getGameRules()));
         // Paper は overworld の分を MinecraftServer.createLevels で、他の世界の分を initWorld で入れる。
         // CraftWorldBorder が読む。世界ごとの境界はどれも自分の世界を指す
         this.getWorldBorder().world = this;

@@ -279,7 +279,7 @@ file: net/minecraft/server/level/ServerPlayerGameMode.java
 anchor:
     if (this.player.getAbilities().instabuild) {
 insert:
-    if (!dev.shifu.event.ShifuEvents.interactBlockLeft(this.player, pos, direction)) {
+    if (!dev.shifu.event.ShifuEvents.interactBlockLeft(this.player, pos, face)) {
         this.player.connection.send(new ClientboundBlockUpdatePacket(pos, this.level.getBlockState(pos)));
         return;
     }

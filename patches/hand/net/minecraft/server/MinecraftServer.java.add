@@ -39,12 +39,12 @@
     // vanilla の createLevels() のうち、レベル 1 つ分の初期化。
     // Shifu の起動経路は DedicatedServer.initServer -> vanilla の loadLevel() -> createLevels() なので、
     // ここを通るのは CraftServer.createWorld で作った世界だけ。起動時の世界は vanilla のまま通る。
-    // Paper の版 (MinecraftServer.java.patch:409) から、Shifu に無いものだけ落とした:
-    // levelLoadListener は vanilla ではサーバーに 1 つなので this のものを使う。
+    // Paper の版 (MinecraftServer.java.patch:371) から、Shifu に無いものだけ落とした:
+    // initWorldBorder は Paper の追加なので、中でやっていることをそのまま書く。
     // setupDebugLevel はゲームルールがサーバーに 1 つなので vanilla の 1 引数の版を呼ぶ。
-    public void initWorld(final ServerLevel level, final org.bukkit.@Nullable WorldCreator creator) {
-        final ServerLevelData levelData = level.serverLevelData;
-        final WorldOptions worldOptions = level.worldGenSettings.options();
+    public void initWorld(final ServerLevel level,
+                          final net.minecraft.world.level.storage.PrimaryLevelData levelData,
+                          final WorldOptions worldOptions) {
         final boolean isDebug = this.worldData.isDebugWorld();
 
         if (level.generator != null) {
@@ -58,17 +58,7 @@
 
         if (!levelData.isInitialized()) {
             try {
-                if (creator != null && creator.forcedSpawnPosition() != null) {
-                    levelData.setSpawn(LevelData.RespawnData.of(
-                        level.dimension(),
-                        io.papermc.paper.util.MCUtil.toBlockPos(creator.forcedSpawnPosition()),
-                        Objects.requireNonNullElse(creator.forcedSpawnYaw(), LevelData.RespawnData.DEFAULT.yaw()),
-                        Objects.requireNonNullElse(creator.forcedSpawnPitch(), LevelData.RespawnData.DEFAULT.pitch())
-                    ));
-                } else {
-                    setInitialSpawn(level, levelData, worldOptions.generateBonusChest(), isDebug, this.levelLoadListener);
-                }
-
+                setInitialSpawn(level, levelData, worldOptions.generateBonusChest(), isDebug, level.levelLoadListener);
                 levelData.setInitialized(true);
 
                 if (isDebug) {
@@ -89,7 +79,7 @@
         }
 
         GlobalPos focusPos = this.selectLevelLoadFocusPos();
-        this.levelLoadListener.updateFocus(focusPos.dimension(), ChunkPos.containing(focusPos.pos()));
+        level.levelLoadListener.updateFocus(focusPos.dimension(), new ChunkPos(focusPos.pos()));
     }
 
 // MinecraftServer.prepareLevel

@@ -1,0 +1,16 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// ServerLevelData.setRaining
+    // Paper は理由つきの版を interface に足して、CraftWorld から呼ぶ。
+    // 抽象で足すと vanilla の中の実装が軒並み落ちるので default で足す。
+    // 理由は使わない。WeatherChangeEvent は発火層が別に出す。
+    // 読んだ位置: patches/sources/net/minecraft/world/level/storage/ServerLevelData.java.patch
+    default void setRaining(final boolean raining, final org.bukkit.event.weather.WeatherChangeEvent.Cause cause) {
+        this.setRaining(raining);
+    }
+
+// ServerLevelData.setThundering
+    // 同上(ThunderChangeEvent)。
+    default void setThundering(final boolean thundering, final org.bukkit.event.weather.ThunderChangeEvent.Cause cause) {
+        this.setThundering(thundering);
+    }

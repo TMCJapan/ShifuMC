@@ -568,7 +568,7 @@ file: net/minecraft/world/level/block/ComposterBlock.java
 anchor:
     if ((levelValue != 0 || !(_float > 0.0F)) && !(level.getRandom().nextDouble() < _float)) {
 insert-after:
-    dev.shifu.event.BlockEvents.compostItem(sourceEntity, level, pos, itemStack, state, false);
+    dev.shifu.event.BlockEvents.compostItem(entity, level, pos, stack, state, false);
 
 file: net/minecraft/world/level/block/ComposterBlock.java
 anchor:
@@ -576,7 +576,7 @@ anchor:
     BlockState blockState = state.setValue(LEVEL, i);
     level.setBlock(pos, blockState, Block.UPDATE_ALL);
 insert:
-    if (!dev.shifu.event.BlockEvents.compostItem(sourceEntity, level, pos, itemStack, state, true)) {
+    if (!dev.shifu.event.BlockEvents.compostItem(entity, level, pos, stack, state, true)) {
         return state;
     }
 

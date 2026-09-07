@@ -69,3 +69,17 @@ with:
             // Shifu - paperConfig() を読む 2 ブロックを落とした。Level.paperConfig は Shifu では null。
             // 湧き上限は spawnCategoryLimit を空のままにすると getSpawnLimitUnsafe が server 側の値へ落ちる。
             // voidDamage の 3 つは Paper の World API 用で、vanilla の奈落ダメージは Entity 側にある。
+
+# vanilla の ServerLevel.serverLevelData は ServerLevelData 型。Paper は PrimaryLevelData に
+# 狭めているので、worldGenOptions と settings は素の型では見えない。呼ぶ側で戻す。
+count: 2
+replace:
+    this.world.serverLevelData.worldGenOptions()
+with:
+    ((net.minecraft.world.level.storage.PrimaryLevelData) this.world.serverLevelData).worldGenOptions()
+
+# 同上。1.21.11 の vanilla は LevelSettings.hardcore が public な欄なので、そのまま書ける
+replace:
+    this.world.serverLevelData.settings.hardcore = hardcore;
+with:
+    ((net.minecraft.world.level.storage.PrimaryLevelData) this.world.serverLevelData).settings.hardcore = hardcore;

@@ -483,7 +483,7 @@ anchor:
     this.player.connection.send(new ClientboundBlockUpdatePacket(pos, this.level.getBlockState(pos)));
     this.debugLogging(pos, false, sequence, "may not interact");
 insert:
-    dev.shifu.event.ShifuEvents.interactBlockLeft(this.player, pos, direction);
+    dev.shifu.event.ShifuEvents.interactBlockLeft(this.player, pos, face);
 
 # BlockDamageEvent。壊し始め(即時破壊でないとき)
 #
@@ -492,7 +492,7 @@ file: net/minecraft/server/level/ServerPlayerGameMode.java
 anchor:
     if (!blockState.isAir() && f >= 1.0F) {
 insert:
-    final org.bukkit.event.block.BlockDamageEvent shifuDamage = dev.shifu.event.PlayerEvents.blockDamage(this.player, pos, direction, f >= 1.0F);
+    final org.bukkit.event.block.BlockDamageEvent shifuDamage = dev.shifu.event.PlayerEvents.blockDamage(this.player, pos, face, f >= 1.0F);
     if (shifuDamage != null) {
         if (shifuDamage.isCancelled()) {
             return;
