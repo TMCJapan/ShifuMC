@@ -170,9 +170,12 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch:148
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    this.level().addFreshEntity(entity);
+    this.level().addFreshEntity(itemEntity);
+    }
+
+    return itemEntity;
 insert:
-    if (!dev.shifu.event.ShifuEvents.playerDropItem(this, entity, thrownFromHand)) {
+    if (!dev.shifu.event.ShifuEvents.playerDropItem(this, itemEntity, includeThrower)) {
         return null;
     }
 

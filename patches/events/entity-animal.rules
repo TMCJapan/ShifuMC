@@ -425,17 +425,11 @@ insert-after:
 # EntityDropItemEvent(キツネが吐き出す・落とす)。Paper は spawnAtLocation の中で発火する。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/fox/Fox.java.patch(EntityDropItemEvent)
-file: net/minecraft/world/entity/animal/fox/Fox.java
-anchor:
-    this.level().addFreshEntity(thrownItem);
-insert:
-    if (dev.shifu.event.AnimalEvents.dropItem(this, thrownItem)) {
-insert-after:
-    }
-
+# 吐き出す(spitOutItem)と落とす(dropItemStack)の 2 か所。どちらも同じ形
 file: net/minecraft/world/entity/animal/fox/Fox.java
 anchor:
     this.level().addFreshEntity(itemEntity);
+count: 2
 insert:
     if (dev.shifu.event.AnimalEvents.dropItem(this, itemEntity)) {
 insert-after:

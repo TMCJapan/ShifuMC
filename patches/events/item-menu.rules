@@ -117,14 +117,15 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/EnchantmentMenu.java.patch(EnchantItemEvent)
 file: net/minecraft/world/inventory/EnchantmentMenu.java
 anchor:
-    if (!newEnchantment.isEmpty()) {
+    if (!enchantmentList.isEmpty()) {
+    player.onEnchantmentPerformed(item, i);
 insert:
-    newEnchantment = dev.shifu.event.ItemEvents.enchantItem(this, level, pos, player, enchantmentItem, newEnchantment, buttonId,
+    enchantmentList = dev.shifu.event.ItemEvents.enchantItem(this, level, pos, player, itemStack, enchantmentList, id,
             this.costs, this.enchantClue, this.levelClue);
-    if (newEnchantment == null) {
+    if (enchantmentList == null) {
         return;
     }
-    enchantmentItem = dev.shifu.event.ItemEvents.enchantedItem(this.enchantSlots, itemStack, enchantmentItem);
+    itemStack = dev.shifu.event.ItemEvents.enchantedItem(this.enchantSlots, item, itemStack);
 
 # ---------------------------------------------------------------- PlayerLecternPageChangeEvent
 #

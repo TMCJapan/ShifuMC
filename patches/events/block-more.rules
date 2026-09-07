@@ -394,21 +394,34 @@ insert:
     }
 
 # PlayerInteractEvent(PHYSICAL)/ EntityInteractEvent と EntityChangeBlockEvent(レッドストーン鉱石)
+# 殴る
 file: net/minecraft/world/level/block/RedStoneOreBlock.java
 anchor:
     interact(state, level, pos);
-count: 2
+    super.attack(state, level, pos, player);
 insert:
     dev.shifu.event.BlockEvents.oreToucher(player);
 
+# 使う
 file: net/minecraft/world/level/block/RedStoneOreBlock.java
 anchor:
-    interact(onState, level, pos);
-insert:
-    if (dev.shifu.event.BlockEvents.physicalInteract(entity, level, pos)) {
-        dev.shifu.event.BlockEvents.oreToucher(entity);
-insert-after:
+    interact(state, level, pos);
     }
+
+    return (InteractionResult)(stack.getItem() instanceof BlockItem && new BlockPlaceContext(player, hand, stack, hitResult).canPlace()
+insert:
+    dev.shifu.event.BlockEvents.oreToucher(player);
+
+# 踏む。取り消されたら interact を飛ばして super.stepOn だけ通す
+file: net/minecraft/world/level/block/RedStoneOreBlock.java
+anchor:
+    if (!entity.isSteppingCarefully()) {
+insert-after:
+    if (!dev.shifu.event.BlockEvents.physicalInteract(entity, level, pos)) {
+        super.stepOn(level, pos, state, entity);
+        return;
+    }
+    dev.shifu.event.BlockEvents.oreToucher(entity);
 
 file: net/minecraft/world/level/block/RedStoneOreBlock.java
 anchor:
@@ -521,10 +534,10 @@ insert:
 
 file: net/minecraft/world/level/block/SpongeBlock.java
 anchor:
-    level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+    level.setBlock(blockPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
 count: 2
 insert:
-    dev.shifu.event.BlockEvents.spongeBefore(level, pos);
+    dev.shifu.event.BlockEvents.spongeBefore(level, blockPos);
 
 file: net/minecraft/world/level/block/SpongeBlock.java
 anchor:
@@ -728,11 +741,11 @@ insert:
 # FluidLevelChangeEvent(段が変わる。2 箇所とも同じ形)
 file: net/minecraft/world/level/material/FlowingFluid.java
 anchor:
-    level.setBlock(pos, blockState, Block.UPDATE_ALL);
+    level.setBlock(pos, state, Block.UPDATE_ALL);
 count: 2
 insert:
-    blockState = dev.shifu.event.BlockEvents.fluidLevelChange(level, pos, blockState);
-    if (blockState == null) {
+    state = dev.shifu.event.BlockEvents.fluidLevelChange(level, pos, state);
+    if (state == null) {
         return;
     }
 
@@ -883,8 +896,11 @@ insert-after:
 file: net/minecraft/world/level/block/entity/SignBlockEntity.java
 anchor:
     return text;
+    }
+
+    public boolean setText(SignText text, boolean isFrontText) {
 insert:
-    text = dev.shifu.event.BlockEvents.signChange(this, player, shifuOriginalText, text, lines);
+    text = dev.shifu.event.BlockEvents.signChange(this, player, shifuOriginalText, text, filteredText);
 
 # PlayerSignCommandPreprocessEvent
 file: net/minecraft/world/level/block/entity/SignBlockEntity.java

@@ -317,7 +317,7 @@ file: net/minecraft/world/entity/ambient/Bat.java
 anchor:
     this.setResting(false);
     if (!isSilent) {
-        level.levelEvent(null, LevelEvent.SOUND_BAT_LIFTOFF, pos, 0);
+        level.levelEvent(null, LevelEvent.SOUND_BAT_LIFTOFF, blockPos, 0);
     }
 count: 2
 insert:
@@ -491,8 +491,8 @@ insert-after:
 # HangingBreakEvent(PHYSICS: 押された・動かされた)。move と push の 2 箇所。
 file: net/minecraft/world/entity/decoration/BlockAttachedEntity.java
 anchor:
-    this.kill(level);
-    this.dropItem(level, null);
+    this.kill(serverLevel);
+    this.dropItem(serverLevel, null);
 count: 2
 insert:
     if (dev.shifu.event.EntityEvents.hangingBreak(this, org.bukkit.event.hanging.HangingBreakEvent.RemoveCause.PHYSICS)) {
@@ -504,9 +504,9 @@ insert-after:
 # PlayerItemFrameChangeEvent(PLACE)
 file: net/minecraft/world/entity/decoration/ItemFrame.java
 anchor:
-    this.setItem(itemStack, false);
+    this.setItem(itemInHand);
 insert:
-    final int shifuFrame = dev.shifu.event.EntityEvents.frameChange(this, player, itemStack);
+    final int shifuFrame = dev.shifu.event.EntityEvents.frameChange(this, player, itemInHand);
     if (shifuFrame == 0) {
         return InteractionResult.FAIL;
     }
@@ -625,7 +625,7 @@ insert-after:
 # FireworkExplodeEvent。爆発する 3 箇所を同じ形で囲む。
 file: net/minecraft/world/entity/projectile/FireworkRocketEntity.java
 anchor:
-    this.explode(level);
+    this.explode(serverLevel);
 count: 3
 insert:
     if (dev.shifu.event.EntityEvents.fireworkExplode(this)) {
