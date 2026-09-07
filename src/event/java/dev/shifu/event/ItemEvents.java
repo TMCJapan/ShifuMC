@@ -28,14 +28,14 @@ import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.Leashable;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.animal.sheep.Sheep;
+import net.minecraft.world.entity.animal.Sheep;
 import net.minecraft.world.entity.decoration.LeashFenceKnotEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.FireworkRocketEntity;
 import net.minecraft.world.entity.projectile.FishingHook;
 import net.minecraft.world.entity.projectile.Projectile;
-import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownEnderpearl;
+import net.minecraft.world.entity.projectile.ThrownEnderpearl;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.AnvilMenu;
 import net.minecraft.world.inventory.ContainerLevelAccess;
@@ -415,7 +415,7 @@ public final class ItemEvents {
             return CANCELLED;
         }
 
-        final net.minecraft.resources.Identifier key = CraftNamespacedKey.toMinecraft(event.getStonecuttingRecipe().getKey());
+        final net.minecraft.resources.ResourceLocation key = CraftNamespacedKey.toMinecraft(event.getStonecuttingRecipe().getKey());
 
         if (recipe.get().id().identifier().equals(key)) {
             return buttonId;

@@ -13,7 +13,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PositionMoveRotation;
-import net.minecraft.world.entity.Relative;
+import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.ServerExplosion;
 import net.minecraft.world.level.portal.TeleportTransition;
@@ -1072,7 +1072,7 @@ public final class ShifuEvents {
         }
 
         final int experience = current.experience();
-        final boolean keepInventoryRule = player.level().getGameRules().get(net.minecraft.world.level.gamerules.GameRules.KEEP_INVENTORY);
+        final boolean keepInventoryRule = player.level().getGameRules().get(net.minecraft.world.level.GameRules.KEEP_INVENTORY);
         final boolean keepInventory = keepInventoryRule || player.isSpectator();
         final Component defaultMessage = player.getCombatTracker().getDeathMessage();
 
@@ -1281,7 +1281,7 @@ public final class ShifuEvents {
 
         // vanilla が transferInventoryXpAndScore で写した条件。写していなければ補う
         final boolean transferred = keepAllPlayerData
-                || fresh.level().getGameRules().get(net.minecraft.world.level.gamerules.GameRules.KEEP_INVENTORY)
+                || fresh.level().getGameRules().get(net.minecraft.world.level.GameRules.KEEP_INVENTORY)
                 || old.isSpectator();
 
         if (transferred) {

@@ -1,0 +1,15 @@
+# この版で名前が違う NMS のクラス。tools/retarget_imports.py が当てる。
+#
+# 置き場所が変わっただけのものは木を探せば見つかるので、ここには書かない。
+# ここに書くのは**名前ごと変わった**もの。中身が同じであることを確かめてから足す。
+#
+#     新しい版での名前 -> この版での名前
+
+# 1.21.2 で MobSpawnType から改名。列挙子は同じ
+net.minecraft.world.entity.EntitySpawnReason -> net.minecraft.world.entity.MobSpawnType
+
+# 1.21.2 で RelativeMovement から改名。列挙子は同じ(X Y Z Y_ROT X_ROT)
+net.minecraft.world.entity.Relative -> net.minecraft.world.entity.RelativeMovement
+
+# 26.x で ResourceLocation から改名
+net.minecraft.resources.Identifier -> net.minecraft.resources.ResourceLocation

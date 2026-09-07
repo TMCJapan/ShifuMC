@@ -1055,7 +1055,7 @@ public final class BlockEvents {
      *
      * @return 入ってよいか
      */
-    public static boolean enterHive(final BlockEntity hive, final net.minecraft.world.entity.animal.bee.Bee bee) {
+    public static boolean enterHive(final BlockEntity hive, final net.minecraft.world.entity.animal.Bee bee) {
         if (hive.getLevel() == null || !listening(org.bukkit.event.entity.EntityEnterBlockEvent.getHandlerList())) {
             return true;
         }

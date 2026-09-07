@@ -265,8 +265,15 @@ def main():
             if old == new:
                 continue
 
-            have, _, mine = members(old)
-            theirs, order, _ = members(new)
+            try:
+                have, _, mine = members(old)
+                theirs, order, _ = members(new)
+            except RuntimeError as problem:
+                # 正規表現の再帰が深くなりすぎるファイルがある。
+                # そこだけ諦めて、どれかを言う
+                print(f"  読めなかった: {rel} ({problem})", file=sys.stderr)
+                continue
+
             blocks = []
 
             for key in order:

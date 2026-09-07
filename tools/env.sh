@@ -130,6 +130,10 @@ export SHIFU_BASE_PAPER
 # Paper 側を素の状態に戻す。前の回の書き換えが残っていると当て直せない。
 shifu_reset_paper() {
     if [ "$LAYOUT" = classic ]; then
+        # 前の回に shifu_stage_tree が写した vanilla が残る。Paper が持たない
+        # 2974 件は checkout では戻らないので、消してから戻す。
+        # 残すと make_classic_shim が Shifu 自身の出力を「Paper の宣言」と読む。
+        git -C "$PW/Paper-Server" clean -qfd -- src/main/java
         git -C "$PW/Paper-Server" checkout -q -- src/main/java
         # Paper は岩盤生成を paper:optionally_flat_bedrock_condition_source に差し替える。
         # vanilla の挙動が変わるので、当たる前の中身に戻す。
