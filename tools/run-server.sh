@@ -10,7 +10,11 @@ set -e
 
 . "$(dirname "$0")/env.sh"
 RUN=$PW/run-shifu
-JAR=$PW/paper-server/build/libs/paper-bundler-26.2.local-SNAPSHOT.jar
+# jar の名前にバージョンが入る。組んだものを 1 つ拾う
+find_jar() {
+    ls "$PW"/paper-server/build/libs/*bundler*.jar 2>/dev/null | grep -v reobf | head -1
+}
+JAR=$(find_jar)
 
 if [ "$1" != "--skip-build" ]; then
     cd "$PW"
@@ -18,8 +22,22 @@ if [ "$1" != "--skip-build" ]; then
     # class の後処理(局所変数の番号合わせと、公式バイトコードへの戻し)
     "$GRADLEW" --no-daemon ":paper-server:compileJava" "-Dorg.gradle.jvmargs=-Xmx6G"
     sh "$SHIFU/tools/postcompile.sh"
-    "$GRADLEW" --no-daemon ":paper-server:createBundlerJar" -x ":paper-server:compileJava" \
+    # 26.x は createBundlerJar の 1 つだけ。1.21.x は mojmap と reobf に分かれる。
+    # Shifu は実行時も mojmap なので mojmap の方を組む。
+    BUNDLE=createBundlerJar
+
+    if "$GRADLEW" --no-daemon ":paper-server:tasks" --all 2>/dev/null | grep -q createMojmapBundlerJar; then
+        BUNDLE=createMojmapBundlerJar
+    fi
+
+    "$GRADLEW" --no-daemon ":paper-server:$BUNDLE" -x ":paper-server:compileJava" \
         "-Dorg.gradle.jvmargs=-Xmx6G -Duser.language=en -Duser.country=US"
+    JAR=$(find_jar)
+fi
+
+if [ -z "$JAR" ]; then
+    echo "bundler の jar が無い: $PW/paper-server/build/libs" >&2
+    exit 1
 fi
 
 mkdir -p "$RUN"

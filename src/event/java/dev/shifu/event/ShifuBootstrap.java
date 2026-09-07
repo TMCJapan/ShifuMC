@@ -24,6 +24,22 @@ import net.minecraft.server.MinecraftServer;
  * {@code paper-server patches/sources/net/minecraft/server/dedicated/DedicatedServer.java.patch:105}
  */
 public final class ShifuBootstrap {
+    /**
+     * Bukkit の Main が解析した起動時の引数。
+     *
+     * <p>Paper は MinecraftServer の構築子の引数を 1 つ増やして渡すが、vanilla の
+     * 構築子の宣言は変えられない。アダプタ層(PaperBootstrap)が起動前にここへ置き、
+     * 構築子の中で {@code this.options} に移す(patches/wire)。
+     * CraftServer.getConfigFile() が this.console.options を読むので、これが無いと
+     * CraftServer の構築中に NPE になる。
+     *
+     * <p>MinecraftServer の static 欄にしないのは、触ると MinecraftServer の初期化が
+     * 走るため。1.21.11 の DEMO_SETTINGS は {@code new GameRules(...)} を作り、
+     * ゲームルールの登録は BuiltInRegistries を触るので、{@code Bootstrap.bootStrap()}
+     * より前に走ると「Not bootstrapped」で落ちる。
+     */
+    public static OptionSet options;
+
     private ShifuBootstrap() {
     }
 

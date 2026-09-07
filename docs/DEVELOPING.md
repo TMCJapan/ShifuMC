@@ -37,6 +37,12 @@ SHIFU_PAPER=/d/.pw11 sh tools/setup.sh
 **候補を出すだけで書き換えはしない。** 当てる位置を機械が選ぶと、
 発火が黙って別の場所に付いたことに気付けなくなる。
 
+当たらない規則を「本文を消して `file:` の行だけ残す」形で片付けると、
+何も入らないまま静かに通る(`apply_events.py` は規則が無いものを失敗にしない)。
+`python tools/check_wires.py` が、比べる先のブランチの配線が今の木に入っているかを見る。
+1.21.11 では `MinecraftServer.getServer()` が返す `SERVER` の代入、Bukkit のスコアボード、
+watchdog の tick、プラグインメッセージの取り込みがこの形で落ちていた。
+
 ## 環境
 
 前提は Windows + Git Bash (MSYS)、JDK 25、Python 3.12。
@@ -659,6 +665,31 @@ Python の非 raw 文字列に `\b` を書くとバックスペース (0x08) に
 
 PowerShell の `Set-Content -Encoding utf8` は BOM を付ける。
 `[System.IO.File]::WriteAllText` を使う。
+
+### 版をまたぐときの違い
+
+ハッシュを直に書いたツールは版が変わると黙って別の物を見る。基点のコミットは
+paperweight が積む題名(`Vanilla` / `Mache` / `paper ATs` / `paper Imports`)で
+履歴から引く。`tools/env.sh`、`tools/paths.py`、`tools/keep_vanilla_classes.py`。
+
+26.1 より前の公式 jar は難読化されている。「Mojang の jar」を受け取るツールに
+そのまま渡すとクラス名が 1 つも当たらず、エラーではなく **0 件** で返る。
+paperweight が codebook で名前を戻した
+`paper-server/.gradle/caches/paperweight/taskCache/codebook-minecraft.jar` を渡す。
+バイトコードは公式のままなので、局所変数の表も合成メソッドの形も公式のものが入っている。
+`tools/make_decompile_rules.py` と `tools/postcompile.sh` がこれを見る。
+
+gradle のタスク名も版で違う。パッチ当ては 26.x が `applyAllPatches`、
+1.21.x が `applyPatches`。bundler は 26.x が `createBundlerJar` の 1 つ、
+1.21.x は難読化があるので `createMojmapBundlerJar` と `createReobfBundlerJar` に
+分かれる(Shifu は実行時も mojmap なので mojmap の方)。
+jar の名前にもバージョンが入るので、名前を直に書かず `build/libs` から拾う。
+
+Shifu が足す static な欄を、初期化の重いクラスに置かない。`MinecraftServer` の
+static 欄に触ると `MinecraftServer` の初期化が走る。1.21.11 の `DEMO_SETTINGS` は
+`new GameRules(...)` を作り、ゲームルールの登録は `BuiltInRegistries` を触るので、
+`Bootstrap.bootStrap()` より前だと `Not bootstrapped` で落ちる。
+起動時の引数は `dev.shifu.event.ShifuBootstrap.options` に置いてある。
 
 ### 26.2 の仕様
 

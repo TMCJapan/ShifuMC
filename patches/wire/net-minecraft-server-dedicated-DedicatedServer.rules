@@ -34,6 +34,12 @@ insert:
 # stop のあと JVM を終える(stopServer の末尾)。理由は ShifuBootstrap.exitAfterServerThread。
 # Paper は同じ位置で System.exit している(patches/sources/.../DedicatedServer.java.patch)。
 file: net/minecraft/server/dedicated/DedicatedServer.java
+anchor:
+    super.stopServer();
+    Util.shutdownExecutors();
+insert-after:
+    dev.shifu.event.ShifuBootstrap.exitAfterServerThread();
+
 # Paper の watchdog を起動する
 #
 # WorldEdit は org.spigotmc.WatchdogThread を見つけると、長い操作の途中で tick() を

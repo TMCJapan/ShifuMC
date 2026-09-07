@@ -1,7 +1,5 @@
 # Paper が vanilla のメソッドの中で行う代入。既存の行は変えていない。
 
-# Paper は createLevels に相当する場所で this.server.scoreboardManager = new CraftScoreboardManager(t
-file: net/minecraft/server/MinecraftServer.java
 # 毎 tick のスケジューラ実行
 file: net/minecraft/server/MinecraftServer.java
 anchor:
@@ -50,12 +48,6 @@ anchor:
 insert:
     synchronized (this.stopLock) { this.hasStopped = true; }
 
-# メインスレッド待ちのタスク列 (processQueue) を毎 tick 流す
-file: net/minecraft/server/MinecraftServer.java
-# MinecraftServer.currentTick を進める
-file: net/minecraft/server/MinecraftServer.java
-# 検証で見つけた欠け
-file: net/minecraft/server/MinecraftServer.java
 # Paper の設定。Paper は Services.create で作って構築子で受け取る
 # (patches/sources/net/minecraft/server/Services.java.patch:38, MinecraftServer.java.patch:252)。
 # アダプタ層(CraftWorld, ChatProcessor)が paperConfig() と GlobalConfiguration.get() を読む。
@@ -65,12 +57,47 @@ anchor:
     this.serverThread = serverThread;
     this.executor = Util.backgroundExecutor();
 insert:
-    this.paperConfigurations = dev.shifu.event.ShifuBootstrap.paperConfigurations(MinecraftServer.shifuOptions);
+    this.paperConfigurations = dev.shifu.event.ShifuBootstrap.paperConfigurations(dev.shifu.event.ShifuBootstrap.options);
+
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    LOGGER.info("Stopping server");
+insert:
+    org.spigotmc.WatchdogThread.doStop();
+
+# MinecraftServer.getServer() が返す先。これが入っていないと null が返り、
+# アダプタ層と発火層のほぼ全部が NPE になる。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/MinecraftServer.java.patch(SERVER)
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    super("Server");
+insert-after:
+    SERVER = this;
+
+# Bukkit のスコアボード。主世界のデータを読んだ直後に作る
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    this.stopwatches = dataStorage.computeIfAbsent(Stopwatches.TYPE);
+insert-after:
+    this.server.scoreboardManager = new org.bukkit.craftbukkit.scoreboard.CraftScoreboardManager(this, serverLevel.getScoreboard());
+
+# MinecraftServer.currentTick を進める。Paper のプラグインが tick 番号として読む
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    boolean flag = l == 0L;
+insert:
+    ++MinecraftServer.currentTick;
 
 # watchdog に tick を知らせる。止めるのは stopServer の先頭
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/MinecraftServer.java.patch:575,972
 file: net/minecraft/server/MinecraftServer.java
+anchor:
+    public void tickServer(BooleanSupplier hasTimeLeft) {
+insert-after:
+    org.spigotmc.WatchdogThread.tick();
+
 file: net/minecraft/server/MinecraftServer.java
 anchor:
     LOGGER.info("Stopping server");

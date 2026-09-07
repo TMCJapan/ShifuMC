@@ -53,6 +53,13 @@ insert:
 # LootTable.craftLootTable(データパックの検証のとき)
 # 読んだ位置: patches/sources/net/minecraft/world/level/storage/loot/LootDataType.java.patch
 file: net/minecraft/world/level/storage/loot/LootDataType.java
+anchor:
+    this.validator.run(context, key, value);
+insert-after:
+    if (value instanceof LootTable lootTable) {
+        lootTable.craftLootTable = new org.bukkit.craftbukkit.CraftLootTable(org.bukkit.craftbukkit.util.CraftNamespacedKey.fromMinecraft(key.identifier()), lootTable);
+    }
+
 # TransientCraftingContainer.resultInventory(作業台の結果欄。CraftInventoryCrafting が読む)
 # 読んだ位置: patches/sources/net/minecraft/world/inventory/AbstractCraftingMenu.java.patch
 file: net/minecraft/world/inventory/AbstractCraftingMenu.java

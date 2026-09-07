@@ -5,5 +5,5 @@ file: net/minecraft/server/Main.java
 anchor:
     Bootstrap.bootStrap();
 insert:
-    io.papermc.paper.plugin.PluginInitializerManager.load(net.minecraft.server.MinecraftServer.shifuOptions);
+    io.papermc.paper.plugin.PluginInitializerManager.load(dev.shifu.event.ShifuBootstrap.options);
 

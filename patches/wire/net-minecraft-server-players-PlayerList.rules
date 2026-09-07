@@ -21,4 +21,4 @@ anchor:
     this.serverThread = serverThread;
     this.executor = Util.backgroundExecutor();
 insert:
-    this.options = MinecraftServer.shifuOptions;
+    this.options = dev.shifu.event.ShifuBootstrap.options;

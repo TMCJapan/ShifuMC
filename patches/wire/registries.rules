@@ -8,6 +8,25 @@
 
 # 組み込みのレジストリ(patches/sources/.../BuiltInRegistries.java.patch @@ -392)
 file: net/minecraft/core/registries/BuiltInRegistries.java
+anchor:
+    Identifier identifier = registryKey.identifier();
+    LOADERS.put(identifier, () -> bootstrap.run(registry));
+insert:
+    io.papermc.paper.registry.PaperRegistryAccess.instance().registerRegistry(registry);
+
+# 中身を作る前に org.bukkit.Registry を読み込ませる(同 @@ -399)。
+# Paper の注記のとおり、CraftRegistry の実体はここで作られる。あとの
+# lockReferenceHolders から getRegistry で作らせると順番が合わない。
+file: net/minecraft/core/registries/BuiltInRegistries.java
+anchor:
+    private static void createContents() {
+insert-after:
+    try {
+        Class.forName(org.bukkit.Registry.class.getName());
+    } catch (final ClassNotFoundException e) {
+        throw new RuntimeException(e);
+    }
+
 # 組み込みのレジストリを凍結するとき(同 @@ -399)。
 # Paper は if の外、ラムダの末尾に置く。アンカーの終わりが if の閉じ括弧なので
 # その後ろに入れる。
@@ -17,8 +36,19 @@ anchor:
 insert-after:
     io.papermc.paper.registry.PaperRegistryAccess.instance().lockReferenceHolders(ResourceKey.createRegistryKey(identifier));
 
-# データパックから読むレジストリ(patches/sources/.../RegistryLoadTask.java.patch @@ -39)
-file: net/minecraft/resources/RegistryLoadTask.java
+# データパックから読むレジストリ(patches/sources/.../RegistryDataLoader.java.patch @@ -393, -316)
+file: net/minecraft/resources/RegistryDataLoader.java
+anchor:
+    WritableRegistry<T> writableRegistry = new MappedRegistry<>(this.key, registryLifecycle);
+insert-after:
+    io.papermc.paper.registry.PaperRegistryAccess.instance().registerRegistry(writableRegistry);
+
+file: net/minecraft/resources/RegistryDataLoader.java
+anchor:
+    TagLoader.loadTagsForRegistry(resourceManager, registry);
+insert:
+    io.papermc.paper.registry.PaperRegistryAccess.instance().lockReferenceHolders(registry.key());
+
 # 読み直せるレジストリ(patches/sources/.../ReloadableServerRegistries.java.patch)
 file: net/minecraft/server/ReloadableServerRegistries.java
 anchor:

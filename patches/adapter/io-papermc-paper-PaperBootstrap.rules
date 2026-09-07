@@ -20,6 +20,6 @@ with:
                 vanillaArgs.add(String.valueOf(options.valueOf(valued)));
             }
         }
-        net.minecraft.server.MinecraftServer.shifuOptions = options; // Shifu - 構築子の引数を増やせないので static で渡す
+        dev.shifu.event.ShifuBootstrap.options = options; // Shifu - 構築子の引数を増やせないので static で渡す
         Main.main(vanillaArgs.toArray(new String[0]));
     }

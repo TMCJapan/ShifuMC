@@ -7,3 +7,7 @@
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/network/protocol/common/custom/DiscardedPayload.java.patch
 file: net/minecraft/network/protocol/common/custom/DiscardedPayload.java
+anchor:
+    buffer.skipBytes(i);
+insert:
+    dev.shifu.event.PluginMessages.remember(buffer, i);

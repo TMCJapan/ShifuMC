@@ -112,11 +112,3 @@
         level.entityManager.tick();
         new org.bukkit.event.world.WorldLoadEvent(level.getWorld()).callEvent();
     }
-
-// MinecraftServer.shifuOptions
-    // Paper は構築子の引数を 1 つ増やして OptionSet を渡すが、vanilla の構築子の
-    // 宣言は変えられない。アダプタ層(PaperBootstrap)が起動前にここへ置き、
-    // 構築子の中で this.options に移す(patches/wire)。
-    // CraftServer.getConfigFile() が this.console.options を読むので、これが無いと
-    // CraftServer の構築中に NPE になる。
-    public static joptsimple.OptionSet shifuOptions;

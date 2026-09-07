@@ -19,7 +19,9 @@ set -o pipefail
 
 . "$(dirname "$0")/env.sh"
 CLASSES=$PW/paper-server/build/classes/java/main
-MOJANG=$(cygpath -m "$PW/paper-server/.gradle/caches/paperweight/data/bundler/server.jar")
+# 26.1 より前の公式 jar は難読化されていてクラス名が当たらない。paperweight が
+# codebook で名前を戻したものを使う(バイトコードは公式のまま)。
+MOJANG=$(cygpath -m "$PW/paper-server/.gradle/caches/paperweight/taskCache/codebook-minecraft.jar")
 
 [ -f "$SHIFU/tools/build/lvtmatch/asm.cp" ] || sh "$SHIFU/tools/lvtmatch/build.sh"
 
