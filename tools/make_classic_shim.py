@@ -149,14 +149,15 @@ def imports_for(old, new, blocks):
         if not ms.IMPORT.match(text) or text in have:
             continue
 
-        # `import a.b.C;` の C、`import static a.b.C.D;` の D
-        name = text.rstrip(";").rsplit(".", 1)[-1]
+        # `import a.b.C; // Paper` の C。Paper は import に注記を付ける
+        head = text.split("//")[0].strip().rstrip(";")
+        name = head.rsplit(".", 1)[-1]
 
         if name not in used or name == "*":
             continue
 
         if name in known:
-            blocks = qualify(blocks, name, text.rstrip(";").split()[-1])
+            blocks = qualify(blocks, name, head.split()[-1])
             continue
 
         if text not in out:

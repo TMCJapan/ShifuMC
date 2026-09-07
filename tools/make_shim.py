@@ -361,7 +361,7 @@ def already(lines, body, name):
     return False
 
 
-IMPORT = re.compile(r"^import\s+(?:static\s+)?[\w.]+(?:\.\*)?;$")
+IMPORT = re.compile(r"^import\s+(?:static\s+)?[\w.]+(?:\.\*)?;\s*(?://.*)?$")
 
 
 def imports_in(hunks):
