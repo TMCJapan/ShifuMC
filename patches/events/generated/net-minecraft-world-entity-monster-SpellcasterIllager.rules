@@ -1,7 +1,7 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # handleEntitySpellCastEvent
-file: net/minecraft/world/entity/monster/illager/SpellcasterIllager.java
+file: net/minecraft/world/entity/monster/SpellcasterIllager.java
 anchor:
     this.performSpellCasting();
 insert:

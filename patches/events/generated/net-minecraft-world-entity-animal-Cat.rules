@@ -1,7 +1,7 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # EntityDyeEvent
-file: net/minecraft/world/entity/animal/feline/Cat.java
+file: net/minecraft/world/entity/animal/Cat.java
 anchor:
     if (!this.level().isClientSide()) {
         this.setCollarColor(dyeColor);

@@ -1,7 +1,7 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # VehicleEntityCollisionEvent
-file: net/minecraft/world/entity/vehicle/minecart/AbstractMinecart.java
+file: net/minecraft/world/entity/vehicle/AbstractMinecart.java
 anchor:
     double d = entity.getX() - this.getX();
 insert:

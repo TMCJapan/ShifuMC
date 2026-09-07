@@ -1263,7 +1263,7 @@ insert-after:
     }
 
 # ------------------------------------------------------------ ウサギが畑を荒らす
-file: net/minecraft/world/entity/animal/rabbit/Rabbit.java
+file: net/minecraft/world/entity/animal/Rabbit.java
 anchor:
     level.setBlock(blockPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
 insert:
@@ -1271,7 +1271,7 @@ insert:
         return;
     }
 
-file: net/minecraft/world/entity/animal/rabbit/Rabbit.java
+file: net/minecraft/world/entity/animal/Rabbit.java
 anchor:
     level.setBlock(blockPos, blockState.setValue(CarrotBlock.AGE, ageValue - 1), Block.UPDATE_CLIENTS);
 insert:

@@ -1,7 +1,7 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # callEntityPickupItemEvent
-file: net/minecraft/world/entity/animal/dolphin/Dolphin.java
+file: net/minecraft/world/entity/animal/Dolphin.java
 anchor:
     this.onItemPickup(entity);
 insert:

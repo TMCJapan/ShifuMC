@@ -1,7 +1,7 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # callExplosionPrimeEvent
-file: net/minecraft/world/entity/projectile/hurtingprojectile/windcharge/WindCharge.java
+file: net/minecraft/world/entity/projectile/windcharge/WindCharge.java
 anchor:
     this.level()
 insert:

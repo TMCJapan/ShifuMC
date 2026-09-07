@@ -106,7 +106,7 @@ anchor:
 insert:
     dev.shifu.event.ShifuEvents.teleportCause(target, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.COMMAND);
 
-file: net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownEnderpearl.java
+file: net/minecraft/world/entity/projectile/ThrownEnderpearl.java
 anchor:
     ServerPlayer serverPlayer1 = serverPlayer.teleport(
 insert:

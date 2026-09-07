@@ -1,7 +1,7 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # SkeletonHorseTrapEvent
-file: net/minecraft/world/entity/animal/equine/SkeletonTrapGoal.java
+file: net/minecraft/world/entity/animal/horse/SkeletonTrapGoal.java
 anchor:
     DifficultyInstance currentDifficultyAt = serverLevel.getCurrentDifficultyAt(this.horse.blockPosition());
 insert:

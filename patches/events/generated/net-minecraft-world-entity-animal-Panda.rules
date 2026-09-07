@@ -1,14 +1,14 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # EntityToggleSitEvent
-file: net/minecraft/world/entity/animal/panda/Panda.java
+file: net/minecraft/world/entity/animal/Panda.java
 anchor:
     this.setFlag(FLAG_SIT, sitting);
 insert:
     if (!new io.papermc.paper.event.entity.EntityToggleSitEvent(this.getBukkitEntity(), sitting).callEvent()) return; // Paper - Add EntityToggleSitEvent
 
 # EntityJumpEvent
-file: net/minecraft/world/entity/animal/panda/Panda.java
+file: net/minecraft/world/entity/animal/Panda.java
 anchor:
     panda.jumpFromGround();
 insert:

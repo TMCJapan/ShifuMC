@@ -92,14 +92,14 @@ with:
     var list = List.copyOf(oldLevel.players());
     for (ServerPlayer serverPlayer : list) {
 
-file: net/minecraft/world/entity/animal/feline/Cat.java
+file: net/minecraft/world/entity/animal/Cat.java
 replace:
     for (Cat cat : this.cat.level().getEntitiesOfClass(Cat.class, new AABB(this.goalPos).inflate(2.0))) {
 with:
     var entitiesOfClass = this.cat.level().getEntitiesOfClass(Cat.class, new AABB(this.goalPos).inflate(2.0));
     for (Cat cat : entitiesOfClass) {
 
-file: net/minecraft/world/entity/animal/feline/Cat.java
+file: net/minecraft/world/entity/animal/Cat.java
 replace:
     for (Player player : this.level().getEntitiesOfClass(Player.class, new AABB(blockPos).inflate(2.0, 2.0, 2.0))) {
 with:

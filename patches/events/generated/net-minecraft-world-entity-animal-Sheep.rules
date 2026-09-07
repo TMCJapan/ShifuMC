@@ -1,7 +1,7 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # SheepRegrowWoolEvent
-file: net/minecraft/world/entity/animal/sheep/Sheep.java
+file: net/minecraft/world/entity/animal/Sheep.java
 anchor:
     super.ate();
 insert:

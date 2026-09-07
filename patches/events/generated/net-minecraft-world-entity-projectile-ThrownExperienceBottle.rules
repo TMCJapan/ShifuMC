@@ -1,7 +1,7 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # callExpBottleEvent
-file: net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownExperienceBottle.java
+file: net/minecraft/world/entity/projectile/ThrownExperienceBottle.java
 anchor:
     if (result instanceof BlockHitResult blockHitResult) {
 insert:

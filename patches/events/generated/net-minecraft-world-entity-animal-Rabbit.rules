@@ -1,14 +1,14 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # callEntityChangeBlockEvent
-file: net/minecraft/world/entity/animal/rabbit/Rabbit.java
+file: net/minecraft/world/entity/animal/Rabbit.java
 anchor:
     level.setBlock(blockPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
 insert:
     if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(this.rabbit, blockPos, blockState.getFluidState().createLegacyBlock())) return; // CraftBukkit // Paper - fix wrong block state
 
 # callEntityChangeBlockEvent
-file: net/minecraft/world/entity/animal/rabbit/Rabbit.java
+file: net/minecraft/world/entity/animal/Rabbit.java
 anchor:
     level.setBlock(blockPos, blockState.setValue(CarrotBlock.AGE, ageValue - 1), Block.UPDATE_CLIENTS);
 insert:

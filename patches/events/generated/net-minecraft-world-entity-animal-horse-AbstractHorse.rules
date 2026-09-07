@@ -1,7 +1,7 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # callHorseJumpEvent
-file: net/minecraft/world/entity/animal/equine/AbstractHorse.java
+file: net/minecraft/world/entity/animal/horse/AbstractHorse.java
 anchor:
     this.allowStandSliding = true;
     this.standIfPossible();

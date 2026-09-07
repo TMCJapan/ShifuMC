@@ -43,7 +43,7 @@ insert-after:
     dev.shifu.event.ShifuEvents.blockForm(this.level(), blockPos, shifuBlock4, Block.UPDATE_ALL, this);
 
 # handleBlockFormEvent
-file: net/minecraft/world/entity/animal/golem/SnowGolem.java
+file: net/minecraft/world/entity/animal/SnowGolem.java
 anchor:
     this.level().setBlockAndUpdate(blockPos, blockState);
 insert:

@@ -31,7 +31,7 @@ line:
     private long nextWeatheringTick = -1L;
 
 # CraftLlama が隊列の後続と強さを読み書きする
-file: net/minecraft/world/entity/animal/equine/Llama.java
+file: net/minecraft/world/entity/animal/horse/Llama.java
 line:
     private @Nullable Llama caravanTail;
 line:
@@ -48,7 +48,7 @@ line:
     private BaseCommandBlock.@Nullable CloseableCommandBlockSource createSource(final ServerLevel level) {
 
 # CraftVillager が職業の熟練度を上げる
-file: net/minecraft/world/entity/npc/villager/Villager.java
+file: net/minecraft/world/entity/npc/Villager.java
 line:
     private void increaseMerchantCareer(final ServerLevel level) {
 
@@ -68,7 +68,7 @@ line:
     private void updateEffectiveRespawnData() {
 
 # そのまま通した
-file: net/minecraft/world/entity/vehicle/minecart/AbstractMinecartContainer.java
+file: net/minecraft/world/entity/vehicle/AbstractMinecartContainer.java
 line:
     private NonNullList<ItemStack> itemStacks = NonNullList.withSize(36, ItemStack.EMPTY);
 

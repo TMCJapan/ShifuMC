@@ -16,7 +16,7 @@
 # vanilla の判定は getRandom().nextInt() を消費するので 2 回評価もできない。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/turtle/Turtle.java.patch
-file: net/minecraft/world/entity/animal/turtle/Turtle.java
+file: net/minecraft/world/entity/animal/Turtle.java
 replace:
     || this.turtle.getRandom().nextInt(reducedTickDelay(700)) == 0 && !this.turtle.homePos.closerToCenterThan(this.turtle.position(), 64.0)
     );

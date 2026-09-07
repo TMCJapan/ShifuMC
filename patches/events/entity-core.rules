@@ -693,7 +693,7 @@ insert:
 # ============================================================ AbstractArrow
 
 # EntityCombustByEntityEvent(燃える矢)
-file: net/minecraft/world/entity/projectile/arrow/AbstractArrow.java
+file: net/minecraft/world/entity/projectile/AbstractArrow.java
 anchor:
     entity.igniteForSeconds(5.0F);
 insert:
@@ -702,14 +702,14 @@ insert-after:
     }
 
 # EntityPushedByEntityAttackEvent の主(ノックバック)
-file: net/minecraft/world/entity/projectile/arrow/AbstractArrow.java
+file: net/minecraft/world/entity/projectile/AbstractArrow.java
 anchor:
     entity.push(vec3.x, 0.1, vec3.z);
 insert:
     dev.shifu.event.EntityEvents.pushedBy(this, entity);
 
 # PlayerPickupArrowEvent
-file: net/minecraft/world/entity/projectile/arrow/AbstractArrow.java
+file: net/minecraft/world/entity/projectile/AbstractArrow.java
 anchor:
     if (this.tryPickup(entity)) {
 insert:
@@ -720,7 +720,7 @@ insert:
 # ============================================================ 火の玉・ウィザーの頭
 
 # ExplosionPrimeEvent(大きな火の玉)
-file: net/minecraft/world/entity/projectile/hurtingprojectile/LargeFireball.java
+file: net/minecraft/world/entity/projectile/LargeFireball.java
 anchor:
     this.level().explode(this, this.getX(), this.getY(), this.getZ(), this.explosionPower, flag, Level.ExplosionInteraction.MOB);
 insert:
@@ -732,7 +732,7 @@ insert-after:
     }
 
 # ExplosionPrimeEvent(ウィザーの頭)
-file: net/minecraft/world/entity/projectile/hurtingprojectile/WitherSkull.java
+file: net/minecraft/world/entity/projectile/WitherSkull.java
 anchor:
     this.level().explode(this, this.getX(), this.getY(), this.getZ(), 1.0F, false, Level.ExplosionInteraction.MOB);
 insert:
@@ -744,7 +744,7 @@ insert-after:
     }
 
 # EntityCombustByEntityEvent(小さな火の玉)
-file: net/minecraft/world/entity/projectile/hurtingprojectile/SmallFireball.java
+file: net/minecraft/world/entity/projectile/SmallFireball.java
 anchor:
     var7.igniteForSeconds(5.0F);
 insert:
@@ -753,7 +753,7 @@ insert-after:
     }
 
 # BlockIgniteEvent(小さな火の玉が地面に)。既存の発火層の形に合わせ、CraftEventFactory を直に呼ぶ。
-file: net/minecraft/world/entity/projectile/hurtingprojectile/SmallFireball.java
+file: net/minecraft/world/entity/projectile/SmallFireball.java
 anchor:
     this.level().setBlockAndUpdate(blockPos, BaseFireBlock.getState(this.level(), blockPos));
 insert:
@@ -856,7 +856,7 @@ insert-after:
     }
 
 # VehicleEntityCollisionEvent(トロッコ。ぶつかると判定したあと)
-file: net/minecraft/world/entity/vehicle/minecart/AbstractMinecart.java
+file: net/minecraft/world/entity/vehicle/AbstractMinecart.java
 anchor:
     return AbstractBoat.canVehicleCollide(this, entity);
 insert:

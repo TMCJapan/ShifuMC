@@ -1,7 +1,7 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # callEntityFertilizeEggEvent
-file: net/minecraft/world/entity/animal/turtle/Turtle.java
+file: net/minecraft/world/entity/animal/Turtle.java
 anchor:
     if (loveCause != null) {
 insert:

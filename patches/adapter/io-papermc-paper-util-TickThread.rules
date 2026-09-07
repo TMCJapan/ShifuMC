@@ -1,6 +1,6 @@
 # アダプタ層の書き換え。vanilla の行ではない。
 
-file: ca/spottedleaf/moonrise/common/util/TickThread.java
+file: io/papermc/paper/util/TickThread.java
 
 # moonrise はメインスレッドを自前の TickThread 型で作る。Shifu の NMS は
 # vanilla なので、サーバースレッドは MinecraftServer.spin が作る素の Thread。
