@@ -31,8 +31,6 @@ import zipfile
 import paths
 
 TREE = paths.TREE
-VANILLA = "ed8c9a8"   # Mache(逆コンパイルの手直し)まで
-WITH_ATS = "54f191f"  # paper ATs(可視性を広げる)
 
 
 def git(args, cwd=TREE):
@@ -44,8 +42,19 @@ def git(args, cwd=TREE):
     return done.stdout.decode("utf-8", "replace").split("\n")
 
 
+def _at(subject):
+    """paperweight が積むコミットを題名で引く。ハッシュは版ごとに変わる。"""
+    for line in git(["log", "--format=%H %s"]):
+        if line.endswith(" " + subject):
+            return line.split(" ", 1)[0]
+
+    raise SystemExit("履歴に %r のコミットが無い" % subject)
+
+
 def touched_sources():
     """Shifu が手を入れたファイルと、AT が触ったファイル(どちらも .java の相対パス)。"""
+    vanilla = _at("Mache")     # 逆コンパイルの手直しまで
+    with_ats = _at("paper ATs")  # 可視性を広げる
     ours = set()
 
     for line in git(["status", "--porcelain"]):
@@ -54,7 +63,7 @@ def touched_sources():
         if path.endswith(".java"):
             ours.add(path)
 
-    ats = set(p.strip() for p in git(["diff", "--name-only", VANILLA, WITH_ATS]) if p.strip().endswith(".java"))
+    ats = set(p.strip() for p in git(["diff", "--name-only", vanilla, with_ats]) if p.strip().endswith(".java"))
 
     return ours, ats
 

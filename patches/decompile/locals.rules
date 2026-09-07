@@ -4,5 +4,329 @@
 # 逆コンパイラが 1 行にまとめると変数が消え、@Local で捕まえる MOD が当たらない。
 # 式は同じ回数だけ、同じ順で評価されるので、挙動は変わらない。
 
-# 1.21.11 では作り直しが要る。make_decompile_rules.py は組んだ class と
-# Mojang の jar を突き合わせるので、一度ビルドが通ってから出す。
+file: net/minecraft/core/dispenser/ShearsDispenseItemBehavior.java
+replace:
+    for (Entity entity : level.getEntitiesOfClass(Entity.class, new AABB(pos), EntitySelector.NO_SPECTATORS)) {
+with:
+    var entitiesOfClass = level.getEntitiesOfClass(Entity.class, new AABB(pos), EntitySelector.NO_SPECTATORS);
+    for (Entity entity : entitiesOfClass) {
+
+file: net/minecraft/server/MinecraftServer.java
+replace:
+    for (ServerPlayer serverPlayer : Lists.newArrayList(playerList.getPlayers())) {
+with:
+    var list = Lists.newArrayList(playerList.getPlayers());
+    for (ServerPlayer serverPlayer : list) {
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+replace:
+    if (this.player.level().getBlockEntity(pos) instanceof StructureBlockEntity structureBlockEntity) {
+with:
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = this.player.level().getBlockEntity(pos);
+    if (blockEntity instanceof StructureBlockEntity structureBlockEntity) {
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+replace:
+    if (this.player.level().getBlockEntity(blockPos) instanceof TestBlockEntity testBlockEntity) {
+with:
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = this.player.level().getBlockEntity(blockPos);
+    if (blockEntity instanceof TestBlockEntity testBlockEntity) {
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+replace:
+    BlockState blockState = this.player.level().getBlockState(pos);
+    if (this.player.level().getBlockEntity(pos) instanceof JigsawBlockEntity jigsawBlockEntity) {
+with:
+    BlockState blockState = this.player.level().getBlockState(pos);
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = this.player.level().getBlockEntity(pos);
+    if (blockEntity instanceof JigsawBlockEntity jigsawBlockEntity) {
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+replace:
+    BlockPos pos = packet.getPos();
+    if (this.player.level().getBlockEntity(pos) instanceof JigsawBlockEntity jigsawBlockEntity) {
+with:
+    BlockPos pos = packet.getPos();
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = this.player.level().getBlockEntity(pos);
+    if (blockEntity instanceof JigsawBlockEntity jigsawBlockEntity) {
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+replace:
+    if (this.player.getControlledVehicle() instanceof AbstractBoat abstractBoat) {
+with:
+    net.minecraft.world.entity.Entity controlledVehicle = this.player.getControlledVehicle();
+    if (controlledVehicle instanceof AbstractBoat abstractBoat) {
+
+file: net/minecraft/server/players/PlayerList.java
+replace:
+    for (Packet<?> packet : scoreboard.getStartTrackingPackets(displayObjective)) {
+with:
+    var startTrackingPackets = scoreboard.getStartTrackingPackets(displayObjective);
+    for (Packet<?> packet : startTrackingPackets) {
+
+file: net/minecraft/server/players/PlayerList.java
+replace:
+    for (String string : team.getPlayers()) {
+with:
+    var players = team.getPlayers();
+    for (String string : players) {
+
+file: net/minecraft/world/RandomizableContainer.java
+replace:
+    if (level.getBlockEntity(pos) instanceof RandomizableContainer randomizableContainer) {
+with:
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+    if (blockEntity instanceof RandomizableContainer randomizableContainer) {
+
+file: net/minecraft/world/entity/Entity.java
+replace:
+    for (double d : voxelShape.getCoords(Direction.Axis.Y)) {
+with:
+    var coords = voxelShape.getCoords(Direction.Axis.Y);
+    for (double d : coords) {
+
+file: net/minecraft/world/entity/Entity.java
+replace:
+    for (ServerPlayer serverPlayer : List.copyOf(oldLevel.players())) {
+with:
+    var list = List.copyOf(oldLevel.players());
+    for (ServerPlayer serverPlayer : list) {
+
+file: net/minecraft/world/entity/animal/feline/Cat.java
+replace:
+    for (Cat cat : this.cat.level().getEntitiesOfClass(Cat.class, new AABB(this.goalPos).inflate(2.0))) {
+with:
+    var entitiesOfClass = this.cat.level().getEntitiesOfClass(Cat.class, new AABB(this.goalPos).inflate(2.0));
+    for (Cat cat : entitiesOfClass) {
+
+file: net/minecraft/world/entity/animal/feline/Cat.java
+replace:
+    for (Player player : this.level().getEntitiesOfClass(Player.class, new AABB(blockPos).inflate(2.0, 2.0, 2.0))) {
+with:
+    var entitiesOfClass = this.level().getEntitiesOfClass(Player.class, new AABB(blockPos).inflate(2.0, 2.0, 2.0));
+    for (Player player : entitiesOfClass) {
+
+file: net/minecraft/world/entity/animal/nautilus/AbstractNautilus.java
+replace:
+    if (this.getFirstPassenger() instanceof Player player) {
+with:
+    net.minecraft.world.entity.Entity firstPassenger = this.getFirstPassenger();
+    if (firstPassenger instanceof Player player) {
+
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+replace:
+    for (Entity entity : this.level().getEntities(this, this.getBoundingBox(), RIDABLE_MINECARTS)) {
+with:
+    var entities = this.level().getEntities(this, this.getBoundingBox(), RIDABLE_MINECARTS);
+    for (Entity entity : entities) {
+
+file: net/minecraft/world/entity/decoration/LeashFenceKnotEntity.java
+replace:
+    for (Leashable leashable1 : Leashable.leashableLeashedTo(this)) {
+with:
+    var list1 = Leashable.leashableLeashedTo(this);
+    for (Leashable leashable1 : list1) {
+
+file: net/minecraft/world/entity/monster/EnderMan.java
+replace:
+    for (ItemStack itemStack1 : carriedBlock.getDrops(builder)) {
+with:
+    var drops = carriedBlock.getDrops(builder);
+    for (ItemStack itemStack1 : drops) {
+
+file: net/minecraft/world/entity/monster/Ravager.java
+replace:
+    for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0), predicate)) {
+with:
+    var entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0), predicate);
+    for (LivingEntity livingEntity : entitiesOfClass) {
+
+file: net/minecraft/world/entity/monster/Ravager.java
+replace:
+    for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0), ROAR_TARGET_ON_CLIENT)) {
+with:
+    var entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0), ROAR_TARGET_ON_CLIENT);
+    for (LivingEntity livingEntity : entitiesOfClass) {
+
+file: net/minecraft/world/entity/projectile/EvokerFangs.java
+replace:
+    for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(0.2, 0.0, 0.2))) {
+with:
+    var entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(0.2, 0.0, 0.2));
+    for (LivingEntity livingEntity : entitiesOfClass) {
+
+file: net/minecraft/world/entity/projectile/FireworkRocketEntity.java
+replace:
+    for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(5.0))) {
+with:
+    var entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(5.0));
+    for (LivingEntity livingEntity : entitiesOfClass) {
+
+file: net/minecraft/world/entity/projectile/throwableitemprojectile/AbstractThrownPotion.java
+replace:
+    for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, aabb, WATER_SENSITIVE_OR_ON_FIRE)) {
+with:
+    var entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, aabb, WATER_SENSITIVE_OR_ON_FIRE);
+    for (LivingEntity livingEntity : entitiesOfClass) {
+
+file: net/minecraft/world/entity/projectile/throwableitemprojectile/AbstractThrownPotion.java
+replace:
+    for (Axolotl axolotl : this.level().getEntitiesOfClass(Axolotl.class, aabb)) {
+with:
+    var entitiesOfClass1 = this.level().getEntitiesOfClass(Axolotl.class, aabb);
+    for (Axolotl axolotl : entitiesOfClass1) {
+
+file: net/minecraft/world/item/MinecartItem.java
+replace:
+    for (Entity entity : level.getEntities(null, abstractMinecart.getBoundingBox())) {
+with:
+    var entities = level.getEntities(null, abstractMinecart.getBoundingBox());
+    for (Entity entity : entities) {
+
+file: net/minecraft/world/item/enchantment/EnchantmentHelper.java
+replace:
+    );
+    if (damageSource.getEntity() instanceof LivingEntity livingEntity) {
+with:
+    );
+    net.minecraft.world.entity.Entity entity1 = damageSource.getEntity();
+    if (entity1 instanceof LivingEntity livingEntity) {
+
+file: net/minecraft/world/level/ServerExplosion.java
+replace:
+    for (Entity entity : this.level.getEntities(this.source, new AABB(floor, floor2, floor4, floor1, floor3, floor5))) {
+with:
+    var entities = this.level.getEntities(this.source, new AABB(floor, floor2, floor4, floor1, floor3, floor5));
+    for (Entity entity : entities) {
+
+file: net/minecraft/world/level/block/BeehiveBlock.java
+replace:
+    if (level.getBlockEntity(pos) instanceof BeehiveBlockEntity beehiveBlockEntity) {
+with:
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+    if (blockEntity instanceof BeehiveBlockEntity beehiveBlockEntity) {
+
+file: net/minecraft/world/level/block/Block.java
+replace:
+    for (Entity entity : level.getEntities(null, voxelShape.bounds())) {
+with:
+    var entities = level.getEntities(null, voxelShape.bounds());
+    for (Entity entity : entities) {
+
+file: net/minecraft/world/level/block/CampfireBlock.java
+replace:
+    if (level.getBlockEntity(pos) instanceof CampfireBlockEntity campfireBlockEntity) {
+with:
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+    if (blockEntity instanceof CampfireBlockEntity campfireBlockEntity) {
+
+file: net/minecraft/world/level/block/CommandBlock.java
+replace:
+    if (!level.isClientSide()) {
+    if (level.getBlockEntity(pos) instanceof CommandBlockEntity commandBlockEntity) {
+with:
+    if (!level.isClientSide()) {
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+    if (blockEntity instanceof CommandBlockEntity commandBlockEntity) {
+
+file: net/minecraft/world/level/block/CommandBlock.java
+replace:
+    protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+    if (level.getBlockEntity(pos) instanceof CommandBlockEntity commandBlockEntity) {
+with:
+    protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+    if (blockEntity instanceof CommandBlockEntity commandBlockEntity) {
+
+file: net/minecraft/world/level/block/CommandBlock.java
+replace:
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+    if (level.getBlockEntity(pos) instanceof CommandBlockEntity commandBlockEntity) {
+with:
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+    if (blockEntity instanceof CommandBlockEntity commandBlockEntity) {
+
+file: net/minecraft/world/level/block/DetectorRailBlock.java
+replace:
+    for (BlockPos blockPos : railState.getConnections()) {
+with:
+    var connections = railState.getConnections();
+    for (BlockPos blockPos : connections) {
+
+file: net/minecraft/world/level/block/EnchantingTableBlock.java
+replace:
+    if (level.getBlockEntity(pos) instanceof EnchantingTableBlockEntity enchantingTableBlockEntity) {
+with:
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+    if (blockEntity instanceof EnchantingTableBlockEntity enchantingTableBlockEntity) {
+
+file: net/minecraft/world/level/block/EndGatewayBlock.java
+replace:
+    if (level.getBlockEntity(pos) instanceof TheEndGatewayBlockEntity theEndGatewayBlockEntity) {
+with:
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+    if (blockEntity instanceof TheEndGatewayBlockEntity theEndGatewayBlockEntity) {
+
+file: net/minecraft/world/level/block/LecternBlock.java
+replace:
+    if (level.getBlockEntity(pos) instanceof LecternBlockEntity lecternBlockEntity) {
+with:
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+    if (blockEntity instanceof LecternBlockEntity lecternBlockEntity) {
+
+file: net/minecraft/world/level/block/SculkSensorBlock.java
+replace:
+    if (level.getBlockEntity(pos) instanceof SculkSensorBlockEntity sculkSensorBlockEntity) {
+with:
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = level.getBlockEntity(pos);
+    if (blockEntity instanceof SculkSensorBlockEntity sculkSensorBlockEntity) {
+
+file: net/minecraft/world/level/block/TargetBlock.java
+replace:
+    if (projectile.getOwner() instanceof ServerPlayer serverPlayer) {
+with:
+    net.minecraft.world.entity.Entity owner = projectile.getOwner();
+    if (owner instanceof ServerPlayer serverPlayer) {
+
+file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
+replace:
+    if (blockState.getBlock() instanceof BeaconBeamBlock beaconBeamBlock) {
+with:
+    net.minecraft.world.level.block.Block block = blockState.getBlock();
+    if (block instanceof BeaconBeamBlock beaconBeamBlock) {
+
+file: net/minecraft/world/level/block/entity/SculkCatalystBlockEntity.java
+replace:
+    if (entity.getLastHurtByMob() instanceof ServerPlayer serverPlayer) {
+with:
+    net.minecraft.world.entity.LivingEntity lastHurtByMob = entity.getLastHurtByMob();
+    if (lastHurtByMob instanceof ServerPlayer serverPlayer) {
+
+file: net/minecraft/world/level/chunk/ChunkGenerator.java
+replace:
+    for (Structure structure : map.getOrDefault(i, Collections.emptyList())) {
+with:
+    var list1 = map.getOrDefault(i, Collections.emptyList());
+    for (Structure structure : list1) {
+
+file: net/minecraft/world/level/dimension/end/EndDragonFight.java
+replace:
+    if (this.level.getEntity(this.dragonUUID) instanceof EnderDragon enderDragon) {
+with:
+    net.minecraft.world.entity.Entity entity = this.level.getEntity(this.dragonUUID);
+    if (entity instanceof EnderDragon enderDragon) {
+
+file: net/minecraft/world/level/dimension/end/EndDragonFight.java
+replace:
+    for (EndCrystal endCrystal : this.level.getEntitiesOfClass(EndCrystal.class, endSpike.getTopBoundingBox())) {
+with:
+    var entitiesOfClass = this.level.getEntitiesOfClass(EndCrystal.class, endSpike.getTopBoundingBox());
+    for (EndCrystal endCrystal : entitiesOfClass) {
+
+file: net/minecraft/world/level/storage/LevelStorageSource.java
+replace:
+    if (readLightweightData(path) instanceof CompoundTag compoundTag) {
+with:
+    net.minecraft.nbt.Tag lightweightData = readLightweightData(path);
+    if (lightweightData instanceof CompoundTag compoundTag) {

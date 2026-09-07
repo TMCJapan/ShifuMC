@@ -1,4 +1,0 @@
-// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
-
-// AbstractCubeMob.canWander
-    private boolean canWander = true; // Paper - Slime pathfinder events

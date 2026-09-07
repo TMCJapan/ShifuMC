@@ -1,7 +1,20 @@
 # -*- coding: utf-8 -*-
 """逆コンパイルで消えた局所変数を戻す規則を作る。
 
-    python tools/make_decompile_rules.py <コンパイル済みクラスの置き場> <Mojang の jar>
+    python tools/make_decompile_rules.py <コンパイル済みクラスの置き場> <mojmap の公式 jar>
+
+公式 jar は 26.1 より前は難読化されているので、そのまま渡すとクラス名が当たらず
+規則が 1 件も出ない。paperweight が codebook で名前を戻したものを渡すこと。
+
+    <Paper>/paper-server/.gradle/caches/paperweight/taskCache/codebook-minecraft.jar
+
+バイトコードは公式のままなので、局所変数の表も公式のものが入っている。
+
+先に `SHIFU_NO_DECOMPILE=1 sh tools/once.sh` を通しておくこと。どのファイルを見るかは
+ツリーの `git status`(Shifu が触ったファイル)で決めるので当ててある必要があり、
+一方で `replace:` は vanilla の行そのものなので、前の回の locals.rules が
+当たっていると自分の出力に当ててしまう。この 2 つを同時に満たすのが
+「差し込みは当てる・decompile と expr は当てない」状態。
 
 ## なぜ要るか
 
@@ -71,28 +84,32 @@ def source_type(desc):
 
 
 def missing_locals(mine, theirs):
-    """公式にあってこちらに無い局所変数のうち、次の slot がこちらにあるもの。"""
+    """公式にあってこちらに無い局所変数のうち、次の slot がこちらにあるもの。
+
+    同じ slot は使い回される(catch の変数と後ろの変数が同じ番号を取る)ので、
+    slot だけで選ぶと別の変数を拾う。**受け側が始まる位置で生きているもの**
+    だけを候補にする。生きていなければ、その変数はその文とは関係が無い。
+    """
     have = {(n, d) for _, n, d, _, _ in mine}
-    by_slot = {}
-
-    for slot, name, desc, _, _ in sorted(theirs):
-        by_slot.setdefault(slot, (name, desc))
-
+    entries = sorted(theirs)
     out = []
 
-    slots = sorted(by_slot)
-
-    for i, slot in enumerate(slots):
-        name, desc = by_slot[slot]
-
+    for i, (slot, name, desc, start, length) in enumerate(entries):
         if (name, desc) in have:
             continue
 
         # 次にこちらにもある変数を探す。拡張 for は iterator の分だけ番号が空く
-        for other in slots[i + 1:]:
-            if by_slot[other] in have:
-                out.append((name, desc, by_slot[other][0]))
-                break
+        for other_slot, other_name, other_desc, other_start, _ in entries[i + 1:]:
+            if other_slot <= slot or (other_name, other_desc) not in have:
+                continue
+
+            # 受け側(instanceof で束ねる変数)が始まる時点で、こちらも生きている。
+            # 生きていなければ別の文の変数なので、次の候補を見る。
+            if not start <= other_start < start + length:
+                continue
+
+            out.append((name, desc, other_name))
+            break
 
     return out
 
