@@ -142,6 +142,24 @@ shifu_reset_paper() {
     fi
 }
 
+# アダプタ層が要求するメンバーを vanilla に足す。今いる木の中で回す。
+#
+# mache は Paper のパッチ(patches/sources)の hunk から宣言を取る。
+# classic はその差分が無く、作っても CraftBukkit が触る 550 件は
+# 逆コンパイラの方言が違って取り出せないので、
+# vanilla と Paper のクラスを読んで宣言の並びを突き合わせる。
+shifu_make_shim() {
+    if [ "$LAYOUT" != classic ]; then
+        python "$SHIFU/tools/make_shim.py" "$SOURCES" . "$REQ"
+
+        return
+    fi
+
+    rm -rf "$SHIFU/tools/build/classic-shim"
+    python "$SHIFU/tools/make_classic_shim.py" "$ADAPTER" .         "$SHIFU/tools/build/classic-shim" "$REQ" --write
+    python "$SHIFU/tools/apply_shim_adds.py" "$SHIFU/tools/build/classic-shim" .         "$SHIFU/patches/hand" "$SHIFU/patches/access"
+}
+
 # 当て終わった vanilla の木を、コンパイルするソースセットに置く。
 # mache は src/minecraft/java が別のソースセットなのでそのままでよい。
 # classic はソースセットが 1 つしかないので、写さないと Paper の NMS が使われる。

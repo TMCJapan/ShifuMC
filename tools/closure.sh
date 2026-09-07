@@ -32,7 +32,7 @@ for round in 1 2 3 4 5 6 7 8 9 10; do
     shifu_reset_paper
     # Paper が丸ごと足すファイル。元の行が無いので挙動には触れない。
     python "$SHIFU/tools/add_new_files.py" "$SOURCES" . 2>/dev/null
-    python "$SHIFU/tools/make_shim.py" "$SOURCES" . "$REQ" | tail -2
+    shifu_make_shim | tail -2
 
     # 自前で書いた追加。Paper のパッチから取れなかった分。
     # shim は write_members.py が書き出す(上書きされる)。hand は手で書く。

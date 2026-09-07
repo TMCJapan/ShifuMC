@@ -28,7 +28,7 @@ git clean -fdq
 # 何を戻すかは版の並べ方で違うので、env.sh の関数に置いてある。
 shifu_reset_paper
 python "$SHIFU/tools/add_new_files.py" "$SOURCES" . 2>/dev/null
-python "$SHIFU/tools/make_shim.py" "$SOURCES" . "$REQ" | tail -3
+shifu_make_shim | tail -3
 # 可視性だけを広げる。修飾子 1 語だけで、命令列は変わらない。
 python "$SHIFU/tools/widen_access.py" "$SHIFU/patches/access" . $ACCESS_FLAGS
 python "$SHIFU/tools/apply_shim_adds.py" "$SHIFU/patches/shim" . "$SHIFU/patches/hand" "$SHIFU/patches/access" | tail -1
