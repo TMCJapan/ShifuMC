@@ -83,3 +83,10 @@ replace:
     this.world.serverLevelData.settings.hardcore = hardcore;
 with:
     ((net.minecraft.world.level.storage.PrimaryLevelData) this.world.serverLevelData).settings.hardcore = hardcore;
+
+# vanilla の PrimaryLevelData は 3 つの次元で 1 つなので、getLevelName() は 3 つとも同じ。
+# Bukkit の世界は名前で引くので、次元ごとに分けた名前を返す(ServerLevel.bukkitName)。
+replace:
+        return this.world.serverLevelData.getLevelName();
+with:
+        return this.world.bukkitName; // Shifu - vanilla は次元でフォルダを分けないので、名前は ServerLevel が持つ

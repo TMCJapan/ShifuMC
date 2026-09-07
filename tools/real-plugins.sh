@@ -14,7 +14,7 @@ set -e
 . "$(dirname "$0")/env.sh"
 RUN=$PW/run-plugins
 SRC=$PW/run-shifu
-JAR=$PW/paper-server/build/libs/paper-bundler-26.2.local-SNAPSHOT.jar
+JAR=$BUNDLER_JAR
 CACHE=$SHIFU/tools/build/plugins
 OUT=$SHIFU/tools/build
 JAVAC="$JAVA_HOME/bin/javac"
@@ -25,7 +25,7 @@ mkdir -p "$CACHE"
 [ -f "$CACHE/essentialsx.jar" ] || curl -s -L -o "$CACHE/essentialsx.jar" \
     "https://github.com/EssentialsX/Essentials/releases/download/2.22.0/EssentialsX-2.22.0.jar"
 
-CP="$(cygpath -w "$SRC/versions/26.2/paper-26.2.jar")"
+CP="$(cygpath -w "$SRC/versions/$MC_VERSION/paper-$MC_VERSION.jar")"
 for jar in $(find "$SRC/libraries" -name "*.jar"); do
     CP="$CP;$(cygpath -w "$jar")"
 done

@@ -49,8 +49,8 @@ cd "$RUN"
 cp "$DIST/shifu.jar" .
 printf 'eula=true\n' > eula.txt
 printf 'online-mode=false\nserver-port=25594\nlevel-seed=1234567890\n' > server.properties
-printf 'minecraft-version = 26.2\npaper-build = latest\nserver-paperclip = %s\nfabric-loader-version = 0.19.3\nvanilla-parity = true\njvm-args = -Xmx4G\n' \
-    "$(cygpath -m "$DIST/shifu-server.jar")" > shifu.properties
+printf 'minecraft-version = %s\npaper-build = latest\nserver-paperclip = %s\nfabric-loader-version = 0.19.3\nvanilla-parity = true\njvm-args = -Xmx4G\n' \
+    "$MC_VERSION" "$(cygpath -m "$DIST/shifu-server.jar")" > shifu.properties
 
 # MOD とプラグインが両方効くかも見る
 [ -f "$PW/run-fabric/mods/ProbeMod.jar" ] && cp "$PW/run-fabric/mods/ProbeMod.jar" mods/

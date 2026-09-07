@@ -16,7 +16,7 @@ set -e
 . "$(dirname "$0")/env.sh"
 VANILLA=$PW/run-vanilla
 PARITY=$PW/run-parity
-JAR=$PW/paper-server/build/libs/paper-bundler-26.2.local-SNAPSHOT.jar
+JAR=$BUNDLER_JAR
 
 # Done を待って、しばらく tick させてから stop を流す
 run() {

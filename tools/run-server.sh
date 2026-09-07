@@ -10,11 +10,7 @@ set -e
 
 . "$(dirname "$0")/env.sh"
 RUN=$PW/run-shifu
-# jar の名前にバージョンが入る。組んだものを 1 つ拾う
-find_jar() {
-    ls "$PW"/paper-server/build/libs/*bundler*.jar 2>/dev/null | grep -v reobf | head -1
-}
-JAR=$(find_jar)
+JAR=$BUNDLER_JAR
 
 if [ "$1" != "--skip-build" ]; then
     cd "$PW"
@@ -32,7 +28,7 @@ if [ "$1" != "--skip-build" ]; then
 
     "$GRADLEW" --no-daemon ":paper-server:$BUNDLE" -x ":paper-server:compileJava" \
         "-Dorg.gradle.jvmargs=-Xmx6G -Duser.language=en -Duser.country=US"
-    JAR=$(find_jar)
+    JAR=$(ls "$PW"/paper-server/build/libs/*bundler*.jar 2>/dev/null | grep -v reobf | head -1)
 fi
 
 if [ -z "$JAR" ]; then

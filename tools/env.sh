@@ -7,6 +7,9 @@
 #   SHIFU_PAPER  Paper のクローン        既定: リポジトリの親ディレクトリの .pw
 #   SHIFU_BASE   vanilla の基点コミット  既定: tools/build/base-commit.txt、無ければ 6d83d4b
 #   JAVA_HOME    JDK 25                 環境のものを使う。未設定なら止まる
+#   MC_VERSION   Minecraft の版         既定: Paper のクローンの gradle.properties
+#
+# 読める変数: SHIFU PW TREE RESOURCES JAVA GRADLEW MC_VERSION BUNDLER_JAR SERVER_JAR
 
 SHIFU=$(cd "$(dirname "$0")/.." && pwd)
 
@@ -79,4 +82,18 @@ if [ -z "${SHIFU_BASE_RESOURCES:-}" ] && [ -d "$RESOURCES" ]; then
 fi
 
 export SHIFU_BASE_RESOURCES
+
+# Minecraft のバージョン。jar の名前と run-shifu/versions/<版>/ に入る。
+# Paper のクローンの gradle.properties が持っている。
+if [ -z "${MC_VERSION:-}" ] && [ -f "$PW/gradle.properties" ]; then
+    MC_VERSION=$(sed -n 's/^mcVersion=//p' "$PW/gradle.properties" | head -1)
+fi
+
+# 組んだ bundler の jar。名前に版が入り、1.21.x は mojmap と reobf に分かれる。
+BUNDLER_JAR=$(ls "$PW"/paper-server/build/libs/*bundler*.jar 2>/dev/null | grep -v reobf | head -1)
+
+# bundler が起動時に展開するサーバー本体。プラグインを組むときのクラスパス。
+SERVER_JAR=$PW/run-shifu/versions/$MC_VERSION/paper-$MC_VERSION.jar
+export MC_VERSION SERVER_JAR BUNDLER_JAR
+
 export PYTHONIOENCODING=utf-8

@@ -15,7 +15,7 @@ set -e
 
 . "$(dirname "$0")/env.sh"
 RUN=$PW/run-shifu
-JAR=$PW/paper-server/build/libs/paper-bundler-26.2.local-SNAPSHOT.jar
+JAR=$BUNDLER_JAR
 JAVAC="$JAVA_HOME/bin/javac"
 OUT=$SHIFU/tools/build
 
@@ -24,7 +24,7 @@ rm -rf "$OUT/probe" "$OUT/bot"
 mkdir -p "$OUT/probe" "$OUT/bot"
 
 # サーバーの jar と展開済みのライブラリ。API と adventure はこの中にある
-CP="$(cygpath -w "$RUN/versions/26.2/paper-26.2.jar")"
+CP="$(cygpath -w "$RUN/versions/$MC_VERSION/paper-$MC_VERSION.jar")"
 for jar in $(find "$RUN/libraries" -name "*.jar"); do
     CP="$CP;$(cygpath -w "$jar")"
 done

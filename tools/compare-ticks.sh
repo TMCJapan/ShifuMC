@@ -15,7 +15,7 @@ N=${1:-1200}
 . "$(dirname "$0")/env.sh"
 VANILLA=$PW/run-vanilla
 PARITY=$PW/run-parity
-JAR=$PW/paper-server/build/libs/paper-bundler-26.2.local-SNAPSHOT.jar
+JAR=$BUNDLER_JAR
 AGENT="-javaagent:$(cygpath -w "$SHIFU/tools/build/tickstop.jar")=$N"
 
 # agent が無ければ組む(player-events.sh が tools/build を消していることがある)

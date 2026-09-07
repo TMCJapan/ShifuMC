@@ -43,6 +43,29 @@ public final class ShifuBootstrap {
     private ShifuBootstrap() {
     }
 
+    /**
+     * Bukkit から見た世界の UUID。
+     *
+     * <p>CraftBukkit は世界ごとにフォルダを分け、その中の {@code uid.dat} を使う
+     * ({@code WorldUUID.getOrCreate})。vanilla は 3 つの次元で 1 つのフォルダなので、
+     * そのままでは 3 つとも同じ UUID になり、{@code CraftServer.addWorld} が
+     * 2 つめ以降を「重複」として弾く。
+     *
+     * <p>主世界は CraftBukkit と同じく {@code uid.dat} を使い、それ以外は主世界の UUID と
+     * 次元の id から導く。再起動しても同じ値になり、ファイルは増えない。
+     */
+    public static java.util.UUID worldUuid(final net.minecraft.world.level.storage.LevelStorageSource.LevelStorageAccess access,
+                                           final net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension) {
+        final java.util.UUID root = org.bukkit.craftbukkit.util.WorldUUID.getOrCreate(access.levelDirectory.path().toFile());
+
+        if (dimension == net.minecraft.world.level.Level.OVERWORLD) {
+            return root;
+        }
+
+        return java.util.UUID.nameUUIDFromBytes(
+                (root + "/" + dimension.identifier()).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
     /** {@code paper.yml} / {@code config/} / {@code spigot.yml} の場所は Bukkit の Main が解析した引数から取る。 */
     public static PaperConfigurations paperConfigurations(final OptionSet options) {
         try {

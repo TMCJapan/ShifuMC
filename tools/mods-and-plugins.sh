@@ -54,8 +54,8 @@ fi
 cp "$DIST/shifu.jar" "$RUN/"
 [ -f "$RUN/eula.txt" ] || printf 'eula=true\n' > "$RUN/eula.txt"
 [ -f "$RUN/server.properties" ] || printf 'online-mode=false\nserver-port=25593\nlevel-seed=1234567890\n' > "$RUN/server.properties"
-printf 'minecraft-version = 26.2\npaper-build = latest\nserver-paperclip = %s\nfabric-loader-version = 0.19.3\nvanilla-parity = true\njvm-args = -Xmx4G\n' \
-    "$(cygpath -m "$DIST/shifu-server.jar")" > "$RUN/shifu.properties"
+printf 'minecraft-version = %s\npaper-build = latest\nserver-paperclip = %s\nfabric-loader-version = 0.19.3\nvanilla-parity = true\njvm-args = -Xmx4G\n' \
+    "$MC_VERSION" "$(cygpath -m "$DIST/shifu-server.jar")" > "$RUN/shifu.properties"
 
 # 前に組んだサーバーが残っていると、新しい jar で組み直さない
 rm -rf "$RUN/versions" "$RUN/libraries" "$RUN/cache" "$RUN/.shifu" "$RUN/world" "$RUN/world_nether" "$RUN/world_the_end"
@@ -79,7 +79,7 @@ if ! grep -aq "Done (" launch.out; then
     exit 1
 fi
 
-CP="$(cygpath -w "$PW/run-shifu/versions/26.2/paper-26.2.jar")"
+CP="$(cygpath -w "$SERVER_JAR")"
 for jar in $(find "$PW/run-shifu/libraries" -name "*.jar"); do
     CP="$CP;$(cygpath -w "$jar")"
 done

@@ -7,7 +7,11 @@ anchor:
             this.updateSkyBrightness();
 insert-after:
     this.levelStorageAccess = levelStorageAccess;
-    this.uuid = org.bukkit.craftbukkit.util.WorldUUID.getOrCreate(levelStorageAccess.levelDirectory.path().toFile());
+    this.bukkitName = dimension == Level.OVERWORLD ? levelStorageAccess.getLevelId()
+            : levelStorageAccess.getLevelId() + "_" + (dimension == Level.NETHER ? "nether"
+                    : dimension == Level.END ? "the_end"
+                            : dimension.identifier().getNamespace() + "_" + dimension.identifier().getPath());
+    this.uuid = dev.shifu.event.ShifuBootstrap.worldUuid(levelStorageAccess, dimension);
     // Paper は世界の名前をログに出すために ServerLevel を渡す版を足している。出る文字が変わるだけなので vanilla の版を使う
     this.levelLoadListener = new net.minecraft.server.level.progress.LoggingLevelLoadListener(false);
     this.shifuCreateConfigs(levelStorageAccess);

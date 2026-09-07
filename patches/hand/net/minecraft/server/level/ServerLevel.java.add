@@ -89,8 +89,16 @@
     private ResourceKey<LevelStem> typeKey;
 
 // ServerLevel.uuid
-    // Paper は levelStorageAccess の場所から作る。CraftWorld.getUID() が直に読む。
+    // Paper は世界ごとに別のフォルダを持つので uid.dat から作る。vanilla は 3 つの次元で
+    // 1 つのフォルダを使うので、主世界の uid.dat から次元ごとに導く(配線で入れる)。
+    // CraftWorld.getUID() が直に読む。
     public UUID uuid;
+
+// ServerLevel.bukkitName
+    // Bukkit から見た世界の名前。vanilla の PrimaryLevelData は 3 つの次元で 1 つなので、
+    // getLevelName() は 3 つとも同じ。CraftBukkit と同じ規則(<名前>_nether など)で分ける。
+    // CraftWorld.getName() が読む(patches/adapter)。
+    public String bukkitName;
 
 // ServerLevel.levelStorageAccess
     // Paper が構築子で入れる。CraftWorld と CraftServer が直に読む。
@@ -135,11 +143,11 @@
     // 読んだ位置: patches/sources/net/minecraft/world/level/Level.java.patch:89,
     //            patches/sources/net/minecraft/server/level/ServerLevel.java.patch:157
     public void shifuCreateConfigs(final LevelStorageSource.LevelStorageAccess levelStorageAccess) {
-        this.spigotConfig = new org.spigotmc.SpigotWorldConfig(this.serverLevelData.getLevelName());
+        this.spigotConfig = new org.spigotmc.SpigotWorldConfig(this.bukkitName);
         this.paperConfig = this.server.paperConfigurations.createWorldConfig(
                 io.papermc.paper.configuration.PaperConfigurations.createWorldContextMap(
                         levelStorageAccess.levelDirectory.path(),
-                        this.serverLevelData.getLevelName(),
+                        this.bukkitName,
                         this.dimension().identifier(),
                         this.spigotConfig,
                         this.server.registryAccess(),
