@@ -1,0 +1,127 @@
+# tools/make_access_rules.py が作ったもの。
+# 可視性が足りないというエラーから、宣言の行をそのまま写している。
+
+# getDependencyStatus(ChunkStatus,int)
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    private ChunkStatus getDependencyStatus(ChunkStatus centerChunkTargetStatus, int distance) {
+
+# setServerViewDistance(int)
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    protected void setServerViewDistance(int watchDistance) {
+
+# level
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+line:
+    protected ServerLevel level;
+
+# sendChunk(ServerGamePacketListenerImpl,ServerLevel,LevelChunk)
+file: net/minecraft/server/network/PlayerChunkSender.java
+line:
+    private static void sendChunk(ServerGamePacketListenerImpl handler, ServerLevel world, LevelChunk chunk) {
+
+# verifyChatTrusted(PlayerChatMessage)
+file: net/minecraft/server/players/PlayerList.java
+line:
+    private boolean verifyChatTrusted(PlayerChatMessage message) {
+
+# level
+file: net/minecraft/world/entity/Entity.java
+line:
+    private Level level;
+
+# name
+file: net/minecraft/world/entity/ai/attributes/AttributeModifier.java
+line:
+        private final String name;
+
+# setDirty(long)
+file: net/minecraft/world/entity/ai/village/poi/PoiManager.java
+line:
+    protected void setDirty(long pos) {
+
+# caravanTail
+file: net/minecraft/world/entity/animal/horse/Llama.java
+line:
+    private Llama caravanTail;
+
+# getCurrentSpell()
+file: net/minecraft/world/entity/monster/SpellcasterIllager.java
+line:
+    protected SpellcasterIllager.IllagerSpell getCurrentSpell() {
+
+# hurtDir
+file: net/minecraft/world/entity/player/Player.java
+line:
+    protected float hurtDir;
+
+# blockEntityTickers
+file: net/minecraft/world/level/Level.java
+line:
+    protected final List<TickingBlockEntity> blockEntityTickers = Lists.newArrayList();
+
+# name
+file: net/minecraft/world/level/block/entity/BannerBlockEntity.java
+line:
+    private Component name;
+
+# get(int)
+file: net/minecraft/world/level/chunk/PalettedContainer.java
+line:
+    protected T get(int index) {
+
+# get(long)
+file: net/minecraft/world/level/chunk/storage/SectionStorage.java
+line:
+    protected Optional<R> get(long pos) {
+
+# getOrLoad(long)
+file: net/minecraft/world/level/chunk/storage/SectionStorage.java
+line:
+    protected Optional<R> getOrLoad(long pos) {
+
+# registryAccess
+file: net/minecraft/world/level/chunk/storage/SectionStorage.java
+line:
+    private final RegistryAccess registryAccess;
+
+# SHAPE_CHECK_BLOCKS
+file: net/minecraft/world/level/levelgen/structure/StructurePiece.java
+line:
+    private static final Set<Block> SHAPE_CHECK_BLOCKS = ImmutableSet.<Block>builder()
+
+# storage
+file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
+line:
+    private final BitSet storage;
+
+# xMax
+file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
+line:
+    private int xMax;
+
+# xMin
+file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
+line:
+    private int xMin;
+
+# yMax
+file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
+line:
+    private int yMax;
+
+# yMin
+file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
+line:
+    private int yMin;
+
+# zMax
+file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
+line:
+    private int zMax;
+
+# zMin
+file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
+line:
+    private int zMin;
