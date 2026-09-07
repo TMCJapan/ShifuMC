@@ -299,16 +299,6 @@ insert:
     dev.shifu.event.PlayerEvents.spawnCause(this, com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause.PLAYER_RESPAWN);
 
 # PlayerInteractEvent(左クリック、触れない場所)。Paper と同じく結果は見ない
-file: net/minecraft/server/world/ServerPlayerGameMode.java
-anchor:
-    this.player.connection.send(new ClientboundBlockUpdatePacket(pos, this.level.getBlockState(pos)));
-    this.debugLogging(pos, false, sequence, "may not interact");
-insert:
-    dev.shifu.event.ShifuEvents.interactBlockLeft(this.player, pos, direction);
-
-# BlockDamageEvent。壊し始め(即時破壊でないとき)
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/server/world/ServerPlayerGameMode.java.patch(BlockDamageEvent)
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     this.player.jumpFromGround();
@@ -320,15 +310,6 @@ insert:
 # PlayerMoveEvent(乗り物に乗っている間)。vanilla が乗り物を動かしたあと
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch(handleMoveVehicle)
-file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
-anchor:
-    rootVehicle.absSnapTo(d, d1, d2, f, f1);
-insert-after:
-    if (!dev.shifu.event.PlayerEvents.vehicleMove(this, d, d1, d2, f, f1)) {
-        return;
-    }
-
-# PlayerSwapHandItemsEvent。入れ替えの 2 行を囲む
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     this.player.setItemInHand(InteractionHand.OFF_HAND, this.player.getItemInHand(InteractionHand.MAIN_HAND));

@@ -22,7 +22,6 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ExperienceOrb;
-import net.minecraft.world.entity.Leashable;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -35,8 +34,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.FishingHook;
 import net.minecraft.world.entity.projectile.FireworkRocketEntity;
 import net.minecraft.world.entity.projectile.AbstractArrow;
-import net.minecraft.world.entity.projectile.throwableitemprojectile.AbstractThrownPotion;
-import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownSplashPotion;
 import net.minecraft.world.entity.vehicle.VehicleEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameRules;
@@ -791,23 +788,6 @@ public final class EntityEvents {
         return outer != null ? outer : ShifuEvents.beginDeathDrops();
     }
 
-    /**
-     * EntityDeathEvent(防具立てが壊れた)。{@code brokenByAnything} の末尾。控えた落とし物
-     * (装備と、プレイヤーが壊したときは本体)を載せて {@link ShifuEvents#entityDeath} で出す。
-     *
-     * <p>未対応: 取り消し(LivingEntity の死亡と同じ。落とし物は出て、装備は空になり、kill も進む)。
-     *
-     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/decoration/ArmorStand.java.patch
-     */
-    public static void armorStandDeath(final ServerLevel level, final ArmorStand stand, final DamageSource source,
-                                       final List<Entity.DefaultDrop> drops) {
-        if (drops == null) {
-            return;
-        }
-
-        armorStandDeathFired = stand;
-        ShifuEvents.entityDeath(level, stand, source, drops);
-    }
 
     /**
      * EntityDeathEvent(壊れずに消える {@code ArmorStand.kill})。直前に {@code brokenByAnything} が

@@ -18,7 +18,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerConfigurationPacketListenerImpl;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
-import net.minecraft.server.players.NameAndId;
 import net.minecraft.server.players.PlayerList;
 import net.minecraft.server.rcon.RconConsoleSource;
 import net.minecraft.world.Difficulty;
@@ -28,11 +27,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.enchantment.EnchantedItemInUse;
-import net.minecraft.world.item.enchantment.LevelBasedValue;
-import net.minecraft.world.level.gamerules.GameRule;
 import net.minecraft.world.level.Level;
-import net.minecraft.server.ServerLinks;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.border.WorldBorder;
@@ -265,42 +260,7 @@ public final class PlayerEvents {
     private static io.papermc.paper.command.brigadier.CommandSourceStack difficultySource;
 
 
-    /**
-     * WorldGameRuleChangeEvent。書く直前。取り消されたら書かない。値が差し替えられていたら
-     * ここで書いて false を返す(vanilla の行は飛ばす。メッセージと返り値は元の値のまま)。
-     *
-     * 読んだ位置: CraftEventFactory.handleGameRuleSet
-     */
-    public static <T> boolean gameRuleSet(final GameRule<T> rule, final T value, final ServerLevel level,
-                                          final org.bukkit.command.CommandSender sender) {
-        if (!listening(io.papermc.paper.event.world.WorldGameRuleChangeEvent.getHandlerList())) {
-            return true;
-        }
 
-        final String text = rule.serialize(value);
-        final io.papermc.paper.event.world.PaperWorldGameRuleChangeEvent event = new io.papermc.paper.event.world.PaperWorldGameRuleChangeEvent(
-                level.getWorld(), sender, org.bukkit.craftbukkit.CraftGameRule.minecraftToBukkit(rule), text);
-
-        if (!event.callEvent()) {
-            return false;
-        }
-
-        if (event.getValue().equals(text)) {
-            return true;
-        }
-
-        level.getGameRules().set(rule, rule.deserialize(event.getValue()).getOrThrow(), level);
-
-        return false;
-    }
-
-    public static <T> boolean gameRuleSet(final GameRule<T> rule, final T value, final CommandSourceStack source) {
-        if (!listening(io.papermc.paper.event.world.WorldGameRuleChangeEvent.getHandlerList())) {
-            return true;
-        }
-
-        return gameRuleSet(rule, value, source.getLevel(), source.getBukkitSender());
-    }
 
 
     // ------------------------------------------------------------ 時間
@@ -679,23 +639,6 @@ public final class PlayerEvents {
         return false;
     }
 
-    /**
-     * PlayerMoveEvent(乗り物に乗っている間)。vanilla が乗り物を動かしたあと。
-     * 中身は {@link ShifuEvents#playerMove} と同じ。Paper がプレイヤーを乗り物の位置へ動かす
-     * 細工は使わないので、イベントの中で {@code player.getLocation()} を読むと動く前の位置。
-     */
-    public static boolean vehicleMove(final ServerGamePacketListenerImpl connection,
-                                      final double targetX, final double targetY, final double targetZ,
-                                      final float targetYRot, final float targetXRot) {
-        if (!listening(org.bukkit.event.player.PlayerMoveEvent.getHandlerList())) {
-            return true;
-        }
-
-        final ServerPlayer player = connection.player;
-
-        return ShifuEvents.playerMove(connection, player.getX(), player.getY(), player.getZ(),
-                targetX, targetY, targetZ, targetYRot, targetXRot);
-    }
 
     private static boolean swapCancelled;
 

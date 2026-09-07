@@ -36,8 +36,6 @@ import net.minecraft.server.network.ServerCommonPacketListenerImpl;
  * <p><b>プラグインが 1 つも入っていなければ何もしない。</b>そのときに実行される命令列は vanilla と同じ。
  */
 public final class PluginMessages {
-    private static final Identifier REGISTER = Identifier.withDefaultNamespace("register");
-    private static final Identifier UNREGISTER = Identifier.withDefaultNamespace("unregister");
 
     /** 復号したスレッドが、次の handler に渡すまでの間だけ持つ控え。 */
     private static final ThreadLocal<Deque<byte[]>> DECODED = ThreadLocal.withInitial(ArrayDeque::new);

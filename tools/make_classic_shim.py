@@ -68,11 +68,19 @@ def members(lines):
 
             name = None
 
-            for pattern in PATTERNS:
-                hit = pattern.match(line)
+            # 宣言が折り返していると 1 行では `;` `=` `(` `{` まで届かない。
+            # `public final ...ChunkDataController chunkDataControllerNew` のように
+            # 名前で行が終わるものがある。続きを繋いでから見る。
+            for probe in (line, line.rstrip() + " "
+                          + " ".join(l.strip() for l in lines[number + 1:number + 3])):
+                for pattern in PATTERNS:
+                    hit = pattern.match(probe)
 
-                if hit:
-                    name = hit.group(1)
+                    if hit:
+                        name = hit.group(1)
+                        break
+
+                if name:
                     break
 
             if name is None:

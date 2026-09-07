@@ -109,11 +109,26 @@ def main():
         lines = io.open(path, encoding="utf-8").read().split("\n")
         owner, where = spans(lines)
         names = {owner.get(n) for n in bad[name]} - {None}
-
-        if not names:
-            continue
-
         cut = set()
+
+        # メソッドの外(import と欄)。その版に無い型を指しているので落とす
+        for number in sorted(bad[name]):
+            if owner.get(number) is not None or number > len(lines):
+                continue
+
+            text = lines[number - 1].strip()
+
+            if text.startswith("import "):
+                cut.add(number)
+                dropped.append((name[:-len(".java")], text,
+                                sorted(reason[(name, number)])))
+            elif text.endswith(";") and not text.startswith(("//", "*", "@")):
+                cut.add(number)
+                dropped.append((name[:-len(".java")], text.split("=")[0].strip(),
+                                sorted(reason[(name, number)])))
+
+        if not names and not cut:
+            continue
 
         for method in sorted(names):
             if method not in where:

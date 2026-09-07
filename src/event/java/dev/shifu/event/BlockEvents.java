@@ -582,18 +582,6 @@ public final class BlockEvents {
 
 
 
-    /**
-     * レッドストーンダスト。Paper は「置かれている状態が今の状態のとき」だけ発火する。
-     */
-    public static int redstoneWire(final Level level, final BlockPos pos, final BlockState state, final int targetStrength) {
-        final int previous = state.getValue(net.minecraft.world.level.block.RedStoneWireBlock.POWER);
-
-        if (previous == targetStrength || level.getBlockState(pos) != state) {
-            return targetStrength;
-        }
-
-        return redstoneChange(level, pos, previous, targetStrength);
-    }
 
     /**
      * TargetHitEvent。的に投射物が当たった。
@@ -615,18 +603,6 @@ public final class BlockEvents {
 
     // ------------------------------------------------------------ トリップワイヤーフック
 
-    /**
-     * BlockRedstoneEvent(トリップワイヤーフック)。電源が変わるときだけ発火する。
-     *
-     * @return そのフックの状態を書いてよいか
-     */
-    public static boolean tripwireHook(final Level level, final BlockPos pos, final boolean wasPowered, final boolean powered) {
-        if (wasPowered == powered) {
-            return true;
-        }
-
-        return binaryRedstone(level, pos, powered);
-    }
 
     // ------------------------------------------------------------ スポンジ
 
@@ -718,18 +694,6 @@ public final class BlockEvents {
     // ------------------------------------------------------------ 書見台・看板・鐘
 
 
-    /**
-     * BlockRedstoneEvent(書見台のページ送りの信号)。
-     *
-     * @return 変えてよいか
-     */
-    public static boolean lecternPowered(final Level level, final BlockPos pos, final BlockState state, final boolean isPowered) {
-        if (state.getValue(net.minecraft.world.level.block.LecternBlock.POWERED) == isPowered) {
-            return true;
-        }
-
-        return binaryRedstone(level, pos, isPowered);
-    }
 
     private static boolean signFront = true;
 
@@ -1358,22 +1322,6 @@ public final class BlockEvents {
         cauldronReason = reason;
     }
 
-    /**
-     * CauldronLevelChangeEvent(水位が 1 段下がる)。vanilla が置いたあと。
-     * 理由が置かれていなければ UNKNOWN。
-     *
-     * <p>ただし: vanilla は瓶や防具の書き換えを先に済ませてから水位を下げるので、
-     * 取り消しても手元の物は戻らない(Paper は下げる判定を先に行う)。
-     */
-    public static void cauldronLowered(final Level level, final BlockPos pos, final CraftBlockState before) {
-        final Entity entity = cauldronEntity;
-        final org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason reason = cauldronReason;
-        cauldronEntity = null;
-        cauldronReason = null;
-
-        ShifuEvents.cauldronLevelChange(level, pos, before, entity,
-                reason == null ? org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.UNKNOWN : reason);
-    }
 
     /** 大釜の水位のイベントの控えを取る。{@link ShifuEvents#blockChangeBefore} の言い換え。 */
     public static CraftBlockState cauldronBefore(final Level level, final BlockPos pos) {

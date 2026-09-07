@@ -95,22 +95,3 @@ insert-after:
 # 未対応: 取り消しによる蘇生。取り消されたときは落とし物と経験値を vanilla のとおり出す。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch:809
-file: net/minecraft/world/entity/LivingEntity.java
-anchor:
-    this.dropAllDeathLoot(serverLevel, damageSource);
-insert:
-    final java.util.List<net.minecraft.world.entity.Entity.DefaultDrop> shifuDeathDrops =
-            dev.shifu.event.ShifuEvents.beginDeathDrops();
-insert-after:
-    dev.shifu.event.ShifuEvents.entityDeath(serverLevel, this, damageSource, shifuDeathDrops);
-
-# EntityExplodeEvent / BlockExplodeEvent
-#
-# 壊す位置の並びが決まって並べ替えられた直後。Paper と同じ位置。
-# プラグインが直した並びを targetBlocks に書き戻す。取り消されたら
-# 壊さずに抜け、ServerLevel.explode の告知(packet)も飛ばす。
-#
-# 未対応: setYield。落ちる確率は戦利品表が爆発の半径から読むので、渡す先が無い。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/ServerExplosion.java.patch:215,
-#            paper-server patches/sources/net/minecraft/server/level/ServerLevel.java.patch:893

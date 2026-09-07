@@ -3,27 +3,6 @@
 # Paper は ServerLevel の構築子の最後で this.getCraftServer().addWorld(this.getWorld()) を呼ぶ(ServerLev
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-            this.environmentAttributes = EnvironmentAttributeSystem.builder().addDefaultLayers(this).build();
-            this.updateSkyBrightness();
-insert-after:
-    this.levelStorageAccess = levelStorageAccess;
-    this.bukkitName = dimension == Level.OVERWORLD ? levelStorageAccess.getLevelId()
-            : levelStorageAccess.getLevelId() + "_" + (dimension == Level.NETHER ? "nether"
-                    : dimension == Level.END ? "the_end"
-                            : dimension.identifier().getNamespace() + "_" + dimension.identifier().getPath());
-    this.uuid = dev.shifu.event.ShifuBootstrap.worldUuid(levelStorageAccess, dimension);
-    // Paper は世界の名前をログに出すために ServerLevel を渡す版を足している。出る文字が変わるだけなので vanilla の版を使う
-    this.levelLoadListener = new net.minecraft.server.level.progress.LoggingLevelLoadListener(false);
-    this.shifuCreateConfigs(levelStorageAccess);
-    this.getCraftServer().addWorld(this.getWorld());
-
-
-# CraftBukkit は世界に入った/出たエンティティに valid と inWorld の印を付ける
-# (patches/sources/net/minecraft/server/level/ServerLevel.java.patch:1157,1219)。
-# CraftEntity.teleport0 は valid でないエンティティを動かさない(false を返す)ので、
-# 付けないとプラグインからのテレポートが全部失敗する。bot で実測した。
-file: net/minecraft/server/level/ServerLevel.java
-anchor:
     entity.updateDynamicGameEventListener(DynamicGameEventListener::add);
 insert-after:
     entity.inWorld = true;

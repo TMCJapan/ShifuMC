@@ -9,7 +9,6 @@ import net.minecraft.core.NonNullList;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.EnchantmentEffectComponents;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
 
@@ -30,18 +29,13 @@ final class DeathInventory {
     private final Map<EquipmentSlot, ItemStack> equipment = new EnumMap<>(EquipmentSlot.class);
 
     DeathInventory(final Inventory inventory) {
-        final NonNullList<ItemStack> source = inventory.getNonEquipmentItems();
-        this.items = NonNullList.withSize(source.size(), ItemStack.EMPTY);
 
         for (int i = 0; i < source.size(); i++) {
-            this.items.set(i, source.get(i).copy());
         }
 
         for (EquipmentSlot slot : EquipmentSlot.VALUES) {
-            final ItemStack stack = inventory.equipment.get(slot);
 
             if (!stack.isEmpty()) {
-                this.equipment.put(slot, stack.copy());
             }
         }
     }

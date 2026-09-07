@@ -12,11 +12,8 @@ import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.PositionMoveRotation;
 import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.level.ServerExplosion;
-import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.Location;
 import org.bukkit.craftbukkit.CraftWorld;
@@ -137,34 +134,6 @@ public final class ShifuEvents {
         return listening(org.bukkit.event.block.BlockPlaceEvent.getHandlerList());
     }
 
-    /**
-     * ブロックの設置。
-     *
-     * <p>Paper はブロックキャプチャで「置く前に発火して、通ったら置く」に
-     * 作り変える。あれは設置そのものを遅らせるので、周囲への更新順が変わる。
-     * Shifu は <b>vanilla のとおり先に置いてから</b>発火し、取り消された
-     * ときだけ控えておいた元の状態に戻す。通る経路が vanilla のままになる。
-     *
-     * @param replaced 置く前にその場所から取った控え。{@code null} なら発火しない
-     * @return vanilla の続き(音・gameEvent・手持ちの減り)へ進んでよいか
-     *
-     * <p>参照した位置(Paper 26.2):
-     * {@code paper-server src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:519}
-     */
-    public static boolean blockPlace(final ServerLevel level,
-                                     final net.minecraft.world.entity.player.Player player,
-                                     final net.minecraft.world.InteractionHand hand,
-                                     final org.bukkit.block.BlockState replaced,
-                                     final BlockPos clickedPos) {
-        if (replaced == null || player == null) {
-            return true;
-        }
-
-        org.bukkit.event.block.BlockPlaceEvent event =
-                CraftEventFactory.callBlockPlaceEvent(level, player, hand, replaced, clickedPos);
-
-        return !event.isCancelled() && event.canBuild();
-    }
 
     // ------------------------------------------------------------ エンティティ
 
@@ -304,33 +273,6 @@ public final class ShifuEvents {
         return current;
     }
 
-    /**
-     * 落とす物を実際に落とす。
-     *
-     * <p>プラグインが差し替えたものは Bukkit の側から、触っていないものは
-     * vanilla が作った NMS の {@code ItemStack} のまま落とす({@code runConsumer} の判定)。
-     *
-     * <p>Paper の {@code CraftEventFactory} にも同じ形のメソッドがあるが、
-     * 私有で、バージョンによって有ったり無かったりする(1.21.11 には無い)。
-     * ここに置けばどのバージョンでも同じものを使える。
-     */
-    private static void dropAllItems(final List<Entity.DefaultDrop> drops,
-            final java.util.function.Consumer<net.minecraft.world.item.ItemStack> fallback) {
-        for (Entity.DefaultDrop drop : drops) {
-            if (drop == null) {
-                continue;
-            }
-
-            final org.bukkit.inventory.ItemStack stack = drop.stack();
-
-            if (stack.isEmpty()) {
-                continue;
-            }
-
-            drop.runConsumer(item -> fallback.accept(
-                    org.bukkit.craftbukkit.inventory.CraftItemStack.unwrap(item)));
-        }
-    }
 
     /**
      * 控えた経験値オーブを世界へ出す。
@@ -348,54 +290,6 @@ public final class ShifuEvents {
         }
     }
 
-    /**
-     * 死亡。控えた落とし物を渡して発火し、プラグインが直したものを世界へ出す。
-     *
-     * <p><b>未対応:</b> 取り消しによる蘇生({@code setReviveHealth})。
-     * vanilla の {@code die} は既に走り終えているので戻せない。取り消されたときは
-     * 落とし物と経験値を vanilla のとおり世界に出す。
-     *
-     * <p>落ちる経験値({@code setDroppedExp})は、vanilla が
-     * {@code dropAllDeathLoot} の中で出したオーブを控えて、イベントの値と
-     * 突き合わせてから出す。
-     *
-     * <p>参照した位置(Paper 26.2):
-     * {@code paper-server src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:968}
-     */
-    public static void entityDeath(final ServerLevel level, final LivingEntity victim,
-                                   final net.minecraft.world.damagesource.DamageSource source,
-                                   final List<Entity.DefaultDrop> drops) {
-        if (drops == null) {
-            return;
-        }
-
-        final DeathCapture current = endCapture(drops);
-
-        if (current == null) {
-            return;
-        }
-
-        final int experience = current.experience();
-        org.bukkit.event.entity.EntityDeathEvent event = new org.bukkit.event.entity.EntityDeathEvent(
-                (org.bukkit.entity.LivingEntity) victim.getBukkitEntity(),
-                new org.bukkit.craftbukkit.damage.CraftDamageSource(source),
-                new io.papermc.paper.util.TransformingRandomAccessList<>(
-                        drops, Entity.DefaultDrop::stack, CraftEventFactory.FROM_FUNCTION),
-                experience);
-        CraftEventFactory.populateFields(victim, event);
-        event.callEvent();
-
-        if (event.isCancelled()) {
-            dropAllItems(drops, item -> victim.spawnAtLocation(level, item));
-            releaseExperience(victim, current, experience);
-
-            return;
-        }
-
-        victim.expToDrop = event.getDroppedExp();
-        dropAllItems(drops, item -> victim.spawnAtLocation(level, item));
-        releaseExperience(victim, current, event.getDroppedExp());
-    }
 
     /**
      * ダメージ。
@@ -447,7 +341,6 @@ public final class ShifuEvents {
     }
 
     /** 取り消された爆発。{@code ServerLevel.explode} が続きの告知を飛ばすために見る。 */
-    private static ServerExplosion cancelledExplosion;
 
 
 
@@ -516,86 +409,6 @@ public final class ShifuEvents {
 
     // ------------------------------------------------------------ 移動
 
-    /**
-     * 移動。
-     *
-     * <p>{@code handleMovePlayer} の中で、vanilla が
-     * {@code player.absSnapTo(target...)} で位置を確定させる直前。
-     * その時点で位置は {@code move()} で動いたあと、回転は動く前のまま。
-     *
-     * <p>Paper と同じく、発火の前に位置を packet を受ける前の場所へ戻し、
-     * {@code from} は直前に発火した {@code to}(接続が控えている)にする。
-     * 1/256 ブロック・10 度に満たない動きでは発火しない。これも Paper と同じ。
-     *
-     * <p>取り消されたら packet を受ける前の場所へ戻すテレポートを送る。
-     * {@code setTo} で行き先を変えられたら、そこへテレポートする。
-     * どちらも vanilla の {@code absSnapTo(target...)} 以降は走らない。
-     *
-     * <p>乗り物に乗っている間の移動({@code handleMoveVehicle})では発火しない。
-     * Paper はそこでプレイヤーを乗り物の位置へ動かす細工をしてから発火していて、
-     * 細工そのものが vanilla の位置を変える。
-     *
-     * @return vanilla の {@code absSnapTo(target...)} へ進んでよいか
-     *
-     * <p>参照した位置(Paper 26.2):
-     * {@code paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch:889}
-     */
-    public static boolean playerMove(final ServerGamePacketListenerImpl connection,
-                                     final double startX, final double startY, final double startZ,
-                                     final double targetX, final double targetY, final double targetZ,
-                                     final float targetYRot, final float targetXRot) {
-        final boolean moveListening = listening(PlayerMoveEvent.getHandlerList());
-
-        // PlayerJumpEvent(生成した規則)も接続が控えている直前の位置を from に使う
-        if (!moveListening
-                && !listening(com.destroystokyo.paper.event.player.PlayerJumpEvent.getHandlerList())) {
-            return true;
-        }
-
-        final ServerPlayer player = connection.player;
-        final float startYRot = player.getYRot();
-        final float startXRot = player.getXRot();
-        final Location from = connection.shifuMoveFrom(startX, startY, startZ, startYRot, startXRot);
-        final Location to = new Location(player.level().getWorld(), targetX, targetY, targetZ, targetYRot, targetXRot);
-
-        // 1 ピクセルに満たない動きで 40 回発火するのを防ぐ(Paper と同じ閾値)
-        final double delta = net.minecraft.util.Mth.square(from.getX() - to.getX())
-                + net.minecraft.util.Mth.square(from.getY() - to.getY())
-                + net.minecraft.util.Mth.square(from.getZ() - to.getZ());
-        final float deltaAngle = Math.abs(from.getYaw() - to.getYaw()) + Math.abs(from.getPitch() - to.getPitch());
-
-        if (!(delta > 1f / 256 || deltaAngle > 10.0F) || player.isImmobile()) {
-            return true;
-        }
-
-        connection.shifuRememberMove(to);
-
-        if (!moveListening) {
-            return true;
-        }
-
-        // 発火の前に packet を受ける前の場所へ戻す(Paper と同じ)
-        player.absSnapTo(startX, startY, startZ, startYRot, startXRot);
-
-        final Location oldTo = to.clone();
-        final PlayerMoveEvent event = new PlayerMoveEvent(player.getBukkitEntity(), from, to);
-        event.callEvent();
-
-        if (event.isCancelled()) {
-            connection.internalTeleport(from);
-
-            return false;
-        }
-
-        if (!oldTo.equals(event.getTo())) {
-            player.getBukkitEntity().teleport(event.getTo(), TeleportCause.PLUGIN);
-
-            return false;
-        }
-
-        // イベントの中でプラグインがテレポートさせたなら、この packet の位置は使わない
-        return from.equals(player.getBukkitEntity().getLocation()) || !connection.shifuTakeJustTeleported();
-    }
 
     // ------------------------------------------------------------ テレポート
 
@@ -639,33 +452,6 @@ public final class ShifuEvents {
         silentTeleport = connection.player;
     }
 
-    private static TeleportCause takeCause(final ServerPlayer player) {
-        final TeleportCause placed = causeEntity == player ? cause : null;
-        causeEntity = null;
-        cause = null;
-
-        if (placed != null) {
-            return placed;
-        }
-
-        final net.minecraft.world.entity.PortalProcessor portal = player.portalProcess;
-
-        if (portal != null) {
-            if (portal.isSamePortal((net.minecraft.world.level.block.Portal) net.minecraft.world.level.block.Blocks.NETHER_PORTAL)) {
-                return TeleportCause.NETHER_PORTAL;
-            }
-
-            if (portal.isSamePortal((net.minecraft.world.level.block.Portal) net.minecraft.world.level.block.Blocks.END_PORTAL)) {
-                return TeleportCause.END_PORTAL;
-            }
-
-            if (portal.isSamePortal((net.minecraft.world.level.block.Portal) net.minecraft.world.level.block.Blocks.END_GATEWAY)) {
-                return TeleportCause.END_GATEWAY;
-            }
-        }
-
-        return TeleportCause.UNKNOWN;
-    }
 
 
     /**
@@ -691,42 +477,6 @@ public final class ShifuEvents {
         return player.getBukkitEntity().getLocation();
     }
 
-    /**
-     * {@code connection.teleport(destination, relatives)} の出口。
-     * vanilla が位置を確定させて packet を送ったあと。
-     *
-     * <p>Shifu は vanilla の行を残すので、動かしてから発火する。
-     * 取り消されたら元の場所へ、行き先を変えられたらそこへ、
-     * もう 1 度(発火せずに)テレポートさせる。
-     * 動かす前と後が同じ場所なら発火しない(SPIGOT-5171: 参加時など)。
-     */
-    public static void playerTeleported(final ServerGamePacketListenerImpl connection, final Location from) {
-        if (from == null) {
-            return;
-        }
-
-        final ServerPlayer player = connection.player;
-        final Location to = player.getBukkitEntity().getLocation();
-
-        if (from.equals(to)) {
-            return;
-        }
-
-        final PlayerTeleportEvent event = new PlayerTeleportEvent(player.getBukkitEntity(), from, to.clone(), takeCause(player));
-        event.callEvent();
-
-        if (event.isCancelled()) {
-            connection.internalTeleport(from);
-
-            return;
-        }
-
-        final Location changed = event.getTo();
-
-        if (changed != null && !changed.equals(to)) {
-            connection.internalTeleport(changed);
-        }
-    }
 
     /** 別の世界へ移ったあと。Paper は {@code teleport(transition)} の末尾で発火する。 */
     public static void playerChangedWorld(final ServerPlayer player, final ServerLevel oldLevel) {
@@ -779,43 +529,6 @@ public final class ShifuEvents {
     /** 直前に発火したときに開いていた画面。イベントの中で閉じられたかを見る。 */
     private static net.minecraft.world.inventory.AbstractContainerMenu clickedMenu;
 
-    /**
-     * インベントリのクリック。vanilla の {@code containerMenu.clicked(...)} の直前。
-     *
-     * <p>Paper と同じ手順で {@code ClickType} と {@code InventoryAction} を導き、
-     * {@code InventoryClickEvent}(作業台・鍛冶台・製図台では
-     * {@code CraftItemEvent} / {@code SmithItemEvent} / {@code CartographyItemEvent})を
-     * 発火する。ドラッグ({@code QUICK_CRAFT})では発火しない。Paper も
-     * ここでは発火せず、1 マスだけのドラッグを普通のクリックに読み替えているが、
-     * その読み替えは vanilla の処理を変えるので入れない。
-     *
-     * <p>観戦者のクリックは vanilla が {@code clicked} へ届く前に弾くので、
-     * 発火しない。Paper は取り消し済みのイベントを発火している。
-     *
-     * @return 発火したイベント。登録が無ければ null で、vanilla のまま
-     *
-     * <p>参照した位置(Paper 26.2):
-     * {@code paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch:1989}
-     */
-    public static org.bukkit.event.inventory.InventoryClickEvent inventoryClick(
-            final ServerPlayer player,
-            final net.minecraft.network.protocol.game.ServerboundContainerClickPacket packet,
-            final int slotIndex) {
-        if (!listening(org.bukkit.event.inventory.InventoryClickEvent.getHandlerList())) {
-            return null;
-        }
-
-        final org.bukkit.event.inventory.InventoryClickEvent event = InventoryClicks.build(player, packet, slotIndex);
-
-        if (event == null) {
-            return null;
-        }
-
-        clickedMenu = player.containerMenu;
-        event.callEvent();
-
-        return event;
-    }
 
     /** イベントの中で別の画面が開かれたか(SPIGOT-1224)。 */
     public static boolean containerChanged(final ServerPlayer player,
@@ -894,205 +607,10 @@ public final class ShifuEvents {
         return capture.drops;
     }
 
-    /**
-     * プレイヤーの死亡。vanilla が落とし物と経験値を出し終えた直後。
-     *
-     * <p>死亡メッセージの告知は、発火する前に vanilla が済ませないよう
-     * 呼ぶ側で飛ばしてある。ここでイベントの結果に従って送る。
-     *
-     * <p>取り消されたら控えた持ち物を戻し、落とし物と経験値は捨て、
-     * 体力を戻して false を返す。呼ぶ側は統計や死亡地点の記録へ進まない。
-     * その前に走った肩の生き物の解放と、周りの生き物への通知は戻せない。
-     *
-     * <p>{@code getKeepLevel} / {@code getNewLevel} などリスポーン後の経験値は
-     * {@link #playerRespawned} で新しいプレイヤーへ写す。
-     *
-     * @return vanilla の続き(統計・死亡地点)へ進んでよいか
-     *
-     * <p>参照した位置(Paper 26.2):
-     * {@code paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch:448},
-     * {@code paper-server src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:1005}
-     */
-    public static boolean playerDeath(final ServerPlayer player,
-                                      final net.minecraft.world.damagesource.DamageSource source,
-                                      final List<Entity.DefaultDrop> drops,
-                                      final boolean showDeathMessage) {
-        if (drops == null) {
-            return true;
-        }
-
-        final DeathCapture current = endCapture(drops);
-
-        if (current == null) {
-            return true;
-        }
-
-        final int experience = current.experience();
-        final boolean keepInventoryRule = player.level().getGameRules().get(net.minecraft.world.level.GameRules.KEEP_INVENTORY);
-        final boolean keepInventory = keepInventoryRule || player.isSpectator();
-        final Component defaultMessage = player.getCombatTracker().getDeathMessage();
-
-        player.keepLevel = keepInventory; // SPIGOT-2222: Paper と同じく先に入れておく
-
-        final org.bukkit.event.entity.PlayerDeathEvent event = new org.bukkit.event.entity.PlayerDeathEvent(
-                player.getBukkitEntity(),
-                new org.bukkit.craftbukkit.damage.CraftDamageSource(source),
-                new io.papermc.paper.util.TransformingRandomAccessList<>(
-                        drops, Entity.DefaultDrop::stack, CraftEventFactory.FROM_FUNCTION),
-                experience,
-                0,
-                PaperAdventure.asAdventure(defaultMessage),
-                showDeathMessage);
-        event.setKeepInventory(keepInventory);
-        event.setKeepLevel(player.keepLevel);
-        CraftEventFactory.populateFields(player, event);
-        event.callEvent();
-
-        if (event.isCancelled()) {
-            current.inventory.restore(player.getInventory());
-
-            if (player.getHealth() <= 0) {
-                player.setHealth((float) event.getReviveHealth());
-            }
-
-            return false;
-        }
-
-        player.keepLevel = event.getKeepLevel();
-        player.newLevel = event.getNewLevel();
-        player.newTotalExp = event.getNewTotalExp();
-        player.expToDrop = event.getDroppedExp();
-        player.newExp = event.getNewExp();
-        player.shifuDeathEvent = true;
-        player.shifuKeepInventory = event.getKeepInventory();
-
-        if (event.getKeepInventory()) {
-            if (!keepInventory) {
-                // vanilla は落とし終えている。控えから戻す
-                current.inventory.restore(player.getInventory());
-            }
-        } else if (keepInventory) {
-            // vanilla は残している。Paper と同じく空にする(残す指定の物は除く)
-            current.inventory.clear(player.getInventory(), event.getItemsToKeep());
-        } else {
-            current.inventory.restoreKept(player.getInventory(), event.getItemsToKeep());
-        }
-
-        // 残す指定に入っていて持ち物に無かった物(Paper と同じ扱い)
-        for (org.bukkit.inventory.ItemStack stack : event.getItemsToKeep()) {
-            player.getBukkitEntity().getInventory().addItem(stack);
-        }
-
-        dropAllItems(drops, item -> player.drop(item, true, false));
-        releaseExperience(player, current, event.getDroppedExp());
-        announceDeath(player, event);
-
-        return true;
-    }
-
-    /**
-     * 死亡メッセージを送る。vanilla の {@code ServerPlayer.die} の前半と同じ手順で、
-     * 文だけをイベントのものにする。
-     */
-    private static void announceDeath(final ServerPlayer player, final org.bukkit.event.entity.PlayerDeathEvent event) {
-        final net.kyori.adventure.text.Component apiMessage = event.deathMessage() != null
-                ? event.deathMessage()
-                : net.kyori.adventure.text.Component.empty();
-        final Component screenMessage = PaperAdventure.asVanilla(
-                event.deathScreenMessageOverride() != null ? event.deathScreenMessageOverride() : apiMessage);
-
-        if (apiMessage != net.kyori.adventure.text.Component.empty() && event.getShowDeathMessages()) {
-            final Component deathMessage = PaperAdventure.asVanilla(apiMessage);
-            sendCombatKill(player, true, screenMessage);
-
-            final net.minecraft.world.scores.Team team = player.getTeam();
-            final net.minecraft.server.players.PlayerList list = player.level().getServer().getPlayerList();
-
-            if (team == null || team.getDeathMessageVisibility() == net.minecraft.world.scores.Team.Visibility.ALWAYS) {
-                list.broadcastSystemMessage(deathMessage, false);
-            } else if (team.getDeathMessageVisibility() == net.minecraft.world.scores.Team.Visibility.HIDE_FOR_OTHER_TEAMS) {
-                list.broadcastSystemToTeam(player, deathMessage);
-            } else if (team.getDeathMessageVisibility() == net.minecraft.world.scores.Team.Visibility.HIDE_FOR_OWN_TEAM) {
-                list.broadcastSystemToAllExceptTeam(player, deathMessage);
-            }
-        } else {
-            sendCombatKill(player, event.getShowDeathMessages(), screenMessage);
-        }
-    }
-
-    /** 死亡画面の packet。vanilla の {@code die} と同じく、長すぎる文は差し替える。 */
-    private static void sendCombatKill(final ServerPlayer player, final boolean display, final Component message) {
-        if (!display || message == net.minecraft.network.chat.CommonComponents.EMPTY) {
-            player.connection.send(new net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket(
-                    player.getId(), net.minecraft.network.chat.CommonComponents.EMPTY));
-
-            return;
-        }
-
-        player.connection.send(
-                new net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket(player.getId(), message),
-                net.minecraft.network.PacketSendListener.exceptionallySend(() -> {
-                    String truncated = message.getString(256);
-                    Component explanation = Component.translatable(
-                            "death.attack.message_too_long",
-                            Component.literal(truncated).withStyle(net.minecraft.ChatFormatting.YELLOW));
-                    Component fake = Component.translatable("death.attack.even_more_magic", player.getDisplayName())
-                            .withStyle(style -> style.withHoverEvent(
-                                    new net.minecraft.network.chat.HoverEvent.ShowText(explanation)));
-
-                    return new net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket(player.getId(), fake);
-                }));
-    }
 
 
-    /**
-     * リスポーンで新しい {@link ServerPlayer} が出来て、vanilla が古いものから
-     * 状態を写した直後。
-     *
-     * <p>Bukkit の {@code Player} は同じものを使い続ける。CraftBukkit は
-     * エンティティを作り直さないので、プラグインは持っている参照が
-     * リスポーン後も生きている前提で書かれている。vanilla は作り直すので、
-     * 古い側の {@code CraftPlayer} を新しい方へ付け替える。
-     *
-     * <p>死亡イベントが {@code keepInventory} や経験値の扱いを決めていたら、
-     * vanilla が写さなかった分をここで写す(Paper の {@code reset()} と同じ結果)。
-     */
-    public static void playerRespawned(final ServerPlayer old, final ServerPlayer fresh, final boolean keepAllPlayerData) {
-        final org.bukkit.craftbukkit.entity.CraftPlayer craft = old.getBukkitEntity();
-        craft.setHandle(fresh);
-        fresh.shifuAdoptBukkitEntity(craft);
 
-        if (!old.shifuDeathEvent) {
-            return;
-        }
 
-        old.shifuDeathEvent = false;
-
-        // vanilla が transferInventoryXpAndScore で写した条件。写していなければ補う
-        final boolean transferred = keepAllPlayerData
-                || fresh.level().getGameRules().get(net.minecraft.world.level.GameRules.KEEP_INVENTORY)
-                || old.isSpectator();
-
-        if (transferred) {
-            return;
-        }
-
-        if (old.shifuKeepInventory) {
-            fresh.getInventory().replaceWith(old.getInventory());
-            fresh.getInventory().setSelectedSlot(old.getInventory().getSelectedSlot());
-        }
-
-        if (old.keepLevel) {
-            fresh.experienceLevel = old.experienceLevel;
-            fresh.totalExperience = old.totalExperience;
-            fresh.experienceProgress = old.experienceProgress;
-        } else {
-            fresh.experienceLevel = old.newLevel;
-            fresh.totalExperience = old.newTotalExp;
-            fresh.experienceProgress = 0.0F;
-            fresh.giveExperiencePoints(old.newExp);
-        }
-    }
 
     // ------------------------------------------------------------ ブロックの変化
 
@@ -1115,126 +633,14 @@ public final class ShifuEvents {
         return org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
     }
 
-    /**
-     * 発火のあと。取り消されたら控えに戻す。プラグインが {@code getNewState()} を
-     * 書き換えていたら、その状態で置き直す(Paper はイベント後の snapshot を置く)。
-     */
-    private static void finishBlockChange(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
-                                          final org.bukkit.craftbukkit.block.CraftBlockState before,
-                                          final org.bukkit.craftbukkit.block.CraftBlockState placed,
-                                          final boolean allowed, final int flags) {
-        if (!allowed) {
-            before.place(flags);
 
-            return;
-        }
 
-        if (placed.getHandle() != level.getBlockState(pos)) {
-            placed.place(flags);
-        }
-    }
 
-    /** BlockGrowEvent。vanilla が置いたあと。 */
-    public static void blockGrow(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
-                                 final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags) {
-        if (before == null) {
-            return;
-        }
 
-        final org.bukkit.craftbukkit.block.CraftBlockState placed = org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
-        final org.bukkit.event.block.BlockGrowEvent event = new org.bukkit.event.block.BlockGrowEvent(placed.getBlock(), placed);
-        finishBlockChange(level, pos, before, placed, event.callEvent(), flags);
-    }
 
-    /** BlockSpreadEvent。vanilla が置いたあと。 */
-    public static void blockSpread(final net.minecraft.world.level.LevelAccessor level, final BlockPos source, final BlockPos pos,
-                                   final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags) {
-        if (before == null) {
-            return;
-        }
-
-        final BlockPos from = CraftEventFactory.sourceBlockOverride != null ? CraftEventFactory.sourceBlockOverride : source;
-        final org.bukkit.craftbukkit.block.CraftBlockState placed = org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
-        final org.bukkit.event.block.BlockSpreadEvent event = new org.bukkit.event.block.BlockSpreadEvent(
-                placed.getBlock(), CraftBlock.at(level, from), placed);
-        finishBlockChange(level, pos, before, placed, event.callEvent(), flags);
-    }
-
-    /** BlockFormEvent / EntityBlockFormEvent。vanilla が置いたあと。 */
-    public static void blockForm(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
-                                 final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags, final Entity entity) {
-        if (before == null) {
-            return;
-        }
-
-        final org.bukkit.craftbukkit.block.CraftBlockState placed = org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
-        final org.bukkit.event.block.BlockFormEvent event = entity == null
-                ? new org.bukkit.event.block.BlockFormEvent(placed.getBlock(), placed)
-                : new org.bukkit.event.block.EntityBlockFormEvent(entity.getBukkitEntity(), placed.getBlock(), placed);
-        finishBlockChange(level, pos, before, placed, event.callEvent(), flags);
-    }
-
-    /** MoistureChangeEvent。vanilla が置いたあと。 */
-    public static void moistureChange(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
-                                      final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags) {
-        if (before == null) {
-            return;
-        }
-
-        final org.bukkit.craftbukkit.block.CraftBlockState placed = org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
-        final org.bukkit.event.block.MoistureChangeEvent event = new org.bukkit.event.block.MoistureChangeEvent(placed.getBlock(), placed);
-        finishBlockChange(level, pos, before, placed, event.callEvent(), flags);
-    }
-
-    /** CauldronLevelChangeEvent。vanilla が置いたあと。 */
-    public static void cauldronLevelChange(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
-                                           final org.bukkit.craftbukkit.block.CraftBlockState before, final Entity entity,
-                                           final org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason reason) {
-        if (before == null) {
-            return;
-        }
-
-        final org.bukkit.craftbukkit.block.CraftBlockState placed = org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
-        final org.bukkit.event.block.CauldronLevelChangeEvent event = new org.bukkit.event.block.CauldronLevelChangeEvent(
-                CraftBlock.at(level, pos), entity == null ? null : entity.getBukkitEntity(), reason, placed);
-        finishBlockChange(level, pos, before, placed, event.callEvent(), net.minecraft.world.level.block.Block.UPDATE_ALL);
-    }
 
     // ------------------------------------------------------------ クリック
 
-    /**
-     * ブロックへの右クリック。{@code useItemOn} の先頭、状態を読んだ直後で、
-     * まだ何も起きていない。Paper と同じ位置・同じ引数で発火する。
-     *
-     * @return 発火したイベント。登録が無ければ null
-     *
-     * <p>参照した位置(Paper 26.2):
-     * {@code paper-server patches/sources/net/minecraft/server/level/ServerPlayerGameMode.java.patch:340}
-     */
-    public static org.bukkit.event.player.PlayerInteractEvent interactBlock(
-            final net.minecraft.server.level.ServerPlayerGameMode gameMode, final ServerPlayer player,
-            final net.minecraft.world.level.Level level, final net.minecraft.world.item.ItemStack itemStack,
-            final net.minecraft.world.InteractionHand hand, final net.minecraft.world.phys.BlockHitResult hitResult,
-            final net.minecraft.world.level.block.state.BlockState state) {
-        if (!listening(org.bukkit.event.player.PlayerInteractEvent.getHandlerList())) {
-            return null;
-        }
-
-        final BlockPos pos = hitResult.getBlockPos();
-        final boolean cancelledBlock = gameMode.getGameModeForPlayer() == net.minecraft.world.level.GameType.SPECTATOR
-                && state.getMenuProvider(level, pos) == null;
-        final boolean cancelledItem = player.getCooldowns().isOnCooldown(itemStack);
-        final org.bukkit.event.player.PlayerInteractEvent event = CraftEventFactory.callPlayerInteractEvent(
-                player, org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK, pos, hitResult.getDirection(), itemStack,
-                cancelledBlock, cancelledItem, hand, hitResult.getLocation());
-        gameMode.firedInteract = true;
-        gameMode.interactResult = event.useItemInHand() == org.bukkit.event.Event.Result.DENY;
-        gameMode.interactPosition = pos.immutable();
-        gameMode.interactHand = hand;
-        gameMode.interactItemStack = itemStack.copy();
-
-        return event;
-    }
 
     /**
      * ブロックへの右クリックが拒まれたとき。Paper と同じくクライアントの画面を直して返る。
@@ -1268,121 +674,12 @@ public final class ShifuEvents {
         return true;
     }
 
-    /**
-     * ブロックへの左クリック(壊し始め)。vanilla の権限判定のあと、
-     * クリエイティブの即時破壊より前。Paper と同じ位置。
-     *
-     * @return 続けてよいか
-     */
-    public static boolean interactBlockLeft(final ServerPlayer player, final BlockPos pos, final net.minecraft.core.Direction direction) {
-        if (!listening(org.bukkit.event.player.PlayerInteractEvent.getHandlerList())) {
-            return true;
-        }
-
-        return !CraftEventFactory.callPlayerInteractEvent(
-                player, org.bukkit.event.block.Action.LEFT_CLICK_BLOCK, pos, direction,
-                player.getInventory().getSelectedItem(), net.minecraft.world.InteractionHand.MAIN_HAND).isCancelled();
-    }
 
     // ------------------------------------------------------------ ログイン
 
     private static final java.util.concurrent.atomic.AtomicInteger PRE_LOGIN_THREADS = new java.util.concurrent.atomic.AtomicInteger();
 
-    /**
-     * AsyncPlayerPreLoginEvent と PlayerPreLoginEvent。名前が決まって、vanilla が
-     * {@code startClientVerification} で先へ進む直前。
-     *
-     * <p>登録が無ければ true を返して vanilla がそのまま進む。登録があれば
-     * Paper と同じく別スレッドで発火し、通ったらプロフィール(差し替えられていることがある)で
-     * vanilla の続きへ進み、弾かれたら切断する。どちらも false を返すので、
-     * 呼ぶ側の vanilla の行は飛ばす。
-     *
-     * <p>参照した位置(Paper 26.2):
-     * {@code paper-server patches/sources/net/minecraft/server/network/ServerLoginPacketListenerImpl.java.patch:251}
-     */
-    public static boolean preLogin(final net.minecraft.server.network.ServerLoginPacketListenerImpl listener,
-                                   final com.mojang.authlib.GameProfile profile) {
-        if (!listening(org.bukkit.event.player.AsyncPlayerPreLoginEvent.getHandlerList())
-                && !listening(org.bukkit.event.player.PlayerPreLoginEvent.getHandlerList())) {
-            return true;
-        }
 
-        final Thread thread = new Thread("Shifu pre-login #" + PRE_LOGIN_THREADS.incrementAndGet()) {
-            @Override
-            public void run() {
-                try {
-                    final com.mojang.authlib.GameProfile accepted = callPreLoginEvents(listener, profile);
-
-                    if (accepted != null) {
-                        listener.shifuStartClientVerification(accepted);
-                    }
-                } catch (final Exception e) {
-                    listener.disconnect(Component.literal("Failed to verify username!"));
-                    org.bukkit.Bukkit.getLogger().log(java.util.logging.Level.WARNING, "Exception verifying " + profile.name(), e);
-                }
-            }
-        };
-        thread.setUncaughtExceptionHandler(new net.minecraft.DefaultUncaughtExceptionHandler(org.slf4j.LoggerFactory.getLogger("Shifu")));
-        thread.start();
-
-        return false;
-    }
-
-    /** Paper の {@code callPlayerPreLoginEvents} と同じ手順。弾かれたら切断して null。 */
-    private static com.mojang.authlib.GameProfile callPreLoginEvents(
-            final net.minecraft.server.network.ServerLoginPacketListenerImpl listener,
-            final com.mojang.authlib.GameProfile original) {
-        final net.minecraft.network.Connection connection = listener.shifuConnection();
-        final org.bukkit.craftbukkit.CraftServer server = (org.bukkit.craftbukkit.CraftServer) org.bukkit.Bukkit.getServer();
-        final java.net.InetAddress address = inetAddress(connection.getRemoteAddress());
-        final java.net.InetAddress rawAddress = inetAddress(connection.channel.remoteAddress());
-
-        com.destroystokyo.paper.profile.PlayerProfile profile = com.destroystokyo.paper.profile.CraftPlayerProfile.asBukkitCopy(original);
-        final org.bukkit.event.player.AsyncPlayerPreLoginEvent asyncEvent = new org.bukkit.event.player.AsyncPlayerPreLoginEvent(
-                original.name(), address, rawAddress, original.id(), listener.transferred, profile,
-                connection.hostname, listener.paperLoginConnection);
-        server.getPluginManager().callEvent(asyncEvent);
-        profile = asyncEvent.getPlayerProfile();
-        profile.complete(true);
-
-        final com.mojang.authlib.GameProfile accepted = com.destroystokyo.paper.profile.CraftPlayerProfile.asAuthlibCopy(profile);
-
-        if (listening(org.bukkit.event.player.PlayerPreLoginEvent.getHandlerList())) {
-            final org.bukkit.event.player.PlayerPreLoginEvent event =
-                    new org.bukkit.event.player.PlayerPreLoginEvent(accepted.name(), address, accepted.id());
-
-            if (asyncEvent.getResult() != org.bukkit.event.player.PlayerPreLoginEvent.Result.ALLOWED) {
-                event.disallow(asyncEvent.getResult(), asyncEvent.kickMessage());
-            }
-
-            final org.bukkit.craftbukkit.util.Waitable<org.bukkit.event.player.PlayerPreLoginEvent.Result> waitable =
-                    new org.bukkit.craftbukkit.util.Waitable<>() {
-                        @Override
-                        protected org.bukkit.event.player.PlayerPreLoginEvent.Result evaluate() {
-                            server.getPluginManager().callEvent(event);
-
-                            return event.getResult();
-                        }
-                    };
-            server.getServer().processQueue.add(waitable);
-
-            try {
-                if (waitable.get() != org.bukkit.event.player.PlayerPreLoginEvent.Result.ALLOWED) {
-                    listener.disconnect(PaperAdventure.asVanilla(event.kickMessage()));
-
-                    return null;
-                }
-            } catch (final InterruptedException | java.util.concurrent.ExecutionException e) {
-                throw new IllegalStateException(e);
-            }
-        } else if (asyncEvent.getLoginResult() != org.bukkit.event.player.AsyncPlayerPreLoginEvent.Result.ALLOWED) {
-            listener.disconnect(PaperAdventure.asVanilla(asyncEvent.kickMessage()));
-
-            return null;
-        }
-
-        return accepted;
-    }
 
     private static java.net.InetAddress inetAddress(final java.net.SocketAddress address) {
         return address instanceof java.net.InetSocketAddress inet ? inet.getAddress() : java.net.InetAddress.getLoopbackAddress();
@@ -1415,18 +712,6 @@ public final class ShifuEvents {
         return true;
     }
 
-    /** EntityChangeBlockEvent。vanilla が置いたあと。Paper は置く前に発火するが、形は同じ。 */
-    public static void entityChangeBlock(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
-                                         final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags, final Entity entity) {
-        if (before == null) {
-            return;
-        }
-
-        final org.bukkit.craftbukkit.block.CraftBlockState placed = org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
-        final org.bukkit.event.entity.EntityChangeBlockEvent event = new org.bukkit.event.entity.EntityChangeBlockEvent(
-                entity.getBukkitEntity(), placed.getBlock(), placed.getBlockData());
-        finishBlockChange(level, pos, before, placed, event.callEvent(), flags);
-    }
 
     // ------------------------------------------------------------ TNT
 

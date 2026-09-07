@@ -355,15 +355,6 @@ insert:
 
 file: net/minecraft/world/entity/decoration/ArmorStand.java
 anchor:
-    Block.popResource(this.level(), this.blockPosition().above(), itemStack);
-    }
-    }
-insert-after:
-    dev.shifu.event.EntityEvents.armorStandDeath(level, this, damageSource, shifuDrops);
-
-# EntityDeathEvent(kill)。直前に壊れて出していれば出さない。
-file: net/minecraft/world/entity/decoration/ArmorStand.java
-anchor:
     this.remove(Entity.RemovalReason.KILLED);
     this.gameEvent(GameEvent.ENTITY_DIE);
 insert:

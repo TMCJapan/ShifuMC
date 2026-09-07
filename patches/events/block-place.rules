@@ -27,16 +27,3 @@ insert-after:
                             blockPlaceContext.getLevel(),
                             blockPlaceContext.getClickedPos()).getState()
                     : null;
-
-file: net/minecraft/world/item/BlockItem.java
-anchor:
-    SoundType soundType = blockState2.getSoundType();
-insert:
-    if (shifuReplaced != null && level instanceof net.minecraft.server.level.ServerLevel shifuLevel
-            && !dev.shifu.event.ShifuEvents.blockPlace(
-                    shifuLevel, player, blockPlaceContext.getHand(), shifuReplaced,
-                    blockPlaceContext.getHitResult().getBlockPos())) {
-        shifuLevel.setBlock(clickedPos, ((org.bukkit.craftbukkit.block.CraftBlockState) shifuReplaced).getHandle(),
-                net.minecraft.world.level.block.Block.UPDATE_ALL);
-        return InteractionResult.FAIL;
-    }

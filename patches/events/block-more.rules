@@ -567,48 +567,6 @@ insert:
 # ------------------------------------------------------------ レッドストーン
 
 # BlockRedstoneEvent(トラップドア)
-file: net/minecraft/world/world/block/TripWireHookBlock.java
-anchor:
-    Direction opposite = direction.getOpposite();
-    world.setBlock(blockPosx, blockState1.setValue(FACING, opposite), Block.UPDATE_ALL);
-    notifyNeighbors(block, world, blockPosx, opposite);
-    emitState(world, blockPosx, flag2, flag3, flag, flag1);
-insert:
-    if (dev.shifu.event.BlockEvents.tripwireHook(world, blockPosx, flag1, flag3)) {
-insert-after:
-    }
-
-file: net/minecraft/world/world/block/TripWireHookBlock.java
-anchor:
-    emitState(world, pos, flag2, flag3, flag, flag1);
-    if (!attaching) {
-        world.setBlock(pos, blockState1.setValue(FACING, direction), Block.UPDATE_ALL);
-        if (shouldNotifyNeighbours) {
-            notifyNeighbors(block, world, pos, direction);
-        }
-    }
-insert:
-    if (dev.shifu.event.BlockEvents.tripwireHook(world, pos, flag1, flag3)) {
-insert-after:
-    }
-
-# BlockRedstoneEvent(書見台のページ送り)
-file: net/minecraft/world/world/block/LecternBlock.java
-anchor:
-    world.setBlock(pos, state.setValue(POWERED, powered), Block.UPDATE_ALL);
-insert:
-    if (!dev.shifu.event.BlockEvents.lecternPowered(world, pos, state, powered)) {
-        return;
-    }
-
-# PlayerInsertLecternBookEvent
-file: net/minecraft/world/world/redstone/DefaultRedstoneWireEvaluator.java
-anchor:
-    if (state.getValue(RedStoneWireBlock.POWER) != i) {
-insert:
-    i = dev.shifu.event.BlockEvents.redstoneWire(world, pos, state, i);
-
-# TargetHitEvent と BlockRedstoneEvent(的ブロック)
 file: net/minecraft/world/world/block/TargetBlock.java
 anchor:
     if (!world.getBlockTicks().hasScheduledTick(hitResult.getBlockPos(), state.getBlock())) {
@@ -922,19 +880,6 @@ anchor:
 insert:
     dev.shifu.event.BlockEvents.cauldronCause(entity1, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.EXTINGUISH);
 
-file: net/minecraft/world/world/block/LayeredCauldronBlock.java
-anchor:
-    BlockState blockState = i == 0 ? Blocks.CAULDRON.defaultBlockState() : state.setValue(LEVEL, i);
-    world.setBlockAndUpdate(pos, blockState);
-insert:
-    final org.bukkit.craftbukkit.block.CraftBlockState shifuCauldron = dev.shifu.event.BlockEvents.cauldronBefore(world, pos);
-insert-after:
-    dev.shifu.event.BlockEvents.cauldronLowered(world, pos, shifuCauldron);
-
-# ------------------------------------------------------------ キノコが広がる
-#
-# vanilla は pos を書き換えながら place を探すので、広がりの元は探す前に控える。
-# Paper も同じ理由で sourcePos を足している(Use correct source for mushroom block spread event)。
 file: net/minecraft/world/world/block/MushroomBlock.java
 anchor:
     for (int k = 0; k < 4; k++) {
