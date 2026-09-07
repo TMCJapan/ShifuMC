@@ -10,8 +10,3 @@ insert-after:
 
 # 本編の listener は handleCustomPayload を空で上書きしている。共通側の配線は届かないので、
 # ここにも同じものを置く(設定フェーズは共通側が受ける)。
-file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
-anchor:
-    public void handleCustomPayload(ServerboundCustomPayloadPacket packet) {
-insert-after:
-    dev.shifu.event.PluginMessages.handle(this, packet);

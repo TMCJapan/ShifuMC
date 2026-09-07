@@ -129,66 +129,6 @@ public final class PluginMessages {
         });
     }
 
-    /**
-     * {@code handleCustomPayload}(vanilla は空)の中身。
-     *
-     * <p>Paper と同じことをする: {@code minecraft:register} / {@code unregister} は
-     * チャンネルの登録、{@code minecraft:brand} はクライアントの名乗り、それ以外は
-     * Bukkit の Messenger へ渡す。
-     *
-     * <p>Paper は読めない本文で接続を切るが、vanilla は何もしないので切らずに記録だけ残す。
-     */
-    public static void handle(final ServerCommonPacketListenerImpl listener, final ServerboundCustomPayloadPacket packet) {
-        if (!enabled()) {
-            return;
-        }
-
-        if (packet.payload() instanceof BrandPayload brand) {
-            listener.playerBrand = brand.brand();
-
-            return;
-        }
-
-        if (!(packet.payload() instanceof DiscardedPayload discarded)) {
-            return;
-        }
-
-        // vanilla は捨てる packet なので、ここから先はサーバースレッドで行う。
-        // 控えを取り出すのは待ち行列へ回したあと(先に取り出すと、回された 2 回目で列がずれる)。
-        net.minecraft.network.protocol.PacketUtils.ensureRunningOnSameThread(packet, listener, net.minecraft.server.MinecraftServer.getServer().packetProcessor());
-
-        final byte[] data = take(listener.connection);
-
-        if (data == null) {
-            return;
-        }
-
-        final Identifier identifier = discarded.id();
-
-        try {
-            final boolean register = REGISTER.equals(identifier);
-
-            if (register || UNREGISTER.equals(identifier)) {
-                int start = 0;
-
-                for (int at = 0; at < data.length; at++) {
-                    if (data[at] == 0) {
-                        channel(listener, data, start, at, register);
-                        start = at + 1;
-                    }
-                }
-
-                channel(listener, data, start, data.length, register);
-
-                return;
-            }
-
-            listener.cserver.getMessenger().dispatchIncomingMessage(listener.paperConnection(), identifier.toString(), data);
-        } catch (final RuntimeException e) {
-            org.slf4j.LoggerFactory.getLogger(PluginMessages.class)
-                    .error("チャンネル {} のプラグインメッセージを処理できない", identifier, e);
-        }
-    }
 
     private static byte[] take(final Connection connection) {
         final Deque<byte[]> queue = PENDING.get(connection);
@@ -202,32 +142,5 @@ public final class PluginMessages {
         }
     }
 
-    private static void channel(final ServerCommonPacketListenerImpl listener, final byte[] data,
-                                final int from, final int to, final boolean register) {
-        if (to - from <= 0) {
-            return;
-        }
 
-        final io.papermc.paper.connection.PluginMessageBridgeImpl bridge = bridgeOf(listener);
-
-        if (bridge == null) {
-            return;
-        }
-
-        final String channel = new String(data, from, to - from, StandardCharsets.US_ASCII);
-
-        if (register) {
-            bridge.addChannel(channel);
-        } else {
-            bridge.removeChannel(channel);
-        }
-    }
-
-    private static io.papermc.paper.connection.PluginMessageBridgeImpl bridgeOf(final ServerCommonPacketListenerImpl listener) {
-        return switch (listener) {
-            case net.minecraft.server.network.ServerGamePacketListenerImpl game -> game.player.getBukkitEntity();
-            case net.minecraft.server.network.ServerConfigurationPacketListenerImpl configuration -> configuration.paperConnection;
-            default -> null;
-        };
-    }
 }

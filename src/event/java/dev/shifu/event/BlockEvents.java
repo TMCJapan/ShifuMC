@@ -96,41 +96,6 @@ public final class BlockEvents {
         dispenseRemaining = dispensed;
     }
 
-    /**
-     * BlockDispenseEvent(既定の挙動)。{@code spawnItem} で ItemEntity を作って速度を決めたあと、
-     * 世界に足す直前。Paper と同じ位置で、取り消し・アイテムの差し替え・速度の差し替えが効く。
-     *
-     * <p>効かないもの: 種類の違うアイテムに差し替えたときに、その種類の挙動へ渡し直すこと
-     * (Paper の chain)。差し替えたアイテムをそのまま落とす。
-     *
-     * @return 世界に足してよいか
-     */
-    public static boolean dispenseItem(final Level level, final ItemEntity itemEntity) {
-        final BlockSource source = dispenseSource;
-        final ItemStack remaining = dispenseRemaining;
-        dispenseSource = null;
-        dispenseRemaining = null;
-
-        if (source == null || !listening(org.bukkit.event.block.BlockDispenseEvent.getHandlerList())) {
-            return true;
-        }
-
-        final CraftItemStack craftItem = CraftItemStack.asCraftMirror(itemEntity.getItem());
-        final org.bukkit.event.block.BlockDispenseEvent event = new org.bukkit.event.block.BlockDispenseEvent(
-                bukkit(level, source.pos()), craftItem.clone(), CraftVector.toBukkit(itemEntity.getDeltaMovement()));
-
-        if (!event.callEvent()) {
-            // Paper と同じく、取り出した 1 個を戻す
-            remaining.grow(1);
-
-            return false;
-        }
-
-        itemEntity.setItem(CraftItemStack.asNMSCopy(event.getItem()));
-        itemEntity.setDeltaMovement(CraftVector.toVec3(event.getVelocity()));
-
-        return true;
-    }
 
     /**
      * BlockDispenseEvent(専用の挙動)。ボート・トロッコ・投射物・防具立て・バケツ・TNT・
@@ -357,28 +322,6 @@ public final class BlockEvents {
         return false;
     }
 
-    /**
-     * EntityCombustByBlockEvent。火のブロックが燃やす直前。
-     *
-     * @return 燃やしてよいか。取り消されたら Paper と同じく残り火の時間を 1 戻す
-     */
-    public static boolean combustByBlock(final Entity entity, final BlockPos pos) {
-        if (!listening(org.bukkit.event.entity.EntityCombustByBlockEvent.getHandlerList())) {
-            return true;
-        }
-
-        final org.bukkit.event.entity.EntityCombustByBlockEvent event = new org.bukkit.event.entity.EntityCombustByBlockEvent(
-                bukkit(entity.level(), pos), entity.getBukkitEntity(), 8.0F);
-
-        if (event.callEvent()) {
-            // 効かないもの: 燃える長さ(vanilla の 8 秒のまま)
-            return true;
-        }
-
-        entity.setRemainingFireTicks(entity.getRemainingFireTicks() - 1);
-
-        return false;
-    }
 
     // ------------------------------------------------------------ ブロックの消滅・生成・変化
 
@@ -399,21 +342,6 @@ public final class BlockEvents {
         return listening(org.bukkit.event.block.BlockFadeEvent.getHandlerList());
     }
 
-    /**
-     * 氷が溶ける。消えるか水になるかは vanilla と同じ判定で決める。
-     *
-     * @return 溶かしてよいか
-     */
-    public static boolean iceMelt(final Level level, final BlockPos pos) {
-        if (!listening(org.bukkit.event.block.BlockFadeEvent.getHandlerList())) {
-            return true;
-        }
-
-        final boolean evaporates = level.environmentAttributes().getValue(net.minecraft.world.attribute.EnvironmentAttributes.WATER_EVAPORATES, pos);
-
-        return fade(level, pos, evaporates ? net.minecraft.world.level.block.Blocks.AIR.defaultBlockState()
-                : net.minecraft.world.level.block.Blocks.WATER.defaultBlockState());
-    }
 
     /**
      * BlockFormEvent(返り値で状態を決める形: コンクリートパウダーが固まる)。
@@ -652,31 +580,7 @@ public final class BlockEvents {
 
     // ------------------------------------------------------------ レッドストーン
 
-    /**
-     * BlockRedstoneEvent(0 か 15 の二値)。
-     *
-     * @return 変えてよいか(プラグインが値を元に戻していないか)
-     */
-    public static boolean binaryRedstone(final LevelAccessor level, final BlockPos pos, final boolean willBePowered) {
-        if (!listening(org.bukkit.event.block.BlockRedstoneEvent.getHandlerList())) {
-            return true;
-        }
 
-        return CraftEventFactory.callBinaryRedstoneChange(level, pos, willBePowered);
-    }
-
-    /**
-     * BlockRedstoneEvent(強さ)。レッドストーンダストの評価と的ブロック。
-     *
-     * @return プラグインが決めた強さ。登録が無ければそのまま
-     */
-    public static int redstoneChange(final LevelAccessor level, final BlockPos pos, final int oldCurrent, final int newCurrent) {
-        if (oldCurrent == newCurrent || !listening(org.bukkit.event.block.BlockRedstoneEvent.getHandlerList())) {
-            return newCurrent;
-        }
-
-        return CraftEventFactory.callRedstoneChange(level, pos, oldCurrent, newCurrent).getNewCurrent();
-    }
 
     /**
      * レッドストーンダスト。Paper は「置かれている状態が今の状態のとき」だけ発火する。
@@ -740,38 +644,6 @@ public final class BlockEvents {
         }
     }
 
-    /**
-     * SpongeAbsorbEvent。vanilla が水を消したあと、スポンジを濡らす前。取り消されたら控えに戻す。
-     *
-     * <p>効かないもの: 昆布などの落とし物は取り消しても出る(vanilla が先に落とす)。
-     * イベントの blocks の書き換え。
-     *
-     * @return スポンジを濡らしてよいか
-     */
-    public static boolean spongeAbsorb(final Level level, final BlockPos sponge) {
-        final List<CraftBlockState> before = spongeAbsorbed;
-        spongeAbsorbed = null;
-
-        if (before == null || before.isEmpty()) {
-            return true;
-        }
-
-        final List<org.bukkit.block.BlockState> after = new ArrayList<>();
-
-        for (final CraftBlockState state : before) {
-            after.add(CraftBlockStates.getBlockState(level, state.getPosition()));
-        }
-
-        if (new org.bukkit.event.block.SpongeAbsorbEvent(bukkit(level, sponge), after).callEvent()) {
-            return true;
-        }
-
-        for (int i = before.size() - 1; i >= 0; i--) {
-            before.get(i).place(Block.UPDATE_ALL);
-        }
-
-        return false;
-    }
 
     // ------------------------------------------------------------ 流体
 
@@ -813,40 +685,9 @@ public final class BlockEvents {
         return listening(org.bukkit.event.block.BlockReceiveGameEvent.getHandlerList());
     }
 
-    /**
-     * BlockReceiveGameEvent。スカルクセンサーなどが振動を受ける直前。登録があるときだけ呼ばれる。
-     *
-     * <p>効かないもの: vanilla が受けないと判定したものを、取り消しを外して受けさせること。
-     *
-     * @return 受けてよいか
-     */
-    public static boolean receiveGameEvent(final ServerLevel level, final net.minecraft.core.Holder<net.minecraft.world.level.gameevent.GameEvent> event,
-                                           final net.minecraft.world.level.gameevent.GameEvent.Context context, final Vec3 destination, final boolean vanillaReceives) {
-        final Entity entity = context.sourceEntity();
-        final org.bukkit.event.block.BlockReceiveGameEvent bukkitEvent = new org.bukkit.event.block.BlockReceiveGameEvent(
-                org.bukkit.craftbukkit.CraftGameEvent.minecraftHolderToBukkit(event), bukkit(level, BlockPos.containing(destination)),
-                entity == null ? null : entity.getBukkitEntity());
-        bukkitEvent.setCancelled(!vanillaReceives);
-        bukkitEvent.callEvent();
-
-        return !bukkitEvent.isCancelled();
-    }
 
     // ------------------------------------------------------------ ポータル
 
-    /**
-     * EntityPortalEnterEvent。ネザーポータルの中に入った。
-     *
-     * @return 続けてよいか
-     */
-    public static boolean portalEnter(final Entity entity, final Level level, final BlockPos pos) {
-        if (!listening(org.bukkit.event.entity.EntityPortalEnterEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new org.bukkit.event.entity.EntityPortalEnterEvent(entity.getBukkitEntity(),
-                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level), org.bukkit.PortalType.NETHER).callEvent();
-    }
 
     /**
      * EntityPortalReadyEvent。行き先の世界が決まった直後。
@@ -868,23 +709,6 @@ public final class BlockEvents {
         return event.getTargetWorld() == null ? null : ((org.bukkit.craftbukkit.CraftWorld) event.getTargetWorld()).getHandle();
     }
 
-    /**
-     * EntityPortalEvent / PlayerPortalEvent。ネザーの出口を探す直前(Paper の handlePortalEvents)。
-     *
-     * <p>効かないもの: 探す半径・作る半径の差し替え(vanilla の {@code getExitPortal} は自分の値を使う)。
-     * 行き先の世界と位置の差し替えは効く。
-     *
-     * @return 行き先。取り消されたら null
-     */
-    public static org.bukkit.craftbukkit.event.PortalEventResult portalDestination(final Entity entity, final ServerLevel newLevel, final BlockPos approximateExitPos) {
-        if (!listening(org.bukkit.event.entity.EntityPortalEvent.getHandlerList())
-                && !listening(org.bukkit.event.player.PlayerPortalEvent.getHandlerList())) {
-            return null;
-        }
-
-        return CraftEventFactory.handlePortalEvents(entity, org.bukkit.craftbukkit.util.CraftLocation.toBukkit(approximateExitPos, newLevel),
-                org.bukkit.PortalType.NETHER, 128, 16);
-    }
 
     public static boolean listeningPortal() {
         return listening(org.bukkit.event.entity.EntityPortalEvent.getHandlerList())
@@ -893,22 +717,6 @@ public final class BlockEvents {
 
     // ------------------------------------------------------------ 書見台・看板・鐘
 
-    /**
-     * PlayerInsertLecternBookEvent。本を置く直前。
-     *
-     * <p>効かないもの: {@code setBook} での差し替え(vanilla の行が渡す本を変えられない)。
-     *
-     * @return 置いてよいか
-     */
-    public static boolean insertLecternBook(final LivingEntity sourceEntity, final Level level, final BlockPos pos, final ItemStack book) {
-        if (!(sourceEntity instanceof ServerPlayer player)
-                || !listening(io.papermc.paper.event.player.PlayerInsertLecternBookEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new io.papermc.paper.event.player.PlayerInsertLecternBookEvent(player.getBukkitEntity(), bukkit(level, pos),
-                CraftItemStack.asCraftMirror(book.copyWithCount(1))).callEvent();
-    }
 
     /**
      * BlockRedstoneEvent(書見台のページ送りの信号)。
@@ -1104,24 +912,6 @@ public final class BlockEvents {
         return brewingConsumes;
     }
 
-    /**
-     * BrewingStartEvent。醸造を始めた直後(vanilla が 400 を入れたあと)。
-     *
-     * <p>効かないもの: {@code setRecipeBrewTime}(Paper だけの欄)。
-     *
-     * @return 醸造にかかる時間
-     */
-    public static int brewingStart(final Level level, final BlockPos pos, final ItemStack ingredient, final int vanilla) {
-        if (!listening(org.bukkit.event.block.BrewingStartEvent.getHandlerList())) {
-            return vanilla;
-        }
-
-        final org.bukkit.event.block.BrewingStartEvent event = new org.bukkit.event.block.BrewingStartEvent(
-                bukkit(level, pos), CraftItemStack.asCraftMirror(ingredient), vanilla);
-        event.callEvent();
-
-        return event.getBrewingTime();
-    }
 
     /**
      * BrewEvent。醸造の結果を入れる直前。結果は vanilla と同じ {@code mix} で先に求める。
@@ -1212,20 +1002,6 @@ public final class BlockEvents {
         return listening(org.bukkit.event.inventory.FurnaceStartSmeltEvent.getHandlerList());
     }
 
-    /**
-     * FurnaceStartSmeltEvent。焼き始め(cookingTimer が 0)のとき。登録があるときだけ呼ばれる。
-     *
-     * @return 焼くのにかかる時間
-     */
-    public static int furnaceStartSmelt(final ServerLevel level, final BlockPos pos, final ItemStack ingredient,
-                                        final net.minecraft.world.item.crafting.RecipeHolder<? extends net.minecraft.world.item.crafting.AbstractCookingRecipe> recipe) {
-        final org.bukkit.event.inventory.FurnaceStartSmeltEvent event = new org.bukkit.event.inventory.FurnaceStartSmeltEvent(
-                bukkit(level, pos), CraftItemStack.asCraftMirror(ingredient),
-                (org.bukkit.inventory.CookingRecipe<?>) recipe.toBukkitRecipe(), recipe.value().cookingTime());
-        event.callEvent();
-
-        return event.getTotalCookTime();
-    }
 
     /**
      * FurnaceSmeltEvent。焼き上がりを結果の枠に入れる直前(呼び出し側で)。
@@ -1393,89 +1169,9 @@ public final class BlockEvents {
         return event.callEvent() && items.contains(entity.getBukkitEntity());
     }
 
-    /**
-     * TrialSpawnerSpawnEvent。世界に足す直前。
-     *
-     * @return 足してよいか
-     */
-    public static boolean trialSpawn(final Entity entity, final BlockPos spawnerPos) {
-        if (!listening(org.bukkit.event.entity.TrialSpawnerSpawnEvent.getHandlerList())) {
-            return true;
-        }
 
-        return !CraftEventFactory.callTrialSpawnerSpawnEvent(entity, spawnerPos).isCancelled();
-    }
 
-    /**
-     * BlockDispenseLootEvent。トライアルスポナーと宝物庫が報酬を出す直前。
-     *
-     * @return 出す物。取り消されたら null
-     */
-    public static List<ItemStack> dispenseLoot(final ServerLevel level, final BlockPos pos, final net.minecraft.world.entity.player.Player player,
-                                               final List<ItemStack> loot, final net.minecraft.resources.ResourceKey<net.minecraft.world.level.storage.loot.LootTable> lootTable) {
-        if (!listening(org.bukkit.event.block.BlockDispenseLootEvent.getHandlerList())) {
-            return loot;
-        }
 
-        final org.bukkit.event.block.BlockDispenseLootEvent event = CraftEventFactory.callBlockDispenseLootEvent(
-                level, pos, player, loot, level.getServer().reloadableRegistries().getLootTable(lootTable));
-
-        if (event.isCancelled()) {
-            return null;
-        }
-
-        return event.getDispensedLoot().stream().map(CraftItemStack::asNMSCopy).toList();
-    }
-
-    /**
-     * VaultChangeStateEvent。状態を書く直前。
-     *
-     * <p>効かないもの: 鍵を入れたプレイヤーの紐付け(vanilla の setVaultState には渡らない)。
-     * ACTIVE になるときだけ、繋がっているプレイヤーの 1 人を入れる(Paper と同じ)。
-     *
-     * @return 書いてよいか
-     */
-    public static boolean vaultState(final ServerLevel level, final BlockPos pos,
-                                     final net.minecraft.world.level.block.entity.vault.VaultState from,
-                                     final net.minecraft.world.level.block.entity.vault.VaultState to,
-                                     final net.minecraft.world.level.block.entity.vault.VaultSharedData sharedData) {
-        if (!listening(io.papermc.paper.event.block.VaultChangeStateEvent.getHandlerList())) {
-            return true;
-        }
-
-        org.bukkit.entity.Player associated = null;
-
-        if (to == net.minecraft.world.level.block.entity.vault.VaultState.ACTIVE) {
-            final java.util.Set<java.util.UUID> connected = sharedData.getConnectedPlayers();
-
-            if (!connected.isEmpty()) {
-                associated = level.getCraftServer().getPlayer(connected.iterator().next());
-            }
-        }
-
-        return new io.papermc.paper.event.block.VaultChangeStateEvent(bukkit(level, pos), associated,
-                org.bukkit.craftbukkit.block.data.CraftBlockData.toBukkit(from, org.bukkit.block.data.type.Vault.State.class),
-                org.bukkit.craftbukkit.block.data.CraftBlockData.toBukkit(to, org.bukkit.block.data.type.Vault.State.class)).callEvent();
-    }
-
-    /**
-     * VaultDisplayItemEvent。飾るアイテムを決めた直後。
-     *
-     * @return 飾る物。取り消されたら null
-     */
-    public static ItemStack vaultDisplay(final ServerLevel level, final BlockPos pos, final ItemStack displayItem) {
-        if (!listening(org.bukkit.event.block.VaultDisplayItemEvent.getHandlerList())) {
-            return displayItem;
-        }
-
-        final org.bukkit.event.block.VaultDisplayItemEvent event = CraftEventFactory.callVaultDisplayItemEvent(level, pos, displayItem);
-
-        if (event.isCancelled()) {
-            return null;
-        }
-
-        return CraftItemStack.asNMSCopy(event.getDisplayItem());
-    }
 
     // ------------------------------------------------------------ 錠
 

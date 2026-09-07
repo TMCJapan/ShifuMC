@@ -189,71 +189,8 @@ public final class EntityEvents {
         entity.shifuLastLavaContact = pos.immutable();
     }
 
-    public static boolean lavaIgnite(final Entity entity) {
-        if (!listening(EntityCombustEvent.getHandlerList())) {
-            return true;
-        }
 
-        if (!(entity instanceof LivingEntity) || entity.getRemainingFireTicks() > 0) {
-            return true;
-        }
 
-        final net.minecraft.core.BlockPos lava = entity.shifuLastLavaContact;
-        final org.bukkit.block.Block block = lava == null
-                ? null
-                : org.bukkit.craftbukkit.block.CraftBlock.at(entity.level(), lava);
-        final EntityCombustByBlockEvent event = new EntityCombustByBlockEvent(block, entity.getBukkitEntity(), 15.0F);
-
-        if (!event.callEvent()) {
-            return false;
-        }
-
-        return ignite(entity, event.getDuration(), 15.0F);
-    }
-
-    /**
-     * EntityCombustByEntityEvent(矢、小さな火の玉)。{@code X.igniteForSeconds(5.0F)} を囲む。
-     *
-     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/projectile/arrow/AbstractArrow.java.patch、
-     * .../hurtingprojectile/SmallFireball.java.patch
-     */
-    public static boolean combustByEntity(final Entity combuster, final Entity entity, final float seconds) {
-        if (!listening(EntityCombustEvent.getHandlerList())) {
-            return true;
-        }
-
-        final EntityCombustByEntityEvent event = new EntityCombustByEntityEvent(
-                combuster.getBukkitEntity(), entity.getBukkitEntity(), seconds);
-
-        if (!event.callEvent()) {
-            return false;
-        }
-
-        return ignite(entity, event.getDuration(), seconds);
-    }
-
-    /**
-     * EntityCombustByEntityEvent(雷)。{@code Entity.thunderHit} の {@code igniteForSeconds(8.0F)} を囲む。
-     * 取り消されたら、直前に足した残り火の 1 tick を戻す(Paper と同じ)。
-     *
-     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/Entity.java.patch(thunderHit)
-     */
-    public static boolean lightningCombust(final Entity entity, final LightningBolt bolt) {
-        if (!listening(EntityCombustEvent.getHandlerList())) {
-            return true;
-        }
-
-        final EntityCombustByEntityEvent event = new EntityCombustByEntityEvent(
-                bolt.getBukkitEntity(), entity.getBukkitEntity(), 8.0F);
-
-        if (!event.callEvent()) {
-            entity.setRemainingFireTicks(entity.getRemainingFireTicks() - 1);
-
-            return false;
-        }
-
-        return ignite(entity, event.getDuration(), 8.0F);
-    }
 
     /**
      * HangingBreakByEntityEvent(雷が額縁や絵に当たった)。{@code thunderHit} の {@code hurtServer} を囲む。
@@ -288,44 +225,6 @@ public final class EntityEvents {
         pushee = pushed;
     }
 
-    /**
-     * EntityPushedByEntityAttackEvent。{@code Entity.push(xa, ya, za)} の代入を囲む。
-     * 主が置かれていなければ出さない(Paper も主が null なら出さない)。
-     *
-     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/Entity.java.patch(push)
-     *
-     * @return vanilla の代入へ進んでよいか。値が変えられていたら自分で足して false
-     */
-    public static boolean pushed(final Entity entity, final double xa, final double ya, final double za) {
-        final Entity by = pusher;
-        final Entity target = pushee;
-        pusher = null;
-        pushee = null;
-
-        if (by == null || target != entity) {
-            return true;
-        }
-
-        final io.papermc.paper.event.entity.EntityPushedByEntityAttackEvent event =
-                new io.papermc.paper.event.entity.EntityPushedByEntityAttackEvent(
-                        entity.getBukkitEntity(), io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.PUSH,
-                        by.getBukkitEntity(), new org.bukkit.util.Vector(xa, ya, za));
-
-        if (!event.callEvent()) {
-            return false;
-        }
-
-        final org.bukkit.util.Vector delta = event.getKnockback();
-
-        if (delta.getX() == xa && delta.getY() == ya && delta.getZ() == za) {
-            return true;
-        }
-
-        entity.setDeltaMovement(entity.getDeltaMovement().add(delta.getX(), delta.getY(), delta.getZ()));
-        entity.needsSync = true;
-
-        return false;
-    }
 
     // ------------------------------------------------------------ 落とし物
 
@@ -347,53 +246,8 @@ public final class EntityEvents {
 
     // ------------------------------------------------------------ リード
 
-    /**
-     * PlayerUnleashEntityEvent(プレイヤーが手で外す)。{@code Entity.interact} の
-     * {@code removeLeash / dropLeash} を囲む。
-     *
-     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/Entity.java.patch(interact)、
-     * src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java(handlePlayerUnleashEntityEvent)
-     *
-     * @param dropLeash vanilla がリードを落とすか(既定)
-     * @return 0 = 取り消し(PASS を返す)、1 = vanilla の行へ、2 = 済み(イベントが選んだ方で外した)
-     */
-    public static int playerUnleash(final Entity entity, final Leashable leashable, final Player player,
-                                    final InteractionHand hand, final boolean dropLeash) {
-        if (!leashable.isLeashed() || !listening(EntityUnleashEvent.getHandlerList())) {
-            return 1;
-        }
 
-        final PlayerUnleashEntityEvent event = new PlayerUnleashEntityEvent(entity.getBukkitEntity(),
-                (org.bukkit.entity.Player) player.getBukkitEntity(), CraftEquipmentSlot.getHand(hand), dropLeash);
 
-        if (!event.callEvent()) {
-            resendLeash(entity, leashable, player);
-
-            return 0;
-        }
-
-        if (event.isDropLeash() == dropLeash) {
-            return 1;
-        }
-
-        unleash(leashable, event.isDropLeash());
-
-        return 2;
-    }
-
-    private static void resendLeash(final Entity entity, final Leashable leashable, final Player player) {
-        if (player instanceof ServerPlayer serverPlayer) {
-            serverPlayer.connection.send(new ClientboundSetEntityLinkPacket(entity, leashable.getLeashHolder()));
-        }
-    }
-
-    private static void unleash(final Leashable leashable, final boolean drop) {
-        if (drop) {
-            leashable.dropLeash();
-        } else {
-            leashable.removeLeash();
-        }
-    }
 
     private static InteractionHand shearHand;
     private static boolean unleashHandled;
@@ -405,77 +259,7 @@ public final class EntityEvents {
         }
     }
 
-    /**
-     * PlayerUnleashEntityEvent(ハサミで、自分に付いたリード)。{@code dropAllLeashConnections} の
-     * 自分の分を囲む。プレイヤーか手が無ければ Paper も出さない。
-     *
-     * @return 0 = 取り消し(自分の分を飛ばす)、1 = vanilla、2 = 済み(外した)
-     */
-    public static int unleashSelf(final Entity self, final Player player) {
-        final InteractionHand hand = shearHand;
 
-        if (player == null || hand == null || !listening(EntityUnleashEvent.getHandlerList())
-                || !(self instanceof Leashable leashable) || !leashable.isLeashed()) {
-            return 1;
-        }
-
-        final PlayerUnleashEntityEvent event = new PlayerUnleashEntityEvent(self.getBukkitEntity(),
-                (org.bukkit.entity.Player) player.getBukkitEntity(), CraftEquipmentSlot.getHand(hand), true);
-
-        if (!event.callEvent()) {
-            resendLeash(self, leashable, player);
-
-            return 0;
-        }
-
-        if (event.isDropLeash()) {
-            return 1;
-        }
-
-        leashable.removeLeash();
-        unleashHandled = true;
-
-        return 2;
-    }
-
-    /**
-     * PlayerUnleashEntityEvent(ハサミで、自分に繋がれた個体)。取り消された個体を除いた並びを返す。
-     * リードを落とさない指定の個体はここで外す。
-     */
-    public static List<Leashable> unleashEach(final List<Leashable> leashables, final Player player) {
-        final InteractionHand hand = shearHand;
-        shearHand = null;
-
-        if (player == null || hand == null || !listening(EntityUnleashEvent.getHandlerList())) {
-            return leashables;
-        }
-
-        final List<Leashable> kept = new ArrayList<>(leashables.size());
-
-        for (Leashable leashable : leashables) {
-            if (!(leashable instanceof Entity entity)) {
-                kept.add(leashable);
-                continue;
-            }
-
-            final PlayerUnleashEntityEvent event = new PlayerUnleashEntityEvent(entity.getBukkitEntity(),
-                    (org.bukkit.entity.Player) player.getBukkitEntity(), CraftEquipmentSlot.getHand(hand), true);
-
-            if (!event.callEvent()) {
-                resendLeash(entity, leashable, player);
-                continue;
-            }
-
-            if (event.isDropLeash()) {
-                kept.add(leashable);
-            } else {
-                leashable.removeLeash();
-                unleashHandled = true;
-            }
-        }
-
-        return kept;
-    }
 
     /** 直前の {@link #unleashSelf} / {@link #unleashEach} で、落とさずに外した個体があったか。 */
     public static boolean takeUnleashHandled() {
@@ -485,67 +269,8 @@ public final class EntityEvents {
         return handled;
     }
 
-    /**
-     * EntityUnleashEvent(持ち主か本人が世界から消えた)。{@code Leashable.tickLeash} の
-     * ゲームルールの if/else を囲む。
-     *
-     * <p>効かないもの: Paper の {@code pluginRemoved}(プラグインが持ち主を消したときはリードを落とさない)。
-     *
-     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/Leashable.java.patch(tickLeash)
-     */
-    public static boolean unleashGone(final ServerLevel level, final Entity entity, final Leashable leashable) {
-        if (!listening(EntityUnleashEvent.getHandlerList())) {
-            return true;
-        }
 
-        final boolean drop = level.getGameRules().get(GameRules.ENTITY_DROPS);
-        final EntityUnleashEvent event = new EntityUnleashEvent(entity.getBukkitEntity(),
-                EntityUnleashEvent.UnleashReason.HOLDER_GONE,
-                drop);
-        event.callEvent();
 
-        if (event.isDropLeash() == drop) {
-            return true;
-        }
-
-        unleash(leashable, event.isDropLeash());
-
-        return false;
-    }
-
-    /**
-     * EntityUnleashEvent(次元を移った)。{@code removeAfterChangingDimensions} の {@code removeLeash} を囲む。
-     * 既定はリードを落とさない。落とす指定なら自分で落として false。
-     */
-    public static boolean unleashDimension(final Entity entity, final Leashable leashable) {
-        if (!leashable.isLeashed() || !listening(EntityUnleashEvent.getHandlerList())) {
-            return true;
-        }
-
-        final EntityUnleashEvent event = new EntityUnleashEvent(entity.getBukkitEntity(),
-                EntityUnleashEvent.UnleashReason.UNKNOWN, false);
-        event.callEvent();
-
-        if (!event.isDropLeash()) {
-            return true;
-        }
-
-        leashable.dropLeash();
-
-        return false;
-    }
-
-    /**
-     * PlayerLeashEntityEvent(フェンスに繋ぐ・フェンスから自分へ)。{@code LeashFenceKnotEntity.interact} の
-     * {@code setLeashedTo} を囲む。
-     */
-    public static boolean playerLeash(final Leashable leashed, final Entity holder, final Player player, final InteractionHand hand) {
-        if (!listening(PlayerLeashEntityEvent.getHandlerList())) {
-            return true;
-        }
-
-        return CraftEventFactory.handlePlayerLeashEntityEvent(leashed, holder, player, hand);
-    }
 
     // ------------------------------------------------------------ 空気・削除
 
@@ -684,14 +409,6 @@ public final class EntityEvents {
         return CraftEventFactory.callPlayerXpCooldownEvent(player, newCooldown, reason).getNewCooldown();
     }
 
-    /** PlayerExpChangeEvent。Paper と同じく、残りが正のときだけ出す。 */
-    public static int expChange(final Player player, final ExperienceOrb orb, final int amount) {
-        if (amount <= 0 || !listening(org.bukkit.event.player.PlayerExpChangeEvent.getHandlerList())) {
-            return amount;
-        }
-
-        return CraftEventFactory.callPlayerExpChangeEvent(player, orb, amount).getAmount();
-    }
 
     // ------------------------------------------------------------ ポーション効果
 
@@ -1289,14 +1006,6 @@ public final class EntityEvents {
 
     // ------------------------------------------------------------ 花火・釣り・矢
 
-    /** FireworkExplodeEvent。{@code explode(level)} を囲む。取り消されたら Paper と同じく消す。 */
-    public static boolean fireworkExplode(final FireworkRocketEntity firework) {
-        if (!listening(org.bukkit.event.entity.FireworkExplodeEvent.getHandlerList())) {
-            return true;
-        }
-
-        return CraftEventFactory.callFireworkExplodeEvent(firework);
-    }
 
     private static InteractionHand fishingHand;
 
@@ -1321,25 +1030,6 @@ public final class EntityEvents {
                 (org.bukkit.entity.FishHook) hook.getBukkitEntity(), PlayerFishEvent.State.LURED).callEvent();
     }
 
-    /**
-     * PlayerFishEvent(CAUGHT_FISH)。{@code retrieve} で釣った物を作った直後。
-     * 経験値は Paper と同じくここで乱数を引く(vanilla がオーブを作る式と同じ回数)。
-     *
-     * @return 発火したイベント。登録が無ければ null(vanilla の経験値オーブへ)
-     */
-    public static PlayerFishEvent fishCaught(final FishingHook hook, final Player owner, final ItemEntity caught) {
-        if (!listening(PlayerFishEvent.getHandlerList())) {
-            return null;
-        }
-
-        final PlayerFishEvent event = new PlayerFishEvent((org.bukkit.entity.Player) owner.getBukkitEntity(),
-                caught.getBukkitEntity(), (org.bukkit.entity.FishHook) hook.getBukkitEntity(), fishingSlot(),
-                PlayerFishEvent.State.CAUGHT_FISH);
-        event.setExpToDrop(hook.getRandom().nextInt(6) + 1);
-        event.callEvent();
-
-        return event;
-    }
 
     /** PlayerFishEvent(IN_GROUND / REEL_IN)。 */
     public static boolean fishState(final FishingHook hook, final Player owner, final PlayerFishEvent.State state) {
@@ -1382,135 +1072,11 @@ public final class EntityEvents {
         splashHit = hitResult;
     }
 
-    /**
-     * WaterBottleSplashEvent。{@code AbstractThrownPotion.onHitAsWater} の本体を囲む。登録があれば
-     * vanilla と同じ範囲・同じ判定で相手を集めて発火し、イベントの結果で傷つける・消火する・潤す。
-     *
-     * <p>効かないもの: 取り消したときの飛沫の粒子の抑制(Paper は出さない。vanilla は出す)。
-     *
-     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/projectile/throwableitemprojectile/AbstractThrownPotion.java.patch
-     *
-     * @return vanilla の本体へ進んでよいか
-     */
-    public static boolean waterSplash(final AbstractThrownPotion potion, final ServerLevel level) {
-        final HitResult hit = splashHit;
-        splashHit = null;
-
-        if (!listening(io.papermc.paper.event.entity.WaterBottleSplashEvent.getHandlerList())) {
-            return true;
-        }
-
-        final AABB aabb = potion.getBoundingBox().inflate(4.0, 2.0, 4.0);
-        final Map<org.bukkit.entity.LivingEntity, Double> affected = new HashMap<>();
-        final Set<org.bukkit.entity.LivingEntity> rehydrate = new HashSet<>();
-        final Set<org.bukkit.entity.LivingEntity> extinguish = new HashSet<>();
-
-        for (LivingEntity entity : potion.level().getEntitiesOfClass(LivingEntity.class, aabb,
-                e -> AbstractThrownPotion.WATER_SENSITIVE_OR_ON_FIRE.test(e) || e instanceof Axolotl)) {
-            final org.bukkit.entity.LivingEntity bukkit = (org.bukkit.entity.LivingEntity) entity.getBukkitEntity();
-
-            if (entity instanceof Axolotl) {
-                rehydrate.add(bukkit);
-            }
-
-            if (potion.distanceToSqr(entity) < 16.0) {
-                if (entity.isSensitiveToWater()) {
-                    affected.put(bukkit, 1.0);
-                }
-
-                if (entity.isOnFire() && entity.isAlive()) {
-                    extinguish.add(bukkit);
-                }
-            }
-        }
-
-        final io.papermc.paper.event.entity.WaterBottleSplashEvent event =
-                CraftEventFactory.callWaterBottleSplashEvent(potion, hit, affected, rehydrate, extinguish);
-
-        if (event.isCancelled()) {
-            return false;
-        }
-
-        for (org.bukkit.entity.LivingEntity toDamage : event.getToDamage()) {
-            ((CraftLivingEntity) toDamage).getHandle().hurtServer(level, potion.damageSources().indirectMagic(potion, potion.getOwner()), 1.0F);
-        }
-
-        for (org.bukkit.entity.LivingEntity toExtinguish : event.getToExtinguish()) {
-            ((CraftLivingEntity) toExtinguish).getHandle().extinguishFire();
-        }
-
-        for (org.bukkit.entity.LivingEntity toRehydrate : event.getToRehydrate()) {
-            if (((CraftLivingEntity) toRehydrate).getHandle() instanceof Axolotl axolotl) {
-                axolotl.rehydrate();
-            }
-        }
-
-        return false;
-    }
 
     public static boolean potionSplashListening() {
         return listening(org.bukkit.event.entity.PotionSplashEvent.getHandlerList());
     }
 
-    /**
-     * PotionSplashEvent。{@code ThrownSplashPotion.onHitAsPotion} の効果を与える塊を囲む。登録があれば
-     * vanilla と同じ計算で強さを集めて発火し、イベントの相手と強さで効果を与える。
-     *
-     * <p>未対応: 効果の無いポーション(Paper は出す。vanilla は {@code onHitAsPotion} を呼ばない)。
-     *
-     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownSplashPotion.java.patch
-     *
-     * @return vanilla の塊へ進んでよいか(登録があれば常に false)
-     */
-    public static boolean potionSplash(final ThrownSplashPotion potion, final ServerLevel level,
-                                       final Iterable<MobEffectInstance> mobEffects, final float durationScale,
-                                       final AABB potionAabb, final List<LivingEntity> entities, final float margin,
-                                       final HitResult hitResult, final Entity effectSource) {
-        final Map<org.bukkit.entity.LivingEntity, Double> affected = new HashMap<>();
-
-        for (LivingEntity entity : entities) {
-            if (entity.isAffectedByPotions()) {
-                final double dist = potionAabb.distanceToSqr(entity.getBoundingBox().inflate(margin));
-
-                if (dist < 16.0) {
-                    affected.put((org.bukkit.entity.LivingEntity) entity.getBukkitEntity(), 1.0 - Math.sqrt(dist) / 4.0);
-                }
-            }
-        }
-
-        final org.bukkit.event.entity.PotionSplashEvent event = CraftEventFactory.callPotionSplashEvent(potion, hitResult, affected);
-
-        if (event.isCancelled() || entities.isEmpty()) {
-            return false;
-        }
-
-        for (org.bukkit.entity.LivingEntity victim : event.getAffectedEntities()) {
-            if (!(victim instanceof CraftLivingEntity craft)) {
-                continue;
-            }
-
-            final LivingEntity entity = craft.getHandle();
-            final double scale = event.getIntensity(victim);
-
-            for (MobEffectInstance effectInstance : mobEffects) {
-                final Holder<MobEffect> effect = effectInstance.getEffect();
-
-                if (effect.value().isInstantenous()) {
-                    effect.value().applyInstantenousEffect(level, potion, potion.getOwner(), entity, effectInstance.getAmplifier(), scale);
-                } else {
-                    final int duration = effectInstance.mapDuration(d -> (int) (scale * d * durationScale + 0.5));
-                    final MobEffectInstance newEffect = new MobEffectInstance(
-                            effect, duration, effectInstance.getAmplifier(), effectInstance.isAmbient(), effectInstance.isVisible());
-
-                    if (!newEffect.endsWithin(20)) {
-                        entity.addEffect(newEffect, effectSource);
-                    }
-                }
-            }
-        }
-
-        return false;
-    }
 
     // ------------------------------------------------------------ 乗り物
 

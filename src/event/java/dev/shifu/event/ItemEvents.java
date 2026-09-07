@@ -148,41 +148,6 @@ public final class ItemEvents {
 
     // ------------------------------------------------------------ PrepareResultEvent 系
 
-    /**
-     * PrepareAnvilEvent / PrepareGrindstoneEvent / PrepareSmithingEvent / PrepareResultEvent。
-     * vanilla が結果スロットを埋めたあと(Paper の {@code callPrepareResultEvent} と同じ位置)。
-     * イベントの結果を結果スロットに置き直し、Paper と同じく変更を送る。
-     * どのイベントも {@code PrepareInventoryResultEvent} の HandlerList を共有している。
-     *
-     * <p>Paper が {@code createResult} の中で setItem を {@code callPrepareAnvilEvent} などに
-     * 置き換えている箇所は、setItem と同じ働きしかしない(発火はここ)ので触らない。
-     *
-     * <p>読んだ位置: paper-server src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java callPrepareResultEvent
-     */
-    public static void prepareResult(final AbstractContainerMenu menu, final int resultSlot) {
-        if (!ShifuEvents.listening(org.bukkit.event.inventory.PrepareInventoryResultEvent.getHandlerList())) {
-            return;
-        }
-
-        final InventoryView view = menu.getBukkitView();
-        final org.bukkit.inventory.ItemStack original = view.getTopInventory().getItem(resultSlot);
-        final CraftItemStack result = original != null ? CraftItemStack.asCraftCopy(original) : null;
-        final com.destroystokyo.paper.event.inventory.PrepareResultEvent event;
-
-        if (menu instanceof AnvilMenu && view instanceof org.bukkit.inventory.view.AnvilView anvilView) {
-            event = new org.bukkit.event.inventory.PrepareAnvilEvent(anvilView, result);
-        } else if (menu instanceof GrindstoneMenu) {
-            event = new org.bukkit.event.inventory.PrepareGrindstoneEvent(view, result);
-        } else if (menu instanceof SmithingMenu) {
-            event = new org.bukkit.event.inventory.PrepareSmithingEvent(view, result);
-        } else {
-            event = new com.destroystokyo.paper.event.inventory.PrepareResultEvent(view, result);
-        }
-
-        event.callEvent();
-        event.getInventory().setItem(resultSlot, event.getResult());
-        menu.broadcastChanges();
-    }
 
     // ------------------------------------------------------------ 砥石の経験値
 
@@ -237,66 +202,6 @@ public final class ItemEvents {
 
     // ------------------------------------------------------------ エンチャント台
 
-    /**
-     * EnchantItemEvent。経験値を払う前(Paper と同じ位置)。
-     *
-     * @return 付けるエンチャントの並び。取り消し(経験値不足、空、手掛かり無し)なら null。
-     *         登録が無ければ渡された並びそのもの
-     */
-    public static List<EnchantmentInstance> enchantItem(final AbstractContainerMenu menu, final Level level, final BlockPos pos,
-                                                        final Player player, final ItemStack item,
-                                                        final List<EnchantmentInstance> enchantments, final int buttonId,
-                                                        final int[] costs, final int[] enchantClue, final int[] levelClue) {
-        if (!ShifuEvents.listening(org.bukkit.event.enchantment.EnchantItemEvent.getHandlerList())) {
-            return enchantments;
-        }
-
-        final IdMap<Holder<Enchantment>> registry = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).asHolderIdMap();
-        final Map<org.bukkit.enchantments.Enchantment, Integer> enchants = new HashMap<>();
-
-        for (final EnchantmentInstance instance : enchantments) {
-            enchants.put(CraftEnchantment.minecraftHolderToBukkit(instance.enchantment()), instance.level());
-        }
-
-        final Holder<Enchantment> holder = registry.byId(enchantClue[buttonId]);
-
-        if (holder == null) {
-            return null;
-        }
-
-        final CraftItemStack craftItem = CraftItemStack.asCraftMirror(item);
-        final org.bukkit.event.enchantment.EnchantItemEvent event = new org.bukkit.event.enchantment.EnchantItemEvent(
-                (org.bukkit.entity.Player) player.getBukkitEntity(), menu.getBukkitView(), CraftBlock.at(level, pos),
-                craftItem, costs[buttonId], enchants,
-                CraftEnchantment.minecraftHolderToBukkit(holder), levelClue[buttonId], buttonId);
-        enchantReplacement = null;
-        event.callEvent();
-        final int itemLevel = event.getExpLevelCost();
-
-        if (event.isCancelled() || (itemLevel > player.experienceLevel && !player.getAbilities().instabuild)
-                || event.getEnchantsToAdd().isEmpty()) {
-            return null;
-        }
-
-
-        final List<EnchantmentInstance> out = new ArrayList<>();
-
-        for (final Map.Entry<org.bukkit.enchantments.Enchantment, Integer> entry : event.getEnchantsToAdd().entrySet()) {
-            final Holder<Enchantment> enchantment = CraftEnchantment.bukkitToMinecraftHolder(entry.getKey());
-
-            if (enchantment != null) {
-                out.add(new EnchantmentInstance(enchantment, entry.getValue()));
-            }
-        }
-
-        if (out.isEmpty()) {
-            return null;
-        }
-
-        enchantReplacement = CraftItemStack.getOrCloneOnMutation(craftItem, event.getItem());
-
-        return out;
-    }
 
     private static ItemStack enchantReplacement;
 
@@ -389,46 +294,6 @@ public final class ItemEvents {
 
     // ------------------------------------------------------------ 石切台
 
-    /**
-     * PlayerStonecutterRecipeSelectEvent。vanilla が番号を書き込んだあと、結果を置く前(Paper と同じ)。
-     *
-     * @return 使うレシピの番号。取り消されたら {@link #CANCELLED}。登録が無い・変わらないなら buttonId
-     */
-    public static int stonecutterRecipe(final AbstractContainerMenu menu, final Player player,
-                                        final SelectableRecipe.SingleInputSet<StonecutterRecipe> recipes, final int buttonId) {
-        if (!ShifuEvents.listening(io.papermc.paper.event.player.PlayerStonecutterRecipeSelectEvent.getHandlerList())) {
-            return buttonId;
-        }
-
-        final Optional<RecipeHolder<StonecutterRecipe>> recipe = recipes.entries().get(buttonId).recipe().recipe();
-
-        if (recipe.isEmpty()) {
-            return buttonId;
-        }
-
-        final io.papermc.paper.event.player.PlayerStonecutterRecipeSelectEvent event = new io.papermc.paper.event.player.PlayerStonecutterRecipeSelectEvent(
-                (org.bukkit.entity.Player) player.getBukkitEntity(),
-                (org.bukkit.inventory.StonecutterInventory) menu.getBukkitView().getTopInventory(),
-                (org.bukkit.inventory.StonecuttingRecipe) recipe.get().toBukkitRecipe());
-
-        if (!event.callEvent()) {
-            return CANCELLED;
-        }
-
-        final net.minecraft.resources.ResourceLocation key = CraftNamespacedKey.toMinecraft(event.getStonecuttingRecipe().getKey());
-
-        if (recipe.get().id().identifier().equals(key)) {
-            return buttonId;
-        }
-
-        for (int i = 0; i < recipes.entries().size(); i++) {
-            if (recipes.entries().get(i).recipe().recipe().filter(r -> r.id().identifier().equals(key)).isPresent()) {
-                return i;
-            }
-        }
-
-        return buttonId;
-    }
 
     // ------------------------------------------------------------ BlockCanBuildEvent
 
@@ -529,123 +394,14 @@ public final class ItemEvents {
         return ShifuEvents.listening(com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent.getHandlerList());
     }
 
-    /**
-     * PlayerLaunchProjectileEvent。登録があるとき、vanilla の「音 → 生成と発射 → 統計 → 消費」を
-     * ここで同じ順に行い、生成と発火だけを音の前に置く(Paper と同じく、取り消されたら音も出ない)。
-     * 生成は {@code Projectile.spawnProjectileFromRotation} と同じ手順。
-     *
-     * @param sound 音。無ければ null(投げポーション)
-     * @return 続けてよいか。取り消されたら手元を送り直して false(呼ぶ側は FAIL を返す)
-     */
-    public static <T extends Projectile> boolean launch(final Projectile.ProjectileFactory<T> creator, final ServerLevel level,
-                                                        final ItemStack stack, final Player player, final InteractionHand hand,
-                                                        final float yOffset, final float pow, final float uncertainty,
-                                                        final SoundEvent sound, final SoundSource source, final Item item) {
-        final T projectile = creator.create(level, player, stack);
-        projectile.shootFromRotation(player, player.getXRot(), player.getYRot(), yOffset, pow, uncertainty);
-        final com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent event = new com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent(
-                (org.bukkit.entity.Player) player.getBukkitEntity(), CraftItemStack.asCraftMirror(stack),
-                (org.bukkit.entity.Projectile) projectile.getBukkitEntity());
-
-        if (!event.callEvent()) {
-            if (projectile instanceof ThrownEnderpearl pearl && player instanceof ServerPlayer serverPlayer) {
-                serverPlayer.deregisterEnderPearl(pearl);
-                serverPlayer.connection.send(new ClientboundCooldownPacket(player.getCooldowns().getCooldownGroup(stack), 0));
-            }
-
-            player.containerMenu.forceHeldSlot(hand);
-
-            return false;
-        }
-
-        if (sound != null) {
-            level.playSound(null, player.getX(), player.getY(), player.getZ(), sound, source, 0.5F,
-                    0.4F / (level.getRandom().nextFloat() * 0.4F + 0.8F));
-        }
-
-        level.addFreshEntity(projectile);
-        projectile.applyOnProjectileSpawned(level, stack);
-        player.awardStat(Stats.ITEM_USED.get(item));
-
-        if (event.shouldConsume()) {
-            stack.consume(1, player);
-        } else {
-            player.containerMenu.forceHeldSlot(hand);
-        }
-
-        return true;
-    }
 
     // ------------------------------------------------------------ 花火
 
-    /**
-     * PlayerLaunchProjectileEvent(ブロックに向けて使った花火)。
-     *
-     * @return null なら取り消し(PASS)。true なら消費する。false なら消費しない
-     */
-    public static Boolean launchFirework(final ServerLevel level, final Player player, final InteractionHand hand,
-                                         final ItemStack stack, final Vec3 clickLocation, final Direction direction) {
-        final FireworkRocketEntity rocket = new FireworkRocketEntity(
-                level, player,
-                clickLocation.x + direction.getStepX() * 0.15,
-                clickLocation.y + direction.getStepY() * 0.15,
-                clickLocation.z + direction.getStepZ() * 0.15,
-                stack);
-
-        if (player == null) {
-            Projectile.spawnProjectile(rocket, level, stack);
-
-            return Boolean.TRUE;
-        }
-
-        final com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent event = new com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent(
-                (org.bukkit.entity.Player) player.getBukkitEntity(), CraftItemStack.asCraftMirror(stack),
-                (org.bukkit.entity.Firework) rocket.getBukkitEntity());
-
-        if (!event.callEvent()) {
-            return null;
-        }
-
-        Projectile.spawnProjectile(rocket, level, stack);
-
-        return event.shouldConsume();
-    }
 
     public static boolean elytraBoostListening() {
         return ShifuEvents.listening(com.destroystokyo.paper.event.player.PlayerElytraBoostEvent.getHandlerList());
     }
 
-    /**
-     * PlayerElytraBoostEvent。登録があるとき、vanilla の「リード切り → 生成と発射 → 消費 → 統計」を
-     * ここで同じ順に行い、生成と発火だけを先に置く。取り消されたら手元を送り直すだけ。
-     */
-    public static void elytraBoost(final Level level, final ServerLevel serverLevel, final Player player,
-                                   final InteractionHand hand, final ItemStack stack, final Item item) {
-        final FireworkRocketEntity rocket = new FireworkRocketEntity(level, stack, player);
-        final com.destroystokyo.paper.event.player.PlayerElytraBoostEvent event = new com.destroystokyo.paper.event.player.PlayerElytraBoostEvent(
-                (org.bukkit.entity.Player) player.getBukkitEntity(), CraftItemStack.asCraftMirror(stack),
-                (org.bukkit.entity.Firework) rocket.getBukkitEntity(), CraftEquipmentSlot.getHand(hand));
-
-        if (!event.callEvent()) {
-            player.containerMenu.forceHeldSlot(hand);
-
-            return;
-        }
-
-        if (player.dropAllLeashConnections(null)) {
-            level.playSound(null, player, net.minecraft.sounds.SoundEvents.LEAD_BREAK, SoundSource.NEUTRAL, 1.0F, 1.0F);
-        }
-
-        Projectile.spawnProjectile(rocket, serverLevel, stack);
-
-        if (event.shouldConsume()) {
-            stack.consume(1, player);
-        } else {
-            player.containerMenu.forceHeldSlot(hand);
-        }
-
-        player.awardStat(Stats.ITEM_USED.get(item));
-    }
 
     // ------------------------------------------------------------ 釣り竿
 
@@ -653,29 +409,6 @@ public final class ItemEvents {
         return ShifuEvents.listening(org.bukkit.event.player.PlayerFishEvent.getHandlerList());
     }
 
-    /**
-     * PlayerFishEvent(FISHING)。登録があるとき、浮きを作ってから発火し、通れば vanilla と同じく
-     * 音を鳴らして世界に足す。取り消されたら {@code player.fishing} を外す(浮きの構築子が付けている)。
-     */
-    public static boolean fish(final Level level, final ServerLevel serverLevel, final Player player, final InteractionHand hand,
-                               final ItemStack stack, final int luck, final int lureSpeed) {
-        final FishingHook hook = new FishingHook(player, level, luck, lureSpeed);
-        final org.bukkit.event.player.PlayerFishEvent event = new org.bukkit.event.player.PlayerFishEvent(
-                (org.bukkit.entity.Player) player.getBukkitEntity(), null, (org.bukkit.entity.FishHook) hook.getBukkitEntity(),
-                CraftEquipmentSlot.getHand(hand), org.bukkit.event.player.PlayerFishEvent.State.FISHING);
-
-        if (!event.callEvent()) {
-            player.fishing = null;
-
-            return false;
-        }
-
-        level.playSound(null, player.getX(), player.getY(), player.getZ(), net.minecraft.sounds.SoundEvents.FISHING_BOBBER_THROW,
-                SoundSource.NEUTRAL, 0.5F, 0.4F / (level.getRandom().nextFloat() * 0.4F + 0.8F));
-        Projectile.spawnProjectile(hook, serverLevel, stack);
-
-        return true;
-    }
 
     // ------------------------------------------------------------ 弓・クロスボウの発射
 
@@ -683,29 +416,6 @@ public final class ItemEvents {
         return ShifuEvents.listening(org.bukkit.event.entity.EntityShootBowEvent.getHandlerList());
     }
 
-    /**
-     * EntityShootBowEvent。矢を作って発射方向を付けたあと、世界に足す前(呼ぶ側が作る。
-     * createProjectile / shootProjectile は protected なので中でしか呼べない)。
-     *
-     * @return 続けてよいか(耐久を減らす)。取り消し、または足したあと消えていたら false
-     */
-    public static boolean shootBow(final ServerLevel level, final LivingEntity shooter, final ItemStack weapon, final ItemStack ammo,
-                                   final Projectile projectile, final InteractionHand hand, final float power) {
-        final org.bukkit.event.entity.EntityShootBowEvent event = CraftEventFactory.callEntityShootBowEvent(
-                shooter, weapon, ammo, projectile, hand, power, true);
-
-        if (event.isCancelled()) {
-            event.getProjectile().remove();
-
-            return false;
-        }
-
-        if (event.getProjectile() == projectile.getBukkitEntity()) {
-            return !Projectile.spawnProjectile(projectile, level, ammo).isRemoved();
-        }
-
-        return true;
-    }
 
     // ------------------------------------------------------------ 壊れた入れ物の中身
 
@@ -760,37 +470,10 @@ public final class ItemEvents {
         return event.callEvent();
     }
 
-    /** PlayerLeashEntityEvent。1 匹ずつ、結び目に繋ぐ前。 */
-    public static boolean leash(final Leashable leashable, final Entity holder, final Player player) {
-        if (!ShifuEvents.listening(org.bukkit.event.entity.PlayerLeashEntityEvent.getHandlerList())) {
-            return true;
-        }
-
-        return CraftEventFactory.handlePlayerLeashEntityEvent(leashable, holder, player, peekLeashHand(player));
-    }
 
     // ------------------------------------------------------------ メイス
 
-    public static boolean smashListening() {
-        return ShifuEvents.listening(io.papermc.paper.event.entity.EntityAttemptSmashAttackEvent.getHandlerList());
-    }
 
-    /**
-     * EntityAttemptSmashAttackEvent。
-     *
-     * <p>効かないもの: vanilla が打たない場面を {@code Result.ALLOW} で打たせること
-     * (vanilla の判定の行は変えられない)。DENY は効く。
-     *
-     * @return vanilla の判定へ進んでよいか
-     */
-    public static boolean smashAttack(final ItemStack stack, final LivingEntity target, final LivingEntity attacker, final boolean vanilla) {
-        final io.papermc.paper.event.entity.EntityAttemptSmashAttackEvent event = new io.papermc.paper.event.entity.EntityAttemptSmashAttackEvent(
-                (org.bukkit.entity.LivingEntity) attacker.getBukkitEntity(), (org.bukkit.entity.LivingEntity) target.getBukkitEntity(),
-                CraftItemStack.asBukkitCopy(stack), vanilla);
-        event.callEvent();
-
-        return event.getResult() != Event.Result.DENY;
-    }
 
     // ------------------------------------------------------------ 名札
 

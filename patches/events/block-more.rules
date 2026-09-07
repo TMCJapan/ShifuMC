@@ -39,15 +39,6 @@ anchor:
 insert:
     dev.shifu.event.BlockEvents.dispensing(pointer, item);
 
-file: net/minecraft/core/dispenser/DefaultDispenseItemBehavior.java
-anchor:
-    world.addFreshEntity(itemEntity);
-insert:
-    if (dev.shifu.event.BlockEvents.dispenseItem(world, itemEntity)) {
-insert-after:
-    }
-
-# BlockDispenseEvent(ボート)
 file: net/minecraft/core/dispenser/BoatDispenseItemBehavior.java
 anchor:
     AbstractBoat abstractBoat = this.type.create(serverLevel, EntitySpawnReason.DISPENSER);
@@ -341,41 +332,11 @@ insert:
 # EntityInsideBlockEvent と EntityPortalEnterEvent(ネザーポータル)
 file: net/minecraft/world/level/block/NetherPortalBlock.java
 anchor:
-    if (entity.canUsePortal(false)) {
-insert:
-    if (!dev.shifu.event.BlockEvents.insideBlock(entity, level, pos)) {
-        return;
-    }
-insert-after:
-    if (!dev.shifu.event.BlockEvents.portalEnter(entity, level, pos)) {
-        return;
-    }
-
-# EntityPortalReadyEvent
-file: net/minecraft/world/level/block/NetherPortalBlock.java
-anchor:
     ServerLevel level1 = level.getServer().getLevel(resourceKey);
 insert-after:
     level1 = dev.shifu.event.BlockEvents.portalReady(entity, level1);
 
 # EntityPortalEvent / PlayerPortalEvent(出口を探す前)
-file: net/minecraft/world/level/block/NetherPortalBlock.java
-anchor:
-    return this.getExitPortal(level1, entity, pos, blockPos, flag, worldBorder);
-insert:
-    if (dev.shifu.event.BlockEvents.listeningPortal()) {
-        final org.bukkit.craftbukkit.event.PortalEventResult shifuPortal = dev.shifu.event.BlockEvents.portalDestination(entity, level1, blockPos);
-        if (shifuPortal == null) {
-            return null;
-        }
-        level1 = ((org.bukkit.craftbukkit.CraftWorld) shifuPortal.to().getWorld()).getHandle();
-        worldBorder = level1.getWorldBorder();
-        blockPos = worldBorder.clampToBounds(shifuPortal.to().getX(), shifuPortal.to().getY(), shifuPortal.to().getZ());
-    }
-
-# PlayerInteractEvent(PHYSICAL)/ EntityInteractEvent(感圧板)
-#
-# vanilla の getEntityCount は数しか返さないので、登録があるときだけ同じ絞り方で引き直す。
 file: net/minecraft/world/level/block/PressurePlateBlock.java
 anchor:
     return getEntityCount(world, TOUCH_AABB.move(pos), class_) > 0 ? 15 : 0;
@@ -443,15 +404,6 @@ insert:
 # ------------------------------------------------------------ 消える・固まる・燃える
 
 # BlockFadeEvent(氷が溶ける)
-file: net/minecraft/world/level/block/IceBlock.java
-anchor:
-    protected void melt(BlockState state, Level world, BlockPos pos) {
-insert-after:
-    if (!dev.shifu.event.BlockEvents.iceMelt(world, pos)) {
-        return;
-    }
-
-# BlockFadeEvent(足場が落ちる・壊れる)
 file: net/minecraft/world/level/block/ScaffoldingBlock.java
 anchor:
     if (state.getValue(DISTANCE) == 7) {
@@ -541,17 +493,6 @@ count: 2
 insert:
     dev.shifu.event.BlockEvents.spongeBefore(level, blockPos);
 
-file: net/minecraft/world/level/block/SpongeBlock.java
-anchor:
-    level.setBlock(pos, Blocks.WET_SPONGE.defaultBlockState(), Block.UPDATE_CLIENTS);
-insert:
-    if (dev.shifu.event.BlockEvents.spongeAbsorb(level, pos)) {
-insert-after:
-    }
-
-# ------------------------------------------------------------ ケーキ・カボチャ・コンポスター・蜂の巣
-
-# EntityChangeBlockEvent(ケーキにろうそくを立てる)
 file: net/minecraft/world/level/block/CakeBlock.java
 anchor:
     if (stack.is(ItemTags.CANDLES) && state.getValue(BITES) == 0 && Block.byItem(item) instanceof CandleBlock candleBlock) {
@@ -626,15 +567,6 @@ insert:
 # ------------------------------------------------------------ レッドストーン
 
 # BlockRedstoneEvent(トラップドア)
-file: net/minecraft/world/level/block/TrapDoorBlock.java
-anchor:
-    if (state.getValue(OPEN) != bl) {
-insert:
-    if (!dev.shifu.event.BlockEvents.binaryRedstone(level, pos, bl)) {
-        return;
-    }
-
-# BlockRedstoneEvent(トリップワイヤーフック。受け側と出し側)
 file: net/minecraft/world/level/block/TripWireHookBlock.java
 anchor:
     Direction opposite = direction.getOpposite();
@@ -670,15 +602,6 @@ insert:
     }
 
 # PlayerInsertLecternBookEvent
-file: net/minecraft/world/level/block/LecternBlock.java
-anchor:
-    lecternBlockEntity.setBook(stack.consumeAndReturn(1, entity));
-insert:
-    if (!dev.shifu.event.BlockEvents.insertLecternBook(entity, level, pos, stack)) {
-        return;
-    }
-
-# BlockRedstoneEvent(レッドストーンダスト)
 file: net/minecraft/world/level/redstone/DefaultRedstoneWireEvaluator.java
 anchor:
     if (state.getValue(RedStoneWireBlock.POWER) != i) {
@@ -696,28 +619,6 @@ insert:
     }
     redstoneStrength = shifuHit;
 
-file: net/minecraft/world/level/block/TargetBlock.java
-anchor:
-    level.setBlock(pos, state.setValue(OUTPUT_POWER, power), Block.UPDATE_ALL);
-insert:
-    final int shifuPower = dev.shifu.event.BlockEvents.redstoneChange(level, pos, state.getValue(OUTPUT_POWER), power);
-    if (shifuPower != power) {
-        level.setBlock(pos, state.setValue(OUTPUT_POWER, shifuPower), Block.UPDATE_ALL);
-        level.scheduleTick(pos, state.getBlock(), waitTime);
-        return;
-    }
-
-file: net/minecraft/world/level/block/TargetBlock.java
-anchor:
-    level.setBlock(pos, state.setValue(OUTPUT_POWER, 0), Block.UPDATE_ALL);
-insert:
-    if (dev.shifu.event.BlockEvents.redstoneChange(level, pos, state.getValue(OUTPUT_POWER), 0) > 0) {
-        return;
-    }
-
-# ------------------------------------------------------------ 流体・振動
-
-# BlockFromToEvent(下へ)
 file: net/minecraft/world/level/material/FlowingFluid.java
 anchor:
     this.spreadTo(world, blockPos, blockState2, Direction.DOWN, fluidState);
@@ -747,21 +648,6 @@ insert:
     }
 
 # BlockReceiveGameEvent(振動を受ける)
-file: net/minecraft/world/level/gameevent/vibrations/VibrationSystem.java
-anchor:
-    if (!vibrationUser.canReceiveVibration(level, BlockPos.containing(pos), gameEvent, context)) {
-insert:
-    if (dev.shifu.event.BlockEvents.listeningReceiveGameEvent()
-            && !dev.shifu.event.BlockEvents.receiveGameEvent(level, gameEvent, context, vec3,
-                    vibrationUser.canReceiveVibration(level, BlockPos.containing(pos), gameEvent, context))) {
-        return false;
-    }
-
-# ------------------------------------------------------------ かまど・醸造台・焚き火
-
-# FurnaceBurnEvent
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java.patch
 file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
     furnace.litTimeRemaining = furnace.getBurnDuration(level.fuelValues(), itemStack);
@@ -786,15 +672,6 @@ insert-after:
     }
 
 # FurnaceStartSmeltEvent
-file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
-anchor:
-    furnace.cookingTimer++;
-insert:
-    if (dev.shifu.event.BlockEvents.listeningFurnaceStart() && recipeHolder != null && furnace.cookingTimer == 0) {
-        furnace.cookingTotalTime = dev.shifu.event.BlockEvents.furnaceStartSmelt(level, pos, itemStack1, recipeHolder);
-    }
-
-# FurnaceSmeltEvent
 file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
     if (burn(level.registryAccess(), recipeHolder, singleRecipeInput, furnace.items, maxStackSize)) {
@@ -848,13 +725,6 @@ insert-after:
     }
 
 # BrewingStartEvent
-file: net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
-anchor:
-    blockEntity.brewTime = 400;
-insert-after:
-    blockEntity.brewTime = dev.shifu.event.BlockEvents.brewingStart(level, pos, itemStack1, blockEntity.brewTime);
-
-# BrewEvent
 file: net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
 anchor:
     for (int i = 0; i < 3; i++) {
@@ -1017,66 +887,6 @@ insert-after:
     }
 
 # TrialSpawnerSpawnEvent
-file: net/minecraft/world/level/block/entity/trialspawner/TrialSpawner.java
-anchor:
-    if (!world.tryAddFreshEntityWithPassengers(entity)) {
-insert:
-    if (!dev.shifu.event.BlockEvents.trialSpawn(entity, pos)) {
-        return Optional.empty();
-    }
-
-# BlockDispenseLootEvent(トライアルスポナーの報酬)
-file: net/minecraft/world/level/block/entity/trialspawner/TrialSpawner.java
-anchor:
-    if (!randomItems.isEmpty()) {
-insert-after:
-    final java.util.List<ItemStack> shifuLoot = dev.shifu.event.BlockEvents.dispenseLoot(level, pos, null, randomItems, lootTable);
-    if (shifuLoot == null) {
-        return;
-    }
-    randomItems = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(shifuLoot);
-
-# BlockDispenseLootEvent(宝物庫)
-file: net/minecraft/world/level/block/entity/vault/VaultBlockEntity.java
-anchor:
-    unlock(world, state, pos, config, serverData, sharedData, list);
-insert:
-    list = dev.shifu.event.BlockEvents.dispenseLoot(world, pos, player, list, config.lootTable());
-    if (list == null) {
-        return;
-    }
-
-# VaultChangeStateEvent
-file: net/minecraft/world/level/block/entity/vault/VaultBlockEntity.java
-anchor:
-    level.setBlock(pos, newState, Block.UPDATE_ALL);
-insert:
-    if (!dev.shifu.event.BlockEvents.vaultState(level, pos, vaultState, vaultState1, sharedData)) {
-        return;
-    }
-
-# VaultDisplayItemEvent
-file: net/minecraft/world/level/block/entity/vault/VaultBlockEntity.java
-anchor:
-    sharedData.setDisplayItem(randomDisplayItemFromLootTable);
-insert:
-    randomDisplayItemFromLootTable = dev.shifu.event.BlockEvents.vaultDisplay(level, pos, randomDisplayItemFromLootTable);
-    if (randomDisplayItemFromLootTable == null) {
-        return;
-    }
-
-# ============================================================ 生成器が出せなかった箇所(手書き)
-#
-# tools/make_block_events.py が出せないもの。理由は 2 つで、
-#   * Paper がメソッドの署名に引数を足して値を渡している(呼ぶ直前に置く形に読み替える)
-#   * 1 つのハンクで「消えた setBlock」と「足した発火」の数が合わない(Paper が構造を変えている)
-# どちらも vanilla の行はそのまま残してある。
-
-# ------------------------------------------------------------ 大釜の水位が 1 段下がる
-#
-# Paper は lowerFillLevel に (entity, reason) を足して渡す。Shifu は呼ぶ直前に置く。
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/block/LayeredCauldronBlock.java.patch
-#            paper-server patches/sources/net/minecraft/core/cauldron/CauldronInteraction.java.patch
 file: net/minecraft/core/cauldron/CauldronInteraction.java
 anchor:
     player.awardStat(Stats.ITEM_USED.get(item));

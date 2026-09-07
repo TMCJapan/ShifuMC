@@ -114,18 +114,3 @@ insert-after:
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/level/ServerExplosion.java.patch:215,
 #            paper-server patches/sources/net/minecraft/server/level/ServerLevel.java.patch:893
-file: net/minecraft/world/level/ServerExplosion.java
-anchor:
-    Util.shuffle(blocks, this.level.random);
-insert-after:
-    if (!dev.shifu.event.ShifuEvents.explode(this, blocks)) {
-        return;
-    }
-
-file: net/minecraft/server/level/ServerLevel.java
-anchor:
-    int i = serverExplosion.explode();
-insert-after:
-    if (dev.shifu.event.ShifuEvents.explosionCancelled(serverExplosion)) {
-        return;
-    }

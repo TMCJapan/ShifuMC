@@ -13,8 +13,3 @@ insert-after:
 
 # handleCustomPayload。vanilla は中身が空(本文も捨てられている)。
 # Bukkit の Messenger へ渡す経路をここで作る。プラグインが無ければ何もしない。
-file: net/minecraft/server/network/ServerCommonPacketListenerImpl.java
-anchor:
-    public void handleCustomPayload(ServerboundCustomPayloadPacket packet) {
-insert-after:
-    dev.shifu.event.PluginMessages.handle(this, packet);

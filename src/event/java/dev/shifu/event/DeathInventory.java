@@ -46,71 +46,7 @@ final class DeathInventory {
         }
     }
 
-    /** 控えた中身を丸ごと戻す。 */
-    void restore(final Inventory inventory) {
-        for (int i = 0; i < this.items.size(); i++) {
-            inventory.getNonEquipmentItems().set(i, this.items.get(i).copy());
-        }
 
-        for (EquipmentSlot slot : EquipmentSlot.VALUES) {
-            inventory.equipment.set(slot, this.equipment.getOrDefault(slot, ItemStack.EMPTY).copy());
-        }
-    }
 
-    /** 残す指定に合う物だけ戻す。合った物は指定から外す。 */
-    void restoreKept(final Inventory inventory, final List<org.bukkit.inventory.ItemStack> toKeep) {
-        if (toKeep.isEmpty()) {
-            return;
-        }
 
-        for (int i = 0; i < this.items.size(); i++) {
-            if (shouldKeep(toKeep, this.items.get(i))) {
-                inventory.getNonEquipmentItems().set(i, this.items.get(i).copy());
-            }
-        }
-
-        for (Map.Entry<EquipmentSlot, ItemStack> entry : this.equipment.entrySet()) {
-            if (shouldKeep(toKeep, entry.getValue())) {
-                inventory.equipment.set(entry.getKey(), entry.getValue().copy());
-            }
-        }
-    }
-
-    /** 残す指定に合う物を除いて空にする。vanilla が残した(keepInventory の)持ち物に使う。 */
-    void clear(final Inventory inventory, final List<org.bukkit.inventory.ItemStack> toKeep) {
-        final NonNullList<ItemStack> live = inventory.getNonEquipmentItems();
-
-        for (int i = 0; i < live.size(); i++) {
-            if (!shouldKeep(toKeep, live.get(i))) {
-                live.set(i, ItemStack.EMPTY);
-            }
-        }
-
-        for (EquipmentSlot slot : EquipmentSlot.VALUES) {
-            if (!shouldKeep(toKeep, inventory.equipment.get(slot))) {
-                inventory.equipment.set(slot, ItemStack.EMPTY);
-            }
-        }
-    }
-
-    /** Paper の {@code shouldKeepDeathEventItem} と同じ判定。 */
-    private static boolean shouldKeep(final List<org.bukkit.inventory.ItemStack> toKeep, final ItemStack item) {
-        if (toKeep.isEmpty() || item.isEmpty()
-                || EnchantmentHelper.has(item, EnchantmentEffectComponents.PREVENT_EQUIPMENT_DROP)) {
-            return false;
-        }
-
-        final org.bukkit.inventory.ItemStack bukkit = CraftItemStack.asCraftMirror(item);
-        final Iterator<org.bukkit.inventory.ItemStack> iterator = toKeep.iterator();
-
-        while (iterator.hasNext()) {
-            if (bukkit.equals(iterator.next())) {
-                iterator.remove();
-
-                return true;
-            }
-        }
-
-        return false;
-    }
 }

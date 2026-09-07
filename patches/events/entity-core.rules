@@ -11,25 +11,6 @@
 # EntityCombustByBlockEvent(溶岩)
 file: net/minecraft/world/entity/Entity.java
 anchor:
-    this.igniteForSeconds(15.0F);
-insert:
-    if (dev.shifu.event.EntityEvents.lavaIgnite(this)) {
-insert-after:
-    }
-
-# EntityPushedByEntityAttackEvent(push の主が置かれているときだけ)
-file: net/minecraft/world/entity/Entity.java
-anchor:
-    this.setDeltaMovement(this.getDeltaMovement().add(x, y, z));
-    this.needsSync = true;
-insert:
-    if (dev.shifu.event.EntityEvents.pushed(this, x, y, z)) {
-insert-after:
-    }
-
-# EntityDropItemEvent(spawnAtLocation)
-file: net/minecraft/world/entity/Entity.java
-anchor:
     level.addFreshEntity(itemEntity);
     return itemEntity;
 insert:
@@ -47,49 +28,6 @@ insert:
     }
 
 # PlayerUnleashEntityEvent(持ち主が手で外す)
-file: net/minecraft/world/entity/Entity.java
-anchor:
-    if (player.hasInfiniteMaterials()) {
-    leashable2.removeLeash();
-    } else {
-    leashable2.dropLeash();
-    }
-insert:
-    final int shifuUnleash = dev.shifu.event.EntityEvents.playerUnleash(this, leashable2, player, hand, !player.hasInfiniteMaterials());
-    if (shifuUnleash == 0) {
-        return InteractionResult.PASS;
-    }
-    if (shifuUnleash == 1) {
-insert-after:
-    }
-
-# PlayerUnleashEntityEvent(別の持ち主から自分へ付け替えるとき、先に外す)
-file: net/minecraft/world/entity/Entity.java
-anchor:
-    if (leashable2.isLeashed()) {
-    leashable2.dropLeash();
-    }
-insert:
-    final int shifuReleash = dev.shifu.event.EntityEvents.playerUnleash(this, leashable2, player, hand, true);
-    if (shifuReleash == 0) {
-        return InteractionResult.PASS;
-    }
-    if (shifuReleash == 1) {
-insert-after:
-    }
-
-# PlayerUnleashEntityEvent(ハサミで全部外す)。自分の分と、自分に繋がれた個体の分。
-# 取り消された個体は並びから外し、dropped は残った並びから決め直す。
-file: net/minecraft/world/entity/Entity.java
-anchor:
-    boolean flag = !list.isEmpty();
-insert:
-    final int shifuSelf = dev.shifu.event.EntityEvents.unleashSelf(this, player);
-    list = dev.shifu.event.EntityEvents.unleashEach(list, player);
-    final boolean shifuHandled = dev.shifu.event.EntityEvents.takeUnleashHandled();
-insert-after:
-    flag = flag || shifuHandled;
-
 file: net/minecraft/world/entity/Entity.java
 anchor:
     if (this instanceof Leashable leashable && leashable.isLeashed()) {
@@ -113,14 +51,6 @@ insert-after:
 # EntityCombustByEntityEvent(雷)と HangingBreakByEntityEvent(雷が額縁に)
 file: net/minecraft/world/entity/Entity.java
 anchor:
-    this.igniteForSeconds(8.0F);
-insert:
-    if (dev.shifu.event.EntityEvents.lightningCombust(this, lightning)) {
-insert-after:
-    }
-
-file: net/minecraft/world/entity/Entity.java
-anchor:
     this.hurtServer(level, this.damageSources().lightningBolt(), 5.0F);
 insert:
     if (dev.shifu.event.EntityEvents.lightningHanging(this, lightning)) {
@@ -128,16 +58,6 @@ insert-after:
     }
 
 # EntityUnleashEvent(次元を移った)
-file: net/minecraft/world/entity/Entity.java
-anchor:
-    leashable.removeLeash();
-    }
-insert:
-    if (dev.shifu.event.EntityEvents.unleashDimension(this, leashable)) {
-insert-after:
-    }
-
-# EntityRemoveEvent(setRemoved の先頭)
 file: net/minecraft/world/entity/Entity.java
 anchor:
     if (this.removalReason == null) {
@@ -205,31 +125,6 @@ anchor:
 insert-after:
     entity.takeXpDelay = dev.shifu.event.EntityEvents.xpCooldown(entity, entity.takeXpDelay, org.bukkit.event.player.PlayerExpCooldownChangeEvent.ChangeReason.PICKUP_ORB);
 
-file: net/minecraft/world/entity/ExperienceOrb.java
-anchor:
-    if (i > 0) {
-    player.giveExperiencePoints(i);
-insert:
-    i = dev.shifu.event.EntityEvents.expChange(player, this, i);
-
-# ============================================================ Leashable
-
-# EntityUnleashEvent(持ち主か本人が消えた)
-file: net/minecraft/world/entity/Leashable.java
-anchor:
-    if (level.getGameRules().get(GameRules.ENTITY_DROPS)) {
-        entity.dropLeash();
-    } else {
-        entity.removeLeash();
-    }
-insert:
-    if (dev.shifu.event.EntityEvents.unleashGone(level, entity, entity)) {
-insert-after:
-    }
-
-# ============================================================ LivingEntity
-
-# EntityPotionEffectEvent(CLEARED)。取り消された効果は消さずに残す。
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
     Map<Holder<MobEffect>, MobEffectInstance> map = Maps.newHashMap(this.activeEffects);
@@ -517,27 +412,6 @@ insert-after:
 # ============================================================ LeashFenceKnotEntity
 
 # PlayerLeashEntityEvent(フェンスに繋ぐ・フェンスから自分へ)
-file: net/minecraft/world/entity/decoration/LeashFenceKnotEntity.java
-anchor:
-    mob.setLeashedTo(this, true);
-    bl = true;
-insert:
-    if (dev.shifu.event.EntityEvents.playerLeash(mob, this, player, hand)) {
-insert-after:
-    }
-
-file: net/minecraft/world/entity/decoration/LeashFenceKnotEntity.java
-anchor:
-    leashable1.setLeashedTo(player, true);
-    flag1 = true;
-insert:
-    if (dev.shifu.event.EntityEvents.playerLeash(leashable1, player, player, hand)) {
-insert-after:
-    }
-
-# ============================================================ ItemEntity
-
-# ItemDespawnEvent。取り消されたら age を 0 に戻し、vanilla の判定を通さない。
 file: net/minecraft/world/entity/item/ItemEntity.java
 anchor:
     if (!this.level().isClientSide() && this.age >= 6000) {
@@ -625,18 +499,6 @@ insert-after:
 # ============================================================ FireworkRocketEntity
 
 # FireworkExplodeEvent。爆発する 3 箇所を同じ形で囲む。
-file: net/minecraft/world/entity/projectile/FireworkRocketEntity.java
-anchor:
-    this.explode(serverLevel);
-count: 3
-insert:
-    if (dev.shifu.event.EntityEvents.fireworkExplode(this)) {
-insert-after:
-    }
-
-# ============================================================ FishingHook
-
-# PlayerFishEvent(LURED)
 file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
     this.timeUntilHooked = Mth.nextInt(this.random, 20, 80);
@@ -647,15 +509,6 @@ insert-after:
     }
 
 # PlayerFishEvent(CAUGHT_FISH)。経験値はイベントの値で。
-file: net/minecraft/world/entity/projectile/FishingHook.java
-anchor:
-    ItemEntity itemEntity = new ItemEntity(this.level(), this.getX(), this.getY(), this.getZ(), itemStack);
-insert-after:
-    final org.bukkit.event.player.PlayerFishEvent shifuFish = dev.shifu.event.EntityEvents.fishCaught(this, playerOwner, itemEntity);
-    if (shifuFish != null && shifuFish.isCancelled()) {
-        return 0;
-    }
-
 file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
     playerOwner.level()
@@ -693,15 +546,6 @@ insert:
 # ============================================================ AbstractArrow
 
 # EntityCombustByEntityEvent(燃える矢)
-file: net/minecraft/world/entity/projectile/AbstractArrow.java
-anchor:
-    entity.igniteForSeconds(5.0F);
-insert:
-    if (dev.shifu.event.EntityEvents.combustByEntity(this, entity, 5.0F)) {
-insert-after:
-    }
-
-# EntityPushedByEntityAttackEvent の主(ノックバック)
 file: net/minecraft/world/entity/projectile/AbstractArrow.java
 anchor:
     livingEntity.push(vec3.x, 0.1, vec3.z);
@@ -746,15 +590,6 @@ insert-after:
 # EntityCombustByEntityEvent(小さな火の玉)
 file: net/minecraft/world/entity/projectile/SmallFireball.java
 anchor:
-    var7.igniteForSeconds(5.0F);
-insert:
-    if (dev.shifu.event.EntityEvents.combustByEntity(this, var7, 5.0F)) {
-insert-after:
-    }
-
-# BlockIgniteEvent(小さな火の玉が地面に)。既存の発火層の形に合わせ、CraftEventFactory を直に呼ぶ。
-file: net/minecraft/world/entity/projectile/SmallFireball.java
-anchor:
     this.level().setBlockAndUpdate(blockPos, BaseFireBlock.getState(this.level(), blockPos));
 insert:
     if (!dev.shifu.event.ShifuEvents.listening(org.bukkit.event.block.BlockIgniteEvent.getHandlerList())
@@ -774,40 +609,6 @@ anchor:
     this.onHitAsPotion(serverLevel, item, result);
 insert:
     dev.shifu.event.EntityEvents.splashHit(result);
-
-file: net/minecraft/world/entity/projectile/throwableitemprojectile/AbstractThrownPotion.java
-anchor:
-    AABB aabb = this.getBoundingBox().inflate(4.0, 2.0, 4.0);
-    
-    for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, aabb, WATER_SENSITIVE_OR_ON_FIRE)) {
-    double d = this.distanceToSqr(livingEntity);
-    if (d < 16.0) {
-    if (livingEntity.isSensitiveToWater()) {
-    livingEntity.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()), 1.0F);
-    }
-    
-    if (livingEntity.isOnFire() && livingEntity.isAlive()) {
-    livingEntity.extinguishFire();
-    }
-    }
-    }
-    
-    for (Axolotl axolotl : this.level().getEntitiesOfClass(Axolotl.class, aabb)) {
-    axolotl.rehydrate();
-    }
-insert:
-    if (dev.shifu.event.EntityEvents.waterSplash(this, level)) {
-insert-after:
-    }
-
-# PotionSplashEvent。効果を与える塊を囲む。
-file: net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownSplashPotion.java
-anchor:
-    if (!entitiesOfClass.isEmpty()) {
-    Entity effectSource = this.getEffectSource();
-insert:
-    if (!dev.shifu.event.EntityEvents.potionSplashListening()
-        || dev.shifu.event.EntityEvents.potionSplash(this, level, allEffects, orDefault, aabb, entitiesOfClass, f, hitResult, this.getEffectSource())) {
 
 file: net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownSplashPotion.java
 anchor:

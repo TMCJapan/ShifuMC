@@ -82,30 +82,6 @@ public final class PlayerEvents {
         return !listening(org.bukkit.event.command.UnknownCommandEvent.getHandlerList());
     }
 
-    /**
-     * UnknownCommandEvent。構文の失敗を送る代わりに発火し、イベントの文を送る。
-     * Paper は生の失敗文と位置の文を 1 つにまとめて渡すので同じにする。
-     * 位置の文(context)は vanilla が組み立てたものを受け取り、無い経路では null。
-     *
-     * 読んだ位置: paper-server patches/sources/net/minecraft/commands/Commands.java.patch(UnknownCommandEvent)
-     */
-    public static void unknownCommand(final CommandSourceStack sender, final String commandString,
-                                      final CommandSyntaxException e, final MutableComponent context) {
-        net.kyori.adventure.text.Component message = PaperAdventure.asAdventure(ComponentUtils.fromMessage(e.getRawMessage()));
-
-        if (context != null) {
-            message = message.append(net.kyori.adventure.text.Component.newline()).append(PaperAdventure.asAdventure(context));
-        }
-
-        final org.bukkit.event.command.UnknownCommandEvent event = new org.bukkit.event.command.UnknownCommandEvent(
-                dev.shifu.command.ApiSource.wrap(sender), commandString,
-                org.spigotmc.SpigotConfig.unknownCommandMessage.isEmpty() ? null : message);
-        org.bukkit.Bukkit.getServer().getPluginManager().callEvent(event);
-
-        if (event.message() != null) {
-            sender.sendFailure(PaperAdventure.asVanilla(event.message()));
-        }
-    }
 
     /**
      * AsyncPlayerSendCommandsEvent と PlayerCommandSendEvent。木を組み終えて packet を送る直前。
@@ -254,26 +230,6 @@ public final class PlayerEvents {
                 new org.bukkit.craftbukkit.util.LazyPlayerSet(connection.player.level().getServer())).callEvent();
     }
 
-    /**
-     * ServerCommandEvent(コマンドブロック)。実行の直前。
-     *
-     * @return 実行する文。取り消されたら null。変えられていなければ渡した参照そのもの
-     */
-    public static String commandBlock(final CommandSourceStack source, final String command) {
-        if (!listening(org.bukkit.event.server.ServerCommandEvent.getHandlerList())) {
-            return command;
-        }
-
-        final String trimmed = net.minecraft.commands.Commands.trimOptionalPrefix(command);
-        final org.bukkit.event.server.ServerCommandEvent event = new org.bukkit.event.server.ServerCommandEvent(
-                source.getBukkitSender(), trimmed);
-
-        if (!event.callEvent()) {
-            return null;
-        }
-
-        return event.getCommand().equals(trimmed) ? command : event.getCommand();
-    }
 
     /**
      * RemoteServerCommandEvent(RCON)。Paper は実行するサーバースレッドのタスクの中で発火する。
@@ -305,33 +261,9 @@ public final class PlayerEvents {
         new com.destroystokyo.paper.event.server.WhitelistToggleEvent(enabled).callEvent();
     }
 
-    /**
-     * WorldDifficultyChangeEvent。ロックの判定を通ったあと、書く前。取り消しは無い
-     * (イベントが Cancellable ではない)。vanilla の難易度はサーバー全体なので世界はオーバーワールド。
-     * 送り主は {@code /difficulty} が呼ぶ直前に置いたもの。他の経路では null。
-     */
-    public static void difficultyChange(final MinecraftServer server, final Difficulty difficulty) {
-        final io.papermc.paper.command.brigadier.CommandSourceStack source = difficultySource;
-        difficultySource = null;
-
-        if (!listening(io.papermc.paper.event.world.WorldDifficultyChangeEvent.getHandlerList())) {
-            return;
-        }
-
-        new io.papermc.paper.event.world.WorldDifficultyChangeEvent(
-                server.overworld().getWorld(), source, org.bukkit.craftbukkit.util.CraftDifficulty.toBukkit(difficulty)).callEvent();
-    }
 
     private static io.papermc.paper.command.brigadier.CommandSourceStack difficultySource;
 
-    /** 次の難易度の変更の送り主を置く({@code /difficulty} から)。 */
-    public static void difficultySource(final CommandSourceStack source) {
-        if (!listening(io.papermc.paper.event.world.WorldDifficultyChangeEvent.getHandlerList())) {
-            return;
-        }
-
-        difficultySource = dev.shifu.command.ApiSource.wrap(source);
-    }
 
     /**
      * WorldGameRuleChangeEvent。書く直前。取り消されたら書かない。値が差し替えられていたら
@@ -370,13 +302,6 @@ public final class PlayerEvents {
         return gameRuleSet(rule, value, source.getLevel(), source.getBukkitSender());
     }
 
-    public static <T> boolean gameRuleSet(final GameRule<T> rule, final T value, final ServerPlayer player) {
-        if (!listening(io.papermc.paper.event.world.WorldGameRuleChangeEvent.getHandlerList())) {
-            return true;
-        }
-
-        return gameRuleSet(rule, value, player.level(), player.getBukkitEntity());
-    }
 
     // ------------------------------------------------------------ 時間
 
@@ -502,32 +427,6 @@ public final class PlayerEvents {
 
     private static final java.util.Set<MapId> initializedMaps = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
-    /**
-     * MapInitializeEvent。{@code getMapData} で読み込んだとき。Paper と同じく、ディスクから
-     * 初めて読んだ地図で 1 度だけ出す({@code setMapData} で出したものは出さない)。
-     * 登録があるときだけ読むが、読みは貯め込みに当たるので vanilla の次の行と同じ物になる。
-     *
-     * 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerLevel.java.patch(Call missing map initialize event)
-     */
-    public static void mapLoaded(final ServerLevel level, final MapId id) {
-        if (!listening(org.bukkit.event.server.MapInitializeEvent.getHandlerList())) {
-            return;
-        }
-
-        final MapItemSavedData data = level.getServer().overworld().getDataStorage().get(MapItemSavedData.type(id));
-
-        if (data == null || !initializedMaps.add(id)) {
-            return;
-        }
-
-        data.id = id;
-
-        if (data.mapView == null) {
-            data.mapView = new org.bukkit.craftbukkit.map.CraftMapView(data);
-        }
-
-        new org.bukkit.event.server.MapInitializeEvent(data.mapView).callEvent();
-    }
 
     /** 変える前のスポーン。登録が無ければ null。 */
     public static Location spawnBefore(final ServerLevel level) {
@@ -554,32 +453,7 @@ public final class PlayerEvents {
         new org.bukkit.event.world.SpawnChangeEvent(level.getWorld(), previous).callEvent();
     }
 
-    /**
-     * ServerExceptionEvent。vanilla はエンティティの tick の例外でサーバーを落とす。
-     * 落ちる前に知らせるだけで、落とす挙動は変えない(Paper は落とさずに捨てる)。
-     */
-    public static void entityException(final Entity entity, final Throwable t) {
-        if (!listening(com.destroystokyo.paper.event.server.ServerExceptionEvent.getHandlerList())) {
-            return;
-        }
 
-        final String message = String.format("Entity threw exception at %s:%s,%s,%s",
-                entity.level().dimension().identifier(), entity.getX(), entity.getY(), entity.getZ());
-        new com.destroystokyo.paper.event.server.ServerExceptionEvent(
-                new com.destroystokyo.paper.exception.ServerInternalException(message, t)).callEvent();
-    }
-
-    /** ServerExceptionEvent。ブロックエンティティの tick の例外。 */
-    public static void blockEntityException(final Level level, final BlockPos pos, final Throwable t) {
-        if (!listening(com.destroystokyo.paper.event.server.ServerExceptionEvent.getHandlerList())) {
-            return;
-        }
-
-        final String message = String.format("BlockEntity threw exception at %s:%s,%s,%s",
-                level.dimension().identifier(), pos.getX(), pos.getY(), pos.getZ());
-        new com.destroystokyo.paper.event.server.ServerExceptionEvent(
-                new com.destroystokyo.paper.exception.ServerInternalException(message, t)).callEvent();
-    }
 
     /**
      * BlockDestroyEvent。壊す効果の前。取り消しは効く。
@@ -646,27 +520,6 @@ public final class PlayerEvents {
         return abort;
     }
 
-    /**
-     * PreSpawnerSpawnEvent。スポナーがエンティティを作る前。
-     *
-     * @return 0 = 続ける、1 = この 1 体を飛ばす、2 = このスポナーの残りも止める
-     */
-    public static int preSpawnerSpawn(final ServerLevel level, final Vec3 spawnPos, final EntityType<?> type, final BlockPos pos) {
-        if (!listening(com.destroystokyo.paper.event.entity.PreSpawnerSpawnEvent.getHandlerList())) {
-            return 0;
-        }
-
-        final com.destroystokyo.paper.event.entity.PreSpawnerSpawnEvent event = new com.destroystokyo.paper.event.entity.PreSpawnerSpawnEvent(
-                CraftLocation.toBukkit(spawnPos, level),
-                org.bukkit.craftbukkit.entity.CraftEntityType.minecraftToBukkit(type),
-                CraftLocation.toBukkit(pos, level));
-
-        if (event.callEvent()) {
-            return 0;
-        }
-
-        return event.shouldAbortSpawn() ? 2 : 1;
-    }
 
     /** SpawnerSpawnEvent。世界に入れる直前。 */
     public static boolean spawnerSpawn(final Entity entity, final BlockPos pos) {
@@ -684,25 +537,6 @@ public final class PlayerEvents {
         return !listening(io.papermc.paper.event.block.DragonEggFormEvent.getHandlerList());
     }
 
-    /**
-     * DragonEggFormEvent。vanilla の「初回だけ卵を置く」の代わりに、Paper と同じく毎回発火する。
-     * 2 回目以降は取り消し済みで出し、プラグインが戻せば置く。
-     */
-    public static void dragonEggForm(final EndDragonFight fight, final ServerLevel level, final BlockPos origin, final boolean previouslyKilled) {
-        final BlockPos eggPos = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, EndPodiumFeature.getLocation(origin));
-        final CraftBlockState eggState = CraftBlockStates.getBlockState(level, eggPos);
-        eggState.setData(Blocks.DRAGON_EGG.defaultBlockState());
-        final io.papermc.paper.event.block.DragonEggFormEvent event = new io.papermc.paper.event.block.DragonEggFormEvent(
-                CraftBlock.at(level, eggPos), eggState, new org.bukkit.craftbukkit.boss.CraftDragonBattle(fight));
-
-        if (previouslyKilled) {
-            event.setCancelled(true);
-        }
-
-        if (event.callEvent()) {
-            ((CraftBlockState) event.getNewState()).place(net.minecraft.world.level.block.Block.UPDATE_ALL);
-        }
-    }
 
     // ------------------------------------------------------------ 世界の境界
 
@@ -746,73 +580,7 @@ public final class PlayerEvents {
         return false;
     }
 
-    /** WorldBorderBoundsChangeEvent(即時)。書く前。 */
-    public static boolean borderSize(final WorldBorder border, final double size) {
-        if (!borderReady(border, io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.getHandlerList())) {
-            return true;
-        }
 
-        final org.bukkit.World world = border.world.getWorld();
-        final io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent event = new io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent(
-                world, world.getWorldBorder(), io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.Type.INSTANT_MOVE,
-                border.getSize(), size, 0);
-
-        if (!event.callEvent()) {
-            return false;
-        }
-
-        borderApplying = true;
-
-        try {
-            if (event.getType() == io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.Type.STARTED_MOVE && event.getDurationTicks() > 0) {
-                border.lerpSizeBetween(event.getOldSize(), event.getNewSize(), event.getDurationTicks(), border.world.getGameTime());
-
-                return false;
-            }
-
-            if (event.getNewSize() == size) {
-                return true;
-            }
-
-            border.setSize(event.getNewSize());
-        } finally {
-            borderApplying = false;
-        }
-
-        return false;
-    }
-
-    /** WorldBorderBoundsChangeEvent(時間をかけて)。書く前。 */
-    public static boolean borderLerp(final WorldBorder border, final double from, final double to, final long ticks, final long gameTime) {
-        if (!borderReady(border, io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.getHandlerList())) {
-            return true;
-        }
-
-        final org.bukkit.World world = border.world.getWorld();
-        final io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.Type type = from == to
-                ? io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.Type.INSTANT_MOVE
-                : io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.Type.STARTED_MOVE;
-        final io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent event = new io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent(
-                world, world.getWorldBorder(), type, from, to, ticks);
-
-        if (!event.callEvent()) {
-            return false;
-        }
-
-        if (event.getNewSize() == to && event.getDurationTicks() == ticks) {
-            return true;
-        }
-
-        borderApplying = true;
-
-        try {
-            border.lerpSizeBetween(from, event.getNewSize(), event.getDurationTicks(), gameTime);
-        } finally {
-            borderApplying = false;
-        }
-
-        return false;
-    }
 
     /** WorldBorderBoundsChangeFinishEvent。動きが終わった tick。 */
     public static void borderFinish(final WorldBorder border, final double from, final double to, final double duration) {
@@ -826,69 +594,14 @@ public final class PlayerEvents {
 
     // ------------------------------------------------------------ ログイン・設定フェーズ
 
-    /**
-     * PlayerConnectionValidateLoginEvent。vanilla の禁止・ホワイトリスト・満員の判定のあと。
-     * プラグインが弾く理由を変えたり、許したりできる。
-     *
-     * @return 弾く理由。許すなら null
-     */
-    public static Component validateLogin(final io.papermc.paper.connection.PlayerConnection connection, final Component error) {
-        if (!listening(io.papermc.paper.event.connection.PlayerConnectionValidateLoginEvent.getHandlerList())) {
-            return error;
-        }
 
-        final io.papermc.paper.event.connection.PlayerConnectionValidateLoginEvent event = new io.papermc.paper.event.connection.PlayerConnectionValidateLoginEvent(
-                connection, error == null ? null : PaperAdventure.asAdventure(error));
-        event.callEvent();
 
-        return event.getKickMessage() == null ? null : PaperAdventure.asVanilla(event.getKickMessage());
-    }
-
-    /** PlayerServerFullCheckEvent に登録が無いか。 */
-    public static boolean silentServerFull() {
-        return !listening(io.papermc.paper.event.player.PlayerServerFullCheckEvent.getHandlerList());
-    }
-
-    /**
-     * PlayerServerFullCheckEvent。入れるかを決める最後のところ。Paper と同じく満員でなくても
-     * 発火するので、プラグインは満員でない相手を弾くことも、満員の相手を入れることもできる。
-     *
-     * @param full vanilla の判定(満員で、上限を超えて入れる相手でもない)
-     * @return 弾く文。入れてよければ null
-     */
-    public static Component serverFull(final NameAndId nameAndId, final boolean full) {
-        final io.papermc.paper.event.player.PlayerServerFullCheckEvent event = new io.papermc.paper.event.player.PlayerServerFullCheckEvent(
-                new com.destroystokyo.paper.profile.CraftPlayerProfile(nameAndId),
-                PaperAdventure.asAdventure(Component.translatable("multiplayer.disconnect.server_full")), full);
-        event.callEvent();
-
-        return event.isAllowed() ? null : PaperAdventure.asVanilla(event.kickMessage());
-    }
 
     /** ProfileWhitelistVerifyEvent に登録が無いか。 */
     public static boolean silentWhitelist() {
         return !listening(com.destroystokyo.paper.event.profile.ProfileWhitelistVerifyEvent.getHandlerList());
     }
 
-    /**
-     * ProfileWhitelistVerifyEvent。{@code isWhiteListed} の判定の代わり。弾く文の差し替えは
-     * 効かない(vanilla の文を使う)。{@code isWhiteListed} を呼ぶ経路すべてで発火する
-     * (ログインのほか、ホワイトリストの読み直しで追い出すときも)。
-     */
-    public static boolean whitelistVerify(final PlayerList list, final NameAndId nameAndId,
-                                          final boolean whitelisted, final boolean isOp) {
-        final com.destroystokyo.paper.event.profile.ProfileWhitelistVerifyEvent event = new com.destroystokyo.paper.event.profile.ProfileWhitelistVerifyEvent(
-                new com.destroystokyo.paper.profile.CraftPlayerProfile(nameAndId), list.isUsingWhitelist(), whitelisted, isOp,
-                net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(org.spigotmc.SpigotConfig.whitelistMessage));
-        whitelistKick = null;
-        event.callEvent();
-
-        if (!event.isWhitelisted() && event.kickMessage() != null) {
-            whitelistKick = PaperAdventure.asVanilla(event.kickMessage());
-        }
-
-        return event.isWhitelisted();
-    }
 
     private static Component whitelistKick;
 
@@ -931,32 +644,11 @@ public final class PlayerEvents {
         }
     }
 
-    /** PlayerLinksSendEvent。送る前。差し替えたリンクを返す。 */
-    public static ServerLinks linksSend(final ServerConfigurationPacketListenerImpl listener, final ServerLinks links) {
-        if (!listening(org.bukkit.event.player.PlayerLinksSendEvent.getHandlerList())) {
-            return links;
-        }
-
-        return onServerThread(() -> {
-            final org.bukkit.craftbukkit.CraftServerLinks bukkit = new org.bukkit.craftbukkit.CraftServerLinks(links);
-            new org.bukkit.event.player.PlayerLinksSendEvent(listener.paperConnection, bukkit).callEvent();
-
-            return bukkit.getServerLinks();
-        });
-    }
 
     // PlayerCodeOfConductSendEvent は 26.x で入った Paper のイベントで、1.21.11 の API には無い。
 
     // ------------------------------------------------------------ プレイヤーの packet
 
-    /** ClientTickEndEvent。クライアントの tick 終わりの packet。 */
-    public static void clientTickEnd(final ServerPlayer player) {
-        if (!listening(io.papermc.paper.event.packet.ClientTickEndEvent.getHandlerList())) {
-            return;
-        }
-
-        new io.papermc.paper.event.packet.ClientTickEndEvent(player.getBukkitEntity()).callEvent();
-    }
 
     /**
      * PlayerJumpEvent。{@code jumpFromGround} の直前。取り消されたら from へ戻して packet を捨てる。
@@ -1060,31 +752,6 @@ public final class PlayerEvents {
         return book.copy();
     }
 
-    /**
-     * PlayerEditBookEvent。vanilla が本を書き換えたあと。取り消されたら控えに戻す。
-     * 中身が差し替えられていたら置き直す。署名の場合は {@code signed} が新しい本で、
-     * 取り消されたら元の本をスロットに戻す。
-     */
-    public static void bookEdited(final ServerPlayer player, final int slot, final ItemStack before, final ItemStack after, final boolean signing) {
-        if (before == null) {
-            return;
-        }
-
-        final org.bukkit.event.player.PlayerEditBookEvent event = new org.bukkit.event.player.PlayerEditBookEvent(
-                player.getBukkitEntity(), slot >= 0 && slot <= 8 ? slot : -1,
-                (org.bukkit.inventory.meta.BookMeta) CraftItemStack.getItemMeta(before),
-                (org.bukkit.inventory.meta.BookMeta) CraftItemStack.getItemMeta(after), signing);
-        event.callEvent();
-
-        if (event.isCancelled()) {
-            player.getInventory().setItem(slot, before);
-            player.containerMenu.forceSlot(player.getInventory(), slot);
-
-            return;
-        }
-
-        CraftItemStack.setItemMeta(after, event.getNewBookMeta());
-    }
 
     // ------------------------------------------------------------ スポーン地点
 
@@ -1103,111 +770,10 @@ public final class PlayerEvents {
         spawnCause = cause;
     }
 
-    /**
-     * PlayerSpawnChangeEvent と PlayerSetSpawnEvent。{@code setRespawnPosition} の頭。
-     * 位置や通知が差し替えられていたら、その値で自分を呼び直して false(引数は final)。
-     *
-     * 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch(PlayerSetSpawnEvent)
-     */
-    public static boolean setSpawn(final ServerPlayer player, final ServerPlayer.RespawnConfig config, final boolean showMessage) {
-        if (settingSpawn) {
-            return true;
-        }
-
-        if (!listening(com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.getHandlerList())
-                && !listening(org.bukkit.event.player.PlayerSpawnChangeEvent.getHandlerList())) {
-            return true;
-        }
-
-        final com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause cause = spawnPlayer == player && spawnCause != null
-                ? spawnCause : com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause.UNKNOWN;
-        spawnPlayer = null;
-        spawnCause = null;
-
-        Location location = null;
-        boolean notify = false;
-
-        if (config != null) {
-            notify = showMessage && !config.isSamePosition(player.getRespawnConfig());
-            location = CraftLocation.toBukkit(config.respawnData().pos(), player.level().getServer().getLevel(config.respawnData().dimension()));
-            location.setYaw(config.respawnData().yaw());
-            location.setPitch(config.respawnData().pitch());
-        }
-
-        final org.bukkit.event.player.PlayerSpawnChangeEvent first = new org.bukkit.event.player.PlayerSpawnChangeEvent(
-                player.getBukkitEntity(), location, config != null && config.forced(),
-                cause == com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause.PLAYER_RESPAWN
-                        ? org.bukkit.event.player.PlayerSpawnChangeEvent.Cause.RESET
-                        : org.bukkit.event.player.PlayerSpawnChangeEvent.Cause.valueOf(cause.name()));
-        first.callEvent();
-
-        final net.kyori.adventure.text.Component message = notify
-                ? PaperAdventure.asAdventure(Component.translatable("block.minecraft.set_spawn")) : null;
-        final com.destroystokyo.paper.event.player.PlayerSetSpawnEvent event = new com.destroystokyo.paper.event.player.PlayerSetSpawnEvent(
-                player.getBukkitEntity(), cause, first.getNewSpawn(), first.isForced(), notify, message);
-        event.setCancelled(first.isCancelled());
-
-        if (!event.callEvent()) {
-            return false;
-        }
-
-        final boolean sameLocation = (event.getLocation() == null) == (location == null)
-                && (location == null || (event.getLocation().equals(location) && event.isForced() == config.forced()));
-        final boolean sameNotice = event.willNotifyPlayer() == notify && (message == null || message.equals(event.getNotification()));
-
-        if (sameLocation && sameNotice) {
-            return true;
-        }
-
-        ServerPlayer.RespawnConfig replaced = config;
-
-        if (!sameLocation) {
-            replaced = event.getLocation() == null ? null : new ServerPlayer.RespawnConfig(
-                    LevelData.RespawnData.of(
-                            ((org.bukkit.craftbukkit.CraftWorld) event.getLocation().getWorld()).getHandle().dimension(),
-                            CraftLocation.toBlockPosition(event.getLocation()), event.getLocation().getYaw(), event.getLocation().getPitch()),
-                    event.isForced());
-        }
-
-        if (event.willNotifyPlayer() && event.getNotification() != null) {
-            player.sendSystemMessage(PaperAdventure.asVanilla(event.getNotification()));
-        }
-
-        settingSpawn = true;
-
-        try {
-            player.setRespawnPosition(replaced, false);
-        } finally {
-            settingSpawn = false;
-        }
-
-        return false;
-    }
 
     // ------------------------------------------------------------ ブロックを壊す
 
-    /**
-     * BlockDamageEvent。壊し始めの判定のあと(クリエイティブの即時破壊は通らない)。
-     *
-     * @return イベント。登録が無ければ null
-     */
-    public static org.bukkit.event.block.BlockDamageEvent blockDamage(final ServerPlayer player, final BlockPos pos,
-                                                                     final Direction direction, final boolean instaBreak) {
-        if (!listening(org.bukkit.event.block.BlockDamageEvent.getHandlerList())) {
-            return null;
-        }
 
-        return CraftEventFactory.callBlockDamageEvent(player, pos, direction, player.getInventory().getSelectedItem(), instaBreak);
-    }
-
-    /** BlockDamageAbortEvent。壊すのをやめたとき。 */
-    public static void blockDamageAbort(final ServerPlayer player, final BlockPos pos) {
-        if (!listening(org.bukkit.event.block.BlockDamageAbortEvent.getHandlerList())) {
-            return;
-        }
-
-        CraftEventFactory.callBlockDamageAbortEvent(player, pos, player.getInventory().getSelectedItem());
-    }
 
     // ------------------------------------------------------------ 食事・盾・エンチャント
 
@@ -1301,33 +867,6 @@ public final class PlayerEvents {
 
     // EntityLungeEvent は 26.x で入った Paper のイベントで、1.21.11 の API には無い。
 
-    /**
-     * EntityCombustByEntityEvent / EntityCombustEvent(火属性のエンチャント)。燃やす前。
-     * 長さが差し替えられていたらここで燃やして false。
-     */
-    public static boolean enchantIgnite(final EnchantedItemInUse item, final Entity entity, final LevelBasedValue duration, final int level) {
-        if (!listening(org.bukkit.event.entity.EntityCombustByEntityEvent.getHandlerList())
-                && !listening(org.bukkit.event.entity.EntityCombustEvent.getHandlerList())) {
-            return true;
-        }
-
-        final float seconds = duration.calculate(level);
-        final org.bukkit.event.entity.EntityCombustEvent event = item.owner() != null
-                ? new org.bukkit.event.entity.EntityCombustByEntityEvent(item.owner().getBukkitEntity(), entity.getBukkitEntity(), seconds)
-                : new org.bukkit.event.entity.EntityCombustEvent(entity.getBukkitEntity(), seconds);
-
-        if (!event.callEvent()) {
-            return false;
-        }
-
-        if (event.getDuration() == seconds) {
-            return true;
-        }
-
-        entity.igniteForSeconds(event.getDuration());
-
-        return false;
-    }
 
     // ------------------------------------------------------------ GS4 query
 

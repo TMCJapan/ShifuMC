@@ -81,19 +81,6 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch:740
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    ServerLevel level = teleportTransition.newLevel();
-insert:
-    final TeleportTransition shifuTransition = dev.shifu.event.ShifuEvents.playerTeleport(this, teleportTransition);
-    if (shifuTransition == null) {
-        return null;
-    }
-    if (shifuTransition != teleportTransition) {
-        return this.teleport(shifuTransition);
-    }
-
-# PlayerChangedWorldEvent
-file: net/minecraft/server/level/ServerPlayer.java
-anchor:
     this.teleportSpectators(teleportTransition, serverLevel);
 insert-after:
     dev.shifu.event.ShifuEvents.playerChangedWorld(this, serverLevel);
@@ -230,17 +217,6 @@ insert-after:
 # 変えられたときだけ差し替える。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch:607
-file: net/minecraft/server/players/PlayerList.java
-anchor:
-    TeleportTransition teleportTransition = player.findRespawnPositionAndUseSpawnBlock(!keepInventory, TeleportTransition.DO_NOTHING);
-insert-after:
-    final TeleportTransition shifuRespawn = dev.shifu.event.ShifuEvents.playerRespawn(player, teleportTransition, keepInventory);
-    if (shifuRespawn != null) {
-        teleportTransition = shifuRespawn;
-    }
-
-# リスポーンで作り直された ServerPlayer へ、Bukkit の Player を付け替える。
-# 死亡イベントが決めた持ち物と経験値の扱いもここで写す。
 file: net/minecraft/server/players/PlayerList.java
 anchor:
     serverPlayer.restoreFrom(player, alive);

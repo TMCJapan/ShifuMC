@@ -144,58 +144,9 @@ public final class AnimalEvents {
         return false;
     }
 
-    /**
-     * EntityTeleportEvent。{@code TamableAnimal.maybeTeleportTo} で飼い主のそばへ飛ぶ直前。
-     *
-     * @return null なら取り消し(vanilla は false を返す)。TRUE なら vanilla の snapTo へ。
-     *         FALSE なら差し替え先へ飛ばし済み(vanilla の snapTo は飛ばす)
-     */
-    public static Boolean teleport(final Entity entity, final double x, final double y, final double z) {
-        if (!listening(org.bukkit.event.entity.EntityTeleportEvent.getHandlerList())) {
-            return Boolean.TRUE;
-        }
-
-        final org.bukkit.event.entity.EntityTeleportEvent event = CraftEventFactory.callEntityTeleportEvent(entity, x, y, z);
-
-        if (event.isCancelled() || event.getTo() == null) {
-            return null;
-        }
-
-        final org.bukkit.Location to = event.getTo();
-
-        if (to.getX() == x && to.getY() == y && to.getZ() == z
-                && to.getYaw() == entity.getYRot() && to.getPitch() == entity.getXRot()) {
-            return Boolean.TRUE;
-        }
-
-        entity.snapTo(to.getX(), to.getY(), to.getZ(), to.getYaw(), to.getPitch());
-
-        return Boolean.FALSE;
-    }
 
     // ------------------------------------------------------------ 村人
 
-    /**
-     * VillagerCareerChangeEvent。{@code AssignProfessionFromJobSite}(EMPLOYED)と
-     * {@code ResetProfession}(LOSING_JOB)で職業を書き換える直前。
-     *
-     * @return 書き込む職業。取り消されたら null
-     */
-    public static Holder<VillagerProfession> careerChange(final Villager villager, final Holder<VillagerProfession> profession,
-                                                         final VillagerCareerChangeEvent.ChangeReason reason) {
-        if (!listening(VillagerCareerChangeEvent.getHandlerList())) {
-            return profession;
-        }
-
-        final VillagerCareerChangeEvent event = CraftEventFactory.callVillagerCareerChangeEvent(
-                villager, CraftVillager.CraftProfession.minecraftHolderToBukkit(profession), reason);
-
-        if (event.isCancelled()) {
-            return null;
-        }
-
-        return CraftVillager.CraftProfession.bukkitToMinecraftHolder(event.getProfession());
-    }
 
     /**
      * VillagerReplenishTradeEvent。{@code Villager.restock} と {@code catchUpDemand} で
@@ -212,19 +163,6 @@ public final class AnimalEvents {
                 (org.bukkit.entity.Villager) villager.getBukkitEntity(), offer.asBukkit()).callEvent();
     }
 
-    /**
-     * ItemTransportingEntityValidateTargetEvent。{@code TransportItemsBetweenContainers.isTargetValidToPick}
-     * で vanilla の判定が通ったあと。
-     *
-     * @return その容器を目標にしてよいか
-     */
-    public static boolean transporterValidateTarget(final PathfinderMob body, final Level level, final BlockPos pos) {
-        if (!listening(io.papermc.paper.event.entity.ItemTransportingEntityValidateTargetEvent.getHandlerList())) {
-            return true;
-        }
-
-        return CraftEventFactory.callTransporterValidateTarget(body, level, pos);
-    }
 
     // ------------------------------------------------------------ 繁殖・手懐け
 
@@ -417,30 +355,6 @@ public final class AnimalEvents {
 
     // ------------------------------------------------------------ 個別の動物
 
-    /**
-     * PigZapEvent。{@code Pig.thunderHit} で変換に入る直前。
-     *
-     * <p>Paper は変換したあと、世界に置く前に発火する。Shifu の {@code convertTo} は中で置いて
-     * 豚を消すので、その前に発火する。イベントに載せる ZombifiedPiglin は仮に作ったもの
-     * (世界には置かない)で、実際に変換される個体ではない。
-     *
-     * <p>効かないもの: {@code getPigZombie()} への変更。登録があると entity の id を 1 つ消費する。
-     *
-     * @return 変換してよいか
-     */
-    public static boolean pigZap(final Pig pig, final LightningBolt bolt, final ServerLevel level) {
-        if (!listening(org.bukkit.event.entity.PigZapEvent.getHandlerList())) {
-            return true;
-        }
-
-        final ZombifiedPiglin sample = EntityType.ZOMBIFIED_PIGLIN.create(level, EntitySpawnReason.CONVERSION);
-
-        if (sample == null) {
-            return true;
-        }
-
-        return !CraftEventFactory.callPigZapEvent(pig, bolt, sample).isCancelled();
-    }
 
     /**
      * TurtleStartDiggingEvent。{@code Turtle.TurtleLayEggGoal.tick} で掘り始める直前。
@@ -476,30 +390,6 @@ public final class AnimalEvents {
         return event.callEvent() && event.isIgnited();
     }
 
-    /**
-     * ElderGuardianAppearanceEvent。{@code ElderGuardian.customServerAiStep} で採掘速度低下を
-     * かけたあと、ジャンプスケアの packet を送る前。プレイヤーごとに発火する。
-     *
-     * <p>Paper は効果をかける前に発火して、取り消されたプレイヤーには効果もかけない。Shifu は
-     * vanilla がかけたあとに発火し、取り消されたプレイヤーからは効果を外して packet も送らない。
-     * そのプレイヤーが元から採掘速度低下(残り 1200 tick 未満)を持っていた場合、それも消える。
-     */
-    public static void elderGuardianAppearance(final ElderGuardian guardian, final List<ServerPlayer> affected) {
-        if (!listening(io.papermc.paper.event.entity.ElderGuardianAppearanceEvent.getHandlerList())) {
-            return;
-        }
-
-        for (final Iterator<ServerPlayer> it = affected.iterator(); it.hasNext();) {
-            final ServerPlayer player = it.next();
-            final io.papermc.paper.event.entity.ElderGuardianAppearanceEvent event = new io.papermc.paper.event.entity.ElderGuardianAppearanceEvent(
-                    (org.bukkit.entity.ElderGuardian) guardian.getBukkitEntity(), player.getBukkitEntity());
-
-            if (!event.callEvent()) {
-                player.removeEffect(MobEffects.MINING_FATIGUE);
-                it.remove();
-            }
-        }
-    }
 
     /**
      * ShulkerDuplicateEvent。{@code Shulker.hitByShulkerBullet} で子を世界に置く直前。Paper と同じ位置。
@@ -529,40 +419,12 @@ public final class AnimalEvents {
         return CraftEventFactory.callStriderTemperatureChangeEvent(strider, shivering);
     }
 
-    /**
-     * EntityCombustByEntityEvent。{@code Zombie.doHurtTarget} で相手に火を付ける直前。
-     *
-     * @return 燃やす秒数。取り消されたら -1。vanilla の値と同じならそのまま vanilla の行へ
-     */
-    public static float combustByEntity(final Entity combuster, final Entity target, final int seconds) {
-        if (!listening(org.bukkit.event.entity.EntityCombustByEntityEvent.getHandlerList())) {
-            return seconds;
-        }
-
-        final org.bukkit.event.entity.EntityCombustByEntityEvent event = new org.bukkit.event.entity.EntityCombustByEntityEvent(
-                combuster.getBukkitEntity(), target.getBukkitEntity(), (float) seconds);
-
-        return event.callEvent() ? event.getDuration() : -1.0F;
-    }
 
     /** PigZombieAngerEvent に登録が無いか。 */
     public static boolean silentPigZombieAnger() {
         return !listening(org.bukkit.event.entity.PigZombieAngerEvent.getHandlerList());
     }
 
-    /**
-     * PigZombieAngerEvent。{@code ZombifiedPiglin.startPersistentAngerTimer}。怒りの長さは
-     * 呼ぶ側が vanilla と同じ式で 1 回だけ引いて渡す。
-     *
-     * @return 怒りの長さ。取り消されたら -1(呼ぶ側が怒りの相手を消す)
-     */
-    public static int pigZombieAnger(final ZombifiedPiglin piglin, final int anger) {
-        final Entity target = net.minecraft.world.entity.EntityReference.getLivingEntity(piglin.getPersistentAngerTarget(), piglin.level());
-        final org.bukkit.event.entity.PigZombieAngerEvent event = new org.bukkit.event.entity.PigZombieAngerEvent(
-                (org.bukkit.entity.PigZombie) piglin.getBukkitEntity(), target == null ? null : target.getBukkitEntity(), anger);
-
-        return event.callEvent() ? event.getNewAnger() : -1;
-    }
 
     /**
      * RaidTriggerEvent に登録があるか。{@code Raids.createOrExtendRaid} が、この呼び出しで
@@ -572,21 +434,6 @@ public final class AnimalEvents {
         return listening(org.bukkit.event.raid.RaidTriggerEvent.getHandlerList());
     }
 
-    /**
-     * RaidTriggerEvent。{@code Raids.createOrExtendRaid} で不吉な予感を吸わせる直前。
-     *
-     * <p>Paper は襲撃の登録をイベントのあとに回している。Shifu は vanilla が先に登録するので、
-     * 取り消されたら呼ぶ側が登録を外す。
-     *
-     * @return 続けてよいか
-     */
-    public static boolean raidTrigger(final ServerLevel level, final Raid raid, final ServerPlayer player) {
-        if (!raidTriggerListening()) {
-            return true;
-        }
-
-        return CraftEventFactory.callRaidTriggerEvent(level, raid, player);
-    }
 
     /** PiglinBarterEvent に登録が無いか。 */
     public static boolean silentBarter() {
