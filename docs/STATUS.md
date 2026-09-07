@@ -1,7 +1,41 @@
-# 現状
+# 現状(ver/1.21.11)
 
-2026-09-04 時点。構成は [ARCHITECTURE.md](ARCHITECTURE.md)、開発の手順は
-[DEVELOPING.md](DEVELOPING.md)。
+2026-09-08 時点。このブランチは Minecraft 1.21.11。26.2 の分は `main` の同じファイル。
+構成は [ARCHITECTURE.md](ARCHITECTURE.md)、開発の手順は [DEVELOPING.md](DEVELOPING.md)。
+
+## 1.21.11 で通っているところ
+
+| | |
+|---|---|
+| コンパイル | エラー 0(`once.sh`) |
+| 差し込み | 発火 828 箇所 / 337 ファイル、配線 75 箇所 / 38 ファイル、落ちた規則 0 |
+| 追加だけであること | `verify_additive.py` が通る(消えた 23 行は可視性のみ) |
+| 起動 | `Done (0.440s)!`。例外 0 |
+| Bukkit の世界 | 3 つ(`world` / `world_nether` / `world_the_end`)。環境と UUID は別々 |
+| スケジューラ | 毎 tick 走る。`MinecraftServer.currentTick` も進む |
+| 停止 | `Bukkit.shutdown()` で JVM まで落ちる |
+
+まだ見ていないもの: プレイヤーを繋いだ経路、実際のプラグイン、Fabric MOD、
+vanilla との tick 一致(`compare-ticks.sh` / `compare-worldgen.sh`)。
+
+### 数(1.21.11)
+
+| | 件数 |
+|---|---|
+| 生成した宣言(`patches/shim`) | 126 メンバー / 98 ファイル |
+| 自前で書いた追加(`patches/hand`) | 182 メンバー / 91 ファイル |
+| 可視性を広げた宣言(`patches/access`) | 22 件 / 18 ファイル |
+| Bukkit 層の配線(`patches/wire`) | 75 箇所 / 38 ファイル |
+| 無名クラスへの差し込み(`patches/anon`) | 7 箇所 / 5 ファイル |
+| 逆コンパイルの取りこぼしを戻した行(`patches/decompile`) | 45 件 |
+| 式の末尾に足した発火(`patches/expr`) | 1 件 |
+| アダプタ層の書き換え(`patches/adapter`) | 61 件 / 37 ファイル |
+| 差し込んだ発火 | 828 箇所 / 337 ファイル(規則 828 件。うち 293 件は生成) |
+| 発火層(`src/event`) | 10 ファイル 8895 行 |
+
+---
+
+以下は `main`(26.2)で測ったもの。1.21.11 では測り直していない。
 
 ## できていること
 
