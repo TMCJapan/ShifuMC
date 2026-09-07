@@ -4,124 +4,124 @@
 # getDependencyStatus(ChunkStatus,int)
 file: net/minecraft/server/level/ChunkMap.java
 line:
-    public ChunkStatus getDependencyStatus(ChunkStatus centerChunkTargetStatus, int distance) {
+    private ChunkStatus getDependencyStatus(ChunkStatus centerChunkTargetStatus, int distance) {
 
 # setServerViewDistance(int)
 file: net/minecraft/server/level/ChunkMap.java
 line:
-    public void setServerViewDistance(int watchDistance) {
+    protected void setServerViewDistance(int watchDistance) {
 
 # level
 file: net/minecraft/server/level/ServerPlayerGameMode.java
 line:
-    public ServerLevel level;
+    protected ServerLevel level;
 
 # sendChunk(ServerGamePacketListenerImpl,ServerLevel,LevelChunk)
 file: net/minecraft/server/network/PlayerChunkSender.java
 line:
-    public static void sendChunk(ServerGamePacketListenerImpl handler, ServerLevel world, LevelChunk chunk) {
+    private static void sendChunk(ServerGamePacketListenerImpl handler, ServerLevel world, LevelChunk chunk) {
 
 # verifyChatTrusted(PlayerChatMessage)
 file: net/minecraft/server/players/PlayerList.java
 line:
-    public boolean verifyChatTrusted(PlayerChatMessage message) {
+    private boolean verifyChatTrusted(PlayerChatMessage message) {
 
 # level
 file: net/minecraft/world/entity/Entity.java
 line:
-    public Level level;
+    private Level level;
 
 # name
 file: net/minecraft/world/entity/ai/attributes/AttributeModifier.java
 line:
-        public final String name;
+        private final String name;
 
 # setDirty(long)
 file: net/minecraft/world/entity/ai/village/poi/PoiManager.java
 line:
-    public void setDirty(long pos) {
+    protected void setDirty(long pos) {
 
 # caravanTail
 file: net/minecraft/world/entity/animal/horse/Llama.java
 line:
-    public Llama caravanTail;
+    private Llama caravanTail;
 
 # getCurrentSpell()
 file: net/minecraft/world/entity/monster/SpellcasterIllager.java
 line:
-    public SpellcasterIllager.IllagerSpell getCurrentSpell() {
+    protected SpellcasterIllager.IllagerSpell getCurrentSpell() {
 
 # hurtDir
 file: net/minecraft/world/entity/player/Player.java
 line:
-    public float hurtDir;
+    protected float hurtDir;
 
 # blockEntityTickers
 file: net/minecraft/world/level/Level.java
 line:
-    public final List<TickingBlockEntity> blockEntityTickers = Lists.newArrayList();
+    protected final List<TickingBlockEntity> blockEntityTickers = Lists.newArrayList();
 
 # name
 file: net/minecraft/world/level/block/entity/BannerBlockEntity.java
 line:
-    public Component name;
+    private Component name;
 
 # get(int)
 file: net/minecraft/world/level/chunk/PalettedContainer.java
 line:
-    public T get(int index) {
+    protected T get(int index) {
 
 # get(long)
 file: net/minecraft/world/level/chunk/storage/SectionStorage.java
 line:
-    public Optional<R> get(long pos) {
+    protected Optional<R> get(long pos) {
 
 # getOrLoad(long)
 file: net/minecraft/world/level/chunk/storage/SectionStorage.java
 line:
-    public Optional<R> getOrLoad(long pos) {
+    protected Optional<R> getOrLoad(long pos) {
 
 # registryAccess
 file: net/minecraft/world/level/chunk/storage/SectionStorage.java
 line:
-    public final RegistryAccess registryAccess;
+    private final RegistryAccess registryAccess;
 
 # SHAPE_CHECK_BLOCKS
 file: net/minecraft/world/level/levelgen/structure/StructurePiece.java
 line:
-    public static final Set<Block> SHAPE_CHECK_BLOCKS = ImmutableSet.<Block>builder()
+    private static final Set<Block> SHAPE_CHECK_BLOCKS = ImmutableSet.<Block>builder()
 
 # storage
 file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
 line:
-    public final BitSet storage;
+    private final BitSet storage;
 
 # xMax
 file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
 line:
-    public int xMax;
+    private int xMax;
 
 # xMin
 file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
 line:
-    public int xMin;
+    private int xMin;
 
 # yMax
 file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
 line:
-    public int yMax;
+    private int yMax;
 
 # yMin
 file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
 line:
-    public int yMin;
+    private int yMin;
 
 # zMax
 file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
 line:
-    public int zMax;
+    private int zMax;
 
 # zMin
 file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
 line:
-    public int zMin;
+    private int zMin;
