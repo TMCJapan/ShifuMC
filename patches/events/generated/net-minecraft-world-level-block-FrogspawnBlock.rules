@@ -10,11 +10,11 @@ insert:
 # callBlockFadeEvent
 file: net/minecraft/world/level/block/FrogspawnBlock.java
 anchor:
-    this.destroyBlock(level, pos);
-    level.playSound(null, pos, SoundEvents.FROGSPAWN_HATCH, SoundSource.BLOCKS, 1.0F, 1.0F);
+    this.destroyBlock(world, pos);
+    world.playSound(null, pos, SoundEvents.FROGSPAWN_HATCH, SoundSource.BLOCKS, 1.0F, 1.0F);
 insert:
     // Paper start - Call BlockFadeEvent
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, Blocks.AIR.defaultBlockState()).isCancelled()) {
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(world, pos, Blocks.AIR.defaultBlockState()).isCancelled()) {
         return;
     }
     // Paper end - Call BlockFadeEven

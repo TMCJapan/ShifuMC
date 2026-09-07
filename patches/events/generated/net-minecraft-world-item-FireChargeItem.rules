@@ -3,11 +3,11 @@
 # callBlockIgniteEvent
 file: net/minecraft/world/item/FireChargeItem.java
 anchor:
-    this.playSound(level, clickedPos);
-    level.setBlockAndUpdate(clickedPos, BaseFireBlock.getState(level, clickedPos));
+    this.playSound(level, blockPos);
+    level.setBlockAndUpdate(blockPos, BaseFireBlock.getState(level, blockPos));
 insert:
     // CraftBukkit start - fire BlockIgniteEvent
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, clickedPos, org.bukkit.event.block.BlockIgniteEvent.IgniteCause.FIREBALL, context.getPlayer()).isCancelled()) {
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, blockPos, org.bukkit.event.block.BlockIgniteEvent.IgniteCause.FIREBALL, context.getPlayer()).isCancelled()) {
         if (!context.getPlayer().getAbilities().instabuild) {
             context.getItemInHand().shrink(1);
         }

@@ -10,10 +10,10 @@
 # 何割が寝たかの判定
 file: net/minecraft/server/players/SleepStatus.java
 anchor:
-    return i >= this.sleepersNeeded(requiredSleepPercentage);
+    return i >= this.sleepersNeeded(percentage);
 insert:
     if (dev.shifu.event.PlayerEvents.anySleepIgnored(sleepingPlayers)) {
-        return dev.shifu.event.PlayerEvents.enoughDeepSleeping(sleepingPlayers, i, this.sleepersNeeded(requiredSleepPercentage));
+        return dev.shifu.event.PlayerEvents.enoughDeepSleeping(sleepingPlayers, i, this.sleepersNeeded(percentage));
     }
 
 # 寝ている人数の数え上げ

@@ -11,7 +11,7 @@
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch:441
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    this.setHealth(health + amount);
+    this.setHealth(f + amount);
 insert:
     final org.bukkit.event.entity.EntityRegainHealthEvent shifuRegain =
             dev.shifu.event.ShifuEvents.entityRegainHealth(this, amount);

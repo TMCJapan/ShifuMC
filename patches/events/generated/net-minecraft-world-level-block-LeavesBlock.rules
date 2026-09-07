@@ -3,13 +3,13 @@
 # LeavesDecayEvent
 file: net/minecraft/world/level/block/LeavesBlock.java
 anchor:
-    dropResources(state, level, pos);
+    dropResources(state, world, pos);
 insert:
     // CraftBukkit start
-    org.bukkit.event.block.LeavesDecayEvent event = new org.bukkit.event.block.LeavesDecayEvent(org.bukkit.craftbukkit.block.CraftBlock.at(level, pos));
-    level.getCraftServer().getPluginManager().callEvent(event);
+    org.bukkit.event.block.LeavesDecayEvent event = new org.bukkit.event.block.LeavesDecayEvent(org.bukkit.craftbukkit.block.CraftBlock.at(world, pos));
+    world.getCraftServer().getPluginManager().callEvent(event);
 
-    if (event.isCancelled() || !level.getBlockState(pos).is(this)) {
+    if (event.isCancelled() || !world.getBlockState(pos).is(this)) {
         return;
     }
     // CraftBukkit end

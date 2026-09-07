@@ -15,7 +15,7 @@ insert:
 file: net/minecraft/core/RegistrySetBuilder.java
 anchor:
     @Override
-    public <T> Optional<RegistryOps.RegistryInfo<T>> lookup(ResourceKey<? extends Registry<? extends T>> registryKey) {
+    public <T> Optional<RegistryOps.RegistryInfo<T>> lookup(ResourceKey<? extends Registry<? extends T>> registryRef) {
 insert:
     @Override
     public HolderLookup.Provider lookupForValueCopyViaBuilders() {

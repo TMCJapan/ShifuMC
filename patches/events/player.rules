@@ -49,7 +49,7 @@ insert:
 # (SPIGOT-1807)。vanilla の行はそのままにして、発火しない印だけ先に付ける。
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    this.teleport(x, y, z, f, f1);
+    this.teleport(i, j, k, g, h);
 insert:
     dev.shifu.event.ShifuEvents.silentTeleport(this);
 
@@ -243,9 +243,9 @@ insert-after:
 # 死亡イベントが決めた持ち物と経験値の扱いもここで写す。
 file: net/minecraft/server/players/PlayerList.java
 anchor:
-    serverPlayer.restoreFrom(player, keepInventory);
+    serverPlayer.restoreFrom(player, alive);
 insert-after:
-    dev.shifu.event.ShifuEvents.playerRespawned(player, serverPlayer, keepInventory);
+    dev.shifu.event.ShifuEvents.playerRespawned(player, serverPlayer, alive);
 
 # PlayerInteractEvent(ブロックへの右クリック)
 #
@@ -257,10 +257,10 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayerGameMode.java.patch:340
 file: net/minecraft/server/level/ServerPlayerGameMode.java
 anchor:
-    BlockState blockState = level.getBlockState(blockPos);
+    BlockState blockState = world.getBlockState(blockPos);
 insert-after:
     final org.bukkit.event.player.PlayerInteractEvent shifuInteract =
-            dev.shifu.event.ShifuEvents.interactBlock(this, player, level, stack, hand, hitResult, blockState);
+            dev.shifu.event.ShifuEvents.interactBlock(this, player, world, stack, hand, hitResult, blockState);
     if (shifuInteract != null && shifuInteract.useInteractedBlock() == org.bukkit.event.Event.Result.DENY) {
         return dev.shifu.event.ShifuEvents.interactBlockDenied(shifuInteract, player, blockState);
     }
@@ -365,9 +365,9 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch(callPlayerBedEnterEvent)
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    Either<Player.BedSleepingProblem, Unit> either = super.startSleepInBed(bedPos).ifRight(unit -> {
+    Either<Player.BedSleepingProblem, Unit> either = super.startSleepInBed(pos).ifRight(unit -> {
 insert:
-    final Either<Player.BedSleepingProblem, Unit> shifuBed = dev.shifu.event.ShifuEvents.bedEnter(this, bedPos);
+    final Either<Player.BedSleepingProblem, Unit> shifuBed = dev.shifu.event.ShifuEvents.bedEnter(this, pos);
     if (shifuBed != null) {
         return shifuBed;
     }
@@ -393,10 +393,10 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    this.send(new ClientboundCommandSuggestionsPacket(packet.getId(), suggestions1));
+    this.send(new ClientboundCommandSuggestionsPacket(packet.getId(), suggestions2));
 insert:
-    final com.mojang.brigadier.suggestion.Suggestions shifuSuggestions = dev.shifu.event.PlayerEvents.sendSuggestions(this.player, packet.getCommand(), suggestions1);
-    if (shifuSuggestions == suggestions1) {
+    final com.mojang.brigadier.suggestion.Suggestions shifuSuggestions = dev.shifu.event.PlayerEvents.sendSuggestions(this.player, packet.getCommand(), suggestions2);
+    if (shifuSuggestions == suggestions2) {
 insert-after:
     } else if (shifuSuggestions != null) {
         this.send(new ClientboundCommandSuggestionsPacket(packet.getId(), shifuSuggestions));

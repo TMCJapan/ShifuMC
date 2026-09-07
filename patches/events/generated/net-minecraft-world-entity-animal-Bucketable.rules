@@ -3,13 +3,13 @@
 # callPlayerFishBucketEvent
 file: net/minecraft/world/entity/animal/Bucketable.java
 anchor:
-    ItemStack itemStack = ItemUtils.createFilledResult(itemInHand, player, bucketItemStack, false);
+    ItemStack itemStack3 = ItemUtils.createFilledResult(itemStack, player, itemStack2, false);
 insert:
-    org.bukkit.event.player.PlayerBucketEntityEvent playerBucketFishEvent = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerFishBucketEvent(entity, player, itemInHand, bucketItemStack, hand);
-    bucketItemStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(playerBucketFishEvent.getEntityBucket());
+    org.bukkit.event.player.PlayerBucketEntityEvent playerBucketFishEvent = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerFishBucketEvent(entity, player, itemStack, itemStack2, hand);
+    itemStack2 = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(playerBucketFishEvent.getEntityBucket());
     if (playerBucketFishEvent.isCancelled()) {
         // Paper start - Fix inventory desync
-        if (player.hasInfiniteMaterials() || itemInHand.getCount() > 1) {
+        if (player.hasInfiniteMaterials() || itemStack.getCount() > 1) {
             player.containerMenu.sendAllDataToRemote();
         } else {
             player.containerMenu.forceHeldSlot(hand);

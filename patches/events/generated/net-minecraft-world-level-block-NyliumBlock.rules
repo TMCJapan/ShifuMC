@@ -3,10 +3,10 @@
 # callBlockFadeEvent
 file: net/minecraft/world/level/block/NyliumBlock.java
 anchor:
-    level.setBlockAndUpdate(pos, Blocks.NETHERRACK.defaultBlockState());
+    world.setBlockAndUpdate(pos, Blocks.NETHERRACK.defaultBlockState());
 insert:
     // CraftBukkit start
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, Blocks.NETHERRACK.defaultBlockState()).isCancelled()) {
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(world, pos, Blocks.NETHERRACK.defaultBlockState()).isCancelled()) {
         return;
     }
     // CraftBukkit end

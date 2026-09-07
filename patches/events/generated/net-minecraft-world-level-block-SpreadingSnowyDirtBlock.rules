@@ -3,10 +3,10 @@
 # callBlockFadeEvent
 file: net/minecraft/world/level/block/SpreadingSnowyDirtBlock.java
 anchor:
-    level.setBlockAndUpdate(pos, Blocks.DIRT.defaultBlockState());
+    world.setBlockAndUpdate(pos, Blocks.DIRT.defaultBlockState());
 insert:
     // CraftBukkit start
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, Blocks.DIRT.defaultBlockState()).isCancelled()) {
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(world, pos, Blocks.DIRT.defaultBlockState()).isCancelled()) {
         return;
     }
     // CraftBukkit end

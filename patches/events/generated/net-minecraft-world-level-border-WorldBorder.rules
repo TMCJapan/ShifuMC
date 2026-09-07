@@ -34,19 +34,19 @@ insert:
 # WorldBorderBoundsChangeEvent
 file: net/minecraft/world/level/border/WorldBorder.java
 anchor:
-    this.extent = (WorldBorder.BorderExtent)(oldSize == newSize
+    this.extent = (WorldBorder.BorderExtent)(fromSize == toSize
 insert:
     // Paper start - Add worldborder events
     if (this.world != null) {
         io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.Type type;
-        if (oldSize == newSize) { // new size = old size
+        if (fromSize == toSize) { // new size = old size
             type = io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.Type.INSTANT_MOVE; // Use INSTANT_MOVE because below it creates a Static border if they are equal.
         } else {
             type = io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.Type.STARTED_MOVE;
         }
-        io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent event = new io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent(world.getWorld(), world.getWorld().getWorldBorder(), type, oldSize, newSize, time);
+        io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent event = new io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent(world.getWorld(), world.getWorld().getWorldBorder(), type, fromSize, toSize, time);
         if (!event.callEvent()) return;
-        newSize = event.getNewSize();
+        toSize = event.getNewSize();
         time = event.getDurationTicks();
     }
     // Paper end - Add worldborder events

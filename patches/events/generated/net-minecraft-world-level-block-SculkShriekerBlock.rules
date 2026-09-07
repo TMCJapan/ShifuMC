@@ -3,6 +3,6 @@
 # callPlayerInteractEvent
 file: net/minecraft/world/level/block/SculkShriekerBlock.java
 anchor:
-    serverLevel.getBlockEntity(pos, BlockEntityType.SCULK_SHRIEKER).ifPresent(sculkShrieker -> sculkShrieker.tryShriek(serverLevel, serverPlayer));
+    serverLevel.getBlockEntity(pos, BlockEntityType.SCULK_SHRIEKER).ifPresent(blockEntity -> blockEntity.tryShriek(serverLevel, serverPlayer));
 insert:
     if (org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerInteractEvent(serverPlayer, org.bukkit.event.block.Action.PHYSICAL, pos, null, null, null).isCancelled()) return; // CraftBukkit

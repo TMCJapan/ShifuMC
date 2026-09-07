@@ -4,7 +4,7 @@
 file: net/minecraft/world/entity/monster/warden/Warden.java
 anchor:
     WardenAi.setDigCooldown(this);
-    boolean flag = !(this.getTarget() instanceof Player);
+    boolean bl = !(this.getTarget() instanceof Player);
 insert:
     // Paper start - Add WardenAngerChangeEvent
     int activeAnger = this.angerManagement.getActiveAnger(entity);

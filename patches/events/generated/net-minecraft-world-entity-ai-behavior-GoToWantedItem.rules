@@ -3,7 +3,7 @@
 # callEntityTargetEvent
 file: net/minecraft/world/entity/ai/behavior/GoToWantedItem.java
 anchor:
-    WalkTarget walkTarget1 = new WalkTarget(new EntityTracker(itemEntity, false), speedModifier, 0);
+    WalkTarget walkTargetx = new WalkTarget(new EntityTracker(itemEntity, false), speed, 0);
 insert:
     // CraftBukkit start
     if (entity instanceof net.minecraft.world.entity.animal.allay.Allay) {

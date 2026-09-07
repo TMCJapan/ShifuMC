@@ -3,6 +3,6 @@
 # SkeletonHorseTrapEvent
 file: net/minecraft/world/entity/animal/horse/SkeletonTrapGoal.java
 anchor:
-    DifficultyInstance currentDifficultyAt = serverLevel.getCurrentDifficultyAt(this.horse.blockPosition());
+    DifficultyInstance difficultyInstance = serverLevel.getCurrentDifficultyAt(this.horse.blockPosition());
 insert:
     if (!new com.destroystokyo.paper.event.entity.SkeletonHorseTrapEvent((org.bukkit.entity.SkeletonHorse) this.horse.getBukkitEntity(), this.eligiblePlayers).callEvent()) return; // Paper

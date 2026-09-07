@@ -3,11 +3,11 @@
 # callBlockIgniteEvent
 file: net/minecraft/world/level/material/LavaFluid.java
 anchor:
-    level.setBlockAndUpdate(blockPos, BaseFireBlock.getState(level, blockPos));
+    world.setBlockAndUpdate(blockPos, BaseFireBlock.getState(world, blockPos));
 insert:
     // CraftBukkit start - Prevent lava putting something on fire
-    if (!level.getBlockState(blockPos).is(Blocks.FIRE)) {
-        if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, blockPos, pos).isCancelled()) {
+    if (!world.getBlockState(blockPos).is(Blocks.FIRE)) {
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(world, blockPos, pos).isCancelled()) {
             continue;
         }
     }
@@ -16,12 +16,12 @@ insert:
 # callBlockIgniteEvent
 file: net/minecraft/world/level/material/LavaFluid.java
 anchor:
-    level.setBlockAndUpdate(blockPos1.above(), BaseFireBlock.getState(level, blockPos1));
+    world.setBlockAndUpdate(blockPos2.above(), BaseFireBlock.getState(world, blockPos2));
 insert:
     // CraftBukkit start - Prevent lava putting something on fire
-    BlockPos up = blockPos1.above();
-    if (!level.getBlockState(up).is(Blocks.FIRE)) {
-        if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, up, pos).isCancelled()) {
+    BlockPos up = blockPos2.above();
+    if (!world.getBlockState(up).is(Blocks.FIRE)) {
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(world, up, pos).isCancelled()) {
             continue;
         }
     }

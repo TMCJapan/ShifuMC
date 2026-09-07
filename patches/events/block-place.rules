@@ -19,7 +19,7 @@
 
 file: net/minecraft/world/item/BlockItem.java
 anchor:
-    BlockState placementState = this.getPlacementState(blockPlaceContext);
+    BlockState blockState = this.getPlacementState(blockPlaceContext);
 insert-after:
     final org.bukkit.block.BlockState shifuReplaced =
             dev.shifu.event.ShifuEvents.blockPlaceListening()
@@ -30,7 +30,7 @@ insert-after:
 
 file: net/minecraft/world/item/BlockItem.java
 anchor:
-    SoundType soundType = blockState.getSoundType();
+    SoundType soundType = blockState2.getSoundType();
 insert:
     if (shifuReplaced != null && level instanceof net.minecraft.server.level.ServerLevel shifuLevel
             && !dev.shifu.event.ShifuEvents.blockPlace(

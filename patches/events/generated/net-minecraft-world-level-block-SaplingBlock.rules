@@ -3,21 +3,21 @@
 # StructureGrowEvent
 file: net/minecraft/world/level/block/SaplingBlock.java
 anchor:
-    this.treeGrower.growTree(level, level.getChunkSource().getGenerator(), pos, state, random);
+    this.treeGrower.growTree(world, world.getChunkSource().getGenerator(), pos, state, random);
 insert:
     // CraftBukkit start
-    if (level.captureTreeGeneration) {
+    if (world.captureTreeGeneration) {
 insert-after:
     } else {
-        level.captureTreeGeneration = true;
-        this.treeGrower.growTree(level, level.getChunkSource().getGenerator(), pos, state, random);
-        level.captureTreeGeneration = false;
-        if (!level.capturedBlockStates.isEmpty()) {
+        world.captureTreeGeneration = true;
+        this.treeGrower.growTree(world, world.getChunkSource().getGenerator(), pos, state, random);
+        world.captureTreeGeneration = false;
+        if (!world.capturedBlockStates.isEmpty()) {
             org.bukkit.TreeType treeType = SaplingBlock.treeType;
             SaplingBlock.treeType = null;
-            org.bukkit.Location location = org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level);
-            java.util.List<org.bukkit.block.BlockState> blocks = new java.util.ArrayList<>(level.capturedBlockStates.values());
-            level.capturedBlockStates.clear();
+            org.bukkit.Location location = org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, world);
+            java.util.List<org.bukkit.block.BlockState> blocks = new java.util.ArrayList<>(world.capturedBlockStates.values());
+            world.capturedBlockStates.clear();
             org.bukkit.event.world.StructureGrowEvent event = null;
             if (treeType != null) {
                 event = new org.bukkit.event.world.StructureGrowEvent(location, treeType, false, null, blocks);
@@ -27,7 +27,7 @@ insert-after:
                 for (org.bukkit.block.BlockState blockstate : blocks) {
                     org.bukkit.craftbukkit.block.CraftBlockState craftBlockState = (org.bukkit.craftbukkit.block.CraftBlockState) blockstate;
                     craftBlockState.place(craftBlockState.getFlags());
-                    level.checkCapturedTreeStateForObserverNotify(pos, craftBlockState); // Paper - notify observers even if grow failed
+                    world.checkCapturedTreeStateForObserverNotify(pos, craftBlockState); // Paper - notify observers even if grow failed
                 }
             }
         }

@@ -31,15 +31,15 @@ insert-after:
 # Paper は if の外、ラムダの末尾に置く。アンカーの終わりが if の閉じ括弧なので
 # その後ろに入れる。
 anchor:
-    LOGGER.error("Unable to bootstrap registry '{}'", identifier);
+    LOGGER.error("Unable to bootstrap registry '{}'", id);
     }
 insert-after:
-    io.papermc.paper.registry.PaperRegistryAccess.instance().lockReferenceHolders(ResourceKey.createRegistryKey(identifier));
+    io.papermc.paper.registry.PaperRegistryAccess.instance().lockReferenceHolders(ResourceKey.createRegistryKey(id));
 
 # データパックから読むレジストリ(patches/sources/.../RegistryDataLoader.java.patch @@ -393, -316)
 file: net/minecraft/resources/RegistryDataLoader.java
 anchor:
-    WritableRegistry<T> writableRegistry = new MappedRegistry<>(this.key, registryLifecycle);
+    WritableRegistry<T> writableRegistry = new MappedRegistry<>(this.key, lifecycle);
 insert-after:
     io.papermc.paper.registry.PaperRegistryAccess.instance().registerRegistry(writableRegistry);
 

@@ -3,6 +3,6 @@
 # handleBlockPreDispenseEvent
 file: net/minecraft/world/level/block/DispenserBlock.java
 anchor:
-    dispenserBlockEntity.setItem(randomSlot, dispenseMethod.dispense(blockSource, item));
+    dispenserBlockEntity.setItem(i, dispenseItemBehavior.dispense(blockSource, itemStack));
 insert:
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockPreDispenseEvent(level, pos, item, randomSlot)) return; // Paper - Add BlockPreDispenseEvent
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockPreDispenseEvent(level, pos, itemStack, i)) return; // Paper - Add BlockPreDispenseEvent

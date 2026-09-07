@@ -13,7 +13,7 @@ insert-after:
 # クライアントの言語。Player.locale() がここを読む(同 patch:1346)。
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    this.language = clientInformation.language();
+    this.language = clientOptions.language();
 insert-after:
     this.adventure$locale = java.util.Objects.requireNonNullElse(net.kyori.adventure.translation.Translator.parseLocale(this.language), java.util.Locale.US);
 

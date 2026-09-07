@@ -18,9 +18,9 @@ insert-after:
 # AbstractFurnaceMenu.inventory(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/AbstractFurnaceMenu.java
 anchor:
-    this.addSlot(new FurnaceResultSlot(inventory.player, container, 2, 116, 35));
+    this.addSlot(new FurnaceResultSlot(playerInventory.player, inventory, 2, 116, 35));
 insert-after:
-    this.inventory = inventory;
+    this.inventory = playerInventory;
 
 # AbstractMountInventoryMenu.inventory(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/AbstractMountInventoryMenu.java
@@ -32,14 +32,14 @@ insert-after:
 # BeaconMenu.inventory(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/BeaconMenu.java
 anchor:
-    super(MenuType.BEACON, containerId);
+    super(MenuType.BEACON, syncId);
 insert-after:
     this.inventory = (net.minecraft.world.entity.player.Inventory) container;
 
 # BrewingStandMenu.inventory(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/BrewingStandMenu.java
 anchor:
-    super(MenuType.BREWING_STAND, containerId);
+    super(MenuType.BREWING_STAND, syncId);
 insert-after:
     this.inventory = playerInventory;
 
@@ -53,7 +53,7 @@ insert-after:
 # DispenserMenu.inventory(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/DispenserMenu.java
 anchor:
-    super(MenuType.GENERIC_3x3, containerId);
+    super(MenuType.GENERIC_3x3, syncId);
 insert-after:
     this.inventory = inventory;
 
@@ -88,7 +88,7 @@ insert-after:
 # MerchantMenu.inventory(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/MerchantMenu.java
 anchor:
-    this.addSlot(new MerchantResultSlot(playerInventory.player, trader, this.tradeContainer, 2, 220, 37));
+    this.addSlot(new MerchantResultSlot(playerInventory.player, merchant, this.tradeContainer, 2, 220, 37));
 insert-after:
     this.inventory = playerInventory;
 

@@ -3,7 +3,7 @@
 # callEntityTargetLivingEvent
 file: net/minecraft/world/entity/ai/behavior/BabyFollowAdult.java
 anchor:
-    WalkTarget walkTarget = new WalkTarget(
+    WalkTarget walkTargetx = new WalkTarget(
 insert:
     // CraftBukkit start
     org.bukkit.event.entity.EntityTargetLivingEntityEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTargetLivingEvent(entity, livingEntity, org.bukkit.event.entity.EntityTargetEvent.TargetReason.FOLLOW_LEADER);

@@ -9,7 +9,7 @@
 file: net/minecraft/server/players/PlayerList.java
 anchor:
     this.server = server;
-    this.registries = registries;
+    this.registries = registryManager;
 insert:
     this.cserver = server.server = new org.bukkit.craftbukkit.CraftServer((net.minecraft.server.dedicated.DedicatedServer) server, this);
     server.console = new com.destroystokyo.paper.console.TerminalConsoleCommandSender();

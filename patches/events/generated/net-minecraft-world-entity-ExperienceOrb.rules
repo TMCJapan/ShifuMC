@@ -3,25 +3,25 @@
 # ExperienceOrbMergeEvent
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
-    this.count = this.count + orb.count;
+    this.count = this.count + other.count;
 insert:
-    // Paper start - call orb merge event
-    if (!new com.destroystokyo.paper.event.entity.ExperienceOrbMergeEvent((org.bukkit.entity.ExperienceOrb) this.getBukkitEntity(), (org.bukkit.entity.ExperienceOrb) orb.getBukkitEntity()).callEvent()) {
+    // Paper start - call other merge event
+    if (!new com.destroystokyo.paper.event.entity.ExperienceOrbMergeEvent((org.bukkit.entity.ExperienceOrb) this.getBukkitEntity(), (org.bukkit.entity.ExperienceOrb) other.getBukkitEntity()).callEvent()) {
         return;
     }
-    // Paper end - call orb merge event
+    // Paper end - call other merge event
 
 # callPlayerItemMendEvent
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
-    itemStack.setDamageValue(itemStack.getDamageValue() - min);
+    itemStack.setDamageValue(itemStack.getDamageValue() - i);
 insert:
     // CraftBukkit start
     // Paper start - mending event
-    final int consumedExperience = min > 0 ? min * value / i : 0;
-    org.bukkit.event.player.PlayerItemMendEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerItemMendEvent(player, this, itemStack, randomItemWith.get().inSlot(), min, consumedExperience);
+    final int consumedExperience = i > 0 ? i * value / i : 0;
+    org.bukkit.event.player.PlayerItemMendEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerItemMendEvent(player, this, itemStack, randomItemWith.get().inSlot(), i, consumedExperience);
     // Paper end - mending event
-    min = event.getRepairAmount();
+    i = event.getRepairAmount();
     if (event.isCancelled()) {
         return value;
     }

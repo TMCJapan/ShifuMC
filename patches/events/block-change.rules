@@ -9,29 +9,29 @@
 # handleBlockFormEvent
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    this.setBlockAndUpdate(blockPos, Blocks.ICE.defaultBlockState());
+    this.setBlockAndUpdate(blockPos2, Blocks.ICE.defaultBlockState());
 insert:
-    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock1 = dev.shifu.event.ShifuEvents.blockChangeBefore(this, blockPos, org.bukkit.event.block.BlockFormEvent.getHandlerList());
+    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock1 = dev.shifu.event.ShifuEvents.blockChangeBefore(this, blockPos2, org.bukkit.event.block.BlockFormEvent.getHandlerList());
 insert-after:
-    dev.shifu.event.ShifuEvents.blockForm(this, blockPos, shifuBlock1, net.minecraft.world.level.block.Block.UPDATE_ALL, null);
+    dev.shifu.event.ShifuEvents.blockForm(this, blockPos2, shifuBlock1, net.minecraft.world.level.block.Block.UPDATE_ALL, null);
 
 # handleBlockFormEvent
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    this.setBlockAndUpdate(heightmapPos, blockState1);
+    this.setBlockAndUpdate(blockPos, blockState2);
 insert:
-    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock2 = dev.shifu.event.ShifuEvents.blockChangeBefore(this, heightmapPos, org.bukkit.event.block.BlockFormEvent.getHandlerList());
+    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock2 = dev.shifu.event.ShifuEvents.blockChangeBefore(this, blockPos, org.bukkit.event.block.BlockFormEvent.getHandlerList());
 insert-after:
-    dev.shifu.event.ShifuEvents.blockForm(this, heightmapPos, shifuBlock2, net.minecraft.world.level.block.Block.UPDATE_ALL, null);
+    dev.shifu.event.ShifuEvents.blockForm(this, blockPos, shifuBlock2, net.minecraft.world.level.block.Block.UPDATE_ALL, null);
 
 # handleBlockFormEvent
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    this.setBlockAndUpdate(heightmapPos, Blocks.SNOW.defaultBlockState());
+    this.setBlockAndUpdate(blockPos, Blocks.SNOW.defaultBlockState());
 insert:
-    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock3 = dev.shifu.event.ShifuEvents.blockChangeBefore(this, heightmapPos, org.bukkit.event.block.BlockFormEvent.getHandlerList());
+    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock3 = dev.shifu.event.ShifuEvents.blockChangeBefore(this, blockPos, org.bukkit.event.block.BlockFormEvent.getHandlerList());
 insert-after:
-    dev.shifu.event.ShifuEvents.blockForm(this, heightmapPos, shifuBlock3, net.minecraft.world.level.block.Block.UPDATE_ALL, null);
+    dev.shifu.event.ShifuEvents.blockForm(this, blockPos, shifuBlock3, net.minecraft.world.level.block.Block.UPDATE_ALL, null);
 
 # handleBlockFormEvent
 file: net/minecraft/world/entity/LivingEntity.java
@@ -72,11 +72,11 @@ insert-after:
 # handleBlockGrowEvent
 file: net/minecraft/world/level/block/CactusBlock.java
 anchor:
-    level.setBlockAndUpdate(blockPos, this.defaultBlockState());
+    world.setBlockAndUpdate(blockPos, this.defaultBlockState());
 insert:
-    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock8 = dev.shifu.event.ShifuEvents.blockChangeBefore(level, blockPos, org.bukkit.event.block.BlockGrowEvent.getHandlerList());
+    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock8 = dev.shifu.event.ShifuEvents.blockChangeBefore(world, blockPos, org.bukkit.event.block.BlockGrowEvent.getHandlerList());
 insert-after:
-    dev.shifu.event.ShifuEvents.blockGrow(level, blockPos, shifuBlock8, net.minecraft.world.level.block.Block.UPDATE_ALL);
+    dev.shifu.event.ShifuEvents.blockGrow(world, blockPos, shifuBlock8, net.minecraft.world.level.block.Block.UPDATE_ALL);
 
 # handleBlockGrowEvent
 file: net/minecraft/world/level/block/CocoaBlock.java
@@ -153,29 +153,29 @@ insert-after:
 # handleBlockSpreadEvent
 file: net/minecraft/world/level/block/GrowingPlantHeadBlock.java
 anchor:
-    level.setBlockAndUpdate(blockPos, this.getGrowIntoState(state, level.random));
+    world.setBlockAndUpdate(blockPos, this.getGrowIntoState(state, world.random));
 insert:
-    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock17 = dev.shifu.event.ShifuEvents.blockChangeBefore(level, blockPos, org.bukkit.event.block.BlockSpreadEvent.getHandlerList());
+    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock17 = dev.shifu.event.ShifuEvents.blockChangeBefore(world, blockPos, org.bukkit.event.block.BlockSpreadEvent.getHandlerList());
 insert-after:
-    dev.shifu.event.ShifuEvents.blockSpread(level, pos, blockPos, shifuBlock17, net.minecraft.world.level.block.Block.UPDATE_ALL);
+    dev.shifu.event.ShifuEvents.blockSpread(world, pos, blockPos, shifuBlock17, net.minecraft.world.level.block.Block.UPDATE_ALL);
 
 # handleBlockFormEvent
 file: net/minecraft/world/level/block/LiquidBlock.java
 anchor:
-    level.setBlockAndUpdate(pos, block.defaultBlockState());
+    world.setBlockAndUpdate(pos, block.defaultBlockState());
 insert:
-    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock18 = dev.shifu.event.ShifuEvents.blockChangeBefore(level, pos, org.bukkit.event.block.BlockFormEvent.getHandlerList());
+    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock18 = dev.shifu.event.ShifuEvents.blockChangeBefore(world, pos, org.bukkit.event.block.BlockFormEvent.getHandlerList());
 insert-after:
-    dev.shifu.event.ShifuEvents.blockForm(level, pos, shifuBlock18, net.minecraft.world.level.block.Block.UPDATE_ALL, null);
+    dev.shifu.event.ShifuEvents.blockForm(world, pos, shifuBlock18, net.minecraft.world.level.block.Block.UPDATE_ALL, null);
 
 # handleBlockFormEvent
 file: net/minecraft/world/level/block/LiquidBlock.java
 anchor:
-    level.setBlockAndUpdate(pos, Blocks.BASALT.defaultBlockState());
+    world.setBlockAndUpdate(pos, Blocks.BASALT.defaultBlockState());
 insert:
-    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock19 = dev.shifu.event.ShifuEvents.blockChangeBefore(level, pos, org.bukkit.event.block.BlockFormEvent.getHandlerList());
+    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock19 = dev.shifu.event.ShifuEvents.blockChangeBefore(world, pos, org.bukkit.event.block.BlockFormEvent.getHandlerList());
 insert-after:
-    dev.shifu.event.ShifuEvents.blockForm(level, pos, shifuBlock19, net.minecraft.world.level.block.Block.UPDATE_ALL, null);
+    dev.shifu.event.ShifuEvents.blockForm(world, pos, shifuBlock19, net.minecraft.world.level.block.Block.UPDATE_ALL, null);
 
 # handleBlockGrowEvent
 file: net/minecraft/world/level/block/NetherWartBlock.java
@@ -207,11 +207,11 @@ insert-after:
 # handleBlockSpreadEvent
 file: net/minecraft/world/level/block/RootedDirtBlock.java
 anchor:
-    level.setBlockAndUpdate(pos.below(), Blocks.HANGING_ROOTS.defaultBlockState());
+    world.setBlockAndUpdate(pos.below(), Blocks.HANGING_ROOTS.defaultBlockState());
 insert:
-    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock23 = dev.shifu.event.ShifuEvents.blockChangeBefore(level, pos.below(), org.bukkit.event.block.BlockSpreadEvent.getHandlerList());
+    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock23 = dev.shifu.event.ShifuEvents.blockChangeBefore(world, pos.below(), org.bukkit.event.block.BlockSpreadEvent.getHandlerList());
 insert-after:
-    dev.shifu.event.ShifuEvents.blockSpread(level, pos, pos.below(), shifuBlock23, net.minecraft.world.level.block.Block.UPDATE_ALL);
+    dev.shifu.event.ShifuEvents.blockSpread(world, pos, pos.below(), shifuBlock23, net.minecraft.world.level.block.Block.UPDATE_ALL);
 
 # handleBlockSpreadEvent
 file: net/minecraft/world/level/block/SculkBlock.java
@@ -252,11 +252,11 @@ insert-after:
 # handleBlockGrowEvent
 file: net/minecraft/world/level/block/StemBlock.java
 anchor:
-    level.setBlockAndUpdate(blockPos, optional.get().defaultBlockState());
+    world.setBlockAndUpdate(blockPos, optional.get().defaultBlockState());
 insert:
-    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock28 = dev.shifu.event.ShifuEvents.blockChangeBefore(level, blockPos, org.bukkit.event.block.BlockGrowEvent.getHandlerList());
+    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock28 = dev.shifu.event.ShifuEvents.blockChangeBefore(world, blockPos, org.bukkit.event.block.BlockGrowEvent.getHandlerList());
 insert-after:
-    dev.shifu.event.ShifuEvents.blockGrow(level, blockPos, shifuBlock28, net.minecraft.world.level.block.Block.UPDATE_ALL);
+    dev.shifu.event.ShifuEvents.blockGrow(world, blockPos, shifuBlock28, net.minecraft.world.level.block.Block.UPDATE_ALL);
 
 # handleBlockGrowEvent
 file: net/minecraft/world/level/block/StemBlock.java
@@ -270,11 +270,11 @@ insert-after:
 # handleBlockGrowEvent
 file: net/minecraft/world/level/block/SugarCaneBlock.java
 anchor:
-    level.setBlockAndUpdate(pos.above(), this.defaultBlockState());
+    world.setBlockAndUpdate(pos.above(), this.defaultBlockState());
 insert:
-    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock30 = dev.shifu.event.ShifuEvents.blockChangeBefore(level, pos.above(), org.bukkit.event.block.BlockGrowEvent.getHandlerList());
+    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock30 = dev.shifu.event.ShifuEvents.blockChangeBefore(world, pos.above(), org.bukkit.event.block.BlockGrowEvent.getHandlerList());
 insert-after:
-    dev.shifu.event.ShifuEvents.blockGrow(level, pos.above(), shifuBlock30, net.minecraft.world.level.block.Block.UPDATE_ALL);
+    dev.shifu.event.ShifuEvents.blockGrow(world, pos.above(), shifuBlock30, net.minecraft.world.level.block.Block.UPDATE_ALL);
 
 # handleBlockGrowEvent
 file: net/minecraft/world/level/block/SweetBerryBushBlock.java

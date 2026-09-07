@@ -3,10 +3,10 @@
 # callEntityChangeBlockEvent
 file: net/minecraft/world/item/PotionItem.java
 anchor:
-    level.playSound(null, clickedPos, SoundEvents.GENERIC_SPLASH, SoundSource.BLOCKS, 1.0F, 1.0F);
+    level.playSound(null, blockPos, SoundEvents.GENERIC_SPLASH, SoundSource.BLOCKS, 1.0F, 1.0F);
 insert:
     // Paper start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(player, clickedPos, Blocks.MUD.defaultBlockState())) {
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(player, blockPos, Blocks.MUD.defaultBlockState())) {
         if (itemInHand.getCount() > 1 || player.hasInfiniteMaterials()) {
             player.containerMenu.sendAllDataToRemote();
         } else {

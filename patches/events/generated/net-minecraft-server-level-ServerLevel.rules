@@ -3,8 +3,8 @@
 # WorldSaveEvent
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    if (progress != null) {
-        progress.progressStartNoAbort(Component.translatable("menu.savingLevel"));
+    if (progressListener != null) {
+    progressListener.progressStartNoAbort(Component.translatable("menu.savingLevel"));
 insert:
     org.bukkit.Bukkit.getPluginManager().callEvent(new org.bukkit.event.world.WorldSaveEvent(this.getWorld())); // CraftBukkit
 

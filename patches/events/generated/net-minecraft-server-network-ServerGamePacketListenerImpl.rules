@@ -266,12 +266,12 @@ insert:
 # UncheckedSignChangeEvent
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    if (!(serverLevel.getBlockEntity(pos) instanceof SignBlockEntity signBlockEntity)) {
+    if (!(serverLevel.getBlockEntity(blockPos) instanceof SignBlockEntity signBlockEntity)) {
 insert:
     // Paper start - Add API for client-side signs
     if (!new io.papermc.paper.event.packet.UncheckedSignChangeEvent(
         this.player.getBukkitEntity(),
-        io.papermc.paper.util.MCUtil.toPosition(pos),
+        io.papermc.paper.util.MCUtil.toPosition(blockPos),
         packet.isFrontText() ? org.bukkit.block.sign.Side.FRONT : org.bukkit.block.sign.Side.BACK,
         filteredText.stream().<net.kyori.adventure.text.Component>map(line -> net.kyori.adventure.text.Component.text(line.raw())).toList())
         .callEvent()) {

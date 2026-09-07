@@ -3,7 +3,7 @@
 # PlayerChunkLoadEvent
 file: net/minecraft/server/network/PlayerChunkSender.java
 anchor:
-    ChunkPos pos = chunk.getPos();
+    ChunkPos chunkPos = chunk.getPos();
 insert:
     // Paper start - PlayerChunkLoadEvent
     if (io.papermc.paper.event.packet.PlayerChunkLoadEvent.getHandlerList().getRegisteredListeners().length > 0) {

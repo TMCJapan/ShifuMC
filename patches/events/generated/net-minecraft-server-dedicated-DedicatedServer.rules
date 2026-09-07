@@ -3,6 +3,6 @@
 # WhitelistToggleEvent
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
-    this.settings.update(dedicatedServerProperties -> dedicatedServerProperties.whiteList.update(this.registryAccess(), usingWhitelist));
+    this.settings.update(serverPropertiesHandler -> serverPropertiesHandler.whiteList.update(this.registryAccess(), useWhitelist));
 insert:
-    new com.destroystokyo.paper.event.server.WhitelistToggleEvent(usingWhitelist).callEvent(); // Paper - WhitelistToggleEvent
+    new com.destroystokyo.paper.event.server.WhitelistToggleEvent(useWhitelist).callEvent(); // Paper - WhitelistToggleEvent

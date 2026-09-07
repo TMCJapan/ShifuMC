@@ -3,11 +3,11 @@
 # WitchConsumePotionEvent
 file: net/minecraft/world/entity/monster/Witch.java
 anchor:
-    if (mainHandItem.is(Items.POTION) && potionContents != null) {
+    if (itemStack.is(Items.POTION) && potionContents != null) {
 insert:
     // Paper start - WitchConsumePotionEvent
-    if (mainHandItem.is(Items.POTION)) {
-        com.destroystokyo.paper.event.entity.WitchConsumePotionEvent event = new com.destroystokyo.paper.event.entity.WitchConsumePotionEvent((org.bukkit.entity.Witch) this.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(mainHandItem));
+    if (itemStack.is(Items.POTION)) {
+        com.destroystokyo.paper.event.entity.WitchConsumePotionEvent event = new com.destroystokyo.paper.event.entity.WitchConsumePotionEvent((org.bukkit.entity.Witch) this.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(itemStack));
         potionContents = event.callEvent() ? org.bukkit.craftbukkit.inventory.CraftItemStack.unwrap(event.getPotion()).get(DataComponents.POTION_CONTENTS) : null;
     }
     // Paper end - WitchConsumePotionEvent

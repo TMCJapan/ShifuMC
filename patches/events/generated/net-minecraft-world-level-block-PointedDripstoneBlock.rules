@@ -3,7 +3,7 @@
 # callEntityChangeBlockEvent
 file: net/minecraft/world/level/block/PointedDripstoneBlock.java
 anchor:
-    level.destroyBlock(blockPos, true);
+    world.destroyBlock(blockPos, true);
 insert:
     // CraftBukkit start
     if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(projectile, blockPos, state.getFluidState().createLegacyBlock())) { // Paper - fix wrong block state

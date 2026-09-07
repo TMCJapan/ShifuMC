@@ -104,9 +104,9 @@ insert-after:
 # EntityAirChangeEvent
 file: net/minecraft/world/entity/Entity.java
 anchor:
-    this.entityData.set(DATA_AIR_SUPPLY_ID, airSupply);
+    this.entityData.set(DATA_AIR_SUPPLY_ID, air);
 insert:
-    if (dev.shifu.event.EntityEvents.airChange(this, airSupply)) {
+    if (dev.shifu.event.EntityEvents.airChange(this, air)) {
 insert-after:
     }
 
@@ -141,10 +141,10 @@ insert-after:
 file: net/minecraft/world/entity/Entity.java
 anchor:
     if (this.removalReason == null) {
-    this.removalReason = removalReason;
+    this.removalReason = reason;
     }
 insert:
-    dev.shifu.event.EntityEvents.removed(this, removalReason);
+    dev.shifu.event.EntityEvents.removed(this, reason);
 
 # ============================================================ ExperienceOrb
 
@@ -208,9 +208,9 @@ insert-after:
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
     if (i > 0) {
-        entity.giveExperiencePoints(i);
+    player.giveExperiencePoints(i);
 insert:
-    i = dev.shifu.event.EntityEvents.expChange(entity, this, i);
+    i = dev.shifu.event.EntityEvents.expChange(player, this, i);
 
 # ============================================================ Leashable
 
@@ -275,9 +275,9 @@ insert:
 # ArrowBodyCountChangeEvent
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    this.entityData.set(DATA_ARROW_COUNT_ID, count);
+    this.entityData.set(DATA_ARROW_COUNT_ID, stuckArrowCount);
 insert:
-    if (dev.shifu.event.EntityEvents.arrowCount(this, count)) {
+    if (dev.shifu.event.EntityEvents.arrowCount(this, stuckArrowCount)) {
 insert-after:
     }
 
@@ -404,7 +404,7 @@ insert:
 # EntityPushedByEntityAttackEvent の主(体当たり)
 file: net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
 anchor:
-    entity.push(d2 / max * 4.0, 0.2F, d3 / max * 4.0);
+    entity.push(f / h * 4.0, 0.2F, g / h * 4.0);
 insert:
     dev.shifu.event.EntityEvents.pushedBy(this, entity);
 
@@ -439,9 +439,9 @@ insert:
 # EntityDamageEvent(爆発)
 file: net/minecraft/world/entity/decoration/ArmorStand.java
 anchor:
-    } else if (damageSource.is(DamageTypeTags.IS_EXPLOSION)) {
+    } else if (source.is(DamageTypeTags.IS_EXPLOSION)) {
 insert-after:
-    if (dev.shifu.event.EntityEvents.damageCancelled(this, damageSource, amount, true, false)) {
+    if (dev.shifu.event.EntityEvents.damageCancelled(this, source, amount, true, false)) {
         return false;
     }
 
@@ -504,9 +504,9 @@ insert-after:
 # PlayerItemFrameChangeEvent(PLACE)
 file: net/minecraft/world/entity/decoration/ItemFrame.java
 anchor:
-    this.setItem(itemInHand);
+    this.setItem(itemStack);
 insert:
-    final int shifuFrame = dev.shifu.event.EntityEvents.frameChange(this, player, itemInHand);
+    final int shifuFrame = dev.shifu.event.EntityEvents.frameChange(this, player, itemStack);
     if (shifuFrame == 0) {
         return InteractionResult.FAIL;
     }
@@ -519,10 +519,10 @@ insert-after:
 # PlayerLeashEntityEvent(フェンスに繋ぐ・フェンスから自分へ)
 file: net/minecraft/world/entity/decoration/LeashFenceKnotEntity.java
 anchor:
-    leashable.setLeashedTo(this, true);
-    flag = true;
+    mob.setLeashedTo(this, true);
+    bl = true;
 insert:
-    if (dev.shifu.event.EntityEvents.playerLeash(leashable, this, player, hand)) {
+    if (dev.shifu.event.EntityEvents.playerLeash(mob, this, player, hand)) {
 insert-after:
     }
 
@@ -704,16 +704,16 @@ insert-after:
 # EntityPushedByEntityAttackEvent の主(ノックバック)
 file: net/minecraft/world/entity/projectile/AbstractArrow.java
 anchor:
-    entity.push(vec3.x, 0.1, vec3.z);
+    livingEntity.push(vec3.x, 0.1, vec3.z);
 insert:
-    dev.shifu.event.EntityEvents.pushedBy(this, entity);
+    dev.shifu.event.EntityEvents.pushedBy(this, livingEntity);
 
 # PlayerPickupArrowEvent
 file: net/minecraft/world/entity/projectile/AbstractArrow.java
 anchor:
-    if (this.tryPickup(entity)) {
+    if (this.tryPickup(player)) {
 insert:
-    if (dev.shifu.event.EntityEvents.arrowPickupListening() && !dev.shifu.event.EntityEvents.pickupArrow(this, entity, this.getPickupItem())) {
+    if (dev.shifu.event.EntityEvents.arrowPickupListening() && !dev.shifu.event.EntityEvents.pickupArrow(this, player, this.getPickupItem())) {
         return;
     }
 
@@ -871,8 +871,8 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/Entity.java.patch:1708
 file: net/minecraft/world/entity/Entity.java
 anchor:
-    vec3 = vec3.add(flow);
-    i++;
+    vec3 = vec3.add(vec32);
+    o++;
     }
 insert-after:
     dev.shifu.event.EntityEvents.lavaContact(this, fluidState, mutableBlockPos);
@@ -883,7 +883,7 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/player/Player.java.patch(ExhaustionReason)
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-    this.causeFoodExhaustion(damageSource.getFoodExhaustion());
+    this.causeFoodExhaustion(source.getFoodExhaustion());
 insert:
     dev.shifu.event.EntityEvents.exhaustionReason(org.bukkit.event.entity.EntityExhaustionEvent.ExhaustionReason.DAMAGED);
 

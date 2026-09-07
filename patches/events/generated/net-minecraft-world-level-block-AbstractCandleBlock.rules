@@ -3,10 +3,10 @@
 # callBlockIgniteEvent
 file: net/minecraft/world/level/block/AbstractCandleBlock.java
 anchor:
-    setLit(level, state, hit.getBlockPos(), true);
+    setLit(world, state, hit.getBlockPos(), true);
 insert:
     // CraftBukkit start
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, hit.getBlockPos(), projectile).isCancelled()) {
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(world, hit.getBlockPos(), projectile).isCancelled()) {
         return;
     }
     // CraftBukkit end

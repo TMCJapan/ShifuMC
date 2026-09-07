@@ -3,7 +3,7 @@
 # EntityDropItemEvent
 file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
 anchor:
-    serverLevel1.addFreshEntity(itemEntity);
+    serverLevel.addFreshEntity(itemEntity);
 insert:
     // CraftBukkit start - handle EntityDropItemEvent
     org.bukkit.event.entity.EntityDropItemEvent event = new org.bukkit.event.entity.EntityDropItemEvent(this.getBukkitEntity(), (org.bukkit.entity.Item) itemEntity.getBukkitEntity());

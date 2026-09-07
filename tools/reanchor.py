@@ -202,13 +202,19 @@ def main():
         floor = float(sys.argv[sys.argv.index("--min") + 1])
 
     by_file = {}
+    # 規則の置き場は入れ子になっている(patches/events/generated など)。
+    # rule.where はファイル名しか持たないので、書き戻す先をここで覚えておく。
+    sources = collections.defaultdict(set)
 
     for base, _, files in os.walk(rules_root):
         for name in sorted(files):
             if not name.endswith(".rules"):
                 continue
 
-            with io.open(os.path.join(base, name), encoding="utf-8") as handle:
+            path = os.path.join(base, name)
+            sources[name].add(path)
+
+            with io.open(path, encoding="utf-8") as handle:
                 for rule in parse(handle.read(), name):
                     by_file.setdefault(rule.target, []).append(rule)
 
@@ -258,8 +264,11 @@ def main():
 
             if write and names is not None:
                 name, _, no = rule.where.rpartition(":")
+                paths = sources.get(name, set())
 
-                if rewrite(os.path.join(rules_root, name), int(no), len(rule.anchor), found, names):
+                if len(paths) != 1:
+                    print(f"{rule.where}: 同じ名前の規則が {len(paths)} 箇所にあるので書き換えない")
+                elif rewrite(next(iter(paths)), int(no), len(rule.anchor), found, names):
                     detail = ", ".join(f"{k}->{v}" for k, v in names.items()) or "final のみ"
                     mark = f" [書き換えた {detail}]"
                     written += 1

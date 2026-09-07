@@ -15,7 +15,7 @@ insert:
 # callPlayerHarvestBlockEvent
 file: net/minecraft/world/level/block/CaveVines.java
 anchor:
-    float f = Mth.randomBetween(serverLevel.random, 0.8F, 1.2F);
+    float f = Mth.randomBetween(world.random, 0.8F, 1.2F);
 insert:
     // Paper start - call player harvest block event
     if (entity instanceof net.minecraft.world.entity.player.Player player) {

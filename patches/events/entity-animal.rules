@@ -10,9 +10,9 @@
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/TamableAnimal.java.patch(EntityToggleSitEvent)
 file: net/minecraft/world/entity/TamableAnimal.java
 anchor:
-    public void setInSittingPose(boolean sitting) {
+    public void setInSittingPose(boolean inSittingPose) {
 insert-after:
-    if (!dev.shifu.event.AnimalEvents.toggleSit(this, sitting)) {
+    if (!dev.shifu.event.AnimalEvents.toggleSit(this, inSittingPose)) {
         return;
     }
 
@@ -310,9 +310,9 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/fox/Fox.java.patch(callEntityBreedEvent)
 file: net/minecraft/world/entity/animal/Fox.java
 anchor:
-    if (serverPlayer != null) {
-    serverPlayer.awardStat(Stats.ANIMALS_BRED);
-    CriteriaTriggers.BRED_ANIMALS.trigger(serverPlayer, this.animal, this.partner, fox);
+    if (serverPlayer3 != null) {
+    serverPlayer3.awardStat(Stats.ANIMALS_BRED);
+    CriteriaTriggers.BRED_ANIMALS.trigger(serverPlayer3, this.animal, this.partner, fox);
 insert:
     if (!dev.shifu.event.AnimalEvents.breed(this.animal, this.partner, fox)) {
         this.animal.resetLove();
@@ -325,9 +325,9 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/frog/Frog.java.patch
 file: net/minecraft/world/entity/animal/frog/Frog.java
 anchor:
-    this.finalizeSpawnChildFromBreeding(level, partner, null);
+    this.finalizeSpawnChildFromBreeding(world, other, null);
 insert:
-    if (!dev.shifu.event.AnimalEvents.fertilizeEgg(this, partner)) {
+    if (!dev.shifu.event.AnimalEvents.fertilizeEgg(this, other)) {
         return;
     }
 
@@ -336,9 +336,9 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/turtle/Turtle.java.patch(callEntityFertilizeEggEvent)
 file: net/minecraft/world/entity/animal/Turtle.java
 anchor:
-    if (loveCause != null) {
-        loveCause.awardStat(Stats.ANIMALS_BRED);
-        CriteriaTriggers.BRED_ANIMALS.trigger(loveCause, this.animal, this.partner, null);
+    if (serverPlayer != null) {
+    serverPlayer.awardStat(Stats.ANIMALS_BRED);
+    CriteriaTriggers.BRED_ANIMALS.trigger(serverPlayer, this.animal, this.partner, null);
 insert:
     if (!dev.shifu.event.AnimalEvents.fertilizeEgg(this.animal, this.partner)) {
         return;
@@ -402,13 +402,13 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/fox/Fox.java.patch(callEntityPickupItemEvent)
 file: net/minecraft/world/entity/animal/Fox.java
 anchor:
-    if (this.canHoldItem(item)) {
+    if (this.canHoldItem(itemStack)) {
 insert-after:
-    if (!dev.shifu.event.AnimalEvents.pickupItem(this, entity, item.getCount() - 1)) {
+    if (!dev.shifu.event.AnimalEvents.pickupItem(this, entity, itemStack.getCount() - 1)) {
         return;
     }
     if (!dev.shifu.event.AnimalEvents.silentPickup()) {
-        item = entity.getItem();
+        itemStack = entity.getItem();
     }
 
 # EntityPickupItemEvent(パンダ)。
@@ -497,9 +497,9 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/Strider.java.patch
 file: net/minecraft/world/entity/monster/Strider.java
 anchor:
-    this.setSuffocating(!flag || flag1);
+    this.setSuffocating(!bl || bl2);
 insert:
-    final boolean shifuSuffocating = !flag || flag1;
+    final boolean shifuSuffocating = !bl || bl2;
     if (shifuSuffocating == this.isSuffocating() || dev.shifu.event.AnimalEvents.striderTemperature(this, shifuSuffocating)) {
 insert-after:
     }
@@ -509,10 +509,10 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/zombie/Zombie.java.patch
 file: net/minecraft/world/entity/monster/Zombie.java
 anchor:
-    target.igniteForSeconds(2 * (int)effectiveDifficulty);
+    target.igniteForSeconds(2 * (int)f);
 insert:
-    final float shifuBurn = dev.shifu.event.AnimalEvents.combustByEntity(this, target, 2 * (int)effectiveDifficulty);
-    if (shifuBurn == 2 * (int)effectiveDifficulty) {
+    final float shifuBurn = dev.shifu.event.AnimalEvents.combustByEntity(this, target, 2 * (int)f);
+    if (shifuBurn == 2 * (int)f) {
 insert-after:
     } else if (shifuBurn >= 0.0F) {
         target.igniteForSeconds(shifuBurn);
@@ -587,9 +587,9 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/Slime.java.patch(SlimeSplitEvent)
 file: net/minecraft/world/entity/monster/Slime.java
 anchor:
-    for (int i2 = 0; i2 < i1; i2++) {
+    for (int l = 0; l < k; l++) {
 insert:
-    i1 = dev.shifu.event.AnimalEvents.slimeSplit(this, i1);
+    k = dev.shifu.event.AnimalEvents.slimeSplit(this, k);
     dev.shifu.event.AnimalEvents.splitBegin(this);
 
 file: net/minecraft/world/entity/monster/Slime.java
@@ -612,21 +612,21 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/Slime.java.patch(Slime pathfinder events)
 file: net/minecraft/world/entity/monster/Slime.java
 anchor:
-    return target != null && this.slime.canAttack(target) && this.slime.getMoveControl() instanceof Slime.SlimeMoveControl;
+    return livingEntity != null && this.slime.canAttack(livingEntity) && this.slime.getMoveControl() instanceof Slime.SlimeMoveControl;
 insert:
     if (dev.shifu.event.AnimalEvents.slimeTargetListening()
-            && target != null && this.slime.canAttack(target) && this.slime.getMoveControl() instanceof Slime.SlimeMoveControl
-            && !dev.shifu.event.AnimalEvents.slimeTarget(this.slime, target)) {
+            && livingEntity != null && this.slime.canAttack(livingEntity) && this.slime.getMoveControl() instanceof Slime.SlimeMoveControl
+            && !dev.shifu.event.AnimalEvents.slimeTarget(this.slime, livingEntity)) {
         return false;
     }
 
 file: net/minecraft/world/entity/monster/Slime.java
 anchor:
-    return target != null && this.slime.canAttack(target) && --this.growTiredTimer > 0;
+    return livingEntity != null && this.slime.canAttack(livingEntity) && --this.growTiredTimer > 0;
 insert:
     if (dev.shifu.event.AnimalEvents.slimeTargetListening()
-            && target != null && this.slime.canAttack(target) && this.growTiredTimer - 1 > 0
-            && !dev.shifu.event.AnimalEvents.slimeTarget(this.slime, target)) {
+            && livingEntity != null && this.slime.canAttack(livingEntity) && this.growTiredTimer - 1 > 0
+            && !dev.shifu.event.AnimalEvents.slimeTarget(this.slime, livingEntity)) {
         return false;
     }
 
@@ -836,7 +836,7 @@ insert:
 file: net/minecraft/world/entity/monster/ZombifiedPiglin.java
 anchor:
     this.level()
-    .getEntitiesOfClass(ZombifiedPiglin.class, aabb, EntitySelector.NO_SPECTATORS)
+    .getEntitiesOfClass(ZombifiedPiglin.class, aABB, EntitySelector.NO_SPECTATORS)
     .stream()
     .filter(zombifiedPiglin -> zombifiedPiglin != this)
     .filter(zombifiedPiglin -> zombifiedPiglin.getTarget() == null)
@@ -907,13 +907,13 @@ insert:
 # フグ
 file: net/minecraft/world/entity/animal/Pufferfish.java
 anchor:
-    mob.addEffect(new MobEffectInstance(MobEffects.POISON, 60 * puffState, 0), this);
+    mob.addEffect(new MobEffectInstance(MobEffects.POISON, 60 * i, 0), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
 file: net/minecraft/world/entity/animal/Pufferfish.java
 anchor:
-    mob.addEffect(new MobEffectInstance(MobEffects.POISON, 60 * puffState, 0), this);
+    mob.addEffect(new MobEffectInstance(MobEffects.POISON, 60 * i, 0), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
@@ -928,7 +928,7 @@ insert:
 # ウーパールーパー
 file: net/minecraft/world/entity/animal/axolotl/Axolotl.java
 anchor:
-    player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, min, 0), this);
+    player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, j, 0), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.AXOLOTL);
 
@@ -948,7 +948,7 @@ insert:
 # シュルカーの弾
 file: net/minecraft/world/entity/projectile/ShulkerBullet.java
 anchor:
-    livingEntity1.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 200), MoreObjects.firstNonNull(owner, this));
+    livingEntity2.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 200), MoreObjects.firstNonNull(entity2, this));
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
@@ -985,7 +985,7 @@ insert:
 # ハスク
 file: net/minecraft/world/entity/monster/Husk.java
 anchor:
-    ((LivingEntity)target).addEffect(new MobEffectInstance(MobEffects.HUNGER, 140 * (int)effectiveDifficulty), this);
+    ((LivingEntity)target).addEffect(new MobEffectInstance(MobEffects.HUNGER, 140 * (int)f), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
@@ -1022,7 +1022,7 @@ insert:
 # ウィザーの頭
 file: net/minecraft/world/entity/projectile/WitherSkull.java
 anchor:
-    livingEntityx.addEffect(new MobEffectInstance(MobEffects.WITHER, 20 * i, 1), this.getEffectSource());
+    livingEntity2.addEffect(new MobEffectInstance(MobEffects.WITHER, 20 * i, 1), this.getEffectSource());
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
@@ -1042,7 +1042,7 @@ insert:
 # エリアの効果雲
 file: net/minecraft/world/entity/AreaEffectCloud.java
 anchor:
-    livingEntity.addEffect(new MobEffectInstance(mobEffectInstance), this);
+    livingEntity.addEffect(new MobEffectInstance(mobEffectInstance2), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.AREA_EFFECT_CLOUD);
 
@@ -1078,6 +1078,6 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/Ravager.java.patch
 file: net/minecraft/world/entity/monster/Ravager.java
 anchor:
-    entity.push(d / max * 4.0, 0.2, d1 / max * 4.0);
+    entity.push(d / f * 4.0, 0.2, e / f * 4.0);
 insert:
     dev.shifu.event.EntityEvents.pushedBy(this, entity);

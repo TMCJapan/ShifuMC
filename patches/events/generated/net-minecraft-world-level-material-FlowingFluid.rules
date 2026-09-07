@@ -3,12 +3,12 @@
 # BlockFromToEvent
 file: net/minecraft/world/level/material/FlowingFluid.java
 anchor:
-    this.spreadTo(level, blockPos, blockState, Direction.DOWN, newLiquid);
+    this.spreadTo(world, blockPos, blockState2, Direction.DOWN, fluidState);
 insert:
     // CraftBukkit start
-    org.bukkit.block.Block source = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+    org.bukkit.block.Block source = org.bukkit.craftbukkit.block.CraftBlock.at(world, pos);
     org.bukkit.event.block.BlockFromToEvent event = new org.bukkit.event.block.BlockFromToEvent(source, org.bukkit.block.BlockFace.DOWN);
-    level.getCraftServer().getPluginManager().callEvent(event);
+    world.getCraftServer().getPluginManager().callEvent(event);
 
     if (event.isCancelled()) {
         return;

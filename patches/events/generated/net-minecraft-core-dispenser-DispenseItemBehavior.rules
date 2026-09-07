@@ -125,8 +125,8 @@ insert:
 # handleBlockDispenseEvent
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    BlockState blockState = serverLevel.getBlockState(blockPos);
-    if (BaseFireBlock.canBePlacedAt(serverLevel, blockPos, direction)) {
+    BlockState blockState = level.getBlockState(blockPos);
+    if (BaseFireBlock.canBePlacedAt(level, blockPos, direction)) {
 insert:
     // Paper start - Call BlockDispenseEvent
     ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this);
@@ -139,11 +139,11 @@ insert:
 # callBlockIgniteEvent
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    serverLevel.setBlockAndUpdate(blockPos, BaseFireBlock.getState(serverLevel, blockPos));
-    serverLevel.gameEvent(null, GameEvent.BLOCK_PLACE, blockPos);
+    level.setBlockAndUpdate(blockPos, BaseFireBlock.getState(level, blockPos));
+    level.gameEvent(null, GameEvent.BLOCK_PLACE, blockPos);
 insert:
     // CraftBukkit start - Ignition by dispensing flint and steel
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(serverLevel, blockPos, blockSource.pos()).isCancelled()) {
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, blockPos, blockSource.pos()).isCancelled()) {
 insert-after:
     }
     // CraftBukkit end
@@ -151,10 +151,10 @@ insert-after:
 # handleBlockDispenseEvent
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (!BoneMealItem.growCrop(item, level, blockPos) && !BoneMealItem.growWaterPlant(item, level, blockPos, null)) {
+    if (!BoneMealItem.growCrop(stack, level, blockPos) && !BoneMealItem.growWaterPlant(stack, level, blockPos, null)) {
 insert:
     // Paper start - Call BlockDispenseEvent
-    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this);
+    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, stack, this);
     if (result != null) {
         this.setSuccess(false);
         return result;
@@ -165,10 +165,10 @@ insert:
 # handleBlockDispenseEvent
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (level.isEmptyBlock(blockPos) && WitherSkullBlock.canSpawnMob(level, blockPos, item)) {
+    if (level.isEmptyBlock(blockPos) && WitherSkullBlock.canSpawnMob(level, blockPos, stack)) {
 insert:
     // Paper start - Call BlockDispenseEvent
-    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this);
+    ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, stack, this);
     if (result != null) {
         this.setSuccess(false);
         return result;
@@ -216,13 +216,13 @@ insert:
 # BlockDispenseArmorEvent
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    for (Armadillo armadillo : entitiesOfClass) {
+    for (Armadillo armadillo : list) {
 insert:
     // CraftBukkit start
     org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(serverLevel, blockSource.pos());
     org.bukkit.craftbukkit.inventory.CraftItemStack craftItem = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(item); // Paper - ignore stack size on damageable items
 
-    org.bukkit.event.block.BlockDispenseEvent event = new org.bukkit.event.block.BlockDispenseArmorEvent(block, craftItem.clone(), entitiesOfClass.get(0).getBukkitLivingEntity());
+    org.bukkit.event.block.BlockDispenseEvent event = new org.bukkit.event.block.BlockDispenseArmorEvent(block, craftItem.clone(), list.get(0).getBukkitLivingEntity());
     serverLevel.getCraftServer().getPluginManager().callEvent(event);
 
     if (event.isCancelled()) {
@@ -244,7 +244,7 @@ insert:
 # handleBlockDispenseEvent
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    level.setBlockAndUpdate(blockPos, waxed.get());
+    level.setBlockAndUpdate(blockPos, optional.get());
 insert:
     // Paper start - Call BlockDispenseEvent
     ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this);

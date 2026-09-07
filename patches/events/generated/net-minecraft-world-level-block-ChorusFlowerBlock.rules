@@ -13,7 +13,7 @@ insert-after:
 # callEntityChangeBlockEvent
 file: net/minecraft/world/level/block/ChorusFlowerBlock.java
 anchor:
-    level.destroyBlock(blockPos, true, projectile);
+    world.destroyBlock(blockPos, true, projectile);
 insert:
     // CraftBukkit start
     if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(projectile, blockPos, state.getFluidState().createLegacyBlock())) { // Paper - fix wrong block state
