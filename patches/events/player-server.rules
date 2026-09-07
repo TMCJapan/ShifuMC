@@ -23,7 +23,7 @@ anchor:
     if (var7.getInput() != null && var7.getCursor() >= 0) {
 insert:
     if (!dev.shifu.event.PlayerEvents.silentUnknownCommand() && !(var7.getInput() != null && var7.getCursor() >= 0)) {
-        dev.shifu.event.PlayerEvents.unknownCommand(sender, commandString, var7, null);
+        dev.shifu.event.PlayerEvents.unknownCommand(source, command, var7, null);
     }
 
 file: net/minecraft/commands/Commands.java
@@ -33,7 +33,7 @@ insert:
     if (dev.shifu.event.PlayerEvents.silentUnknownCommand()) {
 insert-after:
     } else {
-        dev.shifu.event.PlayerEvents.unknownCommand(sender, commandString, e, context);
+        dev.shifu.event.PlayerEvents.unknownCommand(source, command, e, context);
     }
 
 # AsyncPlayerSendCommandsEvent / PlayerCommandSendEvent。木を送る直前(同期)
@@ -128,7 +128,7 @@ insert:
     if (dev.shifu.event.PlayerEvents.silentQuery()) {
 insert-after:
     } else {
-        dev.shifu.event.PlayerEvents.queryBasic(dos, packet, this.serverName, this.worldName, this.serverInterface.getPlayerCount(),
+        dev.shifu.event.PlayerEvents.queryBasic(dos, requestPacket, this.serverName, this.worldName, this.serverInterface.getPlayerCount(),
                 this.maxPlayers, this.serverPort, this.hostIp, this.serverInterface.getServerVersion());
     }
 
@@ -159,7 +159,7 @@ insert:
     if (dev.shifu.event.PlayerEvents.silentQuery()) {
 insert-after:
     } else {
-        dev.shifu.event.PlayerEvents.queryFull(this.rulesResponse, packet, this.serverName, this.serverInterface.getServerVersion(),
+        dev.shifu.event.PlayerEvents.queryFull(this.rulesResponse, requestPacket, this.serverName, this.serverInterface.getServerVersion(),
                 this.worldName, this.serverInterface.getPlayerCount(), this.maxPlayers, this.serverPort, this.hostIp,
                 this.serverInterface.getPlayerNames());
     }

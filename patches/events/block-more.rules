@@ -253,7 +253,7 @@ file: net/minecraft/world/level/block/entity/HopperBlockEntity.java
 anchor:
     ItemStack result = addItem(self, container, self.removeItem(slot, 1), direction);
 insert:
-    if (!dev.shifu.event.BlockEvents.moveItem(self, container, itemStack, true, self)) {
+    if (!dev.shifu.event.BlockEvents.moveItem(self, container, item, true, self)) {
         return false;
     }
 
@@ -262,7 +262,7 @@ file: net/minecraft/world/level/block/entity/HopperBlockEntity.java
 anchor:
     ItemStack itemStack = addItem(container, hopper, container.removeItem(slot, 1), null);
 insert:
-    if (!dev.shifu.event.BlockEvents.moveItem(container, hopper, itemStack, false,
+    if (!dev.shifu.event.BlockEvents.moveItem(container, hopper, item, false,
             hopper instanceof HopperBlockEntity shifuHopper ? shifuHopper : null)) {
         return false;
     }
@@ -816,11 +816,11 @@ file: net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
 anchor:
     blockEntity.fuel = 20;
 insert:
-    if (!dev.shifu.event.BlockEvents.brewingFuel(level, pos, fuel)) {
+    if (!dev.shifu.event.BlockEvents.brewingFuel(level, pos, itemStack)) {
         return;
     }
 insert-after:
-    blockEntity.fuel = dev.shifu.event.BlockEvents.brewingFuelPower(blockEntity.fuel);
+    blockEntity.itemStack = dev.shifu.event.BlockEvents.brewingFuelPower(blockEntity.itemStack);
 
 file: net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
 anchor:
@@ -835,7 +835,7 @@ file: net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
 anchor:
     blockEntity.brewTime = 400;
 insert-after:
-    blockEntity.brewTime = dev.shifu.event.BlockEvents.brewingStart(level, pos, ingredient, blockEntity.brewTime);
+    blockEntity.brewTime = dev.shifu.event.BlockEvents.brewingStart(level, pos, itemStack1, blockEntity.brewTime);
 
 # BrewEvent
 file: net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
@@ -844,7 +844,7 @@ anchor:
         items.set(dest, potionBrewing.mix(ingredient, items.get(dest)));
     }
 insert:
-    final java.util.List<ItemStack> shifuBrew = dev.shifu.event.BlockEvents.brew(level, pos, items, ingredient, potionBrewing);
+    final java.util.List<ItemStack> shifuBrew = dev.shifu.event.BlockEvents.brew(level, pos, items, itemStack1, potionBrewing);
     if (shifuBrew == null) {
         return;
     }
@@ -858,7 +858,7 @@ anchor:
 insert:
     if (dev.shifu.event.BlockEvents.listeningCook()) {
         final ItemStack shifuCooked = dev.shifu.event.BlockEvents.cook(level, pos, itemStack, itemStack1,
-                (org.bukkit.inventory.CookingRecipe<?>) recipeCache.getRecipeFor(input, level)
+                (org.bukkit.inventory.CookingRecipe<?>) check.getRecipeFor(singleRecipeInput, level)
                         .map(net.minecraft.world.item.crafting.RecipeHolder::toBukkitRecipe).orElse(null));
         if (shifuCooked == null) {
             return;
@@ -871,7 +871,7 @@ file: net/minecraft/world/level/block/entity/CampfireBlockEntity.java
 anchor:
     this.cookingTime[i] = recipeFor.get().value().cookingTime();
 insert-after:
-    this.cookingTime[i] = dev.shifu.event.BlockEvents.campfireStart(this, placeItem, recipeFor.get(), this.cookingTime[i]);
+    this.cookingTime[i] = dev.shifu.event.BlockEvents.campfireStart(this, stack, recipeFor.get(), this.cookingTime[i]);
 
 # ------------------------------------------------------------ 看板・鐘・ビーコン・錠
 
@@ -899,7 +899,7 @@ file: net/minecraft/world/level/block/entity/SignBlockEntity.java
 anchor:
     level.getServer().getCommands().performPrefixedCommand(createCommandSourceStack(player, level, pos), runCommand.command());
 insert:
-    if (!dev.shifu.event.BlockEvents.signCommand(this, level, player, runCommand.runCommand(), isFrontText)) {
+    if (!dev.shifu.event.BlockEvents.signCommand(this, level, player, runCommand.command(), isFrontText)) {
         return false;
     }
 
@@ -929,14 +929,14 @@ file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
 anchor:
     playSound(this.level, this.worldPosition, SoundEvents.BEACON_DEACTIVATE);
 insert:
-    dev.shifu.event.BlockEvents.beaconDeactivated(this.level, this.worldPosition);
+    dev.shifu.event.BlockEvents.beaconDeactivated(this.level, this.pos);
 
 # BeaconEffectEvent(1 つめと 2 つめの効果)
 file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
 anchor:
     player.addEffect(new MobEffectInstance(primaryEffect, i1, i, true, true));
 insert:
-    if (dev.shifu.event.BlockEvents.beaconEffect(level, worldPosition, player, primaryEffect, i1, i, true)) {
+    if (dev.shifu.event.BlockEvents.beaconEffect(level, pos, player, primaryEffect, i1, i, true)) {
 insert-after:
     }
 
@@ -944,7 +944,7 @@ file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
 anchor:
     player.addEffect(new MobEffectInstance(secondaryEffect, i1, 0, true, true));
 insert:
-    if (dev.shifu.event.BlockEvents.beaconEffect(level, worldPosition, player, secondaryEffect, i1, 0, false)) {
+    if (dev.shifu.event.BlockEvents.beaconEffect(level, pos, player, secondaryEffect, i1, 0, false)) {
 insert-after:
     }
 
@@ -972,7 +972,7 @@ anchor:
 insert:
     if (dev.shifu.event.BlockEvents.listeningLockCheck()
             && !org.bukkit.craftbukkit.event.CraftEventFactory.callBlockLockCheckEvent(this, this.lockKey, this.getDisplayName(), player)) {
-        BaseContainerBlockEntity.sendChestLockedNotifications(Vec3.atCenterOf(this.getBlockPos()), player, this.getDisplayName());
+        BaseContainerBlockEntity.sendChestLockedNotifications(net.minecraft.world.phys.Vec3.atCenterOf(this.getBlockPos()), player, this.getDisplayName());
         return null;
     }
 
@@ -983,7 +983,7 @@ file: net/minecraft/world/level/block/entity/BrushableBlockEntity.java
 anchor:
     level.setBlock(this.getBlockPos(), blockState1, Block.UPDATE_ALL);
 insert:
-    if (!dev.shifu.event.BlockEvents.brush(this, user, blockState1)) {
+    if (!dev.shifu.event.BlockEvents.brush(this, brusher, blockState1)) {
         return false;
     }
 
@@ -992,7 +992,7 @@ file: net/minecraft/world/level/block/entity/BrushableBlockEntity.java
 anchor:
     level.addFreshEntity(itemEntity);
 insert:
-    if (dev.shifu.event.BlockEvents.brushDrop(this, level, user, itemEntity)) {
+    if (dev.shifu.event.BlockEvents.brushDrop(this, level, brusher, itemEntity)) {
 insert-after:
     }
 
@@ -1001,7 +1001,7 @@ file: net/minecraft/world/level/block/entity/trialspawner/TrialSpawner.java
 anchor:
     if (!level.tryAddFreshEntityWithPassengers(entity)) {
 insert:
-    if (!dev.shifu.event.BlockEvents.trialSpawn(entity, spawnerPos)) {
+    if (!dev.shifu.event.BlockEvents.trialSpawn(entity, pos)) {
         return Optional.empty();
     }
 
@@ -1031,7 +1031,7 @@ file: net/minecraft/world/level/block/entity/vault/VaultBlockEntity.java
 anchor:
     level.setBlock(pos, newState, Block.UPDATE_ALL);
 insert:
-    if (!dev.shifu.event.BlockEvents.vaultState(level, pos, currentVaultState, newVaultState, sharedData)) {
+    if (!dev.shifu.event.BlockEvents.vaultState(level, pos, vaultState, vaultState1, sharedData)) {
         return;
     }
 
@@ -1040,7 +1040,7 @@ file: net/minecraft/world/level/block/entity/vault/VaultBlockEntity.java
 anchor:
     sharedData.setDisplayItem(randomDisplayItemFromLootTable);
 insert:
-    randomDisplayItemFromLootTable = dev.shifu.event.BlockEvents.vaultDisplay(serverLevel, pos, randomDisplayItemFromLootTable);
+    randomDisplayItemFromLootTable = dev.shifu.event.BlockEvents.vaultDisplay(level, pos, randomDisplayItemFromLootTable);
     if (randomDisplayItemFromLootTable == null) {
         return;
     }

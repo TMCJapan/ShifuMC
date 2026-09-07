@@ -88,16 +88,17 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/BeaconMenu.java.patch
 file: net/minecraft/world/inventory/BeaconMenu.java
 anchor:
-    this.beaconData.set(1, encodeEffect(primaryEffect));
+    this.beaconData.set(1, encodeEffect(primaryEffect.orElse(null)));
 insert:
     final io.papermc.paper.event.player.PlayerChangeBeaconEffectEvent shifuBeacon =
-            dev.shifu.event.ItemEvents.changeBeaconEffect(this.inventory.player, this.access, primaryEffect, secondaryEffect);
+            dev.shifu.event.ItemEvents.changeBeaconEffect(this.inventory.player, this.access,
+                    primaryEffect.orElse(null), secondaryEffect.orElse(null));
     if (shifuBeacon != null) {
         if (shifuBeacon.isCancelled()) {
-            return true;
+            return;
         }
-        primaryEffect = dev.shifu.event.ItemEvents.effect(shifuBeacon.getPrimary());
-        secondaryEffect = dev.shifu.event.ItemEvents.effect(shifuBeacon.getSecondary());
+        primaryEffect = java.util.Optional.ofNullable(dev.shifu.event.ItemEvents.effect(shifuBeacon.getPrimary()));
+        secondaryEffect = java.util.Optional.ofNullable(dev.shifu.event.ItemEvents.effect(shifuBeacon.getSecondary()));
     }
 
 file: net/minecraft/world/inventory/BeaconMenu.java

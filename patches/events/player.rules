@@ -253,12 +253,12 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayerGameMode.java.patch:340
 file: net/minecraft/server/level/ServerPlayerGameMode.java
 anchor:
-    BlockState state = level.getBlockState(pos);
+    BlockState blockState = level.getBlockState(blockPos);
 insert-after:
     final org.bukkit.event.player.PlayerInteractEvent shifuInteract =
-            dev.shifu.event.ShifuEvents.interactBlock(this, player, level, itemStack, hand, hitResult, state);
+            dev.shifu.event.ShifuEvents.interactBlock(this, player, level, stack, hand, hitResult, blockState);
     if (shifuInteract != null && shifuInteract.useInteractedBlock() == org.bukkit.event.Event.Result.DENY) {
-        return dev.shifu.event.ShifuEvents.interactBlockDenied(shifuInteract, player, state);
+        return dev.shifu.event.ShifuEvents.interactBlockDenied(shifuInteract, player, blockState);
     }
 
 file: net/minecraft/server/level/ServerPlayerGameMode.java
@@ -339,7 +339,7 @@ file: net/minecraft/server/commands/GameModeCommand.java
 anchor:
     if (setGameMode(context.getSource(), serverPlayer, gameType)) {
 insert:
-    dev.shifu.event.ShifuEvents.gameModeCause(serverPlayer, org.bukkit.event.serverPlayer.PlayerGameModeChangeEvent.Cause.COMMAND);
+    dev.shifu.event.ShifuEvents.gameModeCause(serverPlayer, org.bukkit.event.player.PlayerGameModeChangeEvent.Cause.COMMAND);
 
 # PlayerToggleFlightEvent
 #

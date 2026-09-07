@@ -261,7 +261,7 @@ file: net/minecraft/world/entity/ai/sensing/TemptingSensor.java
 anchor:
     brain.setMemory(MemoryModuleType.TEMPTING_PLAYER, player);
 insert:
-    final int shifuTempt = dev.shifu.event.AnimalEvents.tempt(body, player);
+    final int shifuTempt = dev.shifu.event.AnimalEvents.tempt(entity, player);
     if (shifuTempt == dev.shifu.event.AnimalEvents.CANCEL) {
         return;
     }
@@ -1050,7 +1050,7 @@ file: net/minecraft/world/entity/AreaEffectCloud.java
 anchor:
     livingEntity.addEffect(new MobEffectInstance(mobEffectInstance), this);
 insert:
-    dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.livingEntity.EntityPotionEffectEvent.Cause.AREA_EFFECT_CLOUD);
+    dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.AREA_EFFECT_CLOUD);
 
 # オウムがクッキーを食べる
 file: net/minecraft/world/entity/animal/parrot/Parrot.java

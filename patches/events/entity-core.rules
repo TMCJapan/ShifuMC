@@ -359,10 +359,10 @@ file: net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
 anchor:
     this.remove(Entity.RemovalReason.KILLED);
 insert:
-    if (dev.shifu.event.EntityEvents.damageCancelled(this, source, damage, false, false)) {
+    if (dev.shifu.event.EntityEvents.damageCancelled(this, damageSource, amount, false, false)) {
         return false;
     }
-    final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = source.is(DamageTypeTags.IS_EXPLOSION)
+    final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = damageSource.is(DamageTypeTags.IS_EXPLOSION)
         ? null
         : dev.shifu.event.EntityEvents.explosionPrime(this, 6.0F, false);
     if (shifuPrime != null && shifuPrime.isCancelled()) {
@@ -651,7 +651,7 @@ file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
     ItemEntity itemEntity = new ItemEntity(this.level(), this.getX(), this.getY(), this.getZ(), itemStack);
 insert-after:
-    final org.bukkit.event.player.PlayerFishEvent shifuFish = dev.shifu.event.EntityEvents.fishCaught(this, owner, itemEntity);
+    final org.bukkit.event.player.PlayerFishEvent shifuFish = dev.shifu.event.EntityEvents.fishCaught(this, playerOwner, itemEntity);
     if (shifuFish != null && shifuFish.isCancelled()) {
         return 0;
     }
@@ -664,7 +664,7 @@ insert:
     if (shifuFish == null) {
 insert-after:
     } else if (shifuFish.getExpToDrop() > 0) {
-        owner.level().addFreshEntity(new ExperienceOrb(owner.level(), owner.getX(), owner.getY() + 0.5, owner.getZ() + 0.5, shifuFish.getExpToDrop()));
+        playerOwner.level().addFreshEntity(new ExperienceOrb(playerOwner.level(), playerOwner.getX(), playerOwner.getY() + 0.5, playerOwner.getZ() + 0.5, shifuFish.getExpToDrop()));
     }
 
 # PlayerFishEvent(IN_GROUND / REEL_IN)
@@ -673,7 +673,7 @@ anchor:
     if (this.onGround()) {
     i = 2;
 insert-after:
-    if (!dev.shifu.event.EntityEvents.fishState(this, owner, org.bukkit.event.player.PlayerFishEvent.State.IN_GROUND)) {
+    if (!dev.shifu.event.EntityEvents.fishState(this, playerOwner, org.bukkit.event.player.PlayerFishEvent.State.IN_GROUND)) {
         return 0;
     }
 
@@ -682,7 +682,7 @@ anchor:
     this.discard();
     return i;
 insert:
-    if (i == 0 && !dev.shifu.event.EntityEvents.fishState(this, owner, org.bukkit.event.player.PlayerFishEvent.State.REEL_IN)) {
+    if (i == 0 && !dev.shifu.event.EntityEvents.fishState(this, playerOwner, org.bukkit.event.player.PlayerFishEvent.State.REEL_IN)) {
         return 0;
     }
 
@@ -825,7 +825,7 @@ file: net/minecraft/world/entity/vehicle/VehicleEntity.java
 anchor:
     this.setHurtDir(-this.getHurtDir());
 insert:
-    if (!dev.shifu.event.EntityEvents.vehicleDamage(this, source, damage)) {
+    if (!dev.shifu.event.EntityEvents.vehicleDamage(this, damageSource, amount)) {
         return false;
     }
 
@@ -833,7 +833,7 @@ file: net/minecraft/world/entity/vehicle/VehicleEntity.java
 anchor:
     this.discard();
 insert:
-    if (dev.shifu.event.EntityEvents.vehicleDestroy(this, source)) {
+    if (dev.shifu.event.EntityEvents.vehicleDestroy(this, damageSource)) {
 insert-after:
     } else {
         this.setDamage(40.0F);
