@@ -99,10 +99,28 @@ def already(path):
     return out
 
 
-def pristine(tree, rel):
+def base_of(tree):
+    """その木の基点コミット。**渡された木から引く。**
+
+    `paths.BASE` は環境変数の木を見るので、別の木を引数で渡したときに合わない。
+    合わないと今の木を読んでしまい、`widen_access` が既に `public` にした行を
+    アンカーに書いて、次の回に当たらなくなる。
+    """
+    done = subprocess.run(["git", "-C", tree, "log", "--format=%H %s"],
+                          capture_output=True, text=True, encoding="utf-8",
+                          errors="replace")
+
+    for line in done.stdout.split("\n"):
+        if line.endswith("paper Imports"):
+            return line.split(" ", 1)[0]
+
+    return paths.BASE
+
+
+def pristine(tree, rel, base):
     """基点コミットでのそのファイルの中身。取れなければ今の木を読む。"""
-    if paths.BASE:
-        done = subprocess.run(["git", "-C", tree, "show", f"{paths.BASE}:{rel}"],
+    if base:
+        done = subprocess.run(["git", "-C", tree, "show", f"{base}:{rel}"],
                               capture_output=True, text=True, encoding="utf-8",
                               errors="replace")
 
@@ -147,24 +165,26 @@ def main():
     gap, tree, dest = sys.argv[1:4]
     write = "--write" in sys.argv
     where = index(tree)
+    base = base_of(tree)
     by_file = collections.defaultdict(list)
     unsure = []
 
     for owner, name, args in sorted(wanted(gap) | already(dest)):
-        paths = where.get(owner, [])
+        # `paths` は取り込んだモジュールの名前。上書きしない
+        found = where.get(owner, [])
 
-        if len(paths) != 1:
-            unsure.append(f"{owner}.{name}{args}: 型が {len(paths)} 箇所")
+        if len(found) != 1:
+            unsure.append(f"{owner}.{name}{args}: 型が {len(found)} 箇所")
             continue
 
-        lines = pristine(tree, paths[0])
+        lines = pristine(tree, found[0], base)
         at = find(lines, name, args)
 
         if at is None:
             unsure.append(f"{owner}.{name}{args}: 宣言が 1 つに定まらない")
             continue
 
-        by_file[paths[0]].append((name + args, lines[at].rstrip()))
+        by_file[found[0]].append((name + args, lines[at].rstrip()))
 
     body = ["# tools/make_access_rules.py が作ったもの。",
             "# 可視性が足りないというエラーから、宣言の行をそのまま写している。"]

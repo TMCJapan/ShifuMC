@@ -1,17 +1,1 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
-
-// LevelStorageSource.validateAndCreateAccess
-    // CraftBukkit は世界ごとにフォルダを分けるので、開くときに次元の種別を渡す
-    // (LevelStorageSource.java.patch:339)。vanilla の 1 引数の版は種別を持たないので、
-    // 開いたあとに欄へ入れるだけにする。欄は make_shim が Paper のパッチから足している。
-    //
-    // vanilla の getDimensionPath は DimensionType.getStorageFolder を通るままなので、
-    // 主世界以外の CraftBukkit の世界では data フォルダの位置が Paper と食い違う。
-    // 宣言の書き換えは追加では届かないので、ここでは合わせない。
-    public LevelStorageSource.LevelStorageAccess validateAndCreateAccess(final String saveName, final ResourceKey<LevelStem> dimensionType)
-            throws IOException, ContentValidationException {
-        final LevelStorageSource.LevelStorageAccess access = this.validateAndCreateAccess(saveName);
-        access.dimensionType = dimensionType;
-
-        return access;
-    }
