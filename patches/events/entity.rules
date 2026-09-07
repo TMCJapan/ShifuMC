@@ -124,8 +124,8 @@ insert-after:
 
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    int blockCount = explosion.explode();
+    int i = serverExplosion.explode();
 insert-after:
-    if (dev.shifu.event.ShifuEvents.explosionCancelled(explosion)) {
+    if (dev.shifu.event.ShifuEvents.explosionCancelled(serverExplosion)) {
         return;
     }

@@ -28,12 +28,12 @@ insert:
 
 file: net/minecraft/commands/Commands.java
 anchor:
-    sender.sendFailure(context);
+    source.sendFailure(mutableComponent);
 insert:
     if (dev.shifu.event.PlayerEvents.silentUnknownCommand()) {
 insert-after:
     } else {
-        dev.shifu.event.PlayerEvents.unknownCommand(source, command, e, context);
+        dev.shifu.event.PlayerEvents.unknownCommand(source, command, var7, mutableComponent);
     }
 
 # AsyncPlayerSendCommandsEvent / PlayerCommandSendEvent。木を送る直前(同期)
@@ -97,7 +97,7 @@ insert:
 # WhitelistToggleEvent
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
-    this.settings.update(p -> p.whiteList.update(this.registryAccess(), usingWhitelist));
+    this.settings.update(dedicatedServerProperties -> dedicatedServerProperties.whiteList.update(this.registryAccess(), usingWhitelist));
 insert:
     dev.shifu.event.PlayerEvents.whitelistToggle(usingWhitelist);
 
@@ -117,18 +117,18 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/rcon/thread/QueryThreadGs4.java.patch
 file: net/minecraft/server/rcon/thread/QueryThreadGs4.java
 anchor:
-    dos.writeString(this.serverName);
-    dos.writeString("SMP");
-    dos.writeString(this.worldName);
-    dos.writeString(Integer.toString(this.serverInterface.getPlayerCount()));
-    dos.writeString(Integer.toString(this.maxPlayers));
-    dos.writeShort((short)this.serverPort);
-    dos.writeString(this.hostIp);
+    networkDataOutputStream.writeString(this.serverName);
+    networkDataOutputStream.writeString("SMP");
+    networkDataOutputStream.writeString(this.worldName);
+    networkDataOutputStream.writeString(Integer.toString(this.serverInterface.getPlayerCount()));
+    networkDataOutputStream.writeString(Integer.toString(this.maxPlayers));
+    networkDataOutputStream.writeShort((short)this.serverPort);
+    networkDataOutputStream.writeString(this.hostIp);
 insert:
     if (dev.shifu.event.PlayerEvents.silentQuery()) {
 insert-after:
     } else {
-        dev.shifu.event.PlayerEvents.queryBasic(dos, requestPacket, this.serverName, this.worldName, this.serverInterface.getPlayerCount(),
+        dev.shifu.event.PlayerEvents.queryBasic(networkDataOutputStream, requestPacket, this.serverName, this.worldName, this.serverInterface.getPlayerCount(),
                 this.maxPlayers, this.serverPort, this.hostIp, this.serverInterface.getServerVersion());
     }
 
@@ -336,19 +336,18 @@ insert-after:
 
 file: net/minecraft/world/level/border/WorldBorder.java
 anchor:
-    public void lerpSizeBetween(final double from, final double to, final long ticks, final long gameTime) {
+    public void lerpSizeBetween(double oldSize, double newSize, long time, long startTime) {
 insert-after:
-    if (!dev.shifu.event.PlayerEvents.borderLerp(this, from, to, ticks, gameTime)) {
+    if (!dev.shifu.event.PlayerEvents.borderLerp(this, oldSize, newSize, time, startTime)) {
         return;
     }
 
 file: net/minecraft/world/level/border/WorldBorder.java
 anchor:
-    return this.lerpProgress <= 0L ? WorldBorder.this.new StaticBorderExtent(this.to) : this;
+    WorldBorder.this.setDirty();
+    return WorldBorder.this.new StaticBorderExtent(this.to);
 insert:
-    if (this.lerpProgress <= 0L) {
-        dev.shifu.event.PlayerEvents.borderFinish(WorldBorder.this, this.from, this.to, this.lerpDuration);
-    }
+    dev.shifu.event.PlayerEvents.borderFinish(WorldBorder.this, this.from, this.to, this.lerpDuration);
 
 # ============================================================ ログイン・設定フェーズ
 
@@ -517,15 +516,6 @@ anchor:
 insert-after:
     dev.shifu.event.PlayerEvents.clientTickEnd(this.player);
 
-# WorldGameRuleChangeEvent(クライアントの設定画面からの packet)。lambda の中の書く行を囲む
-file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
-anchor:
-    gameRules.set(rule, (T)parsedValue, this.server);
-insert:
-    if (dev.shifu.event.PlayerEvents.gameRuleSet(rule, (T)parsedValue, this.player)) {
-insert-after:
-    }
-
 # PlayerJumpEvent。跳ぶ直前
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch(PlayerJumpEvent)
@@ -542,7 +532,7 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch(handleMoveVehicle)
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    vehicle.absSnapTo(targetX, targetY, targetZ, targetYRot, targetXRot);
+    rootVehicle.absSnapTo(d, d1, d2, f, f1);
 insert-after:
     if (!dev.shifu.event.PlayerEvents.vehicleMove(this, d, d1, d2, f, f1)) {
         return;
@@ -613,16 +603,16 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/component/BlocksAttacks.java.patch
 file: net/minecraft/world/item/component/BlocksAttacks.java
 anchor:
-    player.getCooldowns().addCooldown(blockingWith, cooldownTicks);
+    player.getCooldowns().addCooldown(stack, i);
 insert:
-    final int shifuCooldown = dev.shifu.event.PlayerEvents.shieldDisable(player, cooldownTicks);
+    final int shifuCooldown = dev.shifu.event.PlayerEvents.shieldDisable(player, i);
     if (shifuCooldown < 0) {
         return;
     }
-    if (shifuCooldown == cooldownTicks) {
+    if (shifuCooldown == i) {
 insert-after:
     } else {
-        player.getCooldowns().addCooldown(blockingWith, shifuCooldown);
+        player.getCooldowns().addCooldown(stack, shifuCooldown);
     }
 
 # EntityCombustByEntityEvent / EntityCombustEvent(火属性)

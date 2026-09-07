@@ -1257,6 +1257,34 @@ public final class BlockEvents {
         return replaced;
     }
 
+    private static ServerLevel furnaceSmeltLevel;
+    private static BlockPos furnaceSmeltPos;
+
+    /** 焼き上がりを入れる前に、かまどの位置を置く(static な burn には渡らない)。 */
+    public static void furnaceSmeltAt(final ServerLevel level, final BlockPos pos) {
+        if (!listening(org.bukkit.event.inventory.FurnaceSmeltEvent.getHandlerList())) {
+            return;
+        }
+
+        furnaceSmeltLevel = level;
+        furnaceSmeltPos = pos;
+    }
+
+    /** 位置を控えから取る版。 */
+    public static ItemStack furnaceSmelt(final net.minecraft.core.NonNullList<ItemStack> items, final ItemStack ingredient, final ItemStack result,
+                                         final net.minecraft.world.item.crafting.RecipeHolder<? extends net.minecraft.world.item.crafting.AbstractCookingRecipe> recipe) {
+        final ServerLevel level = furnaceSmeltLevel;
+        final BlockPos pos = furnaceSmeltPos;
+        furnaceSmeltLevel = null;
+        furnaceSmeltPos = null;
+
+        if (level == null || pos == null) {
+            return result;
+        }
+
+        return furnaceSmelt(level, pos, items, ingredient, result, recipe);
+    }
+
     private static BlockPos furnaceAt;
 
     /** 経験値を出す前に、かまどの位置を置く(static な createExperience には渡らない)。 */

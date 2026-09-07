@@ -19,18 +19,18 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/fox/Fox.java.patch(EntityToggleSitEvent)
 file: net/minecraft/world/entity/animal/fox/Fox.java
 anchor:
-    public void setSitting(final boolean value) {
+    public void setSitting(boolean sitting) {
 insert-after:
-    if (!dev.shifu.event.AnimalEvents.toggleSit(this, value)) {
+    if (!dev.shifu.event.AnimalEvents.toggleSit(this, sitting)) {
         return;
     }
 
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/panda/Panda.java.patch(EntityToggleSitEvent)
 file: net/minecraft/world/entity/animal/panda/Panda.java
 anchor:
-    public void sit(final boolean value) {
+    public void sit(boolean sitting) {
 insert-after:
-    if (!dev.shifu.event.AnimalEvents.toggleSit(this, value)) {
+    if (!dev.shifu.event.AnimalEvents.toggleSit(this, sitting)) {
         return;
     }
 
@@ -98,17 +98,17 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/ai/behavior/AssignProfessionFromJobSite.java.patch
 file: net/minecraft/world/entity/ai/behavior/AssignProfessionFromJobSite.java
 anchor:
-    body.setVillagerData(body.getVillagerData().withProfession(profession));
+    villager.setVillagerData(villager.getVillagerData().withProfession(reference));
 insert:
     final Holder<VillagerProfession> shifuProfession = dev.shifu.event.AnimalEvents.careerChange(
-            body, profession, org.bukkit.event.entity.VillagerCareerChangeEvent.ChangeReason.EMPLOYED);
+            villager, reference, org.bukkit.event.entity.VillagerCareerChangeEvent.ChangeReason.EMPLOYED);
     if (shifuProfession == null) {
         return;
     }
-    if (shifuProfession == profession) {
+    if (shifuProfession == reference) {
 insert-after:
     } else {
-        body.setVillagerData(body.getVillagerData().withProfession(shifuProfession));
+        villager.setVillagerData(villager.getVillagerData().withProfession(shifuProfession));
     }
 
 # VillagerCareerChangeEvent(LOSING_JOB)。
@@ -135,10 +135,10 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/npc/villager/Villager.java.patch(VillagerReplenishTradeEvent)
 file: net/minecraft/world/entity/npc/villager/Villager.java
 anchor:
-    offer.resetUses();
+    merchantOffer.resetUses();
 count: 2
 insert:
-    if (dev.shifu.event.AnimalEvents.replenishTrade(this, offer)) {
+    if (dev.shifu.event.AnimalEvents.replenishTrade(this, merchantOffer)) {
 insert-after:
     }
 
@@ -497,9 +497,9 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/Strider.java.patch
 file: net/minecraft/world/entity/monster/Strider.java
 anchor:
-    this.setSuffocating(!inWarmBlocks && !onWarmStrider);
+    this.setSuffocating(!flag || flag1);
 insert:
-    final boolean shifuSuffocating = !inWarmBlocks && !onWarmStrider;
+    final boolean shifuSuffocating = !flag || flag1;
     if (shifuSuffocating == this.isSuffocating() || dev.shifu.event.AnimalEvents.striderTemperature(this, shifuSuffocating)) {
 insert-after:
     }
@@ -544,14 +544,14 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/piglin/PiglinAi.java.patch(callPiglinBarterEvent)
 file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
 anchor:
-    throwItems(body, getBarterResponseItems(body));
+    throwItems(piglin, getBarterResponseItems(piglin));
 insert:
     if (dev.shifu.event.AnimalEvents.silentBarter()) {
 insert-after:
     } else {
-        final java.util.List<ItemStack> shifuOutcome = dev.shifu.event.AnimalEvents.piglinBarter(body, getBarterResponseItems(body), itemStack);
+        final java.util.List<ItemStack> shifuOutcome = dev.shifu.event.AnimalEvents.piglinBarter(piglin, getBarterResponseItems(piglin), itemInHand);
         if (shifuOutcome != null) {
-            throwItems(body, shifuOutcome);
+            throwItems(piglin, shifuOutcome);
         }
     }
 
@@ -675,7 +675,7 @@ insert:
 # ホグリンがゾグリンになる
 file: net/minecraft/world/entity/monster/hoglin/Hoglin.java
 anchor:
-    this.convertTo(
+    this.convertTo(EntityType.ZOGLIN, ConversionParams.single(this, true, false), mob -> mob.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 200, 0)));
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.PIGLIN_ZOMBIFIED);
 
@@ -703,7 +703,7 @@ insert:
 # ゾンビが村人を感染させる
 file: net/minecraft/world/entity/monster/zombie/Zombie.java
 anchor:
-    ZombieVillager zombieVillager = villager.convertTo(
+    ZombieVillager zombieVillager = villager.convertTo(EntityType.ZOMBIE_VILLAGER, ConversionParams.single(villager, true, true), mob -> {
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.INFECTION);
 
@@ -744,7 +744,7 @@ insert:
 
 file: net/minecraft/world/entity/ai/goal/target/HurtByTargetGoal.java
 anchor:
-    other.setTarget(hurtByMob);
+    mob.setTarget(target);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.TARGET_ATTACKED_NEARBY_ENTITY);
 
@@ -783,7 +783,7 @@ insert:
 
 file: net/minecraft/world/entity/animal/bee/Bee.java
 anchor:
-    other.setTarget(hurtByMob);
+    mob.setTarget(target);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.TARGET_ATTACKED_ENTITY);
 
@@ -801,7 +801,7 @@ insert:
 
 file: net/minecraft/world/entity/animal/panda/Panda.java
 anchor:
-    other.setTarget(hurtByMob);
+    mob.setTarget(target);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.TARGET_ATTACKED_ENTITY);
 
@@ -822,13 +822,13 @@ insert:
 
 file: net/minecraft/world/entity/monster/Vex.java
 anchor:
-    Vex.this.setTarget(Vex.this.getOwner() instanceof Targeting owner ? owner.getTarget() : null);
+    Vex.this.setTarget(owner != null ? owner.getTarget() : null);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.OWNER_ATTACKED_TARGET);
 
 file: net/minecraft/world/entity/monster/zombie/Zombie.java
 anchor:
-    reinforcement.setTarget(target);
+    zombie.setTarget(target);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.REINFORCEMENT_TARGET);
 
@@ -836,12 +836,12 @@ insert:
 file: net/minecraft/world/entity/monster/zombie/ZombifiedPiglin.java
 anchor:
     this.level()
-    .getEntitiesOfClass(ZombifiedPiglin.class, searchAabb, EntitySelector.NO_SPECTATORS)
+    .getEntitiesOfClass(ZombifiedPiglin.class, aabb, EntitySelector.NO_SPECTATORS)
     .stream()
-    .filter(other -> other != this)
-    .filter(other -> other.getTarget() == null)
-    .filter(other -> !other.isAlliedTo(this.getTarget()))
-    .forEach(other -> other.setTarget(this.getTarget()));
+    .filter(zombifiedPiglin -> zombifiedPiglin != this)
+    .filter(zombifiedPiglin -> zombifiedPiglin.getTarget() == null)
+    .filter(zombifiedPiglin -> !zombifiedPiglin.isAlliedTo(this.getTarget()))
+    .forEach(zombifiedPiglin -> zombifiedPiglin.setTarget(this.getTarget()));
 insert:
     dev.shifu.event.EntityEvents.targetReasonUntilDone(org.bukkit.event.entity.EntityTargetEvent.TargetReason.TARGET_ATTACKED_NEARBY_ENTITY);
 insert-after:
@@ -941,7 +941,7 @@ insert:
 # スプラッシュポーション
 file: net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownSplashPotion.java
 anchor:
-    entity.addEffect(newEffect, effectSource);
+    livingEntity.addEffect(mobEffectInstance1, effectSource);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.POTION_SPLASH);
 
@@ -955,14 +955,14 @@ insert:
 # 光の矢
 file: net/minecraft/world/entity/projectile/arrow/SpectralArrow.java
 anchor:
-    mob.addEffect(effect, this.getEffectSource());
+    target.addEffect(mobEffectInstance, this.getEffectSource());
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ARROW);
 
 # 効果付きの矢。1 本に効果が複数あるので、文の間だけ置く
 file: net/minecraft/world/entity/projectile/arrow/Arrow.java
 anchor:
-    potionContents.forEachEffect(effect -> mob.addEffect(effect, effectSource), durationScale);
+    potionContents.forEachEffect(mobEffectInstance -> target.addEffect(mobEffectInstance, effectSource), potionDurationScale);
 insert:
     dev.shifu.event.EntityEvents.effectCauseUntilDone(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ARROW);
 insert-after:
@@ -1070,7 +1070,7 @@ insert:
 # ハチに花を与える
 file: net/minecraft/world/entity/animal/bee/Bee.java
 anchor:
-    this.addEffect(effect);
+    this.addEffect(beeInteractionEffect);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.FOOD);
 

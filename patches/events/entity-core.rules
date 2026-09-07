@@ -201,16 +201,16 @@ insert-after:
 
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
-    player.takeXpDelay = 2;
+    entity.takeXpDelay = 2;
 insert-after:
-    player.takeXpDelay = dev.shifu.event.EntityEvents.xpCooldown(player, player.takeXpDelay, org.bukkit.event.player.PlayerExpCooldownChangeEvent.ChangeReason.PICKUP_ORB);
+    entity.takeXpDelay = dev.shifu.event.EntityEvents.xpCooldown(entity, entity.takeXpDelay, org.bukkit.event.player.PlayerExpCooldownChangeEvent.ChangeReason.PICKUP_ORB);
 
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
-    if (remaining > 0) {
-        player.giveExperiencePoints(remaining);
+    if (i > 0) {
+        entity.giveExperiencePoints(i);
 insert:
-    remaining = dev.shifu.event.EntityEvents.expChange(player, this, remaining);
+    i = dev.shifu.event.EntityEvents.expChange(entity, this, i);
 
 # ============================================================ Leashable
 
@@ -286,7 +286,7 @@ insert-after:
 # EntityTargetLivingEntityEvent
 file: net/minecraft/world/entity/Mob.java
 anchor:
-    this.target = this.asValidTarget(target);
+    this.target = target;
 insert:
     if (dev.shifu.event.EntityEvents.mobTarget(this, target)) {
 insert-after:
@@ -528,10 +528,10 @@ insert-after:
 
 file: net/minecraft/world/entity/decoration/LeashFenceKnotEntity.java
 anchor:
-    mob.setLeashedTo(player, true);
-    anyDropped = true;
+    leashable1.setLeashedTo(player, true);
+    flag1 = true;
 insert:
-    if (dev.shifu.event.EntityEvents.playerLeash(mob, player, player, hand)) {
+    if (dev.shifu.event.EntityEvents.playerLeash(leashable1, player, player, hand)) {
 insert-after:
     }
 
@@ -578,9 +578,11 @@ insert-after:
 # EntityPushedByEntityAttackEvent の主(薙ぎ払い)
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-    entity.push(-Mth.sin(this.getYRot() * Mth.DEG_TO_RAD) * knockbackAmount, 0.1, Mth.cos(this.getYRot() * Mth.DEG_TO_RAD) * knockbackAmount);
+    target.push(
+    -Mth.sin(this.getYRot() * (float) (Math.PI / 180.0)) * strength, 0.1, Mth.cos(this.getYRot() * (float) (Math.PI / 180.0)) * strength
+    );
 insert:
-    dev.shifu.event.EntityEvents.pushedBy(this, entity);
+    dev.shifu.event.EntityEvents.pushedBy(this, target);
 
 # PrePlayerAttackEntityEvent(stabAttack)
 file: net/minecraft/world/entity/player/Player.java
@@ -656,8 +658,12 @@ insert-after:
 
 file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
-    owner.level()
-        .addFreshEntity(new ExperienceOrb(owner.level(), owner.getX(), owner.getY() + 0.5, owner.getZ() + 0.5, this.random.nextInt(6) + 1));
+    playerOwner.level()
+        .addFreshEntity(
+        new ExperienceOrb(
+        playerOwner.level(), playerOwner.getX(), playerOwner.getY() + 0.5, playerOwner.getZ() + 0.5, this.random.nextInt(6) + 1
+        )
+        );
 insert:
     if (shifuFish == null) {
 insert-after:
@@ -698,9 +704,9 @@ insert-after:
 # EntityPushedByEntityAttackEvent の主(ノックバック)
 file: net/minecraft/world/entity/projectile/arrow/AbstractArrow.java
 anchor:
-    mob.push(movement.x, 0.1, movement.z);
+    entity.push(vec3.x, 0.1, vec3.z);
 insert:
-    dev.shifu.event.EntityEvents.pushedBy(this, mob);
+    dev.shifu.event.EntityEvents.pushedBy(this, entity);
 
 # PlayerPickupArrowEvent
 file: net/minecraft/world/entity/projectile/arrow/AbstractArrow.java

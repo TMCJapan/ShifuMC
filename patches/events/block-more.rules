@@ -23,9 +23,9 @@ insert-after:
 # BlockPreDispenseEvent
 file: net/minecraft/world/level/block/DispenserBlock.java
 anchor:
-    blockEntity.setItem(slot, behavior.dispense(source, itemStack));
+    dispenserBlockEntity.setItem(randomSlot, dispenseMethod.dispense(blockSource, item));
 insert:
-    if (!dev.shifu.event.BlockEvents.preDispense(level, pos, itemStack, slot)) {
+    if (!dev.shifu.event.BlockEvents.preDispense(level, pos, item, randomSlot)) {
         return;
     }
 
@@ -224,9 +224,9 @@ insert-after:
 
 file: net/minecraft/world/level/block/DropperBlock.java
 anchor:
-    remaining = DISPENSE_BEHAVIOUR.dispense(source, itemStack);
+    itemStack = DISPENSE_BEHAVIOUR.dispense(blockSource, item);
 insert:
-    if (!dev.shifu.event.BlockEvents.preDispense(level, pos, itemStack, slot)) {
+    if (!dev.shifu.event.BlockEvents.preDispense(level, pos, item, randomSlot)) {
         return;
     }
 
@@ -243,9 +243,9 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/level/block/entity/HopperBlockEntity.java.patch
 file: net/minecraft/world/level/block/entity/HopperBlockEntity.java
 anchor:
-    ItemStack result = addItem(self, container, self.removeItem(slot, 1), direction);
+    ItemStack itemStack = addItem(blockEntity, attachedContainer, blockEntity.removeItem(i, 1), opposite);
 insert:
-    if (!dev.shifu.event.BlockEvents.moveItem(self, container, item, true, self)) {
+    if (!dev.shifu.event.BlockEvents.moveItem(blockEntity, attachedContainer, item, true, blockEntity)) {
         return false;
     }
 
@@ -354,23 +354,23 @@ insert-after:
 # EntityPortalReadyEvent
 file: net/minecraft/world/level/block/NetherPortalBlock.java
 anchor:
-    ServerLevel newLevel = currentLevel.getServer().getLevel(newDimension);
+    ServerLevel level1 = level.getServer().getLevel(resourceKey);
 insert-after:
-    newLevel = dev.shifu.event.BlockEvents.portalReady(entity, newLevel);
+    level1 = dev.shifu.event.BlockEvents.portalReady(entity, level1);
 
 # EntityPortalEvent / PlayerPortalEvent(出口を探す前)
 file: net/minecraft/world/level/block/NetherPortalBlock.java
 anchor:
-    return this.getExitPortal(newLevel, entity, portalEntryPos, approximateExitPos, toNether, newWorldBorder);
+    return this.getExitPortal(level1, entity, pos, blockPos, flag, worldBorder);
 insert:
     if (dev.shifu.event.BlockEvents.listeningPortal()) {
-        final org.bukkit.craftbukkit.event.PortalEventResult shifuPortal = dev.shifu.event.BlockEvents.portalDestination(entity, newLevel, approximateExitPos);
+        final org.bukkit.craftbukkit.event.PortalEventResult shifuPortal = dev.shifu.event.BlockEvents.portalDestination(entity, level1, blockPos);
         if (shifuPortal == null) {
             return null;
         }
-        newLevel = ((org.bukkit.craftbukkit.CraftWorld) shifuPortal.to().getWorld()).getHandle();
-        newWorldBorder = newLevel.getWorldBorder();
-        approximateExitPos = newWorldBorder.clampToBounds(shifuPortal.to().getX(), shifuPortal.to().getY(), shifuPortal.to().getZ());
+        level1 = ((org.bukkit.craftbukkit.CraftWorld) shifuPortal.to().getWorld()).getHandle();
+        worldBorder = level1.getWorldBorder();
+        blockPos = worldBorder.clampToBounds(shifuPortal.to().getX(), shifuPortal.to().getY(), shifuPortal.to().getZ());
     }
 
 # PlayerInteractEvent(PHYSICAL)/ EntityInteractEvent(感圧板)
@@ -528,7 +528,9 @@ insert:
 # SpongeAbsorbEvent
 file: net/minecraft/world/level/block/SpongeBlock.java
 anchor:
-    return BlockPos.breadthFirstTraversal(startPos, 6, 65, (pos, consumer) -> {
+    return BlockPos.breadthFirstTraversal(
+    pos,
+    6,
 insert:
     dev.shifu.event.BlockEvents.spongeBegin();
 
@@ -636,30 +638,25 @@ insert:
 file: net/minecraft/world/level/block/TripWireHookBlock.java
 anchor:
     Direction opposite = direction.getOpposite();
-    level.setBlock(testPos, newState.setValue(FACING, opposite), Block.UPDATE_ALL);
-    notifyNeighbors(block, level, testPos, opposite);
-    if (!level.getBlockState(pos).is(Blocks.TRIPWIRE_HOOK)) {
-        onRemoved(newState, level, pos);
-        return;
-    }
-
-    emitState(level, testPos, attached, powered, wasAttached, wasPowered);
+    level.setBlock(blockPosx, blockState1.setValue(FACING, opposite), Block.UPDATE_ALL);
+    notifyNeighbors(block, level, blockPosx, opposite);
+    emitState(level, blockPosx, flag2, flag3, flag, flag1);
 insert:
-    if (dev.shifu.event.BlockEvents.tripwireHook(level, testPos, wasPowered, powered)) {
+    if (dev.shifu.event.BlockEvents.tripwireHook(level, blockPosx, flag1, flag3)) {
 insert-after:
     }
 
 file: net/minecraft/world/level/block/TripWireHookBlock.java
 anchor:
-    emitState(level, pos, attached, powered, wasAttached, wasPowered);
-    if (!isBeingDestroyed) {
-        level.setBlock(pos, newState.setValue(FACING, direction), Block.UPDATE_ALL);
-        if (canUpdate) {
+    emitState(level, pos, flag2, flag3, flag, flag1);
+    if (!attaching) {
+        level.setBlock(pos, blockState1.setValue(FACING, direction), Block.UPDATE_ALL);
+        if (shouldNotifyNeighbours) {
             notifyNeighbors(block, level, pos, direction);
         }
     }
 insert:
-    if (dev.shifu.event.BlockEvents.tripwireHook(level, pos, wasPowered, powered)) {
+    if (dev.shifu.event.BlockEvents.tripwireHook(level, pos, flag1, flag3)) {
 insert-after:
     }
 
@@ -675,9 +672,9 @@ insert:
 # PlayerInsertLecternBookEvent
 file: net/minecraft/world/level/block/LecternBlock.java
 anchor:
-    lectern.setBook(book.consumeAndReturn(1, sourceEntity));
+    lecternBlockEntity.setBook(stack.consumeAndReturn(1, entity));
 insert:
-    if (!dev.shifu.event.BlockEvents.insertLecternBook(sourceEntity, level, pos, book)) {
+    if (!dev.shifu.event.BlockEvents.insertLecternBook(entity, level, pos, stack)) {
         return;
     }
 
@@ -732,9 +729,9 @@ insert:
 # BlockFromToEvent(横へ)
 file: net/minecraft/world/level/material/FlowingFluid.java
 anchor:
-    this.spreadTo(level, neighborPos, level.getBlockState(neighborPos), spread, newNeighborFluid);
+    this.spreadTo(level, blockPos, level.getBlockState(blockPos), direction, fluidState1);
 insert:
-    if (!dev.shifu.event.BlockEvents.fromTo(level, pos, spread)) {
+    if (!dev.shifu.event.BlockEvents.fromTo(level, pos, direction)) {
         continue;
     }
 
@@ -767,16 +764,22 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java.patch
 file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
-    int newLitTime = entity.getBurnDuration(level.fuelValues(), fuel);
+    furnace.litTimeRemaining = furnace.getBurnDuration(level.fuelValues(), itemStack);
 insert-after:
-    newLitTime = dev.shifu.event.BlockEvents.furnaceBurn(level, pos, fuel, newLitTime);
-    if (newLitTime < 0) {
+    furnace.litTimeRemaining = dev.shifu.event.BlockEvents.furnaceBurn(level, pos, itemStack, furnace.litTimeRemaining);
+    if (furnace.litTimeRemaining < 0) {
         return;
     }
 
 file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
-    consumeFuel(entity.items, fuel);
+    if (flag2) {
+    Item item = itemStack.getItem();
+    itemStack.shrink(1);
+    if (itemStack.isEmpty()) {
+    furnace.items.set(1, item.getCraftingRemainder());
+    }
+    }
 insert:
     if (dev.shifu.event.BlockEvents.furnaceConsumesFuel()) {
 insert-after:
@@ -785,21 +788,34 @@ insert-after:
 # FurnaceStartSmeltEvent
 file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
-    entity.cookingTimer++;
+    furnace.cookingTimer++;
 insert:
-    if (dev.shifu.event.BlockEvents.listeningFurnaceStart() && entity.cookingTimer == 0) {
-        entity.cookingTotalTime = dev.shifu.event.BlockEvents.furnaceStartSmelt(level, pos, ingredient, recipe);
+    if (dev.shifu.event.BlockEvents.listeningFurnaceStart() && recipeHolder != null && furnace.cookingTimer == 0) {
+        furnace.cookingTotalTime = dev.shifu.event.BlockEvents.furnaceStartSmelt(level, pos, itemStack1, recipeHolder);
     }
 
 # FurnaceSmeltEvent
 file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
-    burn(entity.items, ingredient, burnResult);
-    entity.setRecipeUsed(recipe);
+    if (burn(level.registryAccess(), recipeHolder, singleRecipeInput, furnace.items, maxStackSize)) {
 insert:
-    final ItemStack shifuSmelt = dev.shifu.event.BlockEvents.furnaceSmelt(level, pos, entity.items, ingredient, burnResult, recipe);
-    if (shifuSmelt != null) {
-        burnResult = shifuSmelt;
+    dev.shifu.event.BlockEvents.furnaceSmeltAt(level, pos);
+
+# 結果を入れる所。burn は static で level も pos も受け取らないので、控えた位置で発火する
+file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
+anchor:
+    ItemStack itemStack2 = items.get(2);
+    if (itemStack2.isEmpty()) {
+    items.set(2, itemStack1.copy());
+    } else if (ItemStack.isSameItemSameComponents(itemStack2, itemStack1)) {
+    itemStack2.grow(1);
+    }
+insert:
+    itemStack1 = dev.shifu.event.BlockEvents.furnaceSmelt(items, itemStack, itemStack1, recipe);
+    if (itemStack1 == null) {
+        return false;
+    }
+    if (!itemStack1.isEmpty()) {
 insert-after:
     }
 
@@ -812,27 +828,23 @@ insert:
 
 file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
-    ExperienceOrb.award(level, position, xpReward);
+    ExperienceOrb.award(level, popVec, floor);
 insert:
-    xpReward = dev.shifu.event.BlockEvents.furnaceExp(level, xpReward);
+    floor = dev.shifu.event.BlockEvents.furnaceExp(level, floor);
 
 # BrewingStandFuelEvent
 file: net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
 anchor:
     blockEntity.fuel = 20;
+    itemStack.shrink(1);
 insert:
     if (!dev.shifu.event.BlockEvents.brewingFuel(level, pos, itemStack)) {
         return;
     }
 insert-after:
     blockEntity.fuel = dev.shifu.event.BlockEvents.brewingFuelPower(blockEntity.fuel);
-
-file: net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
-anchor:
-    fuel.shrink(1);
-insert:
-    if (dev.shifu.event.BlockEvents.brewingConsumes()) {
-insert-after:
+    if (!dev.shifu.event.BlockEvents.brewingConsumes()) {
+        itemStack.grow(1);
     }
 
 # BrewingStartEvent
@@ -845,11 +857,11 @@ insert-after:
 # BrewEvent
 file: net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
 anchor:
-    for (int dest = 0; dest < 3; dest++) {
-        items.set(dest, potionBrewing.mix(ingredient, items.get(dest)));
+    for (int i = 0; i < 3; i++) {
+        items.set(i, potionBrewing.mix(itemStack, items.get(i)));
     }
 insert:
-    final java.util.List<ItemStack> shifuBrew = dev.shifu.event.BlockEvents.brew(level, pos, items, itemStack1, potionBrewing);
+    final java.util.List<ItemStack> shifuBrew = dev.shifu.event.BlockEvents.brew(level, pos, items, itemStack, potionBrewing);
     if (shifuBrew == null) {
         return;
     }
@@ -929,9 +941,9 @@ insert:
 # BeaconActivatedEvent / BeaconDeactivatedEvent
 file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
 anchor:
-    if (entity.lastCheckY >= lastSetBlock) {
+    if (blockEntity.lastCheckY >= height) {
 insert:
-    dev.shifu.event.BlockEvents.beaconLevels(level, pos, previousLevels, entity.levels);
+    dev.shifu.event.BlockEvents.beaconLevels(level, pos, i, blockEntity.levels);
 
 file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
 anchor:
@@ -1016,13 +1028,13 @@ insert:
 # BlockDispenseLootEvent(トライアルスポナーの報酬)
 file: net/minecraft/world/level/block/entity/trialspawner/TrialSpawner.java
 anchor:
-    if (!lootDrops.isEmpty()) {
+    if (!randomItems.isEmpty()) {
 insert-after:
-    final java.util.List<ItemStack> shifuLoot = dev.shifu.event.BlockEvents.dispenseLoot(level, pos, null, lootDrops, ejectingLootTable);
+    final java.util.List<ItemStack> shifuLoot = dev.shifu.event.BlockEvents.dispenseLoot(level, pos, null, randomItems, lootTable);
     if (shifuLoot == null) {
         return;
     }
-    lootDrops = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(shifuLoot);
+    randomItems = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(shifuLoot);
 
 # BlockDispenseLootEvent(宝物庫)
 file: net/minecraft/world/level/block/entity/vault/VaultBlockEntity.java
@@ -1138,9 +1150,9 @@ insert:
 
 file: net/minecraft/world/level/block/SculkVeinBlock.java
 anchor:
-    level.setBlock(supportPos, defaultSculk, Block.UPDATE_ALL);
+    level.setBlock(blockPos, blockState2, Block.UPDATE_ALL);
 insert:
-    if (!dev.shifu.event.BlockEvents.spreadFromSource(level, supportPos, defaultSculk)) {
+    if (!dev.shifu.event.BlockEvents.spreadFromSource(level, blockPos, blockState2)) {
         return false;
     }
 
@@ -1195,9 +1207,9 @@ insert-after:
 # Paper は最初の 1 段を BlockSpreadEvent、その先を BlockGrowEvent にする。
 file: net/minecraft/world/level/block/BuddingAmethystBlock.java
 anchor:
-    level.setBlockAndUpdate(growPos, targetState);
+    level.setBlockAndUpdate(blockPos, blockState1);
 insert:
-    if (dev.shifu.event.BlockEvents.amethystGrow(level, pos, growPos, targetState, nextStage)) {
+    if (dev.shifu.event.BlockEvents.amethystGrow(level, pos, blockPos, blockState1, block)) {
 insert-after:
     }
 
@@ -1231,11 +1243,11 @@ insert-after:
 
 file: net/minecraft/world/level/block/ChorusFlowerBlock.java
 anchor:
-    this.placeGrownFlower(level, target, currentAge + 1);
-    createdBranch = true;
+    this.placeGrownFlower(level, blockPos1, ageValue + 1);
+    flag2 = true;
 insert:
     if (dev.shifu.event.BlockEvents.silentSpread()
-            || dev.shifu.event.BlockEvents.spreadTo(level, pos, target, this.defaultBlockState().setValue(AGE, currentAge + 1))) {
+            || dev.shifu.event.BlockEvents.spreadTo(level, pos, blockPos1, this.defaultBlockState().setValue(AGE, ageValue + 1))) {
 insert-after:
     }
 

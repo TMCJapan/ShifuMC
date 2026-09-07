@@ -19,8 +19,8 @@ insert:
 
 file: net/minecraft/world/inventory/AbstractContainerMenu.java
 anchor:
-    source.setCount(remaining);
-    this.setCarried(source);
+    itemStack.setCount(count);
+    this.setCarried(itemStack);
 insert-after:
     dev.shifu.event.ItemEvents.drag(this, shifuDragBefore, shifuDragCarried, this.quickcraftType == QUICKCRAFT_TYPE_GREEDY);
 
@@ -133,28 +133,28 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/LecternMenu.java.patch
 file: net/minecraft/world/inventory/LecternMenu.java
 anchor:
-    this.setData(0, currentPage - 1);
+    this.setData(0, i - 1);
 insert:
     final int shifuPage = dev.shifu.event.ItemEvents.lecternPage(this, player,
-            io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection.LEFT, currentPage, currentPage - 1);
+            io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection.LEFT, i, i - 1);
     if (shifuPage == dev.shifu.event.ItemEvents.CANCELLED) {
         return false;
     }
-    if (shifuPage != currentPage - 1) {
+    if (shifuPage != i - 1) {
         this.setData(0, shifuPage);
         return true;
     }
 
 file: net/minecraft/world/inventory/LecternMenu.java
 anchor:
-    this.setData(0, currentPage + 1);
+    this.setData(0, i + 1);
 insert:
     final int shifuPage = dev.shifu.event.ItemEvents.lecternPage(this, player,
-            io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection.RIGHT, currentPage, currentPage + 1);
+            io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection.RIGHT, i, i + 1);
     if (shifuPage == dev.shifu.event.ItemEvents.CANCELLED) {
         return false;
     }
-    if (shifuPage != currentPage + 1) {
+    if (shifuPage != i + 1) {
         this.setData(0, shifuPage);
         return true;
     }
@@ -217,12 +217,12 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/StandingAndWallBlockItem.java.patch
 file: net/minecraft/world/item/StandingAndWallBlockItem.java
 anchor:
-    return stateForPlacement != null && level.isUnobstructed(stateForPlacement, pos, CollisionContext.empty()) ? stateForPlacement : null;
+    return blockState != null && level.isUnobstructed(blockState, clickedPos, CollisionContext.empty()) ? blockState : null;
 insert:
-    if (stateForPlacement != null && dev.shifu.event.ItemEvents.canBuildListening()) {
-        return dev.shifu.event.ItemEvents.canBuild(context.getLevel(), pos, context.getPlayer(), stateForPlacement,
-                level.isUnobstructed(stateForPlacement, pos, CollisionContext.empty()), context.getHand())
-                ? stateForPlacement : null;
+    if (blockState != null && dev.shifu.event.ItemEvents.canBuildListening()) {
+        return dev.shifu.event.ItemEvents.canBuild(context.getLevel(), clickedPos, context.getPlayer(), blockState,
+                level.isUnobstructed(blockState, clickedPos, CollisionContext.empty()), context.getHand())
+                ? blockState : null;
     }
 
 # ---------------------------------------------------------------- ボート
@@ -524,7 +524,7 @@ insert-after:
 
 file: net/minecraft/world/item/FireworkRocketItem.java
 anchor:
-    itemStack.shrink(1);
+    itemInHand.shrink(1);
 insert:
     if (shifuFireworkConsume) {
 insert-after:
@@ -590,16 +590,16 @@ insert-after:
 file: net/minecraft/world/item/ProjectileWeaponItem.java
 anchor:
     Projectile.spawnProjectile(
-        this.createProjectile(level, shooter, weapon, projectile, isCrit),
+        this.createProjectile(level, shooter, weapon, itemStack, isCrit),
         level,
-        projectile,
-        projectileEntity -> this.shootProjectile(shooter, projectileEntity, index, power, uncertainty, angle, targetOverride)
+        itemStack,
+        projectile -> this.shootProjectile(shooter, projectile, i1, velocity, inaccuracy, f4, target)
     );
 insert:
     if (dev.shifu.event.ItemEvents.shootBowListening()) {
-        final Projectile shifuProjectile = this.createProjectile(level, shooter, weapon, projectile, isCrit);
-        this.shootProjectile(shooter, shifuProjectile, index, power, uncertainty, angle, targetOverride);
-        if (!dev.shifu.event.ItemEvents.shootBow(level, shooter, weapon, projectile, shifuProjectile, hand, power)) {
+        final Projectile shifuProjectile = this.createProjectile(level, shooter, weapon, itemStack, isCrit);
+        this.shootProjectile(shooter, shifuProjectile, i1, velocity, inaccuracy, f4, target);
+        if (!dev.shifu.event.ItemEvents.shootBow(level, shooter, weapon, itemStack, shifuProjectile, hand, velocity)) {
             return;
         }
     } else {
