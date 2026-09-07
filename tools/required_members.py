@@ -16,6 +16,9 @@ LOCATION = re.compile(r"^\s*location: (?:class|interface|variable \w+ of type|@?
 MEMBER = re.compile(r"method ([\w$]+) in (?:class|interface) ([\w.]+) cannot be applied")
 ACCESS = re.compile(r"([\w$]+) has (?:private|protected) access in ([\w.]+)")
 ABSTRACT = re.compile(r"does not override abstract method (\w+)\(")
+# 引数違いは 2 つの形で出る。片方だけ見ていると、Paper が足した多重定義
+# (disconnect(Component, Cause) など)が要求に入らない。
+NO_METHOD = re.compile(r"no suitable (?:method|constructor) found for ([\w$]+)\(")
 
 
 def main():
@@ -35,6 +38,9 @@ def main():
 
         for name, owner in MEMBER.findall(line):
             add(owner, "method", name)
+
+        for name in NO_METHOD.findall(line):
+            add("(unqualified)", "method", name)
 
         for name, owner in ACCESS.findall(line):
             add(owner, "access", name)

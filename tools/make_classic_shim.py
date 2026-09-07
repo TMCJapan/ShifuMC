@@ -165,6 +165,76 @@ def imports_for(old, new, blocks):
     return out, blocks
 
 
+OWNER = re.compile(r"^([\w$.<>()]+)\s+\(\d+\)$")
+ENTRY = re.compile(r"^    (\w+)\s+([\w$]+)$")
+EXTENDS = re.compile(r"\b(?:class|interface|enum|record)\s+[\w$]+(?:<[^{]*?>)?\s*"
+                     r"(?:extends\s+([\w$.<>,\s]+?))?\s*(?:implements\s+([\w$.<>,\s]+?))?\s*\{")
+
+
+def required_owners(path):
+    """要素の名前 -> それを要求している型の名前。
+
+    `make_shim.load_required` は型を捨てる(エラーに出る型は呼び出し側の静的な型で、
+    宣言している型とは限らないため)。**classic の生成器は Paper のソース全体から
+    宣言を拾うので、型を捨てると同じ名前の無関係な宣言まで足してしまう。**
+    型は残して、継承をたどって照合する。
+    """
+    out = collections.defaultdict(set)
+    owner = None
+
+    for line in io.open(path, encoding="utf-8"):
+        text = line.rstrip("\n")
+        hit = OWNER.match(text)
+
+        if hit:
+            owner = hit.group(1)
+            continue
+
+        hit = ENTRY.match(text)
+
+        if hit and owner:
+            out[hit.group(2)].add(owner)
+
+    return out
+
+
+def ancestors(tree):
+    """型の単純名 -> 自分と、その上にある型の単純名。"""
+    head = {}
+
+    for base, _, names in os.walk(tree):
+        for name in names:
+            if not name.endswith(".java"):
+                continue
+
+            text = io.open(os.path.join(base, name), encoding="utf-8",
+                           errors="replace").read()
+            match = EXTENDS.search(text)
+            up = set()
+
+            for part in (match.group(1), match.group(2)) if match else ():
+                for one in (part or "").split(","):
+                    one = one.split("<")[0].strip().rsplit(".", 1)[-1]
+
+                    if one:
+                        up.add(one)
+
+            head[name[:-len(".java")]] = up
+
+    def walk(name, seen):
+        if name in seen:
+            return seen
+
+        seen.add(name)
+
+        for up in head.get(name, ()):
+            walk(up, seen)
+
+        return seen
+
+    return {name: walk(name, set()) for name in head}
+
+
 def type_name(lines, start):
     """本体を開いている型の名前。"""
     head = start
@@ -181,6 +251,8 @@ def main():
     paper, tree, dest, required = sys.argv[1:5]
     write = "--write" in sys.argv
     wanted = ms.load_required(required)
+    asked = required_owners(required)
+    above = ancestors(tree)
     files = 0
     total = 0
     skipped = 0
@@ -227,6 +299,17 @@ def main():
                     continue
 
                 if member not in wanted:
+                    skipped += 1
+                    continue
+
+                # 要求している型か、その上にある型に足す。名前だけで見ると
+                # 同じ名前の無関係な宣言まで足して、かえってエラーが増える
+                # 型が分かっているものが 1 つでもあれば、それで絞る。
+                # `(unqualified)`(型が読めなかったエラー)が混ざったときに
+                # 絞りを外すと、同じ名前の宣言を全部足して 402 <-> 448 で振動する。
+                who = asked.get(member, set()) - {"(unqualified)"}
+
+                if who and not any(owner in above.get(one, {one}) for one in who):
                     skipped += 1
                     continue
 
