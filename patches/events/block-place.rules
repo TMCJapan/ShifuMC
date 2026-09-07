@@ -19,7 +19,7 @@
 
 file: net/minecraft/world/item/BlockItem.java
 anchor:
-    if (!this.placeBlock(updatedPlaceContext, placementState)) {
+    } else if (!this.placeBlock(blockPlaceContext, placementState)) {
 insert:
     final org.bukkit.block.BlockState shifuReplaced =
             dev.shifu.event.ShifuEvents.blockPlaceListening()
@@ -36,7 +36,7 @@ insert:
             && !dev.shifu.event.ShifuEvents.blockPlace(
                     shifuLevel, player, blockPlaceContext.getHand(), shifuReplaced,
                     blockPlaceContext.getHitResult().getBlockPos())) {
-        shifuLevel.setBlock(pos, ((org.bukkit.craftbukkit.block.CraftBlockState) shifuReplaced).getHandle(),
+        shifuLevel.setBlock(clickedPos, ((org.bukkit.craftbukkit.block.CraftBlockState) shifuReplaced).getHandle(),
                 net.minecraft.world.level.block.Block.UPDATE_ALL);
         return InteractionResult.FAIL;
     }

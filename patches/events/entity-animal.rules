@@ -575,7 +575,7 @@ file: net/minecraft/world/entity/raid/Raids.java
 anchor:
     raid.absorbRaidOmen(player);
 insert:
-    if (!dev.shifu.event.AnimalEvents.raidTrigger(level, raid, player)) {
+    if (!dev.shifu.event.AnimalEvents.raidTrigger(serverLevel, raid, player)) {
         if (shifuNewRaid) {
             this.raidMap.values().remove(raid);
         }

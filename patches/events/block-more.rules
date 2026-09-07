@@ -469,10 +469,10 @@ insert:
 # BlockIgniteEvent(SPREAD)と BlockSpreadEvent(火が広がる)
 file: net/minecraft/world/level/block/FireBlock.java
 anchor:
-    level.setBlock(pos, this.getStateWithAge(level, pos, min), Block.UPDATE_ALL);
+    level.setBlock(mutableBlockPos, this.getStateWithAge(level, mutableBlockPos, min1), Block.UPDATE_ALL);
 insert:
     if (dev.shifu.event.BlockEvents.listeningFireSpread()
-            && !dev.shifu.event.BlockEvents.fireSpread(level, pos, pos, this.getStateWithAge(level, pos, min))) {
+            && !dev.shifu.event.BlockEvents.fireSpread(level, pos, mutableBlockPos, this.getStateWithAge(level, mutableBlockPos, min1))) {
         continue;
     }
 
@@ -688,7 +688,7 @@ file: net/minecraft/world/level/block/TargetBlock.java
 anchor:
     if (!level.getBlockTicks().hasScheduledTick(hit.getBlockPos(), state.getBlock())) {
 insert:
-    final int shifuHit = dev.shifu.event.BlockEvents.targetHit(level, hit, entity, redstoneStrength);
+    final int shifuHit = dev.shifu.event.BlockEvents.targetHit(level, hit, projectile, redstoneStrength);
     if (shifuHit < 0) {
         return redstoneStrength;
     }
@@ -701,7 +701,7 @@ insert:
     final int shifuPower = dev.shifu.event.BlockEvents.redstoneChange(level, pos, state.getValue(OUTPUT_POWER), power);
     if (shifuPower != power) {
         level.setBlock(pos, state.setValue(OUTPUT_POWER, shifuPower), Block.UPDATE_ALL);
-        level.scheduleTick(pos, state.getBlock(), duration);
+        level.scheduleTick(pos, state.getBlock(), waitTime);
         return;
     }
 
@@ -820,7 +820,7 @@ insert:
         return;
     }
 insert-after:
-    blockEntity.itemStack = dev.shifu.event.BlockEvents.brewingFuelPower(blockEntity.itemStack);
+    blockEntity.fuel = dev.shifu.event.BlockEvents.brewingFuelPower(blockEntity.fuel);
 
 file: net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
 anchor:
@@ -929,7 +929,7 @@ file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
 anchor:
     playSound(this.level, this.worldPosition, SoundEvents.BEACON_DEACTIVATE);
 insert:
-    dev.shifu.event.BlockEvents.beaconDeactivated(this.level, this.pos);
+    dev.shifu.event.BlockEvents.beaconDeactivated(this.level, this.worldPosition);
 
 # BeaconEffectEvent(1 つめと 2 つめの効果)
 file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java

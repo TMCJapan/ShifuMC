@@ -48,7 +48,7 @@
                 return EntityType.create(
                         TagValueInput.create(reporter.forChild(() -> ".shoulder"), serverLevel.registryAccess(), tag),
                         serverLevel,
-                        new EntitySpawnRequest(EntitySpawnReason.LOAD, false)
+                        EntitySpawnReason.LOAD
                     )
                     .map(entity -> {
                         if (entity instanceof TamableAnimal tamed) {

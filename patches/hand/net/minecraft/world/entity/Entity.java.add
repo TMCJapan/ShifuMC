@@ -28,8 +28,8 @@
             return this.getEncodeId();
         }
 
-        ResourceKey<EntityType<?>> typeId = this.typeHolder().unwrapKey().orElseThrow(() -> new IllegalStateException("Unregistered entity"));
-        return typeId.identifier().toString();
+        // 1.21.11 の vanilla に typeHolder() は無い。EntityType から Identifier を引く
+        return net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(this.getType()).toString();
     }
 
 // Entity.setRemoved

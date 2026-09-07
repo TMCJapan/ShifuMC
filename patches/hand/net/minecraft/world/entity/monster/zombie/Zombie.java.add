@@ -10,10 +10,9 @@
             final org.bukkit.event.entity.EntityTransformEvent.TransformReason transformReason,
             final org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason creatureSpawnReason) {
         return villager.convertTo(
-            EntityTypes.ZOMBIE_VILLAGER,
+            EntityType.ZOMBIE_VILLAGER,
             ConversionParams.single(villager, true, true),
             zombie -> {
-                zombie.setVillagerDataFinalized(villager.getVillagerDataFinalized());
                 zombie.finalizeSpawn(
                     level, level.getCurrentDifficultyAt(zombie.blockPosition()), EntitySpawnReason.CONVERSION, new Zombie.ZombieGroupData(false, true)
                 );

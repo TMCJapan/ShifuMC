@@ -652,7 +652,7 @@ anchor:
     ServerLevel serverLevel = (ServerLevel)attacker.level();
 insert:
     if (dev.shifu.event.ItemEvents.smashListening()
-            && !dev.shifu.event.ItemEvents.smashAttack(itemStack, mob, attacker, canSmashAttack(attacker))) {
+            && !dev.shifu.event.ItemEvents.smashAttack(stack, target, attacker, canSmashAttack(attacker))) {
         return;
     }
 

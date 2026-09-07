@@ -24,4 +24,4 @@ file: net/minecraft/server/ReloadableServerRegistries.java
 anchor:
     Map<Identifier, T> map = new HashMap<>();
 insert:
-    io.papermc.paper.writableRegistry.PaperRegistryAccess.instance().registerReloadableRegistry(writableRegistry);
+    io.papermc.paper.registry.PaperRegistryAccess.instance().registerReloadableRegistry(writableRegistry);

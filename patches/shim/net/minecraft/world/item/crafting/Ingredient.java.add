@@ -1,4 +1,0 @@
-// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
-
-// Ingredient.itemStacks
-    private java.util.@org.jspecify.annotations.Nullable List<ItemStack> itemStacks;
