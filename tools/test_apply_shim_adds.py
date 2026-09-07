@@ -44,9 +44,10 @@ def test_parse():
         "        return 0;",
         "    }",
     ]))
-    check("parse: 2 つの塊", sorted(groups), [("Menu", "getBukkitView"), ("Menu", "other")])
+    check("parse: 2 つの塊", sorted(k for k, _ in groups),
+      [("Menu", "getBukkitView"), ("Menu", "other")])
     check("parse: 印は塊に入らない",
-          groups[("Menu", "other")][:2], ["", "    // Shifu - other"])
+          dict(groups)[("Menu", "other")][:2], ["", "    // Shifu - other"])
 
 
 def test_head_skips_annotation():

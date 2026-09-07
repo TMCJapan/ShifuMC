@@ -29,22 +29,27 @@ MARK = re.compile(r"^// (\S+)\.(\w+)$")
 
 
 def parse(text):
-    """(所有クラス, 名前) -> 足す行の並び。"""
-    groups = {}
-    key = None
+    """[((所有クラス, 名前), 足す行の並び)]。
+
+    **辞書にしない。** 同じ名前の欄とメソッドが両方ある型がある
+    (`DamageSource.directBlock` は `org.bukkit.block.Block` の欄と、
+    それを入れて自分を返すメソッド)。辞書にすると後の 1 つしか残らない。
+    """
+    groups = []
+    block = None
 
     for line in text.split("\n"):
         mark = MARK.match(line.strip())
 
         if mark:
-            key = (mark.group(1), mark.group(2))
-            groups[key] = ["", f"    // Shifu - {mark.group(2)}"]
+            block = ["", f"    // Shifu - {mark.group(2)}"]
+            groups.append(((mark.group(1), mark.group(2)), block))
             continue
 
-        if key is None or line.startswith("//"):
+        if block is None or line.startswith("//"):
             continue
 
-        groups[key].append(line)
+        block.append(line)
 
     return groups
 
@@ -150,7 +155,7 @@ def main():
 
             inserts = {}
 
-            for (owner, member), block in groups.items():
+            for (owner, member), block in groups:
                 if defined_in(yield_to, target, member) or (target, member) in access:
                     continue
 
