@@ -1,5 +1,9 @@
 allprojects {
     tasks.withType(JavaCompile).configureEach {
         options.compilerArgs.addAll(['-Xmaxerrs', '5000'])
+        // 差分コンパイルだと、前の回に通ったファイルを見直さないので
+        // エラーの数が「今の木の状態」ではなく「前の回との差」になる。
+        // 同じ入力で 496 と 617 を行き来したのはこれが原因。
+        options.incremental = false
     }
 }

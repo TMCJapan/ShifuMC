@@ -16,13 +16,22 @@ javac は届かない要素を
 
 版を移すと同じ欄の修飾子が変わる(26.2 で `private`、1.21.11 で修飾子無し)ので、
 アンカーはそのバージョンの木から取り直す必要がある。この道具はそれを機械でやる。
+
+**木は基点コミットの中身を読む。** 当てた後の木を読むと、`widen_access.py` が
+既に `public` にした行がアンカーになって、次の回に当たらなくなる
+(`private int zMin;` を探すべきところで `public int zMin;` を書いていた)。
 """
 
 import collections
 import io
 import os
 import re
+import subprocess
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import paths
 
 ACCESS = re.compile(r"\b([A-Za-z_$][\w$]*)(\([^)]*\))? has (?:private|protected) access "
                     r"in ([A-Za-z0-9_.$]+)")
@@ -90,6 +99,20 @@ def already(path):
     return out
 
 
+def pristine(tree, rel):
+    """基点コミットでのそのファイルの中身。取れなければ今の木を読む。"""
+    if paths.BASE:
+        done = subprocess.run(["git", "-C", tree, "show", f"{paths.BASE}:{rel}"],
+                              capture_output=True, text=True, encoding="utf-8",
+                              errors="replace")
+
+        if done.returncode == 0:
+            return done.stdout.split("\n")
+
+    return io.open(os.path.join(tree, rel.replace("/", os.sep)),
+                   encoding="utf-8", errors="replace").read().split("\n")
+
+
 def find(lines, name, args):
     """その要素の宣言の行番号。1 つに定まらなければ None。"""
     hits = []
@@ -134,8 +157,7 @@ def main():
             unsure.append(f"{owner}.{name}{args}: 型が {len(paths)} 箇所")
             continue
 
-        lines = io.open(os.path.join(tree, paths[0].replace("/", os.sep)),
-                        encoding="utf-8", errors="replace").read().split("\n")
+        lines = pristine(tree, paths[0])
         at = find(lines, name, args)
 
         if at is None:
