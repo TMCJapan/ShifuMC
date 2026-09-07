@@ -1,7 +1,0 @@
-// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
-
-// DedicatedServer.motd
-    private net.kyori.adventure.text.Component motd; // Paper - Adventure
-
-// MinecraftServer.hasStopped
-    private boolean hasStopped = false;

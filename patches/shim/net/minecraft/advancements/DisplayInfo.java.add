@@ -1,4 +1,0 @@
-// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
-
-// (unqualified).paper
-    public final io.papermc.paper.advancement.AdvancementDisplay paper = new io.papermc.paper.advancement.PaperAdvancementDisplay(this); // Paper - Add more advancement API

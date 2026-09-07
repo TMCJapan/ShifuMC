@@ -9,14 +9,3 @@ insert:
     if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockSpreadEvent(level, pos, blockPos, this.defaultBlockState().setValue(AGE, ageValue), Block.UPDATE_CLIENTS)) { // CraftBukkit - add event
 insert-after:
     } // CraftBukkit
-
-# callEntityChangeBlockEvent
-file: net/minecraft/world/level/block/ChorusFlowerBlock.java
-anchor:
-    world.destroyBlock(blockPos, true, projectile);
-insert:
-    // CraftBukkit start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(projectile, blockPos, state.getFluidState().createLegacyBlock())) { // Paper - fix wrong block state
-        return;
-    }
-    // CraftBukkit end

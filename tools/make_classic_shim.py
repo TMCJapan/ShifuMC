@@ -172,13 +172,31 @@ TYPE_HEAD = re.compile(r"\b(?:class|interface|enum|record|@interface)\s+([\w$]+)
 WORD = re.compile(r"[A-Za-z_$][\w$]*")
 
 
+def qualify(blocks, name, full):
+    """塊の中の単純名を完全修飾に置き換える。直前が `.` の語は触らない。"""
+    where = re.compile(r"(?<![\w$.])" + re.escape(name) + r"(?![\w$])")
+
+    return [(owner, member, [where.sub(full, line) for line in block])
+            for owner, member, block in blocks]
+
+
 def imports_for(old, new, blocks):
     """足す塊が使っていて、vanilla のファイルに無い import。
 
     宣言は Paper が書いたままなので、Paper の側にしか無い型がそのまま出てくる
     (`CraftInventoryView`、`HumanEntity` など)。
+
+    **その単純名が vanilla のファイルに既にあるときは import しない。**
+    `Player` は Paper のファイルでは `org.bukkit.entity.Player`、vanilla では
+    `net.minecraft.world.entity.player.Player` を指す。import を足すと
+    **既にある行の意味が変わる**(`reference to Player is ambiguous`)。
+    そこは塊の側を完全修飾に直す。
+
+    返すのは (足す import, 直した塊)。
     """
     have = {line.strip() for line in old if ms.IMPORT.match(line.strip())}
+    body = "\n".join(line for line in old if not ms.IMPORT.match(line.strip()))
+    known = set(WORD.findall(body)) | {text.rstrip(";").rsplit(".", 1)[-1] for text in have}
     used = set()
 
     for _, _, block in blocks:
@@ -196,10 +214,17 @@ def imports_for(old, new, blocks):
         # `import a.b.C;` の C、`import static a.b.C.D;` の D
         name = text.rstrip(";").rsplit(".", 1)[-1]
 
-        if name in used and text not in out:
+        if name not in used or name == "*":
+            continue
+
+        if name in known:
+            blocks = qualify(blocks, name, text.rstrip(";").split()[-1])
+            continue
+
+        if text not in out:
             out.append(text)
 
-    return out
+    return out, blocks
 
 
 def type_name(lines, start):
@@ -272,7 +297,7 @@ def main():
 
             files += 1
             total += len(blocks)
-            adds = imports_for(old, new, blocks)
+            adds, blocks = imports_for(old, new, blocks)
             imports += len(adds)
 
             if not write:

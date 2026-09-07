@@ -12,35 +12,3 @@ insert:
     );
     if (!collisionEvent.callEvent()) continue;
     // CraftBukkit end
-
-# VehicleEntityCollisionEvent
-file: net/minecraft/world/entity/vehicle/minecart/NewMinecartBehavior.java
-anchor:
-    entity.push(this.minecart);
-insert:
-    // CraftBukkit start
-    if (!this.minecart.isPassengerOfSameVehicle(entity)) {
-        org.bukkit.event.vehicle.VehicleEntityCollisionEvent collisionEvent = new org.bukkit.event.vehicle.VehicleEntityCollisionEvent(
-            (org.bukkit.entity.Vehicle) this.minecart.getBukkitEntity(),
-            entity.getBukkitEntity()
-        );
-        if (!collisionEvent.callEvent()) {
-            continue;
-        }
-    }
-    // CraftBukkit end
-
-# VehicleEntityCollisionEvent
-file: net/minecraft/world/entity/vehicle/minecart/NewMinecartBehavior.java
-anchor:
-    entity1.push(this.minecart);
-insert:
-    // CraftBukkit start
-    org.bukkit.event.vehicle.VehicleEntityCollisionEvent collisionEvent = new org.bukkit.event.vehicle.VehicleEntityCollisionEvent(
-        (org.bukkit.entity.Vehicle) this.minecart.getBukkitEntity(),
-        entity1.getBukkitEntity()
-    );
-    if (!collisionEvent.callEvent()) {
-        continue;
-    }
-    // CraftBukkit end

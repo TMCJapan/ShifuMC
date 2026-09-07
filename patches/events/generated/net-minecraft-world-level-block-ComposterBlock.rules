@@ -13,16 +13,3 @@ insert:
         }
     }
     // CraftBukkit end
-
-# callEntityChangeBlockEvent
-file: net/minecraft/world/level/block/ComposterBlock.java
-anchor:
-    level.setBlock(pos, blockState, Block.UPDATE_ALL);
-    level.gameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Context.of(entity, blockState));
-    if (i == 7) {
-insert:
-    // Paper start - move the EntityChangeBlockEvent here to avoid conflict later for the compost events
-    if (entity != null && !org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(entity, pos, blockState)) {
-        return null;
-    }
-    // Paper end

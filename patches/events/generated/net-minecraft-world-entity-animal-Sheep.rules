@@ -1,8 +1,0 @@
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
-
-# SheepRegrowWoolEvent
-file: net/minecraft/world/entity/animal/Sheep.java
-anchor:
-    super.ate();
-insert:
-    if (!new org.bukkit.event.entity.SheepRegrowWoolEvent((org.bukkit.entity.Sheep) this.getBukkitEntity()).callEvent()) return; // CraftBukkit

@@ -1,6 +1,0 @@
-// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
-
-// (supertype).getValueForCopying
-    public Optional<T> getValueForCopying(final ResourceKey<T> resourceKey) {
-        return this.frozen ? this.getOptional(resourceKey) : Optional.ofNullable(this.temporaryUnfrozenMap.get(resourceKey.identifier()));
-    }

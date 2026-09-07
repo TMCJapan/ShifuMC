@@ -1,6 +1,0 @@
-// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
-
-// (supertype).reload
-    public PotionBrewing reload(FeatureFlagSet flags) {
-        return bootstrap(flags);
-    }

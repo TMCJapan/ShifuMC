@@ -1,6 +1,0 @@
-// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
-
-// Container.getLocation
-    default org.bukkit.Location getLocation() {
-        return org.bukkit.craftbukkit.util.CraftLocation.toBukkit(this.getPosition(), this.getWorld());
-    }

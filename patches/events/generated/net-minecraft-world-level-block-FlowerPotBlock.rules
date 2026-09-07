@@ -3,24 +3,6 @@
 # PlayerFlowerPotManipulateEvent
 file: net/minecraft/world/level/block/FlowerPotBlock.java
 anchor:
-    level.setBlock(pos, blockState, Block.UPDATE_ALL);
-insert:
-    // Paper start - Add PlayerFlowerPotManipulateEvent
-    org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
-    org.bukkit.inventory.ItemStack placedStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(stack);
-
-    io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent event = new io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent((org.bukkit.entity.Player) player.getBukkitEntity(), block, placedStack, true);
-    if (!event.callEvent()) {
-        // Update client
-        player.containerMenu.forceHeldSlot(hand);
-
-        return InteractionResult.CONSUME;
-    }
-    // Paper end - Add PlayerFlowerPotManipulateEvent
-
-# PlayerFlowerPotManipulateEvent
-file: net/minecraft/world/level/block/FlowerPotBlock.java
-anchor:
     if (!player.addItem(itemStack)) {
 insert:
     // Paper start - Add PlayerFlowerPotManipulateEvent

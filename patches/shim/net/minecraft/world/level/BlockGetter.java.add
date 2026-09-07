@@ -1,6 +1,0 @@
-// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
-
-// BlockGetter.clip
-    default BlockHitResult clip(ClipContext c, BlockPos pos) {
-        return clip(c, pos, null);
-    }

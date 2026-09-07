@@ -1,24 +1,5 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
-# callEntityBreedEvent
-file: net/minecraft/world/entity/animal/Fox.java
-anchor:
-    if (serverPlayer != null) {
-insert:
-    // CraftBukkit start - call EntityBreedEvent
-    fox.setAge(-24000);
-    fox.snapTo(this.animal.getX(), this.animal.getY(), this.animal.getZ(), 0.0F, 0.0F);
-    int experience = this.animal.getRandom().nextInt(7) + 1;
-    org.bukkit.event.entity.EntityBreedEvent entityBreedEvent = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityBreedEvent(fox, this.animal, this.partner, loveCause, this.animal.breedItem, experience);
-    if (entityBreedEvent.isCancelled()) {
-        this.animal.resetLove();
-        this.partner.resetLove();
-        return;
-    }
-    experience = entityBreedEvent.getExperience();
-    // CraftBukkit end - call EntityBreedEvent
-
-
 # callEntityChangeBlockEvent
 file: net/minecraft/world/entity/animal/Fox.java
 anchor:

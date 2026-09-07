@@ -1,9 +1,0 @@
-// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
-
-// LivingEntity.getExpReward
-    public int getExpReward(ServerLevel level, Entity entity) {
-        if (!level.getGameRules().get(GameRules.MOB_DROPS)) {
-            return 0;
-        }
-        return this.getDefaultExpToDrop();
-    }

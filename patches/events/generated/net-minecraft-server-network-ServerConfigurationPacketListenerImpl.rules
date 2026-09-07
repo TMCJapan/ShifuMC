@@ -1,8 +1,0 @@
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
-
-# PlayerConnectionInitialConfigureEvent
-file: net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
-anchor:
-    this.send(new ClientboundCustomPayloadPacket(new BrandPayload(this.server.getServerModName())));
-insert:
-    new io.papermc.paper.event.connection.configuration.PlayerConnectionInitialConfigureEvent(this.paperConnection).callEvent(); // Paper

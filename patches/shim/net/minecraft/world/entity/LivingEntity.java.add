@@ -1,7 +1,0 @@
-// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
-
-// LivingEntity.heal
-    public void heal(final float heal, final EntityRegainHealthEvent.RegainReason regainReason) {
-        // Paper start - Forward
-        this.heal(heal, regainReason, false);
-    }

@@ -1,6 +1,0 @@
-// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
-
-// (supertype).getBukkitSender
-    public org.bukkit.command.CommandSender getBukkitSender(CommandSourceStack wrapper) {
-        return this.console;
-    }

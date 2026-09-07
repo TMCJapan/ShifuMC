@@ -1,7 +1,0 @@
-// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
-
-// LivingEntity.setItemSlot
-    public void setItemSlot(EquipmentSlot slot, ItemStack stack, boolean silent) {
-        super.setItemSlot(slot, stack, silent);
-        this.noTickEquipmentDirty = true;
-    }

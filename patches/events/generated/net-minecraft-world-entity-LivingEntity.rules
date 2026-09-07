@@ -1,44 +1,5 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
-# callEntityPotionEffectChangeEvent
-file: net/minecraft/world/entity/LivingEntity.java
-anchor:
-    iterator.remove();
-insert:
-    // CraftBukkit start
-    EntityPotionEffectEvent event = CraftEventFactory.callEntityPotionEffectChangeEvent(this, mobEffectInstance, null, org.bukkit.event.entity.EntityPotionEffectEvent.Cause.EXPIRATION);
-    if (event.isCancelled()) {
-        continue;
-    }
-    // CraftBukkit end
-
-# EntityDropItemEvent
-file: net/minecraft/world/entity/LivingEntity.java
-anchor:
-            this.level().addFreshEntity(itemEntity);
-        }
-    }
-insert:
-    // CraftBukkit start
-    org.bukkit.event.entity.EntityDropItemEvent event = new org.bukkit.event.entity.EntityDropItemEvent(this.getBukkitEntity(), (org.bukkit.entity.Item) itemEntity.getBukkitEntity());
-    if (!event.callEvent()) {
-        return;
-    }
-    // CraftBukkit end
-
-# PlayerArmorChangeEvent
-file: net/minecraft/world/entity/LivingEntity.java
-anchor:
-    if (map == null) {
-insert:
-    // Paper start - EntityEquipmentChangedEvent, PlayerArmorChangeEvent
-    final org.bukkit.inventory.ItemStack oldItem = CraftItemStack.asBukkitCopy(itemStack);
-    final org.bukkit.inventory.ItemStack newItem = CraftItemStack.asBukkitCopy(itemBySlot);
-    if (this instanceof ServerPlayer && equipmentSlot.getType() == EquipmentSlot.Type.HUMANOID_ARMOR) {
-        new com.destroystokyo.paper.event.player.PlayerArmorChangeEvent((org.bukkit.entity.Player) this.getBukkitEntity(), com.destroystokyo.paper.event.player.PlayerArmorChangeEvent.SlotType.valueOf(equipmentSlot.name()), oldItem, newItem).callEvent();
-    }
-    // Paper end - EntityEquipmentChangedEvent, PlayerArmorChangeEvent
-
 # EntityMoveEvent
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:

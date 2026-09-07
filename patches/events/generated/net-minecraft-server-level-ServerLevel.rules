@@ -8,28 +8,6 @@ anchor:
 insert:
     org.bukkit.Bukkit.getPluginManager().callEvent(new org.bukkit.event.world.WorldSaveEvent(this.getWorld())); // CraftBukkit
 
-# BlockBreakProgressUpdateEvent
-file: net/minecraft/server/level/ServerLevel.java
-anchor:
-    for (ServerPlayer serverPlayer : this.server.getPlayerList().getPlayers()) {
-insert:
-    // CraftBukkit start
-    Player breakerPlayer = null;
-    Entity entity = this.getEntity(breakerId);
-    if (entity instanceof Player) breakerPlayer = (Player) entity;
-    // CraftBukkit end
-
-    // Paper start - Add BlockBreakProgressUpdateEvent
-    // If a plugin is using this method to send destroy packets for a client-side only entity id, no block progress occurred on the server.
-    // Hence, do not call the event.
-    if (entity != null) {
-        float progressFloat = Mth.clamp(progress, 0, 10) / 10.0f;
-        org.bukkit.craftbukkit.block.CraftBlock bukkitBlock = org.bukkit.craftbukkit.block.CraftBlock.at(this, pos);
-        new io.papermc.paper.event.block.BlockBreakProgressUpdateEvent(bukkitBlock, progressFloat, entity.getBukkitEntity())
-            .callEvent();
-    }
-    // Paper end - Add BlockBreakProgressUpdateEvent
-
 # MapInitializeEvent
 file: net/minecraft/server/level/ServerLevel.java
 anchor:

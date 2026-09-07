@@ -1,4 +1,0 @@
-// Paper のパッチから宣言だけを取ったもの。追加のみで、元の行は触らない。
-
-// StructurePlaceSettings.palette
-    public int palette = -1; // CraftBukkit - Set initial value so we know if the palette has been set forcefully

@@ -1,20 +1,5 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
-# EntityPoseChangeEvent
-file: net/minecraft/world/entity/Entity.java
-anchor:
-    this.entityData.set(DATA_POSE, pose);
-insert:
-    if (this.fixedPose) return; // Paper - Expand Pose API
-    // CraftBukkit start
-    if (pose == this.getPose()) {
-        return;
-    }
-    if (!this.generation) {
-        this.level.getCraftServer().getPluginManager().callEvent(new org.bukkit.event.entity.EntityPoseChangeEvent(this.getBukkitEntity(), org.bukkit.entity.Pose.values()[pose.ordinal()]));
-    }
-    // CraftBukkit end
-
 # callPlayerLeashEntityEvent
 file: net/minecraft/world/entity/Entity.java
 anchor:
@@ -41,16 +26,3 @@ insert:
         return InteractionResult.PASS;
     }
     // Paper end - EntityLeashEvent
-
-# callToggleSwimEvent
-file: net/minecraft/world/entity/Entity.java
-anchor:
-    this.setSharedFlag(FLAG_SWIMMING, swimming);
-insert:
-    // CraftBukkit start
-    if (this.valid && this.isSwimming() != swimming && this instanceof net.minecraft.world.entity.LivingEntity) {
-        if (org.bukkit.craftbukkit.event.CraftEventFactory.callToggleSwimEvent((net.minecraft.world.entity.LivingEntity) this, swimming).isCancelled()) {
-            return;
-        }
-    }
-    // CraftBukkit end
