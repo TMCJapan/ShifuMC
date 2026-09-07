@@ -43,6 +43,11 @@ SHIFU_PAPER=/d/.pw11 sh tools/setup.sh
 1.21.11 では `MinecraftServer.getServer()` が返す `SERVER` の代入、Bukkit のスコアボード、
 watchdog の tick、プラグインメッセージの取り込みがこの形で落ちていた。
 
+`reanchor.py` が「似た行が無い」で諦めたものは
+`python tools/reanchor_via_paper.py patches/events <古い版の patches/sources>` に回す。
+Paper のハンクをたどって新しい版の位置を探す道具で、26.2 → 1.21.11 では
+規則の 51% で候補を出し、そのうち 56% が人の選んだ位置を上位 3 件に含んでいた。
+
 ## 環境
 
 前提は Windows + Git Bash (MSYS)、JDK 25、Python 3.12。
