@@ -298,10 +298,10 @@ insert:
 
 # DragonEggFormEvent。登録があれば vanilla の「初回だけ置く」の代わりに発火層が置く
 #
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/dimension/end/EnderDragonFight.java.patch
-file: net/minecraft/world/level/dimension/end/EnderDragonFight.java
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/dimension/end/EndDragonFight.java.patch
+file: net/minecraft/world/level/dimension/end/EndDragonFight.java
 anchor:
-    if (!this.hasPreviouslyKilledDragon) {
+    if (!this.previouslyKilled) {
     this.level
     .setBlockAndUpdate(
     this.level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, EndPodiumFeature.getLocation(this.origin)),
@@ -312,7 +312,7 @@ insert:
     if (dev.shifu.event.PlayerEvents.silentDragonEgg()) {
 insert-after:
     } else {
-        dev.shifu.event.PlayerEvents.dragonEggForm(this, this.level, this.origin, this.hasPreviouslyKilledDragon);
+        dev.shifu.event.PlayerEvents.dragonEggForm(this, this.level, this.origin, this.previouslyKilled);
     }
 
 # ============================================================ 世界の境界

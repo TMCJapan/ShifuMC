@@ -78,27 +78,18 @@ insert:
 # BlockDispenseEvent(シュルカーボックス)
 file: net/minecraft/core/dispenser/ShulkerBoxDispenseBehavior.java
 anchor:
-    Direction clickedFace = source.level().isEmptyBlock(relativePos.below()) ? facing : Direction.UP;
+    Direction direction1 = blockSource.level().isEmptyBlock(blockPos.below()) ? direction : Direction.UP;
 insert-after:
-    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, relativePos)) {
-        return item;
-    }
-
-# BlockDispenseEvent(スポーンエッグ)
-file: net/minecraft/core/dispenser/SpawnEggItemBehavior.java
-anchor:
-    try {
-insert:
-    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item)) {
+    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, blockPos)) {
         return item;
     }
 
 # BlockDispenseArmorEvent(装備を着せる)
 file: net/minecraft/core/dispenser/EquipmentDispenseItemBehavior.java
 anchor:
-    ItemStack equip = dispensed.split(1);
+    ItemStack itemStack = item.split(1);
 insert:
-    if (!dev.shifu.event.BlockEvents.dispenseArmor(blockSource, item, blockPos)) {
+    if (!dev.shifu.event.BlockEvents.dispenseArmor(blockSource, item, livingEntity)) {
         return false;
     }
 
@@ -124,7 +115,7 @@ insert:
 # BlockDispenseEvent(防具立て)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    PostSpawnProcessor<ArmorStand> postSpawnConfig = EntityType.appendDefaultStackConfig(
+    Consumer<ArmorStand> consumer = EntityType.appendDefaultStackConfig(
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(blockSource, item)) {
         return item;
@@ -143,7 +134,7 @@ insert:
 # BlockDispenseEvent(TNT)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    PrimedTnt tnt = new PrimedTnt(level, target.getX() + 0.5, target.getY(), target.getZ() + 0.5, null);
+    PrimedTnt primedTnt = new PrimedTnt(serverLevel, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5, null);
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, blockPos)) {
         return item;
@@ -152,7 +143,7 @@ insert:
 # BlockDispenseEvent(ウィザースケルトンの頭)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (level.isEmptyBlock(target) && WitherSkullBlock.canSpawnMob(level, target, dispensed)) {
+    if (level.isEmptyBlock(blockPos) && WitherSkullBlock.canSpawnMob(level, blockPos, item)) {
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, blockPos)) {
         this.setSuccess(false);
@@ -162,7 +153,7 @@ insert:
 # BlockDispenseEvent(くり抜かれたカボチャ)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (level.isEmptyBlock(target) && pumpkinBlock.canSpawnGolem(level, target)) {
+    if (level.isEmptyBlock(blockPos) && carvedPumpkinBlock.canSpawnGolem(level, blockPos)) {
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, blockPos)) {
         this.setSuccess(false);
@@ -172,7 +163,8 @@ insert:
 # BlockDispenseEvent(ガラス瓶で蜂の巣)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (state.is(BlockTags.BEEHIVES, s -> s.hasProperty(BeehiveBlock.HONEY_LEVEL) && s.getBlock() instanceof BeehiveBlock)
+    if (blockState.is(
+    BlockTags.BEEHIVES,
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, blockPos)) {
         return item;
@@ -191,9 +183,9 @@ insert:
 # BlockDispenseArmorEvent(ブラシでアルマジロ)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    for (Armadillo armadillo : armadillos) {
+    for (Armadillo armadillo : entitiesOfClass) {
 insert:
-    if (!dev.shifu.event.BlockEvents.dispenseArmor(blockSource, item, armadillos.get(0))) {
+    if (!dev.shifu.event.BlockEvents.dispenseArmor(blockSource, item, entitiesOfClass.get(0))) {
         this.setSuccess(false);
         return item;
     }
@@ -211,11 +203,11 @@ insert:
 # BlockDispenseEvent(水入り瓶で泥)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (!level.getBlockState(target).is(BlockTags.CONVERTABLE_TO_MUD)) {
-        return this.defaultDispenseItemBehavior.dispense(source, dispensed);
-    }
+    if (!serverLevel.getBlockState(blockPos1).is(BlockTags.CONVERTABLE_TO_MUD)) {
+        return this.defaultDispenseItemBehavior.dispense(blockSource, item);
+    } else {
 insert-after:
-    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, blockPos)) {
+    if (!dev.shifu.event.BlockEvents.dispense(blockSource, item, blockPos1)) {
         return item;
     }
 
@@ -1056,29 +1048,29 @@ insert:
 #
 # Paper は lowerFillLevel に (entity, reason) を足して渡す。Shifu は呼ぶ直前に置く。
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/level/block/LayeredCauldronBlock.java.patch
-#            paper-server patches/sources/net/minecraft/core/cauldron/CauldronInteractions.java.patch
-file: net/minecraft/core/cauldron/CauldronInteractions.java
+#            paper-server patches/sources/net/minecraft/core/cauldron/CauldronInteraction.java.patch
+file: net/minecraft/core/cauldron/CauldronInteraction.java
 anchor:
-    player.awardStat(Stats.ITEM_USED.get(usedItem));
+    player.awardStat(Stats.ITEM_USED.get(item));
     LayeredCauldronBlock.lowerFillLevel(state, level, pos);
 insert:
     dev.shifu.event.BlockEvents.cauldronCause(player, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.BOTTLE_FILL);
 
-file: net/minecraft/core/cauldron/CauldronInteractions.java
+file: net/minecraft/core/cauldron/CauldronInteraction.java
 anchor:
     player.awardStat(Stats.CLEAN_SHULKER_BOX);
     LayeredCauldronBlock.lowerFillLevel(state, level, pos);
 insert:
     dev.shifu.event.BlockEvents.cauldronCause(player, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.SHULKER_WASH);
 
-file: net/minecraft/core/cauldron/CauldronInteractions.java
+file: net/minecraft/core/cauldron/CauldronInteraction.java
 anchor:
     player.awardStat(Stats.CLEAN_BANNER);
     LayeredCauldronBlock.lowerFillLevel(state, level, pos);
 insert:
     dev.shifu.event.BlockEvents.cauldronCause(player, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.BANNER_WASH);
 
-file: net/minecraft/core/cauldron/CauldronInteractions.java
+file: net/minecraft/core/cauldron/CauldronInteraction.java
 anchor:
     player.awardStat(Stats.CLEAN_ARMOR);
     LayeredCauldronBlock.lowerFillLevel(state, level, pos);
@@ -1138,30 +1130,30 @@ insert:
 
 # ------------------------------------------------------------ 鍾乳石が伸びる
 #
-# Paper は createSpeleothem に source を足して渡す。Shifu は呼ぶ直前に置く。
-file: net/minecraft/world/level/block/SpeleothemBlock.java
+# Paper は createDripstone に source を足して渡す。Shifu は呼ぶ直前に置く。
+file: net/minecraft/world/level/block/PointedDripstoneBlock.java
 anchor:
-    this.createSpeleothem(level, targetPos, growToDirection, SpeleothemThickness.TIP);
+    createDripstone(server, blockPos, direction, DripstoneThickness.TIP);
 insert:
-    dev.shifu.event.BlockEvents.spreadSource(growFromPos);
+    dev.shifu.event.BlockEvents.spreadSource(pos);
 
-file: net/minecraft/world/level/block/SpeleothemBlock.java
+file: net/minecraft/world/level/block/PointedDripstoneBlock.java
 anchor:
-    this.createSpeleothem(level, stalactitePos, Direction.DOWN, SpeleothemThickness.TIP_MERGE);
+    createDripstone(level, blockPos1, Direction.DOWN, DripstoneThickness.TIP_MERGE);
 insert:
-    dev.shifu.event.BlockEvents.spreadSource(tipPos);
+    dev.shifu.event.BlockEvents.spreadSource(pos);
 
-file: net/minecraft/world/level/block/SpeleothemBlock.java
+file: net/minecraft/world/level/block/PointedDripstoneBlock.java
 anchor:
-    this.createSpeleothem(level, stalagmitePos, Direction.UP, SpeleothemThickness.TIP_MERGE);
+    createDripstone(level, blockPos, Direction.UP, DripstoneThickness.TIP_MERGE);
 insert:
-    dev.shifu.event.BlockEvents.spreadSource(tipPos);
+    dev.shifu.event.BlockEvents.spreadSource(pos);
 
-file: net/minecraft/world/level/block/SpeleothemBlock.java
+file: net/minecraft/world/level/block/PointedDripstoneBlock.java
 anchor:
-    level.setBlock(pos, state, Block.UPDATE_ALL);
+    level.setBlock(pos, blockState, Block.UPDATE_ALL);
 insert:
-    if (dev.shifu.event.BlockEvents.spreadFromSource(level, pos, state)) {
+    if (dev.shifu.event.BlockEvents.spreadFromSource(level, pos, blockState)) {
 insert-after:
     }
 
@@ -1290,6 +1282,6 @@ insert-after:
 # ここで MAIN_HAND を置く(ItemEvents 側の求め)。
 file: net/minecraft/world/level/block/FenceBlock.java
 anchor:
-        return !level.isClientSide() ? LeadItem.bindPlayerMobs(player, level, pos) : InteractionResult.PASS;
+        return (InteractionResult)(!level.isClientSide() ? LeadItem.bindPlayerMobs(player, level, pos) : InteractionResult.PASS);
 insert:
     dev.shifu.event.ItemEvents.leashHand(player, net.minecraft.world.InteractionHand.MAIN_HAND);

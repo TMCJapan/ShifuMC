@@ -429,21 +429,19 @@ file: net/minecraft/world/entity/decoration/ArmorStand.java
 anchor:
     this.kill(level);
     return false;
-    }
-
-    if (this.isInvulnerableTo(level, source) || this.invisible || this.isMarker()) {
+    } else if (this.isInvulnerableTo(level, damageSource) || this.invisible || this.isMarker()) {
 insert:
-    if (dev.shifu.event.EntityEvents.damageCancelled(this, source, damage, true, false)) {
+    if (dev.shifu.event.EntityEvents.damageCancelled(this, damageSource, amount, true, false)) {
         return false;
     }
-    dev.shifu.event.EntityEvents.armorStandDeathSource(source);
+    dev.shifu.event.EntityEvents.armorStandDeathSource(damageSource);
 
 # EntityDamageEvent(爆発)
 file: net/minecraft/world/entity/decoration/ArmorStand.java
 anchor:
-    if (source.is(DamageTypeTags.IS_EXPLOSION)) {
+    } else if (damageSource.is(DamageTypeTags.IS_EXPLOSION)) {
 insert-after:
-    if (dev.shifu.event.EntityEvents.damageCancelled(this, source, damage, true, false)) {
+    if (dev.shifu.event.EntityEvents.damageCancelled(this, damageSource, amount, true, false)) {
         return false;
     }
 
@@ -506,7 +504,7 @@ insert-after:
 # PlayerItemFrameChangeEvent(PLACE)
 file: net/minecraft/world/entity/decoration/ItemFrame.java
 anchor:
-    this.setItem(itemStack);
+    this.setItem(itemStack, false);
 insert:
     final int shifuFrame = dev.shifu.event.EntityEvents.frameChange(this, player, itemStack);
     if (shifuFrame == 0) {
@@ -589,7 +587,7 @@ file: net/minecraft/world/entity/player/Player.java
 anchor:
     if (this.cannotAttack(target)) {
         return false;
-    }
+    } else {
 insert-after:
     if (!dev.shifu.event.EntityEvents.preAttack(this, target)) {
         return false;
@@ -604,12 +602,12 @@ insert:
 # EntityDamageEvent(飛び道具を弾く)。deflect の前に出す。
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-    if (entity.is(EntityTypeTags.REDIRECTABLE_PROJECTILE)
-        && entity instanceof Projectile projectile
+    if (target.getType().is(EntityTypeTags.REDIRECTABLE_PROJECTILE)
+        && target instanceof Projectile projectile
         && projectile.deflect(ProjectileDeflection.AIM_DEFLECT, this, EntityReference.of(this), true)) {
 insert:
-    if (dev.shifu.event.EntityEvents.deflectListening() && entity.is(EntityTypeTags.REDIRECTABLE_PROJECTILE)
-        && entity instanceof Projectile && !dev.shifu.event.EntityEvents.deflectAllowed(this, entity)) {
+    if (dev.shifu.event.EntityEvents.deflectListening() && target.getType().is(EntityTypeTags.REDIRECTABLE_PROJECTILE)
+        && target instanceof Projectile && !dev.shifu.event.EntityEvents.deflectAllowed(this, target)) {
         return false;
     }
 
@@ -864,12 +862,14 @@ insert:
 # EntityCombustByBlockEvent に載せる「燃やしたブロック」を覚える。
 # Paper は Entity.lastLavaContact という欄に同じものを入れる。入れるのは登録があるときだけ。
 #
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/EntityFluidInteraction.java.patch
-file: net/minecraft/world/entity/EntityFluidInteraction.java
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/Entity.java.patch:1708
+file: net/minecraft/world/entity/Entity.java
 anchor:
-    tracker.accumulateCurrent(flow);
-insert:
-    dev.shifu.event.EntityEvents.lavaContact(entity, fluidState, mutablePos);
+    vec3 = vec3.add(flow);
+    i++;
+    }
+insert-after:
+    dev.shifu.event.EntityEvents.lavaContact(this, fluidState, mutableBlockPos);
 
 # EntityExhaustionEvent の理由。Paper は causeFoodExhaustion に引数を足して渡す。
 # 置いていない経路(泳ぐ・走る・跳ぶ・空腹の効果・回復・ブロックを壊す・エンチャント)は UNKNOWN。

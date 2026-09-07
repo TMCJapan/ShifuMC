@@ -70,9 +70,9 @@ insert:
     }
 
 # ディスペンサーの火打ち石
-file: net/minecraft/core/dispenser/FlintAndSteelDispenseItemBehavior.java
+file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (TntBlock.prime(level, targetPos)) {
+    if (TntBlock.prime(serverLevel, blockPos)) {
 insert:
     dev.shifu.event.ShifuEvents.tntPrimeCause(org.bukkit.event.block.TNTPrimeEvent.PrimeCause.DISPENSER, null, null);
 

@@ -448,9 +448,9 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/pig/Pig.java.patch(callPigZapEvent)
 file: net/minecraft/world/entity/animal/pig/Pig.java
 anchor:
-    ZombifiedPiglin zombifiedPiglin = this.convertTo(EntityTypes.ZOMBIFIED_PIGLIN, ConversionParams.single(this, false, true), zp -> {
+    ZombifiedPiglin zombifiedPiglin = this.convertTo(EntityType.ZOMBIFIED_PIGLIN, ConversionParams.single(this, false, true), mob -> {
 insert:
-    if (!dev.shifu.event.AnimalEvents.pigZap(this, lightningBolt, level)) {
+    if (!dev.shifu.event.AnimalEvents.pigZap(this, lightning, level)) {
         return;
     }
 
@@ -667,14 +667,14 @@ insert:
 # キノコウシを刈る
 file: net/minecraft/world/entity/animal/cow/MushroomCow.java
 anchor:
-    this.convertTo(EntityTypes.COW, ConversionParams.single(this, false, false), cow -> {
+    this.convertTo(EntityType.COW, ConversionParams.single(this, false, false), cow -> {
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.SHEARED);
 
 # オタマジャクシがカエルになる
 file: net/minecraft/world/entity/animal/frog/Tadpole.java
 anchor:
-    this.convertTo(EntityTypes.FROG, ConversionParams.single(this, false, false), frog -> {
+    this.convertTo(EntityType.FROG, ConversionParams.single(this, false, false), mob -> {
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.METAMORPHOSIS);
 
@@ -695,7 +695,7 @@ insert:
 # スケルトンがストレイになる
 file: net/minecraft/world/entity/monster/skeleton/Skeleton.java
 anchor:
-    this.convertTo(EntityTypes.STRAY, ConversionParams.single(this, true, true), stray -> {
+    this.convertTo(EntityType.STRAY, ConversionParams.single(this, true, true), mob -> {
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.FROZEN);
 
@@ -723,7 +723,7 @@ insert:
 # 村人が雷でウィッチになる
 file: net/minecraft/world/entity/npc/villager/Villager.java
 anchor:
-    Witch witch = this.convertTo(EntityTypes.WITCH, ConversionParams.single(this, false, false), w -> {
+    Witch witch = this.convertTo(EntityType.WITCH, ConversionParams.single(this, false, false), witch1 -> {
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.LIGHTNING);
 
@@ -991,7 +991,7 @@ insert:
 # ハスク
 file: net/minecraft/world/entity/monster/zombie/Husk.java
 anchor:
-    livingEntity.addEffect(new MobEffectInstance(MobEffects.HUNGER, 140 * (int)difficulty), this);
+    ((LivingEntity)target).addEffect(new MobEffectInstance(MobEffects.HUNGER, 140 * (int)effectiveDifficulty), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
@@ -1007,7 +1007,7 @@ insert-after:
 # 洞窟グモ
 file: net/minecraft/world/entity/monster/spider/CaveSpider.java
 anchor:
-    livingEntity.addEffect(new MobEffectInstance(MobEffects.POISON, poisonTime * 20, 0), this);
+    ((LivingEntity)target).addEffect(new MobEffectInstance(MobEffects.POISON, i * 20, 0), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
@@ -1021,7 +1021,7 @@ insert:
 # ウィザースケルトン
 file: net/minecraft/world/entity/monster/skeleton/WitherSkeleton.java
 anchor:
-    livingEntity.addEffect(new MobEffectInstance(MobEffects.WITHER, 200), this);
+    ((LivingEntity)target).addEffect(new MobEffectInstance(MobEffects.WITHER, 200), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 

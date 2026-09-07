@@ -148,10 +148,10 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch:1989
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    this.player.containerMenu.clicked(slotIndex, packet.buttonNum(), packet.containerInput(), this.player);
+    this.player.containerMenu.clicked(slotNum, packet.buttonNum(), packet.clickType(), this.player);
 insert:
     final org.bukkit.event.inventory.InventoryClickEvent shifuClick =
-            dev.shifu.event.ShifuEvents.inventoryClick(this.player, packet, slotIndex);
+            dev.shifu.event.ShifuEvents.inventoryClick(this.player, packet, slotNum);
     if (dev.shifu.event.ShifuEvents.containerChanged(this.player, shifuClick)) {
         this.player.containerMenu.resumeRemoteUpdates();
         this.player.containerMenu.broadcastFullState();

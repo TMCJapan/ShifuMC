@@ -74,10 +74,10 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/GrindstoneMenu.java.patch(BlockExpEvent)
 file: net/minecraft/world/inventory/GrindstoneMenu.java
 anchor:
-    ExperienceOrb.award(serverLevel, Vec3.atCenterOf(pos), this.getExperienceAmount(level));
+    ExperienceOrb.award((ServerLevel)level, Vec3.atCenterOf(blockPos), this.getExperienceAmount(level));
 insert:
     if (!dev.shifu.event.ItemEvents.grindstoneExpListening()
-            || dev.shifu.event.ItemEvents.grindstoneExp(serverLevel, pos, this.getExperienceAmount(level))) {
+            || dev.shifu.event.ItemEvents.grindstoneExp((net.minecraft.server.level.ServerLevel) level, blockPos, this.getExperienceAmount(level))) {
 insert-after:
     }
 
@@ -292,11 +292,16 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/DyeItem.java.patch
 file: net/minecraft/world/item/DyeItem.java
 anchor:
-    sheep.setColor(dyeColor);
+    sheep.setColor(this.dyeColor);
 insert:
-    dyeColor = dev.shifu.event.ItemEvents.dyeWool(sheep, player, dyeColor);
-    if (dyeColor == null) {
+    final net.minecraft.world.item.DyeColor shifuDye = dev.shifu.event.ItemEvents.dyeWool(sheep, player, this.dyeColor);
+    if (shifuDye == null) {
         return InteractionResult.PASS;
+    }
+    if (shifuDye != this.dyeColor) {
+        sheep.setColor(shifuDye);
+    } else {
+insert-after:
     }
 
 # ---------------------------------------------------------------- PlayerLaunchProjectileEvent(投擲物 5 種)
@@ -324,10 +329,10 @@ insert-after:
 
 file: net/minecraft/world/item/SnowballItem.java
 anchor:
-    Projectile.spawnProjectileFromRotation(Snowball::new, serverLevel, itemStack, player, 0.0F, 1.5F, 1.0F);
+    Projectile.spawnProjectileFromRotation(Snowball::new, serverLevel, itemInHand, player, 0.0F, PROJECTILE_SHOOT_POWER, 1.0F);
 insert:
     if (dev.shifu.event.ItemEvents.launchListening()) {
-        if (!dev.shifu.event.ItemEvents.launch(Snowball::new, serverLevel, itemStack, player, hand, 0.0F, 1.5F, 1.0F,
+        if (!dev.shifu.event.ItemEvents.launch(Snowball::new, serverLevel, itemInHand, player, hand, 0.0F, PROJECTILE_SHOOT_POWER, 1.0F,
                 SoundEvents.SNOWBALL_THROW, SoundSource.NEUTRAL, this)) {
             return InteractionResult.FAIL;
         }
@@ -402,10 +407,10 @@ insert-after:
 
 file: net/minecraft/world/item/EnderpearlItem.java
 anchor:
-    Projectile.spawnProjectileFromRotation(ThrownEnderpearl::new, serverLevel, itemStack, player, 0.0F, 1.5F, 1.0F);
+    Projectile.spawnProjectileFromRotation(ThrownEnderpearl::new, serverLevel, itemInHand, player, 0.0F, PROJECTILE_SHOOT_POWER, 1.0F);
 insert:
     if (dev.shifu.event.ItemEvents.launchListening()) {
-        if (!dev.shifu.event.ItemEvents.launch(ThrownEnderpearl::new, serverLevel, itemStack, player, hand, 0.0F, 1.5F, 1.0F,
+        if (!dev.shifu.event.ItemEvents.launch(ThrownEnderpearl::new, serverLevel, itemInHand, player, hand, 0.0F, PROJECTILE_SHOOT_POWER, 1.0F,
                 SoundEvents.ENDER_PEARL_THROW, SoundSource.NEUTRAL, this)) {
             return InteractionResult.FAIL;
         }
@@ -464,10 +469,10 @@ insert-after:
 # 投げポーションに音は無い
 file: net/minecraft/world/item/ThrowablePotionItem.java
 anchor:
-    Projectile.spawnProjectileFromRotation(this::createPotion, serverLevel, itemStack, player, -20.0F, 0.5F, 1.0F);
+    Projectile.spawnProjectileFromRotation(this::createPotion, serverLevel, itemInHand, player, -20.0F, PROJECTILE_SHOOT_POWER, 1.0F);
 insert:
     if (dev.shifu.event.ItemEvents.launchListening()) {
-        if (!dev.shifu.event.ItemEvents.launch(this::createPotion, serverLevel, itemStack, player, hand, -20.0F, 0.5F, 1.0F,
+        if (!dev.shifu.event.ItemEvents.launch(this::createPotion, serverLevel, itemInHand, player, hand, -20.0F, PROJECTILE_SHOOT_POWER, 1.0F,
                 null, null, this)) {
             return InteractionResult.FAIL;
         }
