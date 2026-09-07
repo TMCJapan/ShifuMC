@@ -1,0 +1,10 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callPlayerInteractEvent
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+anchor:
+    this.player.connection.send(new ClientboundBlockUpdatePacket(pos, this.level.getBlockState(pos)));
+    this.debugLogging(pos, false, sequence, "may not interact");
+insert:
+    // CraftBukkit start - fire PlayerInteractEvent
+    org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerInteractEvent(this.player, org.bukkit.event.block.Action.LEFT_CLICK_BLOCK, pos, face, this.player.getInventory().getSelectedItem(), InteractionHand.MAIN_HAND);

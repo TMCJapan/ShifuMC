@@ -1,0 +1,13 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callBlockPhysicsEvent
+file: net/minecraft/world/level/block/DoublePlantBlock.java
+anchor:
+    DoubleBlockHalf doubleBlockHalf = state.getValue(HALF);
+    if (doubleBlockHalf == DoubleBlockHalf.UPPER) {
+insert:
+    // CraftBukkit start
+    if (((net.minecraft.server.level.ServerLevel)level).hasPhysicsEvent && org.bukkit.craftbukkit.event.CraftEventFactory.callBlockPhysicsEvent(level, pos).isCancelled()) { // Paper
+        return;
+    }
+    // CraftBukkit end

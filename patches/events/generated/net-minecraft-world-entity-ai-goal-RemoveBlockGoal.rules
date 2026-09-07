@@ -1,0 +1,12 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityInteractEvent
+file: net/minecraft/world/entity/ai/goal/RemoveBlockGoal.java
+anchor:
+    level.removeBlock(posWithBlock, false);
+insert:
+    // CraftBukkit start - Step on eggs
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityInteractEvent(this.removerMob, org.bukkit.craftbukkit.block.CraftBlock.at(level, posWithBlock))) {
+        return;
+    }
+    // CraftBukkit end

@@ -1,0 +1,14 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# EntityDropItemEvent
+file: net/minecraft/world/entity/ai/behavior/BehaviorUtils.java
+anchor:
+    entity.level().addFreshEntity(itemEntity);
+insert:
+    // CraftBukkit start
+    org.bukkit.event.entity.EntityDropItemEvent event = new org.bukkit.event.entity.EntityDropItemEvent(entity.getBukkitEntity(), (org.bukkit.entity.Item) itemEntity.getBukkitEntity());
+    itemEntity.level().getCraftServer().getPluginManager().callEvent(event);
+    if (event.isCancelled()) {
+        return;
+    }
+    // CraftBukkit end

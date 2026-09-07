@@ -1,5 +1,16 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
+# ExperienceOrbMergeEvent
+file: net/minecraft/world/entity/ExperienceOrb.java
+anchor:
+    this.count = this.count + orb.count;
+insert:
+    // Paper start - call orb merge event
+    if (!new com.destroystokyo.paper.event.entity.ExperienceOrbMergeEvent((org.bukkit.entity.ExperienceOrb) this.getBukkitEntity(), (org.bukkit.entity.ExperienceOrb) orb.getBukkitEntity()).callEvent()) {
+        return;
+    }
+    // Paper end - call orb merge event
+
 # callPlayerItemMendEvent
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:

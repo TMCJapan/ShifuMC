@@ -1,0 +1,17 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityTargetLivingEvent
+file: net/minecraft/world/entity/ai/behavior/PrepareRamNearestTarget.java
+anchor:
+    .ifPresent(entity1 -> this.chooseRamPosition(entity, entity1));
+insert:
+    // CraftBukkit start
+    .map((livingEntity) -> {
+        org.bukkit.event.entity.EntityTargetEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTargetLivingEvent(entity, livingEntity, (livingEntity instanceof net.minecraft.server.level.ServerPlayer) ? org.bukkit.event.entity.EntityTargetEvent.TargetReason.CLOSEST_PLAYER : org.bukkit.event.entity.EntityTargetEvent.TargetReason.CLOSEST_ENTITY);
+        if (event.isCancelled() || event.getTarget() == null) {
+            return null;
+        }
+        livingEntity = ((org.bukkit.craftbukkit.entity.CraftLivingEntity) event.getTarget()).getHandle();
+        return livingEntity;
+    })
+    // CraftBukkit end

@@ -1,0 +1,34 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# handleNonLivingEntityDamageEvent
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+anchor:
+    if (this.isOnFire()) {
+insert:
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.handleNonLivingEntityDamageEvent(this, damageSource, amount, true, this.invisible)) {
+        return false;
+    }
+    // CraftBukkit end
+
+# handleNonLivingEntityDamageEvent
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+anchor:
+    this.causeDamage(level, damageSource, 4.0F);
+insert:
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.handleNonLivingEntityDamageEvent(this, damageSource, amount, true, this.invisible)) {
+        return false;
+    }
+    // CraftBukkit end
+
+# handleNonLivingEntityDamageEvent
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+anchor:
+    boolean isCanBreakArmorStand = damageSource.is(DamageTypeTags.CAN_BREAK_ARMOR_STAND);
+insert:
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.handleNonLivingEntityDamageEvent(this, damageSource, amount, true, this.invisible)) {
+        return false;
+    }
+    // CraftBukkit end

@@ -1,5 +1,16 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
+# callEntityChangeBlockEvent
+file: net/minecraft/world/entity/monster/Ravager.java
+anchor:
+    flag = serverLevel.destroyBlock(blockPos, true, this) || flag;
+insert:
+    // CraftBukkit start
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(this, blockPos, blockState.getFluidState().createLegacyBlock())) { // Paper - fix wrong block state
+        continue;
+    }
+    // CraftBukkit end
+
 # EntityJumpEvent
 file: net/minecraft/world/entity/monster/Ravager.java
 anchor:

@@ -1,0 +1,12 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callBlockFadeEvent
+file: net/minecraft/world/level/block/CoralWallFanBlock.java
+anchor:
+    level.setBlock(pos, this.deadBlock.defaultBlockState().setValue(WATERLOGGED, false).setValue(FACING, state.getValue(FACING)), Block.UPDATE_CLIENTS);
+insert:
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralWallFanBlock.WATERLOGGED, false).setValue(CoralWallFanBlock.FACING, state.getValue(CoralWallFanBlock.FACING))).isCancelled()) {
+        return;
+    }
+    // CraftBukkit end

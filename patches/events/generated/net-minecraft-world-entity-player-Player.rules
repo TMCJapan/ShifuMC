@@ -12,3 +12,18 @@ insert:
         }
     }
     // Paper end - Add PlayerDeepSleepEvent
+
+# callToggleGlideEvent
+file: net/minecraft/world/entity/player/Player.java
+anchor:
+    this.setSharedFlag(Entity.FLAG_FALL_FLYING, true);
+insert:
+    // CraftBukkit start
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callToggleGlideEvent(this, true).isCancelled()) {
+insert-after:
+    } else {
+        // SPIGOT-5542: must toggle like below
+        this.setSharedFlag(Entity.FLAG_FALL_FLYING, true);
+        this.setSharedFlag(Entity.FLAG_FALL_FLYING, false);
+    }
+    // CraftBukkit end

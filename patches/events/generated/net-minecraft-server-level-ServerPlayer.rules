@@ -21,6 +21,37 @@ insert:
     }
     // CraftBukkit end
 
+# PlayerChangedWorldEvent
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+        return this;
+    }
+insert:
+    // CraftBukkit start
+    org.bukkit.event.player.PlayerChangedWorldEvent changeEvent = new org.bukkit.event.player.PlayerChangedWorldEvent(this.getBukkitEntity(), serverLevel.getWorld());
+    this.level().getCraftServer().getPluginManager().callEvent(changeEvent);
+    // CraftBukkit end
+    // Paper start - Reset shield blocking on dimension change
+    if (this.isBlocking()) {
+        this.stopUsingItem();
+    }
+    // Paper end - Reset shield blocking on dimension change
+
+# PlayerBedLeaveEvent
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    if (this.isSleeping()) {
+        this.level().getChunkSource().sendToTrackingPlayersAndSelf(this, new ClientboundAnimatePacket(this, ClientboundAnimatePacket.WAKE_UP));
+insert:
+    if (!this.isSleeping()) return; // CraftBukkit - Can't leave bed if not in one!
+    // CraftBukkit start - fire PlayerBedLeaveEvent
+    org.bukkit.block.Block bed = org.bukkit.craftbukkit.block.CraftBlock.at(this.level(), this.getSleepingPos().orElse(this.blockPosition()));
+    org.bukkit.event.player.PlayerBedLeaveEvent event = new org.bukkit.event.player.PlayerBedLeaveEvent(this.getBukkitEntity(), bed, true);
+    if (!event.callEvent()) {
+        return;
+    }
+    // CraftBukkit end
+
 # callInventoryOpenEventWithTitle
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
@@ -53,3 +84,24 @@ insert:
         }
     }
     // CraftBukkit end
+
+# PlayerStartSpectatingEntityEvent, PlayerStopSpectatingEntityEvent
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    if (this.camera.level() instanceof ServerLevel serverLevel) {
+insert:
+    // Paper start - Add PlayerStartSpectatingEntityEvent and PlayerStopSpectatingEntity
+    if (this.camera == this) {
+        com.destroystokyo.paper.event.player.PlayerStopSpectatingEntityEvent playerStopSpectatingEntityEvent = new com.destroystokyo.paper.event.player.PlayerStopSpectatingEntityEvent(this.getBukkitEntity(), camera.getBukkitEntity());
+        if (!playerStopSpectatingEntityEvent.callEvent()) {
+            this.camera = camera; // rollback camera entity again
+            return;
+        }
+    } else {
+        com.destroystokyo.paper.event.player.PlayerStartSpectatingEntityEvent playerStartSpectatingEntityEvent = new com.destroystokyo.paper.event.player.PlayerStartSpectatingEntityEvent(this.getBukkitEntity(), camera.getBukkitEntity(), entityToSpectate.getBukkitEntity());
+        if (!playerStartSpectatingEntityEvent.callEvent()) {
+            this.camera = camera; // rollback camera entity again
+            return;
+        }
+    }
+    // Paper end - Add PlayerStartSpectatingEntityEvent and PlayerStopSpectatingEntity

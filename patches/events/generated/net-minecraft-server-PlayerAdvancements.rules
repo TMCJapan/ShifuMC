@@ -1,5 +1,17 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
+# PlayerAdvancementCriterionGrantEvent
+file: net/minecraft/server/PlayerAdvancements.java
+anchor:
+    this.unregisterListeners(advancement);
+insert:
+    // Paper start - Add PlayerAdvancementCriterionGrantEvent
+    if (!new com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent(this.player.getBukkitEntity(), advancement.toBukkit(), criterionKey).callEvent()) {
+        orStartProgress.revokeProgress(criterionKey);
+        return false;
+    }
+    // Paper end - Add PlayerAdvancementCriterionGrantEvent
+
 # PlayerAdvancementDoneEvent
 file: net/minecraft/server/PlayerAdvancements.java
 anchor:

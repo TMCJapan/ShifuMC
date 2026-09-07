@@ -1,0 +1,12 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# handleEntitySpellCastEvent
+file: net/minecraft/world/entity/monster/illager/SpellcasterIllager.java
+anchor:
+    this.performSpellCasting();
+insert:
+    // CraftBukkit start
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleEntitySpellCastEvent(SpellcasterIllager.this, this.getSpell())) {
+        return;
+    }
+    // CraftBukkit end

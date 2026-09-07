@@ -29,3 +29,14 @@ insert:
             .callEvent();
     }
     // Paper end - Add BlockBreakProgressUpdateEvent
+
+# MapInitializeEvent
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    this.getServer().overworld().getDataStorage().set(MapItemSavedData.type(mapId), data);
+insert:
+    // CraftBukkit start
+    data.id = mapId;
+    org.bukkit.event.server.MapInitializeEvent event = new org.bukkit.event.server.MapInitializeEvent(data.mapView);
+    event.callEvent();
+    // CraftBukkit end

@@ -17,3 +17,21 @@ insert:
         return InteractionResult.CONSUME;
     }
     // Paper end - Add PlayerFlowerPotManipulateEvent
+
+# PlayerFlowerPotManipulateEvent
+file: net/minecraft/world/level/block/FlowerPotBlock.java
+anchor:
+    if (!player.addItem(itemStack)) {
+insert:
+    // Paper start - Add PlayerFlowerPotManipulateEvent
+    org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+    org.bukkit.inventory.ItemStack pottedStack = new org.bukkit.inventory.ItemStack(org.bukkit.craftbukkit.block.CraftBlockType.minecraftToBukkit(this.potted));
+
+    io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent event = new io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent((org.bukkit.entity.Player) player.getBukkitEntity(), block, pottedStack, false);
+    if (!event.callEvent()) {
+        // Update client
+        player.containerMenu.sendAllDataToRemote();
+
+        return InteractionResult.PASS;
+    }
+    // Paper end - Add PlayerFlowerPotManipulateEvent

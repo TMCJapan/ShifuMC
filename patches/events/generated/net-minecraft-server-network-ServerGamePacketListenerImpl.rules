@@ -33,6 +33,142 @@ anchor:
 insert:
     CraftEventFactory.callRecipeBookSettingsEvent(this.player, packet.getBookType(), packet.isOpen(), packet.isFiltering()); // CraftBukkit
 
+# callTradeSelectEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    if (!merchantMenu.stillValid(this.player)) {
+insert:
+    // CraftBukkit start
+    final org.bukkit.event.inventory.TradeSelectEvent tradeSelectEvent = CraftEventFactory.callTradeSelectEvent(item, merchantMenu);
+    if (tradeSelectEvent.isCancelled()) {
+        this.player.containerMenu.sendAllDataToRemote();
+        return;
+    }
+    // CraftBukkit end
+
+# PlayerJumpEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player.jumpFromGround();
+insert:
+    // Paper start - Add PlayerJumpEvent
+    org.bukkit.entity.Player player = this.getCraftPlayer();
+    Location from = new Location(player.getWorld(), this.lastPosX, this.lastPosY, this.lastPosZ, this.lastYaw, this.lastPitch); // Get the Players previous Event location.
+    Location to = player.getLocation().clone(); // Start off the To location as the Players current location.
+
+    // If the packet contains movement information then we update the To location with the correct XYZ.
+    if (packet.hasPos) {
+        to.setX(packet.x);
+        to.setY(packet.y);
+        to.setZ(packet.z);
+    }
+
+    // If the packet contains look information then we update the To location with the correct Yaw & Pitch.
+    if (packet.hasRot) {
+        to.setYaw(packet.yRot);
+        to.setPitch(packet.xRot);
+    }
+
+    com.destroystokyo.paper.event.player.PlayerJumpEvent event = new com.destroystokyo.paper.event.player.PlayerJumpEvent(player, from, to);
+
+    if (event.callEvent()) {
+insert-after:
+    } else {
+        from = event.getFrom();
+        this.internalTeleport(new PositionMoveRotation(org.bukkit.craftbukkit.util.CraftLocation.toVec3(from), Vec3.ZERO, from.getYaw(), from.getPitch()), Collections.emptySet());
+        return;
+    }
+    // Paper end - Add PlayerJumpEvent
+
+# callPlayerInteractEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    if (this.player.gameMode.useItem(this.player, serverLevel, itemInHand, hand) instanceof InteractionResult.Success success
+insert:
+    // CraftBukkit start
+    // Raytrace to look for 'rogue armswings'
+    double x = this.player.getX();
+    double eyeY = this.player.getEyeY();
+    double z = this.player.getZ();
+    Vec3 from = new Vec3(x, eyeY, z);
+
+    float f3 = Mth.cos(-f * 0.017453292F - 3.1415927F);
+    float f4 = Mth.sin(-f * 0.017453292F - 3.1415927F);
+    float f5 = -Mth.cos(-f1 * 0.017453292F);
+    float f6 = Mth.sin(-f1 * 0.017453292F);
+    float f7 = f4 * f5;
+    float f8 = f3 * f5;
+    double d3 = this.player.blockInteractionRange();
+    Vec3 to = from.add((double) f7 * d3, (double) f6 * d3, (double) f8 * d3);
+    BlockHitResult hitResult = this.player.level().clip(new net.minecraft.world.level.ClipContext(from, to, net.minecraft.world.level.ClipContext.Block.OUTLINE, net.minecraft.world.level.ClipContext.Fluid.NONE, this.player));
+
+    boolean cancelled;
+    if (hitResult == null || hitResult.getType() != HitResult.Type.BLOCK) {
+        org.bukkit.event.player.PlayerInteractEvent event = CraftEventFactory.callPlayerInteractEvent(this.player, Action.RIGHT_CLICK_AIR, itemInHand, hand);
+        cancelled = event.useItemInHand() == Event.Result.DENY;
+    } else {
+        if (this.player.gameMode.firedInteract && this.player.gameMode.interactPosition.equals(hitResult.getBlockPos()) && this.player.gameMode.interactHand == hand && ItemStack.isSameItemSameComponents(this.player.gameMode.interactItemStack, itemInHand)) {
+            cancelled = this.player.gameMode.interactResult;
+        } else {
+            org.bukkit.event.player.PlayerInteractEvent event = CraftEventFactory.callPlayerInteractEvent(this.player, Action.RIGHT_CLICK_BLOCK, hitResult.getBlockPos(), hitResult.getDirection(), itemInHand, true, hand, hitResult.getLocation());
+            cancelled = event.useItemInHand() == Event.Result.DENY;
+        }
+        this.player.gameMode.firedInteract = false;
+    }
+
+    if (cancelled) {
+        this.player.resyncUsingItem(this.player); // Paper - Properly cancel usable items
+        // Paper start - Fix inventory desync; SPIGOT-2524
+        if (io.papermc.paper.util.MCUtil.clientPredictsInteraction(this.player, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), itemInHand)) {
+            this.player.containerMenu.sendAllDataToRemote();
+        } else {
+            this.player.containerMenu.forceHeldSlotAndArmor(hand);
+        }
+        // Paper end - Fix inventory desync
+        return;
+    }
+    itemInHand = this.player.getItemInHand(hand); // Update in case it was changed in the event
+    if (itemInHand.isEmpty()) {
+        return;
+    }
+    // CraftBukkit end
+
+
+# PlayerItemHeldEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    if (this.player.getInventory().getSelectedSlot() != packet.getSlot() && this.player.getUsedItemHand() == InteractionHand.MAIN_HAND) {
+insert:
+    if (packet.getSlot() == this.player.getInventory().getSelectedSlot()) { return; } // Paper - don't fire itemheldevent when there wasn't a slot change
+    PlayerItemHeldEvent event = new PlayerItemHeldEvent(this.getCraftPlayer(), this.player.getInventory().getSelectedSlot(), packet.getSlot());
+    this.cserver.getPluginManager().callEvent(event);
+    if (event.isCancelled()) {
+        this.send(new ClientboundSetHeldSlotPacket(this.player.getInventory().getSelectedSlot()));
+        this.player.resetLastActionTime();
+        return;
+    }
+    // CraftBukkit end
+
+# PlayerCommandPreprocessEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    ParseResults<CommandSourceStack> parseResults = this.parseCommand(command);
+insert:
+    // CraftBukkit start
+    String prefixedCommand = "/" + command;
+    if (org.spigotmc.SpigotConfig.logCommands) { // Paper - Add missing SpigotConfig logCommands check
+        LOGGER.info("{} issued server command: {}", this.player.getScoreboardName(), prefixedCommand);
+    }
+
+    PlayerCommandPreprocessEvent event = new PlayerCommandPreprocessEvent(this.getCraftPlayer(), prefixedCommand, new org.bukkit.craftbukkit.util.LazyPlayerSet(this.server));
+    this.cserver.getPluginManager().callEvent(event);
+
+    if (event.isCancelled()) {
+        return;
+    }
+    command = event.getMessage().substring(1);
+    // CraftBukkit end
+
 # PlayerCommandPreprocessEvent
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
@@ -86,6 +222,62 @@ insert:
 
     if (event.isCancelled()) return;
     // CraftBukkit end
+
+# PlayerRecipeBookClickEvent, callRecipeBookClickEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    RecipeBookMenu.PostPlaceAction postPlaceAction = recipeBookMenu.handlePlacement(
+insert:
+    // Paper start - Add PlayerRecipeBookClickEvent
+    NamespacedKey recipeName = org.bukkit.craftbukkit.util.CraftNamespacedKey.fromMinecraft(recipeHolder.id().identifier());
+    boolean makeAll = packet.useMaxItems();
+    com.destroystokyo.paper.event.player.PlayerRecipeBookClickEvent paperEvent = new com.destroystokyo.paper.event.player.PlayerRecipeBookClickEvent(
+        this.player.getBukkitEntity(), recipeName, makeAll
+    );
+    if (!paperEvent.callEvent()) {
+        return;
+    }
+    recipeName = paperEvent.getRecipe();
+    makeAll = paperEvent.isMakeAll();
+    if (org.bukkit.event.player.PlayerRecipeBookClickEvent.getHandlerList().getRegisteredListeners().length > 0) {
+        // Paper end - Add PlayerRecipeBookClickEvent
+        // CraftBukkit start - implement PlayerRecipeBookClickEvent
+        org.bukkit.inventory.Recipe recipe = this.cserver.getRecipe(recipeName); // Paper - Add PlayerRecipeBookClickEvent - forward to legacy event
+        if (recipe == null) {
+            return;
+        }
+        // Paper start - Add PlayerRecipeBookClickEvent - forward to legacy event
+        org.bukkit.event.player.PlayerRecipeBookClickEvent event = CraftEventFactory.callRecipeBookClickEvent(this.player, recipe, makeAll);
+        recipeName = ((org.bukkit.Keyed) event.getRecipe()).getKey();
+        makeAll = event.isShiftClick();
+    }
+    if (!(this.player.containerMenu instanceof RecipeBookMenu)) {
+        return;
+    }
+    // Paper end - Add PlayerRecipeBookClickEvent - forward to legacy event
+
+    // Cast to keyed should be safe as the recipe will never be a MerchantRecipe.
+    recipeHolder = this.server.getRecipeManager().byKey(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.RECIPE, org.bukkit.craftbukkit.util.CraftNamespacedKey.toMinecraft(recipeName))).orElse(null); // Paper - Add PlayerRecipeBookClickEvent - forward to legacy event
+    if (recipeHolder == null) {
+        return;
+    }
+
+
+# UncheckedSignChangeEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    if (!(serverLevel.getBlockEntity(pos) instanceof SignBlockEntity signBlockEntity)) {
+insert:
+    // Paper start - Add API for client-side signs
+    if (!new io.papermc.paper.event.packet.UncheckedSignChangeEvent(
+        this.player.getBukkitEntity(),
+        io.papermc.paper.util.MCUtil.toPosition(pos),
+        packet.isFrontText() ? org.bukkit.block.sign.Side.FRONT : org.bukkit.block.sign.Side.BACK,
+        filteredText.stream().<net.kyori.adventure.text.Component>map(line -> net.kyori.adventure.text.Component.text(line.raw())).toList())
+        .callEvent()) {
+        return;
+    }
+    // Paper end - Add API for client-side signs
 
 # 
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java

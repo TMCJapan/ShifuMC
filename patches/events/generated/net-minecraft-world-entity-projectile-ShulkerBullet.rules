@@ -1,0 +1,12 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# handleNonLivingEntityDamageEvent
+file: net/minecraft/world/entity/projectile/ShulkerBullet.java
+anchor:
+    this.playSound(SoundEvents.SHULKER_BULLET_HURT, 1.0F, 1.0F);
+insert:
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.handleNonLivingEntityDamageEvent(this, damageSource, amount, false)) {
+        return false;
+    }
+    // CraftBukkit end

@@ -1,0 +1,20 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callHorseJumpEvent
+file: net/minecraft/world/entity/animal/equine/AbstractHorse.java
+anchor:
+    this.allowStandSliding = true;
+    this.standIfPossible();
+    this.playJumpSound();
+insert:
+    // CraftBukkit start
+    float power;
+    if (jumpPower >= 90) {
+        power = 1.0F;
+    } else {
+        power = 0.4F + 0.4F * (float) jumpPower / 90.0F;
+    }
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callHorseJumpEvent(this, power)) {
+        return;
+    }
+    // CraftBukkit end

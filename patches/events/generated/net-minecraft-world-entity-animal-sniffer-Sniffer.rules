@@ -1,5 +1,18 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
+# EntityDropItemEvent
+file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
+anchor:
+    serverLevel1.addFreshEntity(itemEntity);
+insert:
+    // CraftBukkit start - handle EntityDropItemEvent
+    org.bukkit.event.entity.EntityDropItemEvent event = new org.bukkit.event.entity.EntityDropItemEvent(this.getBukkitEntity(), (org.bukkit.entity.Item) itemEntity.getBukkitEntity());
+    org.bukkit.Bukkit.getPluginManager().callEvent(event);
+    if (event.isCancelled()) {
+        return;
+    }
+    // CraftBukkit end
+
 # callEntityFertilizeEggEvent
 file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
 anchor:

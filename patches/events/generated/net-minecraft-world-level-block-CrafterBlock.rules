@@ -1,0 +1,14 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callCrafterCraftEvent
+file: net/minecraft/world/level/block/CrafterBlock.java
+anchor:
+    if (itemStack.isEmpty()) {
+insert:
+    // CraftBukkit start
+    org.bukkit.event.block.CrafterCraftEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callCrafterCraftEvent(pos, level, itemStack, recipeHolder);
+    if (event.isCancelled()) {
+        return;
+    }
+    itemStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getResult());
+    // CraftBukkit end

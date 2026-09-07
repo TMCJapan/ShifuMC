@@ -1,0 +1,17 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callPlayerBucketFillEvent
+file: net/minecraft/world/item/BucketItem.java
+anchor:
+    ItemStack itemStack = bucketPickup.pickupBlock(player, level, blockPos, blockState);
+insert:
+    // CraftBukkit start
+    ItemStack dummyFluid = bucketPickup.pickupBlock(player, org.bukkit.craftbukkit.util.DummyGeneratorAccess.INSTANCE, blockPos, blockState);
+    if (dummyFluid.isEmpty()) return InteractionResult.FAIL; // Don't fire event if the bucket won't be filled.
+    org.bukkit.event.player.PlayerBucketFillEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerBucketFillEvent(level, player, blockPos, blockPos, playerPovHitResult.getDirection(), itemInHand, dummyFluid.getItem(), hand);
+
+    if (event.isCancelled()) {
+        player.containerMenu.sendAllDataToRemote(); // SPIGOT-4541
+        return InteractionResult.FAIL;
+    }
+    // CraftBukkit end

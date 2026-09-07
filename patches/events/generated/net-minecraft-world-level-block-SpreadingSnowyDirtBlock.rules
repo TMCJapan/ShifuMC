@@ -1,0 +1,12 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callBlockFadeEvent
+file: net/minecraft/world/level/block/SpreadingSnowyDirtBlock.java
+anchor:
+    level.setBlockAndUpdate(pos, Blocks.DIRT.defaultBlockState());
+insert:
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, Blocks.DIRT.defaultBlockState()).isCancelled()) {
+        return;
+    }
+    // CraftBukkit end

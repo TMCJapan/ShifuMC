@@ -1,0 +1,13 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callExplosionPrimeEvent
+file: net/minecraft/world/entity/projectile/hurtingprojectile/windcharge/BreezeWindCharge.java
+anchor:
+    this.level()
+insert:
+    // Paper start - Fire event for WindCharge explosions
+    org.bukkit.event.entity.ExplosionPrimeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callExplosionPrimeEvent(this, RADIUS, false);
+    if (event.isCancelled()) {
+        return;
+    }
+    // Paper end - Fire event for WindCharge explosions

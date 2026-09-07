@@ -1,0 +1,13 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callExplosionPrimeEvent
+file: net/minecraft/world/entity/item/PrimedTnt.java
+anchor:
+    this.level()
+insert:
+    // CraftBukkit start
+    ExplosionPrimeEvent event = CraftEventFactory.callExplosionPrimeEvent((org.bukkit.entity.Explosive) this.getBukkitEntity());
+    if (event.isCancelled()) {
+        return;
+    }
+    // CraftBukkit end

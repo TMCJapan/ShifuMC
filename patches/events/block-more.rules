@@ -1313,3 +1313,36 @@ anchor:
         return (InteractionResult)(!level.isClientSide() ? LeadItem.bindPlayerMobs(player, level, pos) : InteractionResult.PASS);
 insert:
     dev.shifu.event.ItemEvents.leashHand(player, net.minecraft.world.InteractionHand.MAIN_HAND);
+
+# ------------------------------------------------------------ 戦利品表を器に詰める
+#
+# LootGenerateEvent。Paper は vanilla の fill(Container, LootParams, long) を
+# 乱数源と plugin を取る版へ回して、そちらだけで発火する。回すのは vanilla の行の
+# 書き換えなので、Shifu は 2 つの fill の同じ位置にそれぞれ置く。
+# vanilla から来る方は plugin = false(Paper が seed 版に渡す値と同じ)。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/storage/loot/LootTable.java.patch:26
+file: net/minecraft/world/level/storage/loot/LootTable.java
+anchor:
+    List<Integer> availableSlots = this.getAvailableSlots(container, random);
+    this.shuffleAndSplitItems(randomItems, availableSlots.size(), random);
+insert:
+    final org.bukkit.event.world.LootGenerateEvent shifuLoot =
+            org.bukkit.craftbukkit.event.CraftEventFactory.callLootGenerateEvent(container, this, lootContext, randomItems, false);
+    if (shifuLoot.isCancelled()) {
+        return;
+    }
+    randomItems = shifuLoot.getLoot().stream().map(org.bukkit.craftbukkit.inventory.CraftItemStack::asNMSCopy).collect(ObjectArrayList.toList());
+
+# patches/hand の fill(Container, LootParams, RandomSource, boolean)。アダプタ層はこちらを呼ぶ
+file: net/minecraft/world/level/storage/loot/LootTable.java
+anchor:
+    List<Integer> availableSlots = this.getAvailableSlots(container, random);
+    this.shuffleAndSplitItems(itemStacks, availableSlots.size(), random);
+insert:
+    final org.bukkit.event.world.LootGenerateEvent shifuLootPlugin =
+            org.bukkit.craftbukkit.event.CraftEventFactory.callLootGenerateEvent(container, this, context, itemStacks, plugin);
+    if (shifuLootPlugin.isCancelled()) {
+        return;
+    }
+    itemStacks = shifuLootPlugin.getLoot().stream().map(org.bukkit.craftbukkit.inventory.CraftItemStack::asNMSCopy).collect(ObjectArrayList.toList());
