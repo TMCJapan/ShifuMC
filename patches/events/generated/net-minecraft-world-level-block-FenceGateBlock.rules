@@ -1,7 +1,7 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # BlockRedstoneEvent
-file: net/minecraft/world/level/block/FenceGateBlock.java
+file: net/minecraft/world/world/block/FenceGateBlock.java
 anchor:
     if (state.getValue(POWERED) != bl) {
 insert:
@@ -10,9 +10,9 @@ insert:
     if (oldPowered != bl) {
         int newPower = bl ? 15 : 0;
         int oldPower = oldPowered ? 15 : 0;
-        org.bukkit.block.Block bukkitBlock = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+        org.bukkit.block.Block bukkitBlock = org.bukkit.craftbukkit.block.CraftBlock.at(world, pos);
         org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(bukkitBlock, oldPower, newPower);
-        level.getCraftServer().getPluginManager().callEvent(eventRedstone);
+        world.getCraftServer().getPluginManager().callEvent(eventRedstone);
         bl = eventRedstone.getNewCurrent() > 0;
     }
     // CraftBukkit end

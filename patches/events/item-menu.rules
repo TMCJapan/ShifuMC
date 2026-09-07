@@ -50,13 +50,13 @@ anchor:
 insert:
     final io.papermc.paper.event.player.PlayerChangeBeaconEffectEvent shifuBeacon =
             dev.shifu.event.ItemEvents.changeBeaconEffect(this.inventory.player, this.access,
-                    primary.orElse(null), secondaryEffect.orElse(null));
+                    primary.orElse(null), secondary.orElse(null));
     if (shifuBeacon != null) {
         if (shifuBeacon.isCancelled()) {
             return;
         }
         primary = java.util.Optional.ofNullable(dev.shifu.event.ItemEvents.effect(shifuBeacon.getPrimary()));
-        secondaryEffect = java.util.Optional.ofNullable(dev.shifu.event.ItemEvents.effect(shifuBeacon.getSecondary()));
+        secondary = java.util.Optional.ofNullable(dev.shifu.event.ItemEvents.effect(shifuBeacon.getSecondary()));
     }
 
 file: net/minecraft/world/inventory/BeaconMenu.java
@@ -77,7 +77,7 @@ file: net/minecraft/world/inventory/LecternMenu.java
 anchor:
     this.setData(0, k - 1);
 insert:
-    final int shifuPage = dev.shifu.event.ItemEvents.lecternPage(this, player,
+    final int shifuPage = dev.shifu.event.ItemEvents.lecternPage(this, user,
             io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection.LEFT, k, k - 1);
     if (shifuPage == dev.shifu.event.ItemEvents.CANCELLED) {
         return false;
@@ -91,7 +91,7 @@ file: net/minecraft/world/inventory/LecternMenu.java
 anchor:
     this.setData(0, j + 1);
 insert:
-    final int shifuPage = dev.shifu.event.ItemEvents.lecternPage(this, player,
+    final int shifuPage = dev.shifu.event.ItemEvents.lecternPage(this, user,
             io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection.RIGHT, j, j + 1);
     if (shifuPage == dev.shifu.event.ItemEvents.CANCELLED) {
         return false;
@@ -111,10 +111,10 @@ anchor:
     this.setupResultSlot(this.selectablePatterns.get(id));
 insert:
     final dev.shifu.event.ItemEvents.LoomChoice shifuLoom = dev.shifu.event.ItemEvents.loomPattern(
-            this, player, this.selectablePatterns, id);
+            this, user, this.selectablePatterns, id);
     if (shifuLoom != null) {
         if (shifuLoom.cancelled()) {
-            player.containerMenu.sendAllDataToRemote();
+            user.containerMenu.sendAllDataToRemote();
             return false;
         }
         this.selectedBannerPatternIndex.set(shifuLoom.index());
@@ -131,9 +131,9 @@ anchor:
     return (!this.mustSurvive() || state.canSurvive(context.getLevel(), context.getClickedPos()))
 insert:
     if (dev.shifu.event.ItemEvents.canBuildListening()) {
-        return dev.shifu.event.ItemEvents.canBuild(context.getLevel(), context.getClickedPos(), player, state,
+        return dev.shifu.event.ItemEvents.canBuild(context.getLevel(), context.getClickedPos(), user, state,
                 (!this.mustSurvive() || state.canSurvive(context.getLevel(), context.getClickedPos()))
-                        && context.getLevel().isUnobstructed(state, context.getClickedPos(), CollisionContext.placementContext(player)),
+                        && context.getLevel().isUnobstructed(state, context.getClickedPos(), CollisionContext.placementContext(user)),
                 context.getHand());
     }
 
@@ -155,9 +155,9 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/BoatItem.java.patch
 file: net/minecraft/world/item/BoatItem.java
 anchor:
-    AbstractBoat boat = this.getBoat(level, playerPovHitResult, itemInHand, player);
+    AbstractBoat boat = this.getBoat(level, playerPovHitResult, itemInHand, user);
 insert:
-    if (!dev.shifu.event.ItemEvents.boatInteract(player, (net.minecraft.world.phys.BlockHitResult) playerPovHitResult, itemInHand, hand)) {
+    if (!dev.shifu.event.ItemEvents.boatInteract(user, (net.minecraft.world.phys.BlockHitResult) playerPovHitResult, itemInHand, hand)) {
         return InteractionResult.PASS;
     }
 
@@ -166,7 +166,7 @@ anchor:
     world.addFreshEntity(boat);
 insert:
     if (!dev.shifu.event.ItemEvents.entityPlace(world, ((net.minecraft.world.phys.BlockHitResult) playerPovHitResult).getBlockPos(),
-            player.getDirection(), player, boat, hand)) {
+            user.getDirection(), user, boat, hand)) {
         return InteractionResult.FAIL;
     }
     if (dev.shifu.event.ItemEvents.spawnCancelListening()) {
@@ -218,7 +218,7 @@ file: net/minecraft/world/item/DyeItem.java
 anchor:
     sheep.setColor(this.dyeColor);
 insert:
-    final net.minecraft.world.item.DyeColor shifuDye = dev.shifu.event.ItemEvents.dyeWool(sheep, player, this.dyeColor);
+    final net.minecraft.world.item.DyeColor shifuDye = dev.shifu.event.ItemEvents.dyeWool(sheep, user, this.dyeColor);
     if (shifuDye == null) {
         return InteractionResult.PASS;
     }
@@ -264,9 +264,9 @@ file: net/minecraft/world/item/EggItem.java
 anchor:
     level.playSound(
         null,
-        player.getX(),
-        player.getY(),
-        player.getZ(),
+        user.getX(),
+        user.getY(),
+        user.getZ(),
         SoundEvents.EGG_THROW,
         SoundSource.PLAYERS,
         0.5F,
@@ -397,9 +397,9 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/LeadItem.java.patch
 file: net/minecraft/world/item/LeadItem.java
 anchor:
-    return bindPlayerMobs(player, level, clickedPos);
+    return bindPlayerMobs(user, level, clickedPos);
 insert:
-    dev.shifu.event.ItemEvents.leashHand(player, context.getHand());
+    dev.shifu.event.ItemEvents.leashHand(user, context.getHand());
 
 # HangingPlaceEvent(柵に新しく結び目を作るとき)は 1.21.11 では出せない。
 # vanilla の getOrCreateKnot は「新しく作ったか」を返さず、Paper は
@@ -424,7 +424,7 @@ anchor:
     mob.setPersistenceRequired();
     }
 insert:
-    final io.papermc.paper.event.player.PlayerNameEntityEvent shifuName = dev.shifu.event.ItemEvents.nameEntity(player, entity, component);
+    final io.papermc.paper.event.player.PlayerNameEntityEvent shifuName = dev.shifu.event.ItemEvents.nameEntity(user, entity, component);
     if (shifuName != null) {
         if (shifuName.isCancelled()) {
             return InteractionResult.PASS;
@@ -440,10 +440,10 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/ItemStack.java.patch(PlayerItemDamageEvent)
 file: net/minecraft/world/item/ItemStack.java
 anchor:
-    int i = this.processDurabilityChange(damage, level, player);
+    int i = this.processDurabilityChange(damage, level, user);
 insert-after:
-    if (i > 0 && player != null) {
-        i = dev.shifu.event.ItemEvents.itemDamage(this, player, i, damage);
+    if (i > 0 && user != null) {
+        i = dev.shifu.event.ItemEvents.itemDamage(this, user, i, damage);
     }
 
 file: net/minecraft/world/item/ItemStack.java

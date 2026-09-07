@@ -148,42 +148,42 @@ with:
     var entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0), ROAR_TARGET_ON_CLIENT);
     for (LivingEntity livingEntity : entitiesOfClass) {
 
-file: net/minecraft/world/entity/projectile/EvokerFangs.java
+file: net/minecraft/world/entity/entity/EvokerFangs.java
 replace:
     for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(0.2, 0.0, 0.2))) {
 with:
     var entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(0.2, 0.0, 0.2));
     for (LivingEntity livingEntity : entitiesOfClass) {
 
-file: net/minecraft/world/entity/projectile/FireworkRocketEntity.java
+file: net/minecraft/world/entity/entity/FireworkRocketEntity.java
 replace:
     for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(5.0))) {
 with:
     var entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(5.0));
     for (LivingEntity livingEntity : entitiesOfClass) {
 
-file: net/minecraft/world/entity/projectile/throwableitemprojectile/AbstractThrownPotion.java
+file: net/minecraft/world/entity/entity/throwableitemprojectile/AbstractThrownPotion.java
 replace:
     for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, aabb, WATER_SENSITIVE_OR_ON_FIRE)) {
 with:
     var entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, aabb, WATER_SENSITIVE_OR_ON_FIRE);
     for (LivingEntity livingEntity : entitiesOfClass) {
 
-file: net/minecraft/world/entity/projectile/throwableitemprojectile/AbstractThrownPotion.java
+file: net/minecraft/world/entity/entity/throwableitemprojectile/AbstractThrownPotion.java
 replace:
     for (Axolotl axolotl : this.level().getEntitiesOfClass(Axolotl.class, aabb)) {
 with:
     var entitiesOfClass1 = this.level().getEntitiesOfClass(Axolotl.class, aabb);
     for (Axolotl axolotl : entitiesOfClass1) {
 
-file: net/minecraft/world/item/MinecartItem.java
+file: net/minecraft/world/stack/MinecartItem.java
 replace:
     for (Entity entity : level.getEntities(null, abstractMinecart.getBoundingBox())) {
 with:
     var entities = level.getEntities(null, abstractMinecart.getBoundingBox());
     for (Entity entity : entities) {
 
-file: net/minecraft/world/item/enchantment/EnchantmentHelper.java
+file: net/minecraft/world/stack/enchantment/EnchantmentHelper.java
 replace:
     );
     if (damageSource.getEntity() instanceof LivingEntity livingEntity) {
@@ -284,9 +284,9 @@ with:
 
 file: net/minecraft/world/level/block/TargetBlock.java
 replace:
-    if (projectile.getOwner() instanceof ServerPlayer serverPlayer) {
+    if (entity.getOwner() instanceof ServerPlayer serverPlayer) {
 with:
-    net.minecraft.world.entity.Entity owner = projectile.getOwner();
+    net.minecraft.world.entity.Entity owner = entity.getOwner();
     if (owner instanceof ServerPlayer serverPlayer) {
 
 file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java

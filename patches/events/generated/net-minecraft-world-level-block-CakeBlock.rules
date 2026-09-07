@@ -1,7 +1,7 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # callEntityChangeBlockEvent
-file: net/minecraft/world/level/block/CakeBlock.java
+file: net/minecraft/world/world/block/CakeBlock.java
 anchor:
     stack.consume(1, player);
 insert:

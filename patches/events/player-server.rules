@@ -128,7 +128,7 @@ insert-after:
 # ============================================================ 世界
 
 # WorldSaveEvent。保存の頭
-file: net/minecraft/server/level/ServerLevel.java
+file: net/minecraft/server/world/ServerLevel.java
 anchor:
     if (progressListener != null) {
     progressListener.progressStartNoAbort(Component.translatable("menu.savingLevel"));
@@ -137,21 +137,21 @@ insert:
 
 # TimeSkipEvent(NIGHT_SKIP)。vanilla が朝へ動かしたあとに発火し、取り消されたら戻して起こさない
 #
-# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerLevel.java.patch(TimeSkipEvent)
-file: net/minecraft/server/level/ServerLevel.java
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/world/ServerLevel.java.patch(TimeSkipEvent)
+file: net/minecraft/server/world/ServerLevel.java
 anchor:
     if (this.sleepStatus.areEnoughSleeping(i) && this.sleepStatus.areEnoughDeepSleeping(i, this.players)) {
 insert-after:
     boolean shifuWake = true;
     final long shifuNight = dev.shifu.event.PlayerEvents.nightBefore(this);
 
-file: net/minecraft/server/level/ServerLevel.java
+file: net/minecraft/server/world/ServerLevel.java
 anchor:
     this.setDayTime(l - l % 24000L);
 insert-after:
     shifuWake = dev.shifu.event.PlayerEvents.nightSkipped(this, shifuNight);
 
-file: net/minecraft/server/level/ServerLevel.java
+file: net/minecraft/server/world/ServerLevel.java
 anchor:
     this.wakeUpAllPlayers();
 insert:
@@ -160,14 +160,14 @@ insert-after:
     }
 
 # MapInitializeEvent。置く前
-file: net/minecraft/server/level/ServerLevel.java
+file: net/minecraft/server/world/ServerLevel.java
 anchor:
     this.getServer().overworld().getDataStorage().set(MapItemSavedData.type(mapId), data);
 insert:
     dev.shifu.event.PlayerEvents.mapInitialize(mapId, data);
 
 # SpawnChangeEvent。書いたあと(位置が同じなら出さない)
-file: net/minecraft/server/level/ServerLevel.java
+file: net/minecraft/server/world/ServerLevel.java
 anchor:
     this.getServer().setRespawnData(respawnData);
 insert:
@@ -176,7 +176,7 @@ insert-after:
     dev.shifu.event.PlayerEvents.spawnChanged(this, shifuSpawn);
 
 # ServerExceptionEvent。エンティティの tick の例外。落とす挙動は変えない
-file: net/minecraft/world/level/Level.java
+file: net/minecraft/world/world/Level.java
 anchor:
     if (!(blockState.getBlock() instanceof BaseFireBlock)) {
     this.levelEvent(LevelEvent.PARTICLES_DESTROY_BLOCK, pos, Block.getId(blockState));
@@ -193,7 +193,7 @@ insert-after:
         dev.shifu.event.PlayerEvents.destroyEffect(this, pos, blockState, shifuDestroy);
     }
 
-file: net/minecraft/world/level/Level.java
+file: net/minecraft/world/world/Level.java
 anchor:
     if (drop) {
     BlockEntity blockEntity = blockState.hasBlockEntity() ? this.getBlockEntity(pos) : null;
@@ -206,19 +206,19 @@ insert-after:
 
 # PreCreatureSpawnEvent(自然湧き)。位置の判定の前
 #
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/NaturalSpawner.java.patch
-file: net/minecraft/world/level/NaturalSpawner.java
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/world/NaturalSpawner.java.patch
+file: net/minecraft/world/world/NaturalSpawner.java
 anchor:
     return entityType.getCategory() != MobCategory.MISC
 insert:
-    if (!dev.shifu.event.PlayerEvents.preCreatureSpawn(level, pos, entityType)) {
+    if (!dev.shifu.event.PlayerEvents.preCreatureSpawn(world, pos, entityType)) {
         return false;
     }
 
 # PreSpawnerSpawnEvent。エンティティを作る前
 #
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/BaseSpawner.java.patch
-file: net/minecraft/world/level/BaseSpawner.java
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/world/BaseSpawner.java.patch
+file: net/minecraft/world/world/BaseSpawner.java
 anchor:
     if (!world.tryAddFreshEntityWithPassengers(entity)) {
 insert:
@@ -229,8 +229,8 @@ insert:
 
 # DragonEggFormEvent。登録があれば vanilla の「初回だけ置く」の代わりに発火層が置く
 #
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/dimension/end/EndDragonFight.java.patch
-file: net/minecraft/world/level/border/WorldBorder.java
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/world/dimension/end/EndDragonFight.java.patch
+file: net/minecraft/world/world/border/WorldBorder.java
 anchor:
     public void setCenter(double x, double z) {
 insert-after:
@@ -238,7 +238,7 @@ insert-after:
         return;
     }
 
-file: net/minecraft/world/level/border/WorldBorder.java
+file: net/minecraft/world/world/border/WorldBorder.java
 anchor:
     WorldBorder.this.setDirty();
     return WorldBorder.this.new StaticBorderExtent(this.to);
@@ -267,7 +267,7 @@ insert-after:
     strings = dev.shifu.event.PlayerEvents.queryPlayers(strings);
 
 # MapInitializeEvent。読み込んだとき(Paper は getMapData でも出す)
-file: net/minecraft/world/level/NaturalSpawner.java
+file: net/minecraft/world/world/NaturalSpawner.java
 anchor:
     if (mob.isMaxGroupSizeReached(p)) {
     break;
@@ -283,8 +283,8 @@ insert-after:
 
 # PlayerSpawnChangeEvent / PlayerSetSpawnEvent。setRespawnPosition の頭
 #
-# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch(PlayerSetSpawnEvent)
-file: net/minecraft/server/level/ServerPlayer.java
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/world/ServerPlayer.java.patch(PlayerSetSpawnEvent)
+file: net/minecraft/server/world/ServerPlayer.java
 anchor:
     this.setRespawnPosition(
     new ServerPlayer.RespawnConfig(LevelData.RespawnData.of(this.level().dimension(), bedPos, this.getYRot(), this.getXRot()), false), true
@@ -292,23 +292,23 @@ insert:
     dev.shifu.event.PlayerEvents.spawnCause(this, com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause.BED);
 
 # 理由(リスポーンで引き継ぐ)
-file: net/minecraft/server/level/ServerPlayer.java
+file: net/minecraft/server/world/ServerPlayer.java
 anchor:
     this.setRespawnPosition(player.respawnConfig, false);
 insert:
     dev.shifu.event.PlayerEvents.spawnCause(this, com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause.PLAYER_RESPAWN);
 
 # PlayerInteractEvent(左クリック、触れない場所)。Paper と同じく結果は見ない
-file: net/minecraft/server/level/ServerPlayerGameMode.java
+file: net/minecraft/server/world/ServerPlayerGameMode.java
 anchor:
     this.player.connection.send(new ClientboundBlockUpdatePacket(pos, this.level.getBlockState(pos)));
     this.debugLogging(pos, false, sequence, "may not interact");
 insert:
-    dev.shifu.event.ShifuEvents.interactBlockLeft(this.player, pos, face);
+    dev.shifu.event.ShifuEvents.interactBlockLeft(this.player, pos, direction);
 
 # BlockDamageEvent。壊し始め(即時破壊でないとき)
 #
-# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayerGameMode.java.patch(BlockDamageEvent)
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/world/ServerPlayerGameMode.java.patch(BlockDamageEvent)
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     this.player.jumpFromGround();
@@ -398,6 +398,6 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/player/Player.java.patch(PlayerShieldDisableEvent)
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-            blocksAttacks.disable(level, this, secondsToDisableBlocking, itemBlockingWith);
+            blocksAttacks.disable(world, this, secondsToDisableBlocking, itemBlockingWith);
 insert:
     dev.shifu.event.PlayerEvents.shieldAttacker(entity);

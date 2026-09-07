@@ -34,7 +34,7 @@ file: net/minecraft/world/inventory/BeaconMenu.java
 anchor:
     super(MenuType.BEACON, syncId);
 insert-after:
-    this.inventory = (net.minecraft.world.entity.player.Inventory) container;
+    this.inventory = (net.minecraft.world.entity.player.Inventory) inventory;
 
 # BrewingStandMenu.inventory(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/BrewingStandMenu.java
@@ -74,7 +74,7 @@ insert-after:
 # HopperMenu.inventory(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/HopperMenu.java
 anchor:
-    this.hopper = container;
+    this.hopper = inventory;
 insert-after:
     this.inventory = inventory;
 
