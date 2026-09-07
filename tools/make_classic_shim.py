@@ -307,9 +307,14 @@ def main():
                 # 型が分かっているものが 1 つでもあれば、それで絞る。
                 # `(unqualified)`(型が読めなかったエラー)が混ざったときに
                 # 絞りを外すと、同じ名前の宣言を全部足して 402 <-> 448 で振動する。
-                who = asked.get(member, set()) - {"(unqualified)"}
+                #
+                # ただし**要求元が NMS の型でないときは絞りに使えない**。
+                # `CraftBlock` が `AABB` を要求していても、AABB は CraftBlock の
+                # 上にはいない。木にある型だけを手掛かりにする。
+                # 構築子は必ず自分の型に属するので、名前が型と同じなら通す。
+                who = {one for one in asked.get(member, set()) if one in above}
 
-                if who and not any(owner in above.get(one, {one}) for one in who):
+                if member != owner and who and not any(owner in above[one] for one in who):
                     skipped += 1
                     continue
 
