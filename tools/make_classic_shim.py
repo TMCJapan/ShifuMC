@@ -18,6 +18,11 @@ Paper が持っている宣言は 2614 件あるが、アダプタ層が要る�
 全部足すと vanilla ではなく Paper の NMS になる。
 
 **元の行は 1 行も取らない。** 取るのは宣言と、その宣言に属する本体だけ。
+
+宣言は Paper が書いたままなので、**Paper の側にしか無い import も要る**
+(`CraftInventoryView`、`HumanEntity` など)。塊の中に出てくる名前に絞って、
+vanilla のファイルの import の並びに足す。import を足しても既にある行の意味は
+変わらない。同じ名前が二重に入れば javac が弾くので、黙って挙動が変わることはない。
 """
 
 import collections
@@ -164,6 +169,39 @@ def members(lines):
 TYPE_HEAD = re.compile(r"\b(?:class|interface|enum|record|@interface)\s+([\w$]+)")
 
 
+WORD = re.compile(r"[A-Za-z_$][\w$]*")
+
+
+def imports_for(old, new, blocks):
+    """足す塊が使っていて、vanilla のファイルに無い import。
+
+    宣言は Paper が書いたままなので、Paper の側にしか無い型がそのまま出てくる
+    (`CraftInventoryView`、`HumanEntity` など)。
+    """
+    have = {line.strip() for line in old if ms.IMPORT.match(line.strip())}
+    used = set()
+
+    for _, _, block in blocks:
+        for line in block:
+            used.update(WORD.findall(fs.STRING.sub('""', line).split("//")[0]))
+
+    out = []
+
+    for line in new:
+        text = line.strip()
+
+        if not ms.IMPORT.match(text) or text in have:
+            continue
+
+        # `import a.b.C;` の C、`import static a.b.C.D;` の D
+        name = text.rstrip(";").rsplit(".", 1)[-1]
+
+        if name in used and text not in out:
+            out.append(text)
+
+    return out
+
+
 def type_name(lines, start):
     """本体を開いている型の名前。"""
     head = start
@@ -183,6 +221,7 @@ def main():
     files = 0
     total = 0
     skipped = 0
+    imports = 0
 
     for base, _, names in os.walk(tree):
         for name in sorted(names):
@@ -233,9 +272,16 @@ def main():
 
             files += 1
             total += len(blocks)
+            adds = imports_for(old, new, blocks)
+            imports += len(adds)
 
             if not write:
                 continue
+
+            if adds:
+                spot = ms.import_spot(old)
+                io.open(os.path.join(base, name), "w", encoding="utf-8", newline="\n").write(
+                    "\n".join(old[:spot] + adds + old[spot:]))
 
             out = os.path.join(dest, rel.replace("/", os.sep)) + ".add"
             os.makedirs(os.path.dirname(out), exist_ok=True)
@@ -249,7 +295,7 @@ def main():
             io.open(out, "w", encoding="utf-8", newline="\n").write("\n".join(body) + "\n")
 
     print(f"Paper にしか無い宣言: {total} 件 / {files} ファイル"
-          f"(要求されていないので置かなかった分 {skipped} 件)"
+          f"(要求されていないので置かなかった分 {skipped} 件、足した import {imports} 件)"
           + ("" if write else " -- --write でまだ書いていない"))
 
     return 0
