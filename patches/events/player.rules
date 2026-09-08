@@ -43,7 +43,7 @@ insert:
 
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    this.player.teleportTo(serverLevel, entity.getX(), entity.getY(), entity.getZ(), Set.of(), entity.getYRot(), entity.getXRot(), true);
+    this.player.teleportTo(serverLevel, entity.getX(), entity.getY(), entity.getZ(), entity.getYRot(), entity.getXRot());
 insert:
     dev.shifu.event.ShifuEvents.teleportCause(this.player, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.SPECTATE);
 
@@ -89,9 +89,26 @@ anchor:
 insert-after:
     }
 
+# PlayerInteractEvent(ブロックへの右クリック)
+#
+# useItemOn の先頭、状態を読んだ直後。Paper と同じ位置。ブロックの使用が拒まれたら
+# Paper と同じ後始末をして返る。手に持った物の使用だけが拒まれたら、
+# vanilla がそれを使う直前で抜ける(Paper は条件の行を書き換えているが、
+# ここは vanilla の行を残して手前で抜ける)。
 file: net/minecraft/server/level/ServerPlayerGameMode.java
 anchor:
-    if (!stack.isEmpty() && !player.getCooldowns().isOnCooldown(stack)) {
+    BlockState blockState = world.getBlockState(blockPos);
+    if (!blockState.getBlock().isEnabled(world.enabledFeatures())) {
+insert:
+    final org.bukkit.event.player.PlayerInteractEvent shifuInteract =
+            dev.shifu.event.ShifuEvents.interactBlock(this, player, world, stack, hand, hitResult, world.getBlockState(blockPos));
+    if (shifuInteract != null && shifuInteract.useInteractedBlock() == org.bukkit.event.Event.Result.DENY) {
+        return dev.shifu.event.ShifuEvents.interactBlockDenied(shifuInteract, player, world.getBlockState(blockPos));
+    }
+
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+anchor:
+    if (!stack.isEmpty() && !player.getCooldowns().isOnCooldown(stack.getItem())) {
 insert:
     if (dev.shifu.event.ShifuEvents.interactItemDenied(shifuInteract, player)) {
         return InteractionResult.PASS;

@@ -201,6 +201,11 @@ def main():
     if "--min" in sys.argv:
         floor = float(sys.argv[sys.argv.index("--min") + 1])
 
+    # 局所変数の名前だけでは説明が付かない差(引数の増減、メソッドの改名)でも、
+    # ここに書いた近さ以上ならアンカーだけ木の行に合わせる。**本体は触らない。**
+    # 本体が古い名前を参照していれば、次のコンパイルでエラーとして出る。
+    accept = float(sys.argv[sys.argv.index("--accept") + 1]) if "--accept" in sys.argv else None
+
     by_file = {}
     # 規則の置き場は入れ子になっている(patches/events/generated など)。
     # rule.where はファイル名しか持たないので、書き戻す先をここで覚えておく。
@@ -262,6 +267,11 @@ def main():
             names = rename_map(rule.anchor, found)
             mark = ""
 
+            forced = names is None and accept is not None and ratio >= accept
+
+            if forced:
+                names = {}
+
             if write and names is not None:
                 name, _, no = rule.where.rpartition(":")
                 paths = sources.get(name, set())
@@ -269,7 +279,8 @@ def main():
                 if len(paths) != 1:
                     print(f"{rule.where}: 同じ名前の規則が {len(paths)} 箇所にあるので書き換えない")
                 elif rewrite(next(iter(paths)), int(no), len(rule.anchor), found, names):
-                    detail = ", ".join(f"{k}->{v}" for k, v in names.items()) or "final のみ"
+                    detail = (", ".join(f"{k}->{v}" for k, v in names.items())
+                              or ("本体は触っていない" if forced else "final のみ"))
                     mark = f" [書き換えた {detail}]"
                     written += 1
 

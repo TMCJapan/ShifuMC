@@ -91,10 +91,10 @@ insert-after:
 # EntityPotionEffectEvent(ADDED / CHANGED)
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    if (mobEffectInstance == null) {
-    this.activeEffects.put(effectInstance.getEffect(), effectInstance);
-insert:
-    if (!dev.shifu.event.EntityEvents.addEffect(this, mobEffectInstance, effectInstance, entity)) {
+    MobEffectInstance mobEffectInstance = this.activeEffects.get(effect.getEffect());
+    boolean bl = false;
+insert-after:
+    if (!dev.shifu.event.EntityEvents.addEffect(this, mobEffectInstance, effect, source)) {
         return false;
     }
 
@@ -130,9 +130,9 @@ insert-after:
 # EntityPickupItemEvent。装備できるかは hand の shifuCanPickup で先に見る(Paper は取り消し済みで出す)。
 file: net/minecraft/world/entity/Mob.java
 anchor:
-    ItemStack itemStack = this.equipItemIfPossible(level, item.copy());
+    ItemStack itemStack2 = this.equipItemIfPossible(itemStack.copy());
 insert:
-    if (dev.shifu.event.EntityEvents.pickupListening() && !dev.shifu.event.EntityEvents.mobPickupItem(this, entity, this.shifuCanPickup(item))) {
+    if (dev.shifu.event.EntityEvents.pickupListening() && !dev.shifu.event.EntityEvents.mobPickupItem(this, item, this.shifuCanPickup(itemStack))) {
         return;
     }
 
@@ -164,7 +164,7 @@ insert-after:
 # 閉じ `}` を先に足し、開き `if (...) {` をあとで足す(先に開きを足すと 3 行のアンカーが崩れる)。
 file: net/minecraft/world/entity/ambient/Bat.java
 anchor:
-    if (this.random.nextInt(100) == 0 && level.getBlockState(blockPos1).isRedstoneConductor(level, blockPos1)) {
+    if (this.random.nextInt(100) == 0 && this.level().getBlockState(blockPos2).isRedstoneConductor(this.level(), blockPos2)) {
     this.setResting(true);
     }
 insert-after:
@@ -172,7 +172,7 @@ insert-after:
 
 file: net/minecraft/world/entity/ambient/Bat.java
 anchor:
-    if (this.random.nextInt(100) == 0 && level.getBlockState(blockPos1).isRedstoneConductor(level, blockPos1)) {
+    if (this.random.nextInt(100) == 0 && this.level().getBlockState(blockPos2).isRedstoneConductor(this.level(), blockPos2)) {
 insert-after:
     if (dev.shifu.event.EntityEvents.batToggleSleep(this, false)) {
 
@@ -206,12 +206,12 @@ insert:
 
 file: net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
 anchor:
-    level.explode(this, damageSource1, null, this.getX(), this.getY(), this.getZ(), 6.0F, false, Level.ExplosionInteraction.BLOCK);
+    this.level().explode(this, damageSource, null, this.getX(), this.getY(), this.getZ(), 6.0F, false, Level.ExplosionInteraction.BLOCK);
 insert:
     if (shifuPrime == null) {
 insert-after:
     } else {
-        level.explode(this, damageSource1, null, this.getX(), this.getY(), this.getZ(), shifuPrime.getRadius(), shifuPrime.getFire(), Level.ExplosionInteraction.BLOCK);
+        this.level().explode(this, damageSource, null, this.getX(), this.getY(), this.getZ(), shifuPrime.getRadius(), shifuPrime.getFire(), Level.ExplosionInteraction.BLOCK);
     }
 
 # ============================================================ EnderDragon
@@ -228,13 +228,13 @@ insert:
 # ExplosionPrimeEvent(出現時の爆発)
 file: net/minecraft/world/entity/boss/wither/WitherBoss.java
 anchor:
-    level.explode(this, this.getX(), this.getEyeY(), this.getZ(), 7.0F, false, Level.ExplosionInteraction.MOB);
+    this.level().explode(this, this.getX(), this.getEyeY(), this.getZ(), 7.0F, false, Level.ExplosionInteraction.MOB);
 insert:
     final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = dev.shifu.event.EntityEvents.explosionPrime(this, 7.0F, false);
     if (shifuPrime == null) {
 insert-after:
     } else if (!shifuPrime.isCancelled()) {
-        level.explode(this, this.getX(), this.getEyeY(), this.getZ(), shifuPrime.getRadius(), shifuPrime.getFire(), Level.ExplosionInteraction.MOB);
+        this.level().explode(this, this.getX(), this.getEyeY(), this.getZ(), shifuPrime.getRadius(), shifuPrime.getFire(), Level.ExplosionInteraction.MOB);
     }
 
 # ============================================================ ArmorStand
@@ -242,9 +242,9 @@ insert-after:
 # EntityDamageEvent(BYPASSES_INVULNERABILITY)。kill が使う被害の元も置く。
 file: net/minecraft/world/entity/decoration/ArmorStand.java
 anchor:
-    this.kill(level);
+    this.kill();
     return false;
-    } else if (this.isInvulnerableTo(level, source) || this.invisible || this.isMarker()) {
+    } else if (this.isInvulnerableTo(source) || this.invisible || this.isMarker()) {
 insert:
     if (dev.shifu.event.EntityEvents.damageCancelled(this, source, amount, true, false)) {
         return false;
@@ -263,7 +263,7 @@ insert-after:
 # EntityDeathEvent(壊れた)。本体のアイテムも落とし物に載せるため、brokenByPlayer から控える。
 file: net/minecraft/world/entity/item/ItemEntity.java
 anchor:
-    if (!this.level().isClientSide() && this.age >= 6000) {
+    if (!this.level().isClientSide && this.age >= 6000) {
 insert:
     if (!this.level().isClientSide() && this.age >= 6000 && !dev.shifu.event.EntityEvents.itemDespawn(this)) {
         this.age = 0;
@@ -297,13 +297,13 @@ insert:
 # EntityDamageEvent(飛び道具を弾く)。deflect の前に出す。
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-    if (target.getType().is(EntityTypeTags.REDIRECTABLE_PROJECTILE)
-        && target instanceof Projectile projectile
-        && projectile.deflect(ProjectileDeflection.AIM_DEFLECT, this, EntityReference.of(this), true)) {
+    if (target.getType().is(EntityTypeTags.REDIRECTABLE_PROJECTILE) && target instanceof Projectile projectile) {
+    projectile.deflect(ProjectileDeflection.AIM_DEFLECT, this, this, true);
+    } else {
 insert:
     if (dev.shifu.event.EntityEvents.deflectListening() && target.getType().is(EntityTypeTags.REDIRECTABLE_PROJECTILE)
         && target instanceof Projectile && !dev.shifu.event.EntityEvents.deflectAllowed(this, target)) {
-        return false;
+        return;
     }
 
 # EntityExhaustionEvent
@@ -343,9 +343,9 @@ insert:
 # PlayerPickupArrowEvent
 file: net/minecraft/world/entity/projectile/LargeFireball.java
 anchor:
-    this.level().explode(this, this.getX(), this.getY(), this.getZ(), this.explosionPower, flag, Level.ExplosionInteraction.MOB);
+    this.level().explode(this, this.getX(), this.getY(), this.getZ(), (float)this.explosionPower, bl, Level.ExplosionInteraction.MOB);
 insert:
-    final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = dev.shifu.event.EntityEvents.explosionPrime(this, this.explosionPower, flag);
+    final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = dev.shifu.event.EntityEvents.explosionPrime(this, this.explosionPower, bl);
     if (shifuPrime == null) {
 insert-after:
     } else if (!shifuPrime.isCancelled()) {

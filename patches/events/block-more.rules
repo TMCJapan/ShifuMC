@@ -238,8 +238,8 @@ file: net/minecraft/world/level/block/RedStoneOreBlock.java
 anchor:
     interact(state, world, pos);
     }
-
-    return (InteractionResult)(stack.getItem() instanceof BlockItem && new BlockPlaceContext(player, hand, stack, hitResult).canPlace()
+    
+    return stack.getItem() instanceof BlockItem && new BlockPlaceContext(player, hand, stack, hit).canPlace()
 insert:
     dev.shifu.event.BlockEvents.oreToucher(player);
 
@@ -443,7 +443,7 @@ insert:
 # 結果を入れる所。burn は static で world も pos も受け取らないので、控えた位置で発火する
 file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
-    createExperience(world, popVec, entry.getIntValue(), ((AbstractCookingRecipe)recipeHolder.value()).experience());
+    createExperience(world, pos, entry.getIntValue(), ((AbstractCookingRecipe)recipe.value()).getExperience());
 insert:
     dev.shifu.event.BlockEvents.furnaceExpAt(this.worldPosition);
 
@@ -691,11 +691,11 @@ insert-after:
 # Shifu は vanilla の中身をそのままにして、呼ぶ側を囲む。
 file: net/minecraft/world/level/block/ChorusFlowerBlock.java
 anchor:
-    world.setBlock(pos, ChorusPlantBlock.getStateWithConnections(world, pos, this.plant.defaultBlockState()), Block.UPDATE_CLIENTS);
-    this.placeGrownFlower(world, blockPos, ageValue);
+    world.setBlock(pos, ChorusPlantBlock.getStateWithConnections(world, pos, this.plant.defaultBlockState()), 2);
+    this.placeGrownFlower(world, blockPos, i);
 insert:
     if (dev.shifu.event.BlockEvents.silentSpread()
-            || dev.shifu.event.BlockEvents.spreadTo(world, pos, blockPos, this.defaultBlockState().setValue(AGE, ageValue))) {
+            || dev.shifu.event.BlockEvents.spreadTo(world, pos, blockPos, this.defaultBlockState().setValue(AGE, i))) {
 insert-after:
     }
 
@@ -768,7 +768,7 @@ insert-after:
 # ここで MAIN_HAND を置く(ItemEvents 側の求め)。
 file: net/minecraft/world/level/block/FenceBlock.java
 anchor:
-        return (InteractionResult)(!world.isClientSide() ? LeadItem.bindPlayerMobs(player, world, pos) : InteractionResult.PASS);
+    return !world.isClientSide() ? LeadItem.bindPlayerMobs(player, world, pos) : InteractionResult.PASS;
 insert:
     dev.shifu.event.ItemEvents.leashHand(player, net.minecraft.world.InteractionHand.MAIN_HAND);
 

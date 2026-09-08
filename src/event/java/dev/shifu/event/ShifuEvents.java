@@ -407,6 +407,53 @@ public final class ShifuEvents {
 
 
     /** 右クリックのうち、手に持った物の使用だけが拒まれたか。拒まれていれば手元を送り直す。 */
+    /**
+     * PlayerInteractEvent(ブロックへの右クリック)。{@code useItemOn} の先頭、
+     * ブロックの状態を読んだ直後。登録が無ければ null を返し、呼ぶ側は vanilla のまま進む。
+     *
+     * <p>Paper は {@code firedInteract} などの欄に控えて packet 側の二重発火を避けるが、
+     * Shifu はその経路を持たないので控えない。
+     */
+    public static org.bukkit.event.player.PlayerInteractEvent interactBlock(
+            final net.minecraft.server.level.ServerPlayerGameMode gameMode, final ServerPlayer player,
+            final net.minecraft.world.level.Level level, final net.minecraft.world.item.ItemStack itemStack,
+            final net.minecraft.world.InteractionHand hand, final net.minecraft.world.phys.BlockHitResult hitResult,
+            final net.minecraft.world.level.block.state.BlockState state) {
+        if (!listening(org.bukkit.event.player.PlayerInteractEvent.getHandlerList())) {
+            return null;
+        }
+
+        final BlockPos pos = hitResult.getBlockPos();
+        final boolean cancelledBlock = gameMode.getGameModeForPlayer() == net.minecraft.world.level.GameType.SPECTATOR
+                && state.getMenuProvider(level, pos) == null;
+        final boolean cancelledItem = player.getCooldowns().isOnCooldown(itemStack.getItem());
+
+        return CraftEventFactory.callPlayerInteractEvent(
+                player, org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK, pos, hitResult.getDirection(), itemStack,
+                cancelledBlock, cancelledItem, hand, hitResult.getLocation());
+    }
+
+    /**
+     * ブロックへの右クリックが拒まれたとき。Paper と同じくクライアントの画面を直して返る。
+     */
+    public static net.minecraft.world.InteractionResult interactBlockDenied(
+            final org.bukkit.event.player.PlayerInteractEvent event, final ServerPlayer player,
+            final net.minecraft.world.level.block.state.BlockState state) {
+        if (state.getBlock() instanceof net.minecraft.world.level.block.CakeBlock) {
+            player.getBukkitEntity().sendHealthUpdate(); // SPIGOT-1341 - ケーキの分の体力を戻す
+        } else if (state.is(net.minecraft.world.level.block.Blocks.JIGSAW)
+                || state.is(net.minecraft.world.level.block.Blocks.STRUCTURE_BLOCK)
+                || state.getBlock() instanceof net.minecraft.world.level.block.CommandBlock) {
+            player.connection.send(new net.minecraft.network.protocol.game.ClientboundContainerClosePacket(player.containerMenu.containerId));
+        }
+
+        player.containerMenu.sendAllDataToRemote();
+
+        return event.useItemInHand() != org.bukkit.event.Event.Result.ALLOW
+                ? net.minecraft.world.InteractionResult.SUCCESS
+                : net.minecraft.world.InteractionResult.PASS;
+    }
+
     public static boolean interactItemDenied(final org.bukkit.event.player.PlayerInteractEvent event, final ServerPlayer player) {
         if (event == null || event.useItemInHand() != org.bukkit.event.Event.Result.DENY) {
             return false;

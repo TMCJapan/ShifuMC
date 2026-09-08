@@ -68,20 +68,20 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/feline/Ocelot.java.patch
 file: net/minecraft/world/entity/animal/Ocelot.java
 anchor:
-    if (!this.level().isClientSide()) {
-        if (this.random.nextInt(3) == 0) {
+    if (!this.level().isClientSide) {
+    if (this.random.nextInt(3) == 0) {
 insert-after:
     if (!dev.shifu.event.AnimalEvents.tame(this, player)) {
         this.spawnTrustingParticles(false);
-        this.level().broadcastEntityEvent(this, EntityEvent.TRUSTING_FAILED);
+        this.level().broadcastEntityEvent(this, (byte) 40);
         return InteractionResult.SUCCESS;
     }
 
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/parrot/Parrot.java.patch
 file: net/minecraft/world/entity/animal/Parrot.java
 anchor:
-    if (!this.level().isClientSide()) {
-        if (this.random.nextInt(10) == 0) {
+    if (!this.level().isClientSide) {
+    if (this.random.nextInt(10) == 0) {
 insert-after:
     if (!dev.shifu.event.AnimalEvents.tame(this, player)) {
         this.level().broadcastEntityEvent(this, (byte) 6);
@@ -281,7 +281,7 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/raid/Raids.java.patch(callRaidTriggerEvent)
 file: net/minecraft/world/entity/raid/Raids.java
 anchor:
-    Raid raid = this.getOrCreateRaid(serverLevel, blockPos);
+    Raid raid = this.getOrCreateRaid(player.serverLevel(), blockPos2);
 insert-after:
     final boolean shifuNewRaid = dev.shifu.event.AnimalEvents.raidTriggerListening()
             && !raid.isStarted() && !this.raidMap.containsValue(raid);
@@ -501,10 +501,10 @@ insert:
 # 襲撃者の呼びかけ。どちらも for のループなので、ループの前で置いてあとで外す
 file: net/minecraft/world/entity/raid/Raider.java
 anchor:
-    for (Raider raider : getServerLevel(this.mob)
+    for (Raider raider : this.mob
+    .level()
     .getNearbyEntities(Raider.class, this.shoutTargeting, this.mob, this.mob.getBoundingBox().inflate(8.0, 8.0, 8.0))) {
     raider.setTarget(this.mob.getTarget());
-    }
 insert:
     dev.shifu.event.EntityEvents.targetReasonUntilDone(org.bukkit.event.entity.EntityTargetEvent.TargetReason.FOLLOW_LEADER);
 insert-after:
@@ -701,7 +701,7 @@ insert:
 # ハチの毒針
 file: net/minecraft/world/entity/animal/Bee.java
 anchor:
-    livingEntity.addEffect(new MobEffectInstance(MobEffects.POISON, i * 20, 0), this);
+    ((LivingEntity)target).addEffect(new MobEffectInstance(MobEffects.POISON, i * 20, 0), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
