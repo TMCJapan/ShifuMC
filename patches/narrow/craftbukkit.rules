@@ -76,3 +76,16 @@ with:
     public static enum Flag {
         UNKNOWN_BEHAVIOR, // Paper - add UNKNOWN_BEHAVIOR
         MOVE,
+
+# CraftBukkit は nextContainerCounter を void から int に変えて、次の番号を返す
+# (CraftContainer がその番号で画面を開く)。既にある文はそのままで、返す行を足すだけ
+file: net/minecraft/server/level/ServerPlayer.java
+replace:
+    public void nextContainerCounter() {
+        this.containerCounter = this.containerCounter % 100 + 1;
+    }
+with:
+    public int nextContainerCounter() { // CraftBukkit - void -> int
+        this.containerCounter = this.containerCounter % 100 + 1;
+        return this.containerCounter;
+    }

@@ -140,18 +140,27 @@ def members(lines):
                 number += 1
                 continue
 
-            key = (owner, ms.key_of(name, block))
+            # 1 行に複数あるときは、先頭の宣言もそこで切る。
+            # 行ごと足すと 2 つめ以降と二重になる
+            extras = tail(block[0]) if len(block) == 1 else []
+            head = block
+
+            if extras:
+                cut = block[0].split(";")[0] + ";"
+                head = [cut]
+
+            key = (owner, ms.key_of(name, head))
 
             if key not in out:
-                out[key] = (name, block)
+                out[key] = (name, head)
                 order.append(key)
 
             # **Paper は同じ行に宣言を並べる。** 差分を小さくするために
             # vanilla の宣言の後ろに足す
             # (`protected final ChunkPos chunkPos; public final long coordinateKey; ...`)。
             # 1 行 1 宣言で見ると、先頭の vanilla の宣言しか拾えない。
-            if len(block) == 1:
-                for extra in tail(block[0]):
+            if extras:
+                for extra in extras:
                     hit = next((p.match(extra) for p in PATTERNS if p.match(extra)), None)
 
                     if not hit:
