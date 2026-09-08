@@ -8,26 +8,23 @@
 
 # ============================================================ Entity
 
-# EntityCombustByBlockEvent(溶岩)
-file: net/minecraft/world/entity/Entity.java
-anchor:
-    if (itemInHand.is(Items.SHEARS) && this.shearOffAllLeashConnections(player)) {
-insert:
-    if (itemInHand.is(Items.SHEARS)) {
-        dev.shifu.event.EntityEvents.shearHand(hand);
-    }
-
 # PlayerUnleashEntityEvent(持ち主が手で外す)
-file: net/minecraft/world/entity/Entity.java
+#
+# 1.20.6 は Mob.interact が外す(1.21.x の Leashable は無い)。
+# 取り消されたら繋いだままにして、クライアントへ繋ぎ直しの packet を送る。
+file: net/minecraft/world/entity/Mob.java
 anchor:
-    if (this instanceof Leashable leashable && leashable.isLeashed()) {
-    leashable.dropLeash();
-    flag = true;
-    }
+    this.dropLeash(true, !player.hasInfiniteMaterials());
 insert:
-    if (shifuSelf == 1) {
-insert-after:
+    final Boolean shifuDropLeash = dev.shifu.event.EntityEvents.unleashByPlayer(this, player, hand, !player.hasInfiniteMaterials());
+    if (shifuDropLeash == null) {
+        ((net.minecraft.server.level.ServerPlayer) player).connection.send(
+                new net.minecraft.network.protocol.game.ClientboundSetEntityLinkPacket(this, this.getLeashHolder()));
+        return InteractionResult.PASS;
     }
+    if (shifuDropLeash != !player.hasInfiniteMaterials()) {
+        this.dropLeash(true, shifuDropLeash);
+    } else
 
 # EntityAirChangeEvent
 file: net/minecraft/world/entity/ExperienceOrb.java

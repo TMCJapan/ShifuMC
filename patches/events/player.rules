@@ -24,13 +24,14 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch:986
 file: net/minecraft/server/commands/TeleportCommand.java
 anchor:
-    if (target.teleportTo(level, d, d1, d2, relatives, f2, f3, true)) {
+    if (target.teleportTo(world, x, y, z, movementFlags, f, g)) {
 insert:
     dev.shifu.event.ShifuEvents.teleportCause(target, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.COMMAND);
 
 file: net/minecraft/world/entity/projectile/ThrownEnderpearl.java
 anchor:
-    ServerPlayer serverPlayer1 = serverPlayer.teleport(
+    if (entity.isPassenger()) {
+    serverPlayer.dismountTo(this.getX(), this.getY(), this.getZ());
 insert:
     dev.shifu.event.ShifuEvents.teleportCause(serverPlayer, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.ENDER_PEARL);
 
@@ -122,7 +123,7 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayerGameMode.java.patch:172
 file: net/minecraft/server/commands/GameModeCommand.java
 anchor:
-    if (setGameMode(context.getSource(), serverPlayer, gameType)) {
+    if (serverPlayer.setGameMode(gameMode)) {
 insert:
     dev.shifu.event.ShifuEvents.gameModeCause(serverPlayer, org.bukkit.event.player.PlayerGameModeChangeEvent.Cause.COMMAND);
 

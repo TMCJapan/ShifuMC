@@ -213,6 +213,23 @@ public final class EntityEvents {
         return handled;
     }
 
+    /**
+     * PlayerUnleashEntityEvent(持ち主が手で外す)。1.20.6 は Mob.interact が外す。
+     *
+     * @return 縄を落とすか。取り消されたら null(呼ぶ側は繋いだままにして packet を送り直す)
+     */
+    public static Boolean unleashByPlayer(final Mob mob, final net.minecraft.world.entity.player.Player player,
+                                          final InteractionHand hand, final boolean dropLeash) {
+        if (!listening(org.bukkit.event.player.PlayerUnleashEntityEvent.getHandlerList())) {
+            return dropLeash;
+        }
+
+        final org.bukkit.event.player.PlayerUnleashEntityEvent event =
+                CraftEventFactory.callPlayerUnleashEntityEvent(mob, player, hand, dropLeash);
+
+        return event.isCancelled() ? null : event.isDropLeash();
+    }
+
 
 
 
