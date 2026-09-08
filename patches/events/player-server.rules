@@ -1,3 +1,4 @@
+
 # プレイヤー・サーバー・世界(境界、時間、生成)の発火。発火層は dev.shifu.event.PlayerEvents。
 # どれも vanilla の行を残し、前後に差し込む。登録が無ければ発火しない。
 
@@ -44,58 +45,6 @@ anchor:
 insert:
     if (dev.shifu.event.PlayerEvents.remoteCommand(this, this.rconConsoleSource, command)) {
 insert-after:
-    }
-
-# GS4QueryEvent(BASIC)。vanilla の書き出し 7 行を囲み、登録があれば発火層が書く
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/server/rcon/thread/QueryThreadGs4.java.patch
-file: net/minecraft/server/rcon/thread/QueryThreadGs4.java
-anchor:
-    networkDataOutputStream.writeString(this.serverName);
-    networkDataOutputStream.writeString("SMP");
-    networkDataOutputStream.writeString(this.worldName);
-    networkDataOutputStream.writeString(Integer.toString(this.serverInterface.getPlayerCount()));
-    networkDataOutputStream.writeString(Integer.toString(this.maxPlayers));
-    networkDataOutputStream.writeShort((short)this.serverPort);
-    networkDataOutputStream.writeString(this.hostIp);
-insert:
-    if (dev.shifu.event.PlayerEvents.silentQuery()) {
-insert-after:
-    } else {
-        dev.shifu.event.PlayerEvents.queryBasic(networkDataOutputStream, requestPacket, this.serverName, this.worldName, this.serverInterface.getPlayerCount(),
-                this.maxPlayers, this.serverPort, this.hostIp, this.serverInterface.getServerVersion());
-    }
-
-# GS4QueryEvent(FULL)。書き出し 20 行を囲む。プレイヤー名の列は vanilla のまま
-file: net/minecraft/server/rcon/thread/QueryThreadGs4.java
-anchor:
-    this.rulesResponse.writeString("hostname");
-    this.rulesResponse.writeString(this.serverName);
-    this.rulesResponse.writeString("gametype");
-    this.rulesResponse.writeString("SMP");
-    this.rulesResponse.writeString("game_id");
-    this.rulesResponse.writeString("MINECRAFT");
-    this.rulesResponse.writeString("version");
-    this.rulesResponse.writeString(this.serverInterface.getServerVersion());
-    this.rulesResponse.writeString("plugins");
-    this.rulesResponse.writeString(this.serverInterface.getPluginNames());
-    this.rulesResponse.writeString("map");
-    this.rulesResponse.writeString(this.worldName);
-    this.rulesResponse.writeString("numplayers");
-    this.rulesResponse.writeString(this.serverInterface.getPlayerCount() + "");
-    this.rulesResponse.writeString("maxplayers");
-    this.rulesResponse.writeString(this.maxPlayers + "");
-    this.rulesResponse.writeString("hostport");
-    this.rulesResponse.writeString(this.serverPort + "");
-    this.rulesResponse.writeString("hostip");
-    this.rulesResponse.writeString(this.hostIp);
-insert:
-    if (dev.shifu.event.PlayerEvents.silentQuery()) {
-insert-after:
-    } else {
-        dev.shifu.event.PlayerEvents.queryFull(this.rulesResponse, requestPacket, this.serverName, this.serverInterface.getServerVersion(),
-                this.worldName, this.serverInterface.getPlayerCount(), this.maxPlayers, this.serverPort, this.hostIp,
-                this.serverInterface.getPlayerNames());
     }
 
 # ============================================================ 世界

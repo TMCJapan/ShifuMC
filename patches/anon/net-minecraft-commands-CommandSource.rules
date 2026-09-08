@@ -1,0 +1,14 @@
+# vanilla の中の無名クラスへの追加。型の名前が無いので hand では届かない。
+
+# CommandSource.NULL は CommandSource を実装するので、shim が interface に足した
+# getBukkitSender をここにも要る。Paper と同じ no-op の送り手を返す
+file: net/minecraft/commands/CommandSource.java
+anchor:
+    public boolean acceptsSuccess() {
+    return false;
+    }
+insert-after:
+        @Override
+        public org.bukkit.command.CommandSender getBukkitSender(CommandSourceStack wrapper) {
+            return io.papermc.paper.brigadier.NullCommandSender.INSTANCE; // Paper - expose a no-op CommandSender
+        }

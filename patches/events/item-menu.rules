@@ -1,3 +1,4 @@
+
 # アイテム(world/item)とメニュー(world/inventory)のイベント。手で書いたもの。
 # 発火層は src/event/java/dev/shifu/event/ItemEvents.java。
 #
@@ -23,49 +24,6 @@ anchor:
 insert:
     if (!dev.shifu.event.ItemEvents.grindstoneExpListening()
             || dev.shifu.event.ItemEvents.grindstoneExp((net.minecraft.server.level.ServerLevel) world, pos, this.getExperienceAmount(world))) {
-insert-after:
-    }
-
-# ---------------------------------------------------------------- PlayerChangeBeaconEffectEvent
-#
-# 効果を書き込む前。取り消しは true で抜ける(Paper と同じ。切断させない)。差し替えは
-# vanilla の局所変数に代入して vanilla の行に書き込ませる。消費は willConsumeItem で囲む。
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/BeaconMenu.java.patch
-file: net/minecraft/world/inventory/BeaconMenu.java
-anchor:
-    this.paymentSlot.remove(1);
-insert:
-    if (shifuBeacon == null || shifuBeacon.willConsumeItem()) {
-insert-after:
-    }
-
-# ---------------------------------------------------------------- EnchantItemEvent
-#
-# 経験値を払う前(Paper と同じ)。取り消し(経験値不足・空も)なら抜ける。付けるエンチャントは
-# vanilla の局所変数 newEnchantment に代入して vanilla のループに付けさせる。
-# PrepareItemEnchantEvent は patches/events/generated にある。
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/EnchantmentMenu.java.patch(EnchantItemEvent)
-file: net/minecraft/world/item/BoatItem.java
-anchor:
-    AbstractBoat boat = this.getBoat(level, hitResult, itemInHand, user);
-insert:
-    if (!dev.shifu.event.ItemEvents.boatInteract(user, (net.minecraft.world.phys.BlockHitResult) hitResult, itemInHand, hand)) {
-        return net.minecraft.world.InteractionResult.PASS;
-    }
-
-file: net/minecraft/world/item/BoatItem.java
-anchor:
-    world.addFreshEntity(boat);
-insert:
-    if (!dev.shifu.event.ItemEvents.entityPlace(world, ((net.minecraft.world.phys.BlockHitResult) hitResult).getBlockPos(),
-            user.getDirection(), user, boat, hand)) {
-        return net.minecraft.world.InteractionResult.FAIL;
-    }
-    if (dev.shifu.event.ItemEvents.spawnCancelListening()) {
-        if (!world.addFreshEntity(boat)) {
-            return net.minecraft.world.InteractionResult.PASS;
-        }
-    } else {
 insert-after:
     }
 

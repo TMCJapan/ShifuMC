@@ -1,0 +1,14 @@
+# vanilla の中の無名クラスへの追加。
+
+# コマンドブロックの BaseCommandBlock。shim が足した getBukkitSender をここにも要る
+file: net/minecraft/world/level/block/entity/CommandBlockEntity.java
+anchor:
+    public void setCommand(String command) {
+    super.setCommand(command);
+    CommandBlockEntity.this.setChanged();
+    }
+insert-after:
+        @Override
+        public org.bukkit.command.CommandSender getBukkitSender(net.minecraft.commands.CommandSourceStack wrapper) {
+            return new org.bukkit.craftbukkit.command.CraftBlockCommandSender(wrapper, CommandBlockEntity.this);
+        }

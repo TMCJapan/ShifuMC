@@ -1,0 +1,14 @@
+# vanilla の中の無名クラスへの追加。
+
+# 羊の色を混ぜるときの作業台。shim が AbstractContainerMenu に足した getBukkitView を
+# ここにも要る。Paper と同じで、表に出さないので null を返す
+file: net/minecraft/world/entity/animal/Sheep.java
+anchor:
+    public boolean stillValid(Player player) {
+    return false;
+    }
+insert-after:
+            @Override
+            public org.bukkit.craftbukkit.inventory.CraftInventoryView getBukkitView() {
+                return null; // TODO: O.O
+            }
