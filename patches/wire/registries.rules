@@ -9,7 +9,7 @@
 # 組み込みのレジストリ(patches/sources/.../BuiltInRegistries.java.patch @@ -392)
 file: net/minecraft/core/registries/BuiltInRegistries.java
 anchor:
-    Identifier identifier = registryKey.identifier();
+    Identifier identifier = registryKey.location();
     LOADERS.put(identifier, () -> bootstrap.run(registry));
 insert:
     io.papermc.paper.registry.PaperRegistryAccess.instance().registerRegistry(registry);

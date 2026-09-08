@@ -5,7 +5,7 @@ file: net/minecraft/server/MinecraftServer.java
 anchor:
     this.getPlayerList().getPlayers().forEach(player -> player.connection.suspendFlushing());
 insert-after:
-    this.server.getScheduler().mainThreadHeartbeat();
+    this.server.getScheduler().mainThreadHeartbeat(this.tickCount);
 
 # pause-when-empty-seconds で止まっている間のスケジューラ実行
 file: net/minecraft/server/MinecraftServer.java
@@ -13,7 +13,7 @@ anchor:
                     this.tickConnection();
                     return;
 insert:
-    this.server.getScheduler().mainThreadHeartbeat();
+    this.server.getScheduler().mainThreadHeartbeat(this.tickCount);
 
 # 検証で足した 1 件
 file: net/minecraft/server/MinecraftServer.java
@@ -29,7 +29,7 @@ anchor:
                 this.statusIcon = this.loadStatusIcon().orElse(null);
                 this.status = this.buildServerStatus();
 insert-after:
-    this.server.getScheduler().mainThreadHeartbeat();
+    this.server.getScheduler().mainThreadHeartbeat(this.tickCount);
 
 # 停止時のプラグイン無効化。Paper と同じく、非同期タスクの終わりを最大 5 秒待つ
 file: net/minecraft/server/MinecraftServer.java

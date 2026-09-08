@@ -57,7 +57,7 @@ anchor:
     this.validator.run(reporter, key, value);
 insert-after:
     if (value instanceof LootTable lootTable) {
-        lootTable.craftLootTable = new org.bukkit.craftbukkit.CraftLootTable(org.bukkit.craftbukkit.util.CraftNamespacedKey.fromMinecraft(key.identifier()), lootTable);
+        lootTable.craftLootTable = new org.bukkit.craftbukkit.CraftLootTable(org.bukkit.craftbukkit.util.CraftNamespacedKey.fromMinecraft(key.location()), lootTable);
     }
 
 # TransientCraftingContainer.resultInventory(作業台の結果欄。CraftInventoryCrafting が読む)

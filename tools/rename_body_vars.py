@@ -28,7 +28,7 @@ ERROR = re.compile(r"^(.+?\.java):(\d+): error: cannot find symbol\s*$")
 SYMBOL = re.compile(r"^\s*symbol:\s+variable ([\w$]+)")
 # メソッドの宣言。戻り値と名前と引数まで。
 HEAD = re.compile(r"^(\s+)(?:(?:public|private|protected|static|final|abstract|synchronized|"
-                  r"default|native)\s+)*[\w.<>,?\[\]$]+\s+([\w$]+)\s*\(([^;{]*)\)\s*\{?\s*$")
+                  r"default|native)\s+)*(?:[\w.<>,?\[\]$]+\s+)?([\w$]+)\s*\(([^;{]*)\)\s*\{?\s*$")
 ARG = re.compile(r"^(.*?[\w\]>])\s+([\w$]+)$")
 
 

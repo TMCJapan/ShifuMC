@@ -20,28 +20,28 @@ file: net/minecraft/world/inventory/AbstractFurnaceMenu.java
 anchor:
     this.addSlot(new FurnaceResultSlot(playerInventory.player, inventory, 2, 116, 35));
 insert-after:
-    this.inventory = playerInventory;
+    this.player = playerInventory;
 
 # AbstractMountInventoryMenu.inventory(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/AbstractMountInventoryMenu.java
 anchor:
     super(null, containerId);
 insert-after:
-    this.inventory = playerInventory;
+    this.player = playerInventory;
 
 # BeaconMenu.inventory(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/BeaconMenu.java
 anchor:
     super(MenuType.BEACON, syncId);
 insert-after:
-    this.inventory = (net.minecraft.world.entity.player.Inventory) inventory;
+    this.player = (net.minecraft.world.entity.player.Inventory) inventory;
 
 # BrewingStandMenu.inventory(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/BrewingStandMenu.java
 anchor:
     super(MenuType.BREWING_STAND, syncId);
 insert-after:
-    this.inventory = playerInventory;
+    this.player = playerInventory;
 
 # CartographyTableMenu.player(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/CartographyTableMenu.java
@@ -55,7 +55,7 @@ file: net/minecraft/world/inventory/DispenserMenu.java
 anchor:
     super(MenuType.GENERIC_3x3, syncId);
 insert-after:
-    this.inventory = inventory;
+    this.player = inventory;
 
 # EnchantmentMenu.player(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/EnchantmentMenu.java
@@ -76,7 +76,7 @@ file: net/minecraft/world/inventory/HopperMenu.java
 anchor:
     this.hopper = inventory;
 insert-after:
-    this.inventory = inventory;
+    this.player = inventory;
 
 # LoomMenu.player(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/LoomMenu.java
@@ -90,7 +90,7 @@ file: net/minecraft/world/inventory/MerchantMenu.java
 anchor:
     this.addSlot(new MerchantResultSlot(playerInventory.player, merchant, this.tradeContainer, 2, 220, 37));
 insert-after:
-    this.inventory = playerInventory;
+    this.player = playerInventory;
 
 # StonecutterMenu.player(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/StonecutterMenu.java
