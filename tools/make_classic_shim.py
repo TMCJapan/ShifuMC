@@ -252,6 +252,24 @@ def required_owners(path):
     return out
 
 
+def abstract_names(path):
+    """`abstract` として要求されている名前。
+
+    「X is not abstract and does not override abstract method Y」は、
+    **実装しているすべての型**に足して直る。どれか 1 つの型との継承関係で
+    絞ると、他の実装が漏れる。
+    """
+    out = set()
+
+    for line in io.open(path, encoding="utf-8"):
+        hit = ENTRY.match(line.rstrip("\n"))
+
+        if hit and hit.group(1) == "abstract":
+            out.add(hit.group(2))
+
+    return out
+
+
 def ancestors(tree):
     """型の単純名 -> 自分と、その上にある型の単純名。"""
     head = {}
@@ -347,6 +365,7 @@ def main():
     write = "--write" in sys.argv
     wanted = ms.load_required(required)
     asked = required_owners(required)
+    everywhere = abstract_names(required)
     above = ancestors(tree)
     skip = skips(os.path.join(os.path.dirname(HERE), "patches", "shim-skip.txt"))
     files = 0
@@ -412,7 +431,8 @@ def main():
                 # 照合は**両向き**。`CommandSource.getBukkitSender` が足りないという
                 # エラーは、実装している `Entity` の側に足して直る。要求元が上にいる
                 # ことも下にいることもある(1.20.6 で 145 件がこれだった)。
-                who = {one for one in asked.get(member, set()) if one in above}
+                who = set() if member in everywhere else {
+                    one for one in asked.get(member, set()) if one in above}
 
                 # 入れ子の型(BlockStateBase など)は木の索引に無い。
                 # 継承をたどれないので、そこは絞らない
