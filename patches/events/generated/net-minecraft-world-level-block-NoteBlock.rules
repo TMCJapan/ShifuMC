@@ -3,9 +3,10 @@
 # callNotePlayEvent
 file: net/minecraft/world/level/block/NoteBlock.java
 anchor:
-    float pitchFromNote;
-insert:
+    NoteBlockInstrument noteBlockInstrument = state.getValue(INSTRUMENT);
+    float f;
+insert-after:
     // Paper start - move NotePlayEvent call to fix instrument/note changes
-    org.bukkit.event.block.NotePlayEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callNotePlayEvent(level, pos, noteBlockInstrument, state.getValue(NOTE));
+    org.bukkit.event.block.NotePlayEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callNotePlayEvent(world, pos, noteBlockInstrument, state.getValue(NOTE));
     if (event.isCancelled()) return false;
     // Paper end - move NotePlayEvent call to fix instrument/note changes

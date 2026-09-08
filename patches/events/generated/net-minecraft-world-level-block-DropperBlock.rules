@@ -3,7 +3,7 @@
 # handleBlockFailedDispenseEvent
 file: net/minecraft/world/level/block/DropperBlock.java
 anchor:
-    world.levelEvent(LevelEvent.SOUND_DISPENSER_FAIL, pos, 0);
+    world.levelEvent(1001, pos, 0);
 insert:
     if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockFailedDispenseEvent(world, pos)) // Paper - Add BlockFailedDispenseEvent
 

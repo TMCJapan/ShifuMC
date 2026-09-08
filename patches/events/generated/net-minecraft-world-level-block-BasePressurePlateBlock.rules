@@ -10,15 +10,14 @@ insert-after:
 # BlockRedstoneEvent
 file: net/minecraft/world/level/block/BasePressurePlateBlock.java
 anchor:
-    if (currentSignal != signalStrength) {
+    if (output != i) {
 insert:
-
     // CraftBukkit start - Interact Pressure Plate
-    if (flag != flag1) {
-        org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(org.bukkit.craftbukkit.block.CraftBlock.at(level, pos), currentSignal, signalStrength);
+    if (bl != bl2) {
+        org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(org.bukkit.craftbukkit.block.CraftBlock.at(world, pos), output, i);
         eventRedstone.callEvent();
 
-        flag1 = eventRedstone.getNewCurrent() > 0;
-        signalStrength = eventRedstone.getNewCurrent();
+        bl2 = eventRedstone.getNewCurrent() > 0;
+        i = eventRedstone.getNewCurrent();
     }
     // CraftBukkit end

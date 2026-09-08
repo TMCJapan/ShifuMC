@@ -1,13 +1,14 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
+# 1.20.6 の use は戦利品表ではなく popResource で出す。Paper の
+# PlayerHarvestBlockEvent の分は無いので、EntityChangeBlockEvent だけ置く。
 
 # callEntityChangeBlockEvent
 file: net/minecraft/world/level/block/CaveVines.java
 anchor:
-    Block.dropFromBlockInteractLootTable(
+    Block.popResource(world, pos, new ItemStack(Items.GLOW_BERRIES, 1));
 insert:
     // CraftBukkit start - call entity change block event
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(entity, pos, state.setValue(CaveVines.BERRIES, false))) {
-        return InteractionResult.SUCCESS;
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(picker, pos, state.setValue(CaveVines.BERRIES, false))) {
+        return InteractionResult.sidedSuccess(world.isClientSide);
     }
     // CraftBukkit end - call entity change block event
-    java.util.List<net.minecraft.world.item.ItemStack> drops = new java.util.ArrayList<>(); // Paper - call player harvest block event - store drops from loottable
