@@ -186,36 +186,36 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/sheep/Sheep.java.patch(handlePlayerShearEntityEvent)
 file: net/minecraft/world/entity/animal/Sheep.java
 anchor:
-    this.shear(serverLevel, SoundSource.PLAYERS, itemInHand);
+    this.shear(SoundSource.PLAYERS);
 insert:
-    if (!dev.shifu.event.AnimalEvents.shear(player, this, itemInHand, hand)) {
+    if (!dev.shifu.event.AnimalEvents.shear(player, this, itemStack, hand)) {
         return InteractionResult.PASS;
     }
 
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/cow/MushroomCow.java.patch(handlePlayerShearEntityEvent)
 file: net/minecraft/world/entity/animal/MushroomCow.java
 anchor:
-    this.shear(serverLevel, SoundSource.PLAYERS, itemInHand);
+    this.shear(SoundSource.PLAYERS);
 insert:
-    if (!dev.shifu.event.AnimalEvents.shear(player, this, itemInHand, hand)) {
+    if (!dev.shifu.event.AnimalEvents.shear(player, this, itemStack, hand)) {
         return InteractionResult.PASS;
     }
 
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/golem/SnowGolem.java.patch(handlePlayerShearEntityEvent)
 file: net/minecraft/world/entity/animal/SnowGolem.java
 anchor:
-    this.shear(serverLevel, SoundSource.PLAYERS, itemInHand);
+    this.shear(SoundSource.PLAYERS);
 insert:
-    if (!dev.shifu.event.AnimalEvents.shear(player, this, itemInHand, hand)) {
+    if (!dev.shifu.event.AnimalEvents.shear(player, this, itemStack, hand)) {
         return InteractionResult.PASS;
     }
 
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/monster/skeleton/Bogged.java.patch(handlePlayerShearEntityEvent)
 file: net/minecraft/world/entity/monster/Bogged.java
 anchor:
-    this.shear(serverLevel, SoundSource.PLAYERS, itemInHand);
+    this.shear(SoundSource.PLAYERS);
 insert:
-    if (!dev.shifu.event.AnimalEvents.shear(player, this, itemInHand, hand)) {
+    if (!dev.shifu.event.AnimalEvents.shear(player, this, itemStack, hand)) {
         return InteractionResult.PASS;
     }
 
@@ -348,7 +348,7 @@ insert:
 # ゾンビが村人を感染させる
 file: net/minecraft/world/entity/monster/Zombie.java
 anchor:
-    ZombieVillager zombieVillager = villager.convertTo(EntityType.ZOMBIE_VILLAGER, ConversionParams.single(villager, true, true), mob -> {
+    ZombieVillager zombieVillager = villager.convertTo(EntityType.ZOMBIE_VILLAGER, false);
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.INFECTION);
 
@@ -467,7 +467,7 @@ insert:
 
 file: net/minecraft/world/entity/monster/Vex.java
 anchor:
-    Vex.this.setTarget(owner != null ? owner.getTarget() : null);
+    Vex.this.setTarget(Vex.this.owner.getTarget());
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.OWNER_ATTACKED_TARGET);
 
@@ -579,7 +579,7 @@ insert:
 
 file: net/minecraft/world/entity/animal/axolotl/Axolotl.java
 anchor:
-    player.removeEffect(MobEffects.MINING_FATIGUE);
+    player.removeEffect(MobEffects.DIG_SLOWDOWN);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.AXOLOTL);
 

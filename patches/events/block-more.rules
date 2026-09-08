@@ -84,13 +84,13 @@ insert:
         this.setSuccess(false);
         return stack;
     }
-    dev.shifu.event.BlockEvents.shearing(pointer);
+    dev.shifu.event.BlockEvents.shearing(pointer, stack);
 
 file: net/minecraft/core/dispenser/ShearsDispenseItemBehavior.java
 anchor:
-    shearable.shear(world, SoundSource.BLOCKS, stack);
+    shearable.shear(SoundSource.BLOCKS);
 insert:
-    if (!dev.shifu.event.BlockEvents.shearByBlock(world, dev.shifu.event.BlockEvents.shearingDispenser(pos), entity, stack)) {
+    if (!dev.shifu.event.BlockEvents.shearByBlock(world, dev.shifu.event.BlockEvents.shearingDispenser(pos), livingEntity, dev.shifu.event.BlockEvents.shearingTool(net.minecraft.world.item.ItemStack.EMPTY))) {
         continue;
     }
 
@@ -723,7 +723,7 @@ insert-after:
 # ------------------------------------------------------------ ウサギが畑を荒らす
 file: net/minecraft/world/entity/animal/Rabbit.java
 anchor:
-    world.setBlock(blockPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+    level.setBlock(blockPos, Blocks.AIR.defaultBlockState(), 2);
 insert:
     if (!dev.shifu.event.BlockEvents.entityChangeBlock(this.rabbit, blockPos, blockState.getFluidState().createLegacyBlock())) {
         return;
@@ -731,9 +731,9 @@ insert:
 
 file: net/minecraft/world/entity/animal/Rabbit.java
 anchor:
-    world.setBlock(blockPos, blockState.setValue(CarrotBlock.AGE, ageValue - 1), Block.UPDATE_CLIENTS);
+    level.setBlock(blockPos, blockState.setValue(CarrotBlock.AGE, Integer.valueOf(i - 1)), 2);
 insert:
-    if (!dev.shifu.event.BlockEvents.entityChangeBlock(this.rabbit, blockPos, blockState.setValue(CarrotBlock.AGE, ageValue - 1))) {
+    if (!dev.shifu.event.BlockEvents.entityChangeBlock(this.rabbit, blockPos, blockState.setValue(CarrotBlock.AGE, i - 1))) {
         return;
     }
 

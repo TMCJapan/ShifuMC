@@ -147,22 +147,29 @@ public final class BlockEvents {
                 CraftItemStack.asCraftMirror(tool), List.of()).isCancelled();
     }
 
-    /** ディスペンサーのハサミの側で、刈る生き物の位置は分かるがディスペンサーの位置が分からないので置く。 */
+    /**
+     * ディスペンサーのハサミの側で、刈る生き物の位置は分かるがディスペンサーの位置と
+     * 使った道具が分からないので置く。1.20.6 の {@code tryShearLivingEntity} は
+     * 位置しか受け取らない(Paper は引数を 2 つ増やしている)。
+     */
     private static BlockPos shearingDispenser;
+    private static ItemStack shearingTool;
 
-    public static void shearing(final BlockSource source) {
+    public static void shearing(final BlockSource source, final ItemStack tool) {
         if (!listening(org.bukkit.event.block.BlockShearEntityEvent.getHandlerList())) {
             return;
         }
 
         shearingDispenser = source.pos();
+        shearingTool = tool;
     }
 
     public static BlockPos shearingDispenser(final BlockPos fallback) {
-        final BlockPos at = shearingDispenser;
-        shearingDispenser = null;
+        return shearingDispenser == null ? fallback : shearingDispenser;
+    }
 
-        return at == null ? fallback : at;
+    public static ItemStack shearingTool(final ItemStack fallback) {
+        return shearingTool == null ? fallback : shearingTool;
     }
 
     // ------------------------------------------------------------ 中に入った・踏んだ・触れた
