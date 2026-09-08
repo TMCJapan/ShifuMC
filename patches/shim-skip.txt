@@ -12,3 +12,8 @@ net/minecraft/world/level/GameRules.java GameRules.create
 net/minecraft/world/level/GameRules.java Type.create
 net/minecraft/world/level/GameRules.java BooleanValue.create
 net/minecraft/world/level/GameRules.java IntegerValue.create
+
+# Paper は SectionStorage を RegionFileStorage の下に付け替えている(チャンク系の書き直し)。
+# vanilla の SectionStorage は IOWorker を使うので、read/write の上書きは載らない
+net/minecraft/world/entity/ai/village/poi/PoiManager.java PoiManager.read
+net/minecraft/world/entity/ai/village/poi/PoiManager.java PoiManager.write
