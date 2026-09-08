@@ -3,9 +3,9 @@
 # EnderDragonShootFireballEvent
 file: net/minecraft/world/entity/boss/enderdragon/phases/DragonStrafePlayerPhase.java
 anchor:
-    level.addFreshEntity(dragonFireball);
+    this.dragon.level().addFreshEntity(dragonFireball);
 insert:
+    // Paper は音を発火のあとへ移すが、vanilla の行は動かさないので鳴らす位置はそのまま
     if (new com.destroystokyo.paper.event.entity.EnderDragonShootFireballEvent((org.bukkit.entity.EnderDragon) this.dragon.getBukkitEntity(), (org.bukkit.entity.DragonFireball) dragonFireball.getBukkitEntity()).callEvent()) { // Paper - EnderDragon Events
-        if (!this.dragon.isSilent()) level.levelEvent(null, LevelEvent.SOUND_DRAGON_FIREBALL, this.dragon.blockPosition(), 0); // Paper - EnderDragon Events; Fire after shoot fireball event
 insert-after:
     } else dragonFireball.discard(null); // Paper - EnderDragon Events

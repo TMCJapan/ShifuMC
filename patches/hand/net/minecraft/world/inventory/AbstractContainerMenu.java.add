@@ -1,0 +1,8 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// AbstractContainerMenu.setTitle
+    // shim は title と getTitle を足すが setTitle は入らなかった。Paper の宣言を写す
+    public final void setTitle(net.minecraft.network.chat.Component title) {
+        com.google.common.base.Preconditions.checkState(this.title == null, "Title already set");
+        this.title = title;
+    }

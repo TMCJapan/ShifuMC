@@ -33,28 +33,28 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch:537,551
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    this.actuallyHurt(level, damageSource, amount - this.lastHurt);
+    this.actuallyHurt(source, amount - this.lastHurt);
 insert:
     final org.bukkit.event.entity.EntityDamageEvent shifuHurtPartial =
-            dev.shifu.event.ShifuEvents.entityDamage(this, damageSource, amount - this.lastHurt);
+            dev.shifu.event.ShifuEvents.entityDamage(this, source, amount - this.lastHurt);
     if (shifuHurtPartial == null) {
 insert-after:
     } else if (!shifuHurtPartial.isCancelled()) {
-        this.actuallyHurt(level, damageSource, (float) shifuHurtPartial.getDamage());
+        this.actuallyHurt(source, (float) shifuHurtPartial.getDamage());
     } else {
         return false;
     }
 
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    this.actuallyHurt(level, damageSource, amount);
+    this.actuallyHurt(source, amount);
 insert:
     final org.bukkit.event.entity.EntityDamageEvent shifuHurt =
-            dev.shifu.event.ShifuEvents.entityDamage(this, damageSource, amount);
+            dev.shifu.event.ShifuEvents.entityDamage(this, source, amount);
     if (shifuHurt == null) {
 insert-after:
     } else if (!shifuHurt.isCancelled()) {
-        this.actuallyHurt(level, damageSource, (float) shifuHurt.getDamage());
+        this.actuallyHurt(source, (float) shifuHurt.getDamage());
     } else {
         return false;
     }

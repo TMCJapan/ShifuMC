@@ -39,3 +39,8 @@
     // PlayerNaturallySpawnCreaturesEvent。ServerChunkCache が 1 tick に 1 度作って置き、
     // ChunkMap が湧きの範囲を絞るときに読む。登録が無ければ触らないので null のまま。
     public com.destroystokyo.paper.event.entity.PlayerNaturallySpawnCreaturesEvent shifuNaturallySpawnedEvent;
+
+// ServerPlayer.oldLevel
+    // PlayerLevelChangeEvent が前の段を要る。Paper は ServerPlayer の欄として持っている
+    public int oldLevel = -1;
+

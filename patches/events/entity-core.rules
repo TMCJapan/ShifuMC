@@ -32,7 +32,7 @@ insert-after:
 # EntityAirChangeEvent
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
-    if (this.followingPlayer == null || this.followingPlayer.isSpectator() || this.followingPlayer.distanceToSqr(this) > 64.0) {
+    if (this.followingPlayer != null && (this.followingPlayer.isSpectator() || this.followingPlayer.isDeadOrDying())) {
 insert:
     final Player shifuPrevTarget = this.followingPlayer;
 
@@ -61,9 +61,9 @@ insert-after:
 # PlayerPickupExperienceEvent、PlayerExpCooldownChangeEvent、PlayerExpChangeEvent
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
-    entity.takeXpDelay = 2;
+    player.takeXpDelay = 2;
 insert-after:
-    entity.takeXpDelay = dev.shifu.event.EntityEvents.xpCooldown(entity, entity.takeXpDelay, org.bukkit.event.player.PlayerExpCooldownChangeEvent.ChangeReason.PICKUP_ORB);
+    player.takeXpDelay = dev.shifu.event.EntityEvents.xpCooldown(player, player.takeXpDelay, org.bukkit.event.player.PlayerExpCooldownChangeEvent.ChangeReason.PICKUP_ORB);
 
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:

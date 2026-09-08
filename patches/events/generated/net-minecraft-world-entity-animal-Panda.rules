@@ -3,6 +3,6 @@
 # EntityToggleSitEvent
 file: net/minecraft/world/entity/animal/Panda.java
 anchor:
-    this.setFlag(FLAG_SIT, sitting);
+    this.setFlag(8, sitting);
 insert:
     if (!new io.papermc.paper.event.entity.EntityToggleSitEvent(this.getBukkitEntity(), sitting).callEvent()) return; // Paper - Add EntityToggleSitEvent

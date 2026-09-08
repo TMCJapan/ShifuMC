@@ -231,6 +231,48 @@ public final class ItemEvents {
         return ShifuEvents.listening(com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent.getHandlerList());
     }
 
+    /**
+     * PlayerLaunchProjectileEvent(花火をブロックに向けて使う)。
+     *
+     * <p>1.20.6 に {@code Projectile.spawnProjectile} は無いので、vanilla と同じく
+     * {@code addFreshEntity} で出す。
+     *
+     * @return 手元を消費するか。取り消されたら null
+     */
+    public static Boolean launchFirework(final net.minecraft.world.level.Level level,
+                                         final net.minecraft.world.entity.player.Player player,
+                                         final net.minecraft.world.InteractionHand hand,
+                                         final ItemStack stack, final net.minecraft.world.phys.Vec3 clickLocation,
+                                         final Direction direction) {
+        final net.minecraft.world.entity.projectile.FireworkRocketEntity rocket =
+                new net.minecraft.world.entity.projectile.FireworkRocketEntity(
+                        level, player,
+                        clickLocation.x + direction.getStepX() * 0.15,
+                        clickLocation.y + direction.getStepY() * 0.15,
+                        clickLocation.z + direction.getStepZ() * 0.15,
+                        stack);
+
+        if (player == null) {
+            level.addFreshEntity(rocket);
+
+            return Boolean.TRUE;
+        }
+
+        final com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent event =
+                new com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent(
+                        (org.bukkit.entity.Player) player.getBukkitEntity(),
+                        org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack),
+                        (org.bukkit.entity.Firework) rocket.getBukkitEntity());
+
+        if (!event.callEvent()) {
+            return null;
+        }
+
+        level.addFreshEntity(rocket);
+
+        return event.shouldConsume();
+    }
+
 
     // ------------------------------------------------------------ 花火
 

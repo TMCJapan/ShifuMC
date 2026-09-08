@@ -77,8 +77,8 @@ insert:
 
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    boolean flag = this.level().getGameRules().get(GameRules.SHOW_DEATH_MESSAGES);
-    if (flag) {
+    boolean bl = this.level().getGameRules().getBoolean(GameRules.RULE_SHOWDEATHMESSAGES);
+    if (bl) {
 insert:
     if (!shifuDeath) {
 

@@ -13,7 +13,7 @@
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/world/block/DispenserBlock.java.patch
 file: net/minecraft/world/level/block/DispenserBlock.java
 anchor:
-    world.levelEvent(LevelEvent.SOUND_DISPENSER_FAIL, pos, 0);
+    world.levelEvent(1001, pos, 0);
     world.gameEvent(GameEvent.BLOCK_ACTIVATE, pos, GameEvent.Context.of(dispenserBlockEntity.getBlockState()));
 insert:
     if (dev.shifu.event.BlockEvents.failedDispense(world, pos)) {
@@ -106,7 +106,7 @@ insert:
 # BlockDispenseArmorEvent(荷馬にチェスト)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    PrimedTnt primedTnt = new PrimedTnt(serverLevel, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5, null);
+    PrimedTnt primedTnt = new PrimedTnt(level, (double)blockPos.getX() + 0.5, (double)blockPos.getY(), (double)blockPos.getZ() + 0.5, null);
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, blockPos)) {
         return stack;
@@ -286,10 +286,10 @@ insert:
 # BlockIgniteEvent(SPREAD)と BlockSpreadEvent(火が広がる)
 file: net/minecraft/world/level/block/FireBlock.java
 anchor:
-    world.setBlock(mutableBlockPos, this.getStateWithAge(world, mutableBlockPos, min1), Block.UPDATE_ALL);
+    world.setBlock(mutableBlockPos, this.getStateWithAge(world, mutableBlockPos, r), 3);
 insert:
     if (dev.shifu.event.BlockEvents.listeningFireSpread()
-            && !dev.shifu.event.BlockEvents.fireSpread(world, pos, mutableBlockPos, this.getStateWithAge(world, mutableBlockPos, min1))) {
+            && !dev.shifu.event.BlockEvents.fireSpread(world, pos, mutableBlockPos, this.getStateWithAge(world, mutableBlockPos, r))) {
         continue;
     }
 
@@ -392,7 +392,7 @@ insert:
 # BlockFromToEvent(横へ)
 file: net/minecraft/world/level/material/FlowingFluid.java
 anchor:
-    this.spreadTo(world, blockPos, world.getBlockState(blockPos), direction, fluidState1);
+    this.spreadTo(world, blockPos, blockState2, direction, fluidState2);
 insert:
     if (!dev.shifu.event.BlockEvents.fromTo(world, pos, direction)) {
         continue;
@@ -471,24 +471,24 @@ insert-after:
 # BrewingStartEvent
 file: net/minecraft/world/level/block/entity/CampfireBlockEntity.java
 anchor:
-    Containers.dropItemStack(world, pos.getX(), pos.getY(), pos.getZ(), itemStack1);
+    Containers.dropItemStack(world, (double)pos.getX(), (double)pos.getY(), (double)pos.getZ(), itemStack2);
 insert:
     if (dev.shifu.event.BlockEvents.listeningCook()) {
-        final ItemStack shifuCooked = dev.shifu.event.BlockEvents.cook(world, pos, itemStack, itemStack1,
-                (org.bukkit.inventory.CookingRecipe<?>) check.getRecipeFor(singleRecipeInput, world)
+        final ItemStack shifuCooked = dev.shifu.event.BlockEvents.cook(world, pos, itemStack, itemStack2,
+                (org.bukkit.inventory.CookingRecipe<?>) campfire.quickCheck.getRecipeFor(container, world)
                         .map(net.minecraft.world.item.crafting.RecipeHolder::toBukkitRecipe).orElse(null));
         if (shifuCooked == null) {
             return;
         }
-        itemStack1 = shifuCooked;
+        itemStack2 = shifuCooked;
     }
 
 # CampfireStartEvent
 file: net/minecraft/world/level/block/entity/SignBlockEntity.java
 anchor:
-    this.updateText(signText -> this.setMessages(player, filteredText, signText), isFrontText);
+    this.updateText(text -> this.setMessages(player, messages, text), front);
 insert:
-    dev.shifu.event.BlockEvents.signSide(isFrontText);
+    dev.shifu.event.BlockEvents.signSide(front);
 
 file: net/minecraft/world/level/block/entity/SignBlockEntity.java
 anchor:
@@ -782,25 +782,12 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/world/storage/loot/LootTable.java.patch:26
 file: net/minecraft/world/level/storage/loot/LootTable.java
 anchor:
-    List<Integer> availableSlots = this.getAvailableSlots(container, random);
-    this.shuffleAndSplitItems(randomItems, availableSlots.size(), random);
+    List<Integer> list = this.getAvailableSlots(inventory, randomSource);
+    this.shuffleAndSplitItems(objectArrayList, list.size(), randomSource);
 insert:
     final org.bukkit.event.world.LootGenerateEvent shifuLoot =
-            org.bukkit.craftbukkit.event.CraftEventFactory.callLootGenerateEvent(container, this, lootContext, randomItems, false);
+            org.bukkit.craftbukkit.event.CraftEventFactory.callLootGenerateEvent(inventory, this, lootContext, objectArrayList, false);
     if (shifuLoot.isCancelled()) {
         return;
     }
-    randomItems = shifuLoot.getLoot().stream().map(org.bukkit.craftbukkit.inventory.CraftItemStack::asNMSCopy).collect(ObjectArrayList.toList());
-
-# patches/hand の fill(Container, LootParams, RandomSource, boolean)。アダプタ層はこちらを呼ぶ
-file: net/minecraft/world/level/storage/loot/LootTable.java
-anchor:
-    List<Integer> availableSlots = this.getAvailableSlots(container, random);
-    this.shuffleAndSplitItems(itemStacks, availableSlots.size(), random);
-insert:
-    final org.bukkit.event.world.LootGenerateEvent shifuLootPlugin =
-            org.bukkit.craftbukkit.event.CraftEventFactory.callLootGenerateEvent(container, this, context, itemStacks, plugin);
-    if (shifuLootPlugin.isCancelled()) {
-        return;
-    }
-    itemStacks = shifuLootPlugin.getLoot().stream().map(org.bukkit.craftbukkit.inventory.CraftItemStack::asNMSCopy).collect(ObjectArrayList.toList());
+    objectArrayList = shifuLoot.getLoot().stream().map(org.bukkit.craftbukkit.inventory.CraftItemStack::asNMSCopy).collect(ObjectArrayList.toList());

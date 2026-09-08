@@ -3,7 +3,7 @@
 # callEntityChangeBlockEvent
 file: net/minecraft/world/entity/animal/Rabbit.java
 anchor:
-    level.setBlock(blockPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+    level.setBlock(blockPos, Blocks.AIR.defaultBlockState(), 2);
 insert:
     if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(this.rabbit, blockPos, blockState.getFluidState().createLegacyBlock())) return; // CraftBukkit // Paper - fix wrong block state
 

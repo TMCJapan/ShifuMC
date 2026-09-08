@@ -1,9 +1,0 @@
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
-
-# EntityEffectTickEvent
-file: net/minecraft/world/effect/HealOrHarmMobEffect.java
-anchor:
-    if (this.isHarm == entity.isInvertedHealAndHarm()) {
-        int i = (int)(health * (4 << amplifier) + 0.5);
-insert:
-    if (!new io.papermc.paper.event.entity.EntityEffectTickEvent(entity.getBukkitLivingEntity(), org.bukkit.craftbukkit.potion.CraftPotionEffectType.minecraftToBukkit(this), amplifier).callEvent()) { return; } // Paper - Add EntityEffectTickEvent

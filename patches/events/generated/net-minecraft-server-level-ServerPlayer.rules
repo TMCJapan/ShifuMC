@@ -29,7 +29,7 @@ insert:
     Component title = null; // Paper - Add titleOverride to InventoryOpenEvent
     // CraftBukkit start - Inventory open hook
     if (abstractContainerMenu != null) {
-        abstractContainerMenu.setTitle(menu.getDisplayName());
+        abstractContainerMenu.setTitle(factory.getDisplayName());
 
         boolean cancelled = false;
         // Paper start - Add titleOverride to InventoryOpenEvent
@@ -39,11 +39,11 @@ insert:
         // Paper end - Add titleOverride to InventoryOpenEvent
         if (abstractContainerMenu == null && !cancelled) { // Let pre-cancelled events fall through
             // SPIGOT-5263 - close chest if cancelled
-            if (menu instanceof Container container) {
+            if (factory instanceof Container container) {
                 container.stopOpen(this);
-            } else if (menu instanceof net.minecraft.world.level.block.ChestBlock.DoubleInventory doubleInventory) {
+            } else if (factory instanceof net.minecraft.world.level.block.ChestBlock.DoubleInventory doubleInventory) {
                 // SPIGOT-5355 - double chests too :(
-                doubleInventory.container.stopOpen(this);
+                doubleInventory.inventorylargechest.stopOpen(this);
                 // Paper start - Fix InventoryOpenEvent cancellation
             } else if (!this.enderChestInventory.isActiveChest(null)) {
                 this.enderChestInventory.stopOpen(this);

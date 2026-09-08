@@ -172,7 +172,24 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/FireworkRocketItem.java.patch
 file: net/minecraft/world/item/FireworkRocketItem.java
 anchor:
-    itemInHand.shrink(1);
+    level.addFreshEntity(fireworkRocketEntity);
+insert:
+    final boolean shifuFireworkConsume;
+    if (dev.shifu.event.ItemEvents.launchListening()) {
+        final Boolean shifuLaunched = dev.shifu.event.ItemEvents.launchFirework(level, context.getPlayer(), context.getHand(),
+                itemStack, vec3, direction);
+        if (shifuLaunched == null) {
+            return InteractionResult.PASS;
+        }
+        shifuFireworkConsume = shifuLaunched;
+    } else {
+        shifuFireworkConsume = true;
+insert-after:
+    }
+
+file: net/minecraft/world/item/FireworkRocketItem.java
+anchor:
+    itemStack.shrink(1);
 insert:
     if (shifuFireworkConsume) {
 insert-after:
