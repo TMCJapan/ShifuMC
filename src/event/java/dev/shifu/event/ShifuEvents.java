@@ -528,7 +528,8 @@ public final class ShifuEvents {
     }
 
     /** 爆発で誘爆するとき。vanilla は prime を通らず {@code wasExploded} で直に作る。 */
-    public static boolean tntPrimeByExplosion(final ServerLevel level, final BlockPos pos, final net.minecraft.world.level.Explosion explosion) {
+    // 1.20.6 の TntBlock.wasExploded は Level を受ける。CraftEventFactory も Level で足りる
+    public static boolean tntPrimeByExplosion(final net.minecraft.world.level.Level level, final BlockPos pos, final net.minecraft.world.level.Explosion explosion) {
         if (!listening(org.bukkit.event.block.TNTPrimeEvent.getHandlerList())) {
             return true;
         }

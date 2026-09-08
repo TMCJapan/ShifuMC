@@ -3,23 +3,24 @@
 # アンカーは vanilla のソースそのまま。Minecraft が更新されて行が変わったら
 # apply_events.py が失敗するので、発火が黙って消えることはない。
 
-# BlockBreakEvent
+# TNTPrimeEvent
 #
-# vanilla の権限判定(canDestroyBlock / GameMasterBlock / blockActionRestricted)が
-# 全て終わったあと、最初の書き換えである playerWillDestroy の直前で発火する。
-# 取り消されなければ、以降は vanilla のまま。
+# 1.20.6 の TntBlock は prime ではなく explode。真偽値を返さないので、
+# 火を付ける手前(private な explode の先頭)で 1 度だけ見る。
+# 原因は呼ぶ側がその直前に置く。
 file: net/minecraft/world/level/block/TntBlock.java
 anchor:
-    if (level instanceof ServerLevel serverLevel && serverLevel.getGameRules().get(GameRules.TNT_EXPLODES)) {
+    private static void explode(Level world, BlockPos pos, @Nullable LivingEntity igniter) {
+    if (!world.isClientSide) {
 insert-after:
-    if (!dev.shifu.event.ShifuEvents.tntPrime(level, pos, entity)) {
-        return false;
+    if (!dev.shifu.event.ShifuEvents.tntPrime(world, pos, igniter)) {
+        return;
     }
 
 # onPlace と neighborChanged。同じ行が 2 箇所にあり、どちらもレッドストーン
 file: net/minecraft/world/level/block/TntBlock.java
 anchor:
-    if (level.hasNeighborSignal(pos) && prime(level, pos)) {
+    if (world.hasNeighborSignal(pos)) {
 count: 2
 insert:
     dev.shifu.event.ShifuEvents.tntPrimeCause(org.bukkit.event.block.TNTPrimeEvent.PrimeCause.REDSTONE, null, null);
@@ -27,43 +28,45 @@ insert:
 # playerWillDestroy(不安定な TNT を壊した)
 file: net/minecraft/world/level/block/TntBlock.java
 anchor:
-    prime(level, pos);
-insert:
+    if (!world.isClientSide() && !player.isCreative() && state.getValue(UNSTABLE)) {
+insert-after:
     dev.shifu.event.ShifuEvents.tntPrimeCause(org.bukkit.event.block.TNTPrimeEvent.PrimeCause.BLOCK_BREAK, player, null);
 
 # useItemOn(火打ち石・ファイヤーチャージ)
 file: net/minecraft/world/level/block/TntBlock.java
 anchor:
-    if (prime(level, pos, player)) {
+    explode(world, pos, player);
 insert:
     dev.shifu.event.ShifuEvents.tntPrimeCause(org.bukkit.event.block.TNTPrimeEvent.PrimeCause.PLAYER, player, null);
 
 # onProjectileHit(燃えている矢など)
 file: net/minecraft/world/level/block/TntBlock.java
 anchor:
-    if (projectile.isOnFire()
+    if (projectile.isOnFire() && projectile.mayInteract(world, blockPos)) {
 insert:
     dev.shifu.event.ShifuEvents.tntPrimeCause(org.bukkit.event.block.TNTPrimeEvent.PrimeCause.PROJECTILE, projectile, null);
 
 # wasExploded(誘爆)
 file: net/minecraft/world/level/block/TntBlock.java
 anchor:
-    PrimedTnt primedTnt = new PrimedTnt(level, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, explosion.getIndirectSourceEntity());
+    PrimedTnt primedTnt = new PrimedTnt(
+    world, (double)pos.getX() + 0.5, (double)pos.getY(), (double)pos.getZ() + 0.5, explosion.getIndirectSourceEntity()
+    );
 insert:
-    if (!dev.shifu.event.ShifuEvents.tntPrimeByExplosion(level, pos, explosion)) {
+    if (!dev.shifu.event.ShifuEvents.tntPrimeByExplosion(world, pos, explosion)) {
         return;
     }
 
 # ディスペンサーの火打ち石
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (TntBlock.prime(serverLevel, blockPos)) {
+    TntBlock.explode(level, blockPos);
 insert:
     dev.shifu.event.ShifuEvents.tntPrimeCause(org.bukkit.event.block.TNTPrimeEvent.PrimeCause.DISPENSER, null, null);
 
 # 火が燃え移った
 file: net/minecraft/world/level/block/FireBlock.java
 anchor:
-    TntBlock.prime(level, pos);
+    TntBlock.explode(world, pos);
 insert:
     dev.shifu.event.ShifuEvents.tntPrimeCause(org.bukkit.event.block.TNTPrimeEvent.PrimeCause.FIRE, null, null);
