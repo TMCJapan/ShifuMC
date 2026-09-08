@@ -7,22 +7,6 @@ anchor:
 insert-after:
     this.server.getScheduler().mainThreadHeartbeat(this.tickCount);
 
-# pause-when-empty-seconds で止まっている間のスケジューラ実行
-file: net/minecraft/server/MinecraftServer.java
-anchor:
-                    this.tickConnection();
-                    return;
-insert:
-    this.server.getScheduler().mainThreadHeartbeat(this.tickCount);
-
-# 検証で足した 1 件
-file: net/minecraft/server/MinecraftServer.java
-anchor:
-                    this.tickConnection();
-                    return;
-insert:
-    while (!this.processQueue.isEmpty()) { this.processQueue.remove().run(); }
-
 # 起動中に積まれた 1 tick 遅延のタスクを、最初の tick の前に 1 回流す
 file: net/minecraft/server/MinecraftServer.java
 anchor:
@@ -41,11 +25,12 @@ insert-after:
         this.server.waitForAsyncTasksShutdown();
     }
 
-# MinecraftServer.hasStopped を立てる
+# MinecraftServer.hasStopped を立てる。1.20.6 は stopServer の末尾が storageSource.close()
 file: net/minecraft/server/MinecraftServer.java
 anchor:
-            this.packetProcessor.close();
-insert:
+            LOGGER.error("Failed to unlock level {}", this.storageSource.getLevelId(), var4);
+    }
+insert-after:
     synchronized (this.stopLock) { this.hasStopped = true; }
 
 # Paper の設定。Paper は Services.create で作って構築子で受け取る
@@ -59,11 +44,6 @@ anchor:
 insert:
     this.paperConfigurations = dev.shifu.event.ShifuBootstrap.paperConfigurations(dev.shifu.event.ShifuBootstrap.options);
 
-file: net/minecraft/server/MinecraftServer.java
-anchor:
-    LOGGER.info("Stopping server");
-insert:
-    org.spigotmc.WatchdogThread.doStop();
 
 # MinecraftServer.getServer() が返す先。これが入っていないと null が返り、
 # アダプタ層と発火層のほぼ全部が NPE になる。
@@ -78,7 +58,7 @@ insert-after:
 # Bukkit のスコアボード。主世界のデータを読んだ直後に作る
 file: net/minecraft/server/MinecraftServer.java
 anchor:
-    this.stopwatches = dataStorage.computeIfAbsent(Stopwatches.TYPE);
+    this.readScoreboard(dimensionDataStorage);
 insert-after:
     this.server.scoreboardManager = new org.bukkit.craftbukkit.scoreboard.CraftScoreboardManager(this, serverLevel.getScoreboard());
 

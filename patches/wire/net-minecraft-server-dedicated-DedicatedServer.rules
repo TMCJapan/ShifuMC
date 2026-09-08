@@ -35,7 +35,9 @@ insert-after:
 # WatchdogThread の作成は GlobalConfiguration.get() を読むので、設定が入ったあとに置く。
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
-    this.tickTimeLogger = new RemoteSampleLogger(TpsDebugDimensions.values().length, this.debugSubscribers(), RemoteDebugSampleType.TICK_TIME);
+    this.tickTimeLogger = new RemoteSampleLogger(
+    TpsDebugDimensions.values().length, this.debugSampleSubscriptionTracker, RemoteDebugSampleType.TICK_TIME
+    );
 insert:
     org.spigotmc.WatchdogThread.doStart(org.spigotmc.SpigotConfig.timeoutTime, org.spigotmc.SpigotConfig.restartOnCrash);
 

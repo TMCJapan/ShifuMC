@@ -11,21 +11,15 @@ insert-after:
 # Creeper.entityIgniter(Paper が同じ位置で代入する)
 file: net/minecraft/world/entity/monster/Creeper.java
 anchor:
-    if (!this.level().isClientSide()) {
-insert-after:
+    if (!this.level().isClientSide) {
+    this.ignite();
+insert:
     this.entityIgniter = player;
 
 # AbstractFurnaceMenu.inventory(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/AbstractFurnaceMenu.java
 anchor:
     this.addSlot(new FurnaceResultSlot(playerInventory.player, inventory, 2, 116, 35));
-insert-after:
-    this.player = playerInventory;
-
-# AbstractMountInventoryMenu.inventory(Paper が同じ位置で代入する)
-file: net/minecraft/world/inventory/AbstractMountInventoryMenu.java
-anchor:
-    super(null, containerId);
 insert-after:
     this.player = playerInventory;
 
@@ -46,9 +40,11 @@ insert-after:
 # CartographyTableMenu.player(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/CartographyTableMenu.java
 anchor:
-    this.addStandardInventorySlots(playerInventory, 8, 84);
+    for (int k = 0; k < 9; k++) {
+    this.addSlot(new Slot(inventory, k, 8 + k * 18, 142));
+    }
 insert-after:
-    this.player = (org.bukkit.entity.Player) playerInventory.player.getBukkitEntity();
+    this.player = (org.bukkit.entity.Player) inventory.player.getBukkitEntity();
 
 # DispenserMenu.inventory(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/DispenserMenu.java
@@ -67,7 +63,9 @@ insert-after:
 # GrindstoneMenu.player(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/GrindstoneMenu.java
 anchor:
-    this.addStandardInventorySlots(playerInventory, 8, 84);
+    for (int k = 0; k < 9; k++) {
+    this.addSlot(new Slot(playerInventory, k, 8 + k * 18, 142));
+    }
 insert-after:
     this.player = (org.bukkit.entity.Player) playerInventory.player.getBukkitEntity();
 

@@ -5,3 +5,25 @@
 # ChunkMap が湧かせる chunk を選ぶときに読む(collectSpawningChunks の配線)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerChunkCache.java.patch
+
+# PlayerNaturallySpawnCreaturesEvent が絞った範囲を使う
+#
+# vanilla の判定はそのまま残し、発火に登録があるときだけ別の道を通る。
+# Paper は anyPlayerCloseEnoughForSpawning に reducedRange を足して分けているが、
+# ここでは呼び出し側を囲んで分ける(vanilla の行を変えないため)。
+file: net/minecraft/server/level/ServerChunkCache.java
+anchor:
+    if (this.level.isNaturalSpawningAllowed(chunkPos) && this.chunkMap.anyPlayerCloseEnoughForSpawning(chunkPos)) {
+insert:
+    if (dev.shifu.event.EntityEvents.naturallySpawnCreaturesListening()) {
+        if (this.level.isNaturalSpawningAllowed(chunkPos) && this.chunkMap.shifuAnyPlayerCloseEnoughForSpawningReduced(chunkPos)) {
+            levelChunk2.incrementInhabitedTime(m);
+            if (bl && (this.spawnEnemies || this.spawnFriendlies) && this.level.getWorldBorder().isWithinBounds(chunkPos)) {
+                NaturalSpawner.spawnForChunk(this.level, levelChunk2, spawnState, this.spawnFriendlies, this.spawnEnemies, bl2);
+            }
+
+            if (this.level.shouldTickBlocksAt(chunkPos.toLong())) {
+                this.level.tickChunk(levelChunk2, j);
+            }
+        }
+    } else

@@ -1,0 +1,5 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// Creeper.entityIgniter
+    // 火を付けた人。ExplosionPrimeEvent と EntityDamageEvent の原因に使う
+    private net.minecraft.world.entity.player.Player entityIgniter;

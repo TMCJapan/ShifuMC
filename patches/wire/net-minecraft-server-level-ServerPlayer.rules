@@ -20,20 +20,9 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    public @Nullable Component getTabListDisplayName() {
+    public Component getTabListDisplayName() {
 insert-after:
     if (this.listName != null) {
         return this.listName;
     }
 
-# タブ一覧の並び順(Player.setPlayerListOrder)
-#
-# vanilla は常に 0。Paper は listOrder を返す。既定は 0 なので、
-# 誰も入れなければ vanilla と同じ値になる。
-file: net/minecraft/server/level/ServerPlayer.java
-anchor:
-    public int getTabListOrder() {
-insert-after:
-    if (this.listOrder != 0) {
-        return this.listOrder;
-    }

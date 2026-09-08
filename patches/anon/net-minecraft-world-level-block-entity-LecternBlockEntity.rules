@@ -49,11 +49,15 @@ insert-after:
                 return org.bukkit.craftbukkit.util.CraftLocation.toBukkit(LecternBlockEntity.this.worldPosition, LecternBlockEntity.this.level);
             }
 
+# LecternMenu にも同じ getContainerSize があるので、欄の宣言から数えて 1 つに絞る
 file: net/minecraft/world/level/block/entity/LecternBlockEntity.java
 anchor:
-            @Override
-            public int getContainerSize() {
-insert:
+    public final Container bookAccess = new Container() {
+    @Override
+    public int getContainerSize() {
+    return 1;
+    }
+insert-after:
     @Override
     public LecternBlockEntity shifuLectern() {
         return LecternBlockEntity.this;

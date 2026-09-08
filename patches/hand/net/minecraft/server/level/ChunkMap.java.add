@@ -1,1 +1,23 @@
 // 自前で書いた追加。
+
+// ChunkMap.shifuAnyPlayerCloseEnoughForSpawningReduced
+    // anyPlayerCloseEnoughForSpawning と同じだが、
+    // PlayerNaturallySpawnCreaturesEvent が絞った範囲を使う。
+    // 呼ぶのは ServerChunkCache.tickChunks から(発火に登録があるときだけ)。
+    // Paper の playerIsCloseEnoughForSpawning(player, pos, blockRange) と同じ判定。
+    public boolean shifuAnyPlayerCloseEnoughForSpawningReduced(final ChunkPos pos) {
+        for (final ServerPlayer player : this.playerMap.getAllPlayers()) {
+            final double range = dev.shifu.event.EntityEvents.spawnRangeSquared(player);
+
+            if (range <= 0.0 || player.isSpectator()) {
+                continue;
+            }
+
+            if (euclideanDistanceSquared(pos, player) < range) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+

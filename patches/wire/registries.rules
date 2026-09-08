@@ -37,15 +37,9 @@ anchor:
 insert-after:
     io.papermc.paper.registry.PaperRegistryAccess.instance().registerRegistry(this.key, writableRegistry);
 
-file: net/minecraft/resources/RegistryDataLoader.java
-anchor:
-    TagLoader.loadTagsForRegistry(resourceManager, registry);
-insert:
-    io.papermc.paper.registry.PaperRegistryAccess.instance().lockReferenceHolders(registry.key());
-
 # 読み直せるレジストリ(patches/sources/.../ReloadableServerRegistries.java.patch)
 file: net/minecraft/server/ReloadableServerRegistries.java
 anchor:
-    Map<Identifier, T> map = new HashMap<>();
+    Map<ResourceLocation, JsonElement> map = new HashMap<>();
 insert:
-    io.papermc.paper.registry.PaperRegistryAccess.instance().registerReloadableRegistry(writableRegistry);
+    io.papermc.paper.registry.PaperRegistryAccess.instance().registerReloadableRegistry(type.registryKey(), writableRegistry);

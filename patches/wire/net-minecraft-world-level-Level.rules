@@ -3,8 +3,8 @@
 # Paper は Level の構築子で this.world = new CraftWorld((ServerLevel) this, gen, biomeProvider, environment)
 file: net/minecraft/world/level/Level.java
 anchor:
-            this.palettedContainerFactory = PalettedContainerFactory.create(registryAccess);
-            this.damageSources = new DamageSources(registryAccess);
+        this.registryAccess = registryManager;
+        this.damageSources = new DamageSources(registryManager);
 insert-after:
     this.world = new org.bukkit.craftbukkit.CraftWorld((net.minecraft.server.level.ServerLevel) this, null, null, dimension == Level.OVERWORLD ? org.bukkit.World.Environment.NORMAL : dimension == Level.NETHER ? org.bukkit.World.Environment.NETHER : dimension == Level.END ? org.bukkit.World.Environment.THE_END : org.bukkit.World.Environment.CUSTOM);
 

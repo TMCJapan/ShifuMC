@@ -9,9 +9,9 @@
 # registerCommands() は Paper の /paper コマンドを足すもので、vanilla には無いので入れない。
 file: net/minecraft/server/ReloadableServerResources.java
 anchor:
-    this.advancements = new ServerAdvancementManager(registries);
+    this.advancements = new ServerAdvancementManager(this.registryLookup);
 insert:
-    io.papermc.paper.command.brigadier.PaperCommands.INSTANCE.setDispatcher(this.commands, CommandBuildContext.simple(registries, enabledFeatures));
+    io.papermc.paper.command.brigadier.PaperCommands.INSTANCE.setDispatcher(this.commands, CommandBuildContext.simple(this.registryLookup, enabledFeatures));
 
 # bootstrap から登録する側(paper-plugin の BootstrapContext)への COMMANDS の発火。
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/ReloadableServerResources.java.patch の @@ -99
