@@ -23,7 +23,7 @@ final class ServerLaunch {
 	}
 
 	static int run(Path serverDir, LauncherConfig config, PaperArtifacts paper, FabricArtifacts fabric,
-			Path shifuJar, List<String> serverArgs) throws IOException, InterruptedException {
+			Namespace namespace, Path shifuJar, List<String> serverArgs) throws IOException, InterruptedException {
 		// 起動クラスパスに載せるのは Shifu 自身と fabric-loader 一式だけ。
 		// Paper のライブラリは ShifuGameProvider が Knot 側に足す。
 		// 両方に載せると、同じ jar が親と Knot の双方から見えてクラスローダが分断される。
@@ -39,6 +39,11 @@ final class ServerLaunch {
 		command.add("-Dshifu.librariesDir=" + paper.librariesDir().toAbsolutePath());
 		command.add("-Dshifu.vanillaJar=" + paper.vanillaJar().toAbsolutePath());
 		command.add("-Dshifu.vanillaParity=" + config.vanillaParity());
+
+		if (namespace != null) {
+			command.addAll(namespace.jvmArgs());
+		}
+
 		command.add("-cp");
 		command.add(String.join(File.pathSeparator, classPath));
 		command.add(fabric.mainClass());

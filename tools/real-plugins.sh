@@ -35,7 +35,7 @@ mkdir -p "$OUT/drive" "$OUT/bot" "$RUN/plugins"
 "$JAVAC" -encoding UTF-8 --release 21 -cp "$CP" -d "$OUT/drive" "$SHIFU"/tools/plugin-drive/src/dev/shifu/drive/*.java
 cp "$SHIFU/tools/plugin-drive/plugin.yml" "$OUT/drive/"
 (cd "$OUT/drive" && "$JAVA_HOME/bin/jar" cf ../ShifuPluginDrive.jar .)
-"$JAVAC" -encoding UTF-8 --release 25 -cp "$CP" -d "$OUT/bot" "$SHIFU"/tools/bot/src/dev/shifu/bot/*.java
+"$JAVAC" -encoding UTF-8 --release "$JDK_MIN" -cp "$CP" -d "$OUT/bot" "$SHIFU"/tools/bot/src/dev/shifu/bot/*.java
 
 cp "$CACHE"/*.jar "$OUT/ShifuPluginDrive.jar" "$RUN/plugins/"
 [ -f "$RUN/eula.txt" ] || printf 'eula=true\n' > "$RUN/eula.txt"

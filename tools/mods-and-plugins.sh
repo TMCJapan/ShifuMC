@@ -26,7 +26,14 @@ python "$SHIFU/tools/fetch_addons.py" "$ADDONS"
 rm -f "$ADDONS/mods/zz-fabric-permission-api-shifu.jar" "$RUN/mods/zz-fabric-permission-api-shifu.jar"
 
 mkdir -p "$RUN/mods" "$RUN/plugins"
-cp "$ADDONS"/mods/*.jar "$RUN/mods/"
+rm -f "$RUN"/mods/*.jar
+
+# SHIFU_NO_MODS=1 でプラグインだけにする。名前空間の橋(intermediary -> mojmap)が
+# 要るバージョンで、サーバー側とプラグイン側だけを切り分けて見るときに使う。
+if [ -z "${SHIFU_NO_MODS:-}" ]; then
+    cp "$ADDONS"/mods/*.jar "$RUN/mods/"
+fi
+
 cp "$ADDONS"/plugins/*.jar "$RUN/plugins/"
 [ -f "$SHIFU/tools/build/ShifuPluginDrive.jar" ] && cp "$SHIFU/tools/build/ShifuPluginDrive.jar" "$RUN/plugins/"
 [ -f "$PW/run-fabric/mods/ProbeMod.jar" ] && cp "$PW/run-fabric/mods/ProbeMod.jar" "$RUN/mods/"
@@ -36,12 +43,20 @@ cp "$ADDONS"/plugins/*.jar "$RUN/plugins/"
 #   FastAsyncWorldEdit — Paper の moonrise / starlight の内部を直に呼ぶ
 rm -f "$RUN/plugins"/packetevents-*.jar "$RUN/plugins"/grimac-*.jar "$RUN/plugins"/fastasyncworldedit-*.jar
 
+# 1.20.6 で動かない MOD。理由は docs/STATUS.md
+if [ "$MC_VERSION" = 1.20.6 ]; then
+    rm -f "$RUN/mods"/c2me-fabric-*.jar "$RUN/mods"/servercore-*.jar
+    rm -f "$RUN/mods"/ledger-*.jar "$RUN/mods"/alternate-current-*.jar
+fi
+
 # 内容を足す MOD(ブロックやバイオームを登録するもの)を入れると、Fabric のレジストリ同期が
 # 素のクライアントを弾く。bot は素のクライアントなので、遊びの確認をするときは外す。
 # 起動だけを見るなら SHIFU_CONTENT_MODS=1 で残す
 if [ -z "${SHIFU_CONTENT_MODS:-}" ]; then
     mkdir -p "$ADDONS/content"
     for jar in "$RUN"/mods/*.jar; do
+        [ -f "$jar" ] || continue
+
         case "$(basename "$jar")" in
             fabric-api-*|lithium-*|ferrite-core-*|krypton-*|c2me-fabric-*|attributefix-*|prickle-*|ProbeMod.jar) ;;
             fabric-language-kotlin-*|carpet-*|alternate-current-*|servercore-*|vmp-fabric-*) ;;

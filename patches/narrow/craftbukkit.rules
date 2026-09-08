@@ -6,19 +6,43 @@
 #
 # 1.20.6 では CraftBukkit が「// CraftBukkit - type」の注記を付けている。
 
-# LevelChunk は必ずサーバー側の世界に属する。Paper の chunk 系がここを読む
+# LevelChunk.level は vanilla のまま Level 型で残す。CraftBukkit はここを ServerLevel に
+# 狭めているが、狭めると Fabric の MOD の @Shadow が署名で当たらなくなる
+# (carpet の LevelChunk_movableBEMixin が field_12858 = level を狙う)。
+#
+# 代わりに、Paper から写した本体の側で絞る。入る値は同じ(サーバー側の世界)で、
+# vanilla の行は 1 行も触らない。
 file: net/minecraft/world/level/chunk/LevelChunk.java
+count: 2
 replace:
-    public final Level level;
+        net.minecraft.server.level.ServerChunkCache chunkProvider = this.level.getChunkSource();
 with:
-    public final net.minecraft.server.level.ServerLevel level; // CraftBukkit - type
+        net.minecraft.server.level.ServerChunkCache chunkProvider = ((net.minecraft.server.level.ServerLevel) this.level).getChunkSource();
 
-# 型を狭めたので、入れるところで絞る。入る値は同じ(本編の世界の設定データ)
 file: net/minecraft/world/level/chunk/LevelChunk.java
 replace:
-        this.level = world;
+        this.level.getChunkSource().addLoadedChunk(this);
 with:
-        this.level = (net.minecraft.server.level.ServerLevel) world; // CraftBukkit - type
+        ((net.minecraft.server.level.ServerLevel) this.level).getChunkSource().addLoadedChunk(this);
+
+file: net/minecraft/world/level/chunk/LevelChunk.java
+replace:
+        this.level.getChunkSource().removeLoadedChunk(this); // Paper
+with:
+        ((net.minecraft.server.level.ServerLevel) this.level).getChunkSource().removeLoadedChunk(this); // Paper
+
+file: net/minecraft/world/level/chunk/LevelChunk.java
+replace:
+        this.level.startTickingChunk(this);
+with:
+        ((net.minecraft.server.level.ServerLevel) this.level).startTickingChunk(this);
+
+file: net/minecraft/world/level/chunk/LevelChunk.java
+count: 2
+replace:
+    this.level.getSeed()
+with:
+    ((net.minecraft.server.level.ServerLevel) this.level).getSeed()
 
 # 抽象宣言を public にしたので、上書きしている 2 つも合わせる。
 # 可視性だけで、行そのものは同じなので patches/access では 1 つに定まらない

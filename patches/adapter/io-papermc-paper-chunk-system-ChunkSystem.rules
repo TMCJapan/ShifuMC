@@ -1,0 +1,15 @@
+# LevelChunk.level は vanilla のまま Level 型なので、読む側で絞る。
+# 狭めない理由は patches/narrow/craftbukkit.rules を参照。
+
+file: io/papermc/paper/chunk/system/ChunkSystem.java
+count: 4
+replace:
+        chunk.level.getChunkSource()
+with:
+        ((net.minecraft.server.level.ServerLevel) chunk.level).getChunkSource()
+
+file: io/papermc/paper/chunk/system/ChunkSystem.java
+replace:
+        chunk.level.chunkSource.chunkMap.tickingGenerated.incrementAndGet();
+with:
+        ((net.minecraft.server.level.ServerLevel) chunk.level).chunkSource.chunkMap.tickingGenerated.incrementAndGet();

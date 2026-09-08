@@ -1,7 +1,54 @@
-# 現状(ver/1.21.11)
+# 現状(ver/1.20.6)
 
-2026-09-08 時点。このブランチは Minecraft 1.21.11。26.2 の分は `main` の同じファイル。
+このブランチは Minecraft 1.20.6。節ごとにどの版で測ったかを頭に書いてある。
+26.2 の分は `main`、1.21.11 の分は `ver/1.21.11` の同じファイル。
 構成は [ARCHITECTURE.md](ARCHITECTURE.md)、開発の手順は [DEVELOPING.md](DEVELOPING.md)。
+
+## 1.20.6 で通っているところ(2026-09-09)
+
+| | |
+|---|---|
+| コンパイル | エラー 0(`once.sh`) |
+| 落ちた規則 | 0 |
+| 起動(MOD 無し) | プラグイン 24 個が有効化まで進む |
+| 起動(MOD 込み) | MOD 70(直接入れたのは 12)・プラグイン 24。`java -jar shifu.jar` だけで通る |
+
+### 名前空間の橋(1.20.6)
+
+1.20.6 の Paper は mojmap で動くが、Fabric の MOD は intermediary のまま。
+起動側(`dev.shifu.launcher.Namespace`)が 3 つを用意して fabric-loader に渡す。
+
+1. intermediary と Mojang の `server.txt` を合わせた tiny v2
+2. `fabric.mappingPath` ほか 5 つのシステムプロパティ
+3. サーバー jar を intermediary に写したリマップ用クラスパス
+
+合成とリマップは fabric-loader が同梱している mapping-io と tiny-remapper を
+子 JVM で使う(`dev.shifu.launcher.Bridge`)。26.1 以降は intermediary が
+公開されていないので、404 を見た時点で橋を作らずに進む。
+
+### 名前空間を繋いだあとに直したもの(1.20.6)
+
+| 何が起きたか | 直し方 |
+|---|---|
+| `LivingEntity.checkBedExists` のラムダを狙う mixin が当たらない | 差し込みが使っていたラムダを for 文に直した(`patches/events/entity-core.rules`) |
+| carpet の `@Shadow field_12858` が `LevelChunk` に見つからない | `LevelChunk.level` の型を狭めるのをやめ、Paper から写した本体の側で絞った |
+| fabric-api の `ServerPlayerGameMode.destroyBlock` の局所変数が合わない | ProGuard が使い回している slot を `LvtMatch` でも使い回すようにした(公式とずれる変数 42 → 19) |
+
+### 動かない MOD(1.20.6、プラグイン 24 個と同時に 1 つずつ入れて確認)
+
+| | 誰の問題か |
+|---|---|
+| C2ME 0.2.0+alpha.11.100 | Shifu。`ChunkMap.scheduleChunkGeneration` のラムダが捕まえる引数の順が公式と違う |
+| ServerCore 1.5.3 | 未特定。`Cat.removeWhenFarAway` を狙う `@Redirect` が対象を見つけられない |
+| Ledger 1.3.3 | 未特定。世界の読み込みに入る前に静かに終わる |
+| Alternate Current 1.9.0 | 未特定。同上 |
+
+通ったのは Fabric API、Architectury API、Carpet、Chunky、FerriteCore、Krypton、
+VeryManyPlayers、Lithium、fabric-language-kotlin、styled-chat、No Chat Reports、spark。
+この 12 個を同時に入れても通る。
+
+MOD を入れると NMS 側(`com.mojang.logging`)のログが出なくなる。
+Bukkit 側(プラグイン)のログは出るので、切り分けはそちらの行で行う。
 
 ## 1.21.11 で通っているところ
 

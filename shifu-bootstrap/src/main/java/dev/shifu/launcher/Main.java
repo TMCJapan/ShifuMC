@@ -45,13 +45,18 @@ public final class Main {
 		FabricArtifacts fabric = FabricArtifacts.obtain(downloader, serverDir.resolve(".shifu").resolve("libraries"),
 				config.minecraftVersion(), config.loaderVersion());
 
+		// 難読化されているバージョンでは、MOD の intermediary をサーバーの mojmap へ繋ぐ。
+		// 26.1 以降は難読化が無くなって同じ名前空間なので null が返る。
+		Namespace namespace = Namespace.prepare(downloader, serverDir, config.minecraftVersion(),
+				paper, fabric, ownJar());
+
 		if (config.vanillaParity()) {
 			VanillaParity.apply(serverDir);
 		} else {
 			Log.warn("vanilla-parity is off - Paper's own behaviour changes are left in place");
 		}
 
-		int exit = ServerLaunch.run(serverDir, config, paper, fabric, ownJar(), List.of(args));
+		int exit = ServerLaunch.run(serverDir, config, paper, fabric, namespace, ownJar(), List.of(args));
 
 		if (exit != 0) {
 			Log.warn("server exited with %d", exit);

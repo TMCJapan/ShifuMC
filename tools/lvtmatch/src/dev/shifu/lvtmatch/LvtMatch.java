@@ -26,8 +26,12 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FrameNode;
 import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.JumpInsnNode;
+import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LookupSwitchInsnNode;
 import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.Analyzer;
 import org.objectweb.asm.tree.analysis.BasicValue;
@@ -358,14 +362,18 @@ public final class LvtMatch {
     private static final class Local {
         final LocalVariableNode node;
         final int from;   // 変数を作る store を含む
-        final int to;     // scope の終わり(この番号は含まない)
+        final int origTo; // javac が書いた scope の終わり
+        int to;           // 実際に生きている終わり(この番号は含まない)
         final boolean wide;
         int slot;
+        int lastUse = -1;        // 最後にこの変数を読み書きした命令
+        LabelNode shrinkTo;      // 縮めたときの新しい LVT の終わり
 
         Local(LocalVariableNode node, int from, int to) {
             this.node = node;
             this.from = from;
             this.to = to;
+            this.origTo = to;
             this.wide = "J".equals(node.desc) || "D".equals(node.desc);
             this.slot = node.index;
         }
@@ -436,6 +444,7 @@ public final class LvtMatch {
                 tempTo[slot] = Math.max(tempTo[slot], i + 1);
             } else {
                 owners.put(insn, held);
+                held.lastUse = Math.max(held.lastUse, i);
             }
         }
 
@@ -467,6 +476,8 @@ public final class LvtMatch {
                 target.put(local, slot);
             }
         }
+
+        shareSlots(locals, target, insns);
 
         // いま誰がどの slot に居るか
         List<List<Local>> occupied = new ArrayList<>();
@@ -557,6 +568,98 @@ public final class LvtMatch {
         }
 
         return 1;
+    }
+
+    /**
+     * 公式が 1 つの slot を寿命の違う 2 つの変数で使い回しているところを、こちらでも使い回す。
+     *
+     * <p>Mojang の jar は ProGuard を通っていて、読み終わった変数の slot を次の変数が使う
+     * ({@code ServerPlayerGameMode.destroyBlock} の {@code blockState} と {@code bl} が
+     * どちらも 5 番)。javac は宣言した scope の終わりまで slot を空けないので、
+     * そのままでは後ろの変数を公式の番号へ置けず、余った番号に取り残される。
+     * mixin は slot の順に型を並べて照合するので、そこで当たらなくなる。
+     *
+     * <p>前の変数を最後に読んだあとは、その値を誰も見ない。scope をそこまで縮めれば
+     * 後ろの変数が入れる。縮めた区間の frame は {@code moveFrame} が落とす。
+     */
+    private static void shareSlots(List<Local> locals, Map<Local, Integer> target, InsnList insns) {
+        Map<Integer, List<Local>> bySlot = new HashMap<>();
+
+        for (Local local : locals) {
+            Integer slot = target.get(local);
+
+            if (slot != null) {
+                bySlot.computeIfAbsent(slot, key -> new ArrayList<>()).add(local);
+            }
+        }
+
+        for (List<Local> group : bySlot.values()) {
+            if (group.size() < 2) {
+                continue;
+            }
+
+            group.sort((a, b) -> Integer.compare(a.from, b.from));
+
+            for (int i = 0; i + 1 < group.size(); i++) {
+                Local before = group.get(i);
+                Local after = group.get(i + 1);
+
+                if (after.from <= before.from || before.to <= after.from || before.lastUse >= after.from) {
+                    continue;
+                }
+
+                if (!oneWay(insns, after.from)) {
+                    continue;
+                }
+
+                before.to = after.from;
+                before.shrinkTo = after.node.start;
+            }
+        }
+    }
+
+    /**
+     * その位置より後ろから前へ戻る道が無いか。
+     *
+     * <p>{@link #shareSlots} は縮めた区間の frame を落とす。落とした先から
+     * 落とす前へ戻る道があると、合流したところで JVM の検証が
+     * {@code Inconsistent stackmap frames} で落ちる
+     * ({@code LootTable.shuffleAndSplitItems} の iterator で踏んだ)。
+     */
+    private static boolean oneWay(InsnList insns, int cut) {
+        int count = insns.size();
+
+        for (int i = cut; i < count; i++) {
+            AbstractInsnNode insn = insns.get(i);
+
+            if (insn instanceof JumpInsnNode jump) {
+                if (insns.indexOf(jump.label) < cut) {
+                    return false;
+                }
+            } else if (insn instanceof TableSwitchInsnNode table) {
+                if (insns.indexOf(table.dflt) < cut) {
+                    return false;
+                }
+
+                for (LabelNode label : table.labels) {
+                    if (insns.indexOf(label) < cut) {
+                        return false;
+                    }
+                }
+            } else if (insn instanceof LookupSwitchInsnNode lookup) {
+                if (insns.indexOf(lookup.dflt) < cut) {
+                    return false;
+                }
+
+                for (LabelNode label : lookup.labels) {
+                    if (insns.indexOf(label) < cut) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 
     /** その位置でその slot に居る変数。無ければ null(一時変数)。 */
@@ -693,6 +796,11 @@ public final class LvtMatch {
 
         for (Local local : locals) {
             local.node.index = local.slot;
+
+            if (local.shrinkTo != null) {
+                local.node.end = local.shrinkTo;
+            }
+
             max = Math.max(max, local.slot + (local.wide ? 2 : 1));
         }
 
@@ -726,6 +834,13 @@ public final class LvtMatch {
             }
 
             Local held = frameOwner(locals, i, index);
+
+            // scope を縮めた区間。値は誰も見ないので、frame からも落とす。
+            // 元の番号に残すと、そこに何も入っていないのに型を宣言することになる
+            if (held == null && shrunk(locals, i, index)) {
+                continue;
+            }
+
             out[held == null ? i : held.slot] = bySlot[i];
         }
 
@@ -754,6 +869,21 @@ public final class LvtMatch {
      * frame の位置で、元の slot に居た変数。命令と違って scope の 1 つ前は見ない
      * (frame は label の直後に来るので、scope が始まっていれば覆われている)。
      */
+    /** その位置のその slot が、shareSlots で縮めた区間に入っているか。 */
+    private static boolean shrunk(List<Local> locals, int slot, int index) {
+        for (Local local : locals) {
+            if (local.to >= local.origTo || index < local.to || index >= local.origTo) {
+                continue;
+            }
+
+            if (local.node.index == slot || (local.wide && local.node.index + 1 == slot)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static Local frameOwner(List<Local> locals, int slot, int index) {
         for (Local local : locals) {
             int from = local.from + 1;

@@ -79,7 +79,9 @@ anchor:
     iterator.remove();
     }
 insert-after:
-    shifuKept.forEach(shifuEffect -> this.activeEffects.put(shifuEffect.getEffect(), shifuEffect));
+    for (final MobEffectInstance shifuEffect : shifuKept) {
+        this.activeEffects.put(shifuEffect.getEffect(), shifuEffect);
+    }
 
     if (!shifuKept.isEmpty() && this.activeEffects.size() == shifuKept.size()) {
         return false;

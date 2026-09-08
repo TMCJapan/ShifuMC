@@ -29,10 +29,11 @@ Shifu は逆コンパイルした vanilla の NMS をそのまま置き、Paper 
 
 それより前でも作り自体は変わらない。Paper の開発ツリーは難読化バージョンでも
 mojang マッピングなので、NMS もアダプタ層も mojmap で揃う。ズレるのは MOD だけで、
-intermediary から mojmap への変換は Shifu 側で埋められる(1.21.11 で確認した)。
+intermediary から mojmap への変換は起動側が用意する(`dev.shifu.launcher.Namespace`)。
 要るのは 3 つ。intermediary と Mojang の `server.txt` を合成したマッピング、
 fabric-loader の名前空間のシステムプロパティ、そして入力側の名前空間にした
-リマップ用クラスパス。1.20.5 より前は Paper 自身が spigot 名前空間で動くので、
+リマップ用クラスパス。1.20.6 で MOD 70・プラグイン 24 を同時に起動できている。
+1.20.5 より前は Paper 自身が spigot 名前空間で動くので、
 プラグイン側の変換も抱えることになる。
 
 バージョンごとの実際の費用は名前空間ではなく、差し込みのアンカーの付け直しになる。

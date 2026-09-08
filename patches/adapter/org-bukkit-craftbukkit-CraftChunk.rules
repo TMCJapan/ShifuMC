@@ -1,0 +1,8 @@
+# LevelChunk.level は vanilla のまま Level 型なので、読む側で絞る。
+# 狭めない理由は patches/narrow/craftbukkit.rules を参照。
+
+file: org/bukkit/craftbukkit/CraftChunk.java
+replace:
+        this.worldServer = chunk.level;
+with:
+        this.worldServer = (net.minecraft.server.level.ServerLevel) chunk.level;
