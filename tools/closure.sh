@@ -38,6 +38,8 @@ for round in 1 2 3 4 5 6 7 8 9 10; do
     # shim は write_members.py が書き出す(上書きされる)。hand は手で書く。
     # 可視性だけを広げる。修飾子 1 語だけで、命令列は変わらない。
     python "$SHIFU/tools/widen_access.py" "$SHIFU/patches/access" . $ACCESS_FLAGS
+    # CraftBukkit が宣言の型を狭めるところ。狭めるだけなので入る値は同じ。
+    python "$SHIFU/tools/patch_adapter.py" "$SHIFU/patches/narrow" . $ACCESS_FLAGS | tail -1
     python "$SHIFU/tools/apply_shim_adds.py" "$SHIFU/patches/shim" . "$SHIFU/patches/hand" "$SHIFU/patches/access" | tail -1
     python "$SHIFU/tools/apply_shim_adds.py" "$SHIFU/patches/hand" . | tail -1
 

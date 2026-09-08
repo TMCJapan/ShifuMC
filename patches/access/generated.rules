@@ -11,6 +11,11 @@ file: net/minecraft/server/level/ChunkMap.java
 line:
     protected void setServerViewDistance(int watchDistance) {
 
+# tickingGenerated
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    private final AtomicInteger tickingGenerated = new AtomicInteger();
+
 # level
 file: net/minecraft/server/level/ServerPlayerGameMode.java
 line:

@@ -1,0 +1,28 @@
+# CraftBukkit が vanilla の宣言の**型を狭める**もの。
+#
+# 追加では表せないので、宣言の行そのものを置き換える。狭めるだけなので、
+# 入る値は同じ。命令列も変わらない(ジェネリクスと同じでコンパイル時の検査だけ)。
+# 可視性を広げる patches/access と同じ扱いにする。
+#
+# 1.20.6 では CraftBukkit が「// CraftBukkit - type」の注記を付けている。
+
+# LevelChunk は必ずサーバー側の世界に属する。Paper の chunk 系がここを読む
+file: net/minecraft/world/level/chunk/LevelChunk.java
+replace:
+    public final Level level;
+with:
+    public final net.minecraft.server.level.ServerLevel level; // CraftBukkit - type
+
+# ServerLevel の設定データは必ず本編の世界のもの。CraftWorld がここを読む
+file: net/minecraft/server/level/ServerLevel.java
+replace:
+    public final ServerLevelData serverLevelData;
+with:
+    public final net.minecraft.world.level.storage.PrimaryLevelData serverLevelData; // CraftBukkit - type
+
+# 型を狭めたので、入れるところで絞る。入る値は同じ(本編の世界の設定データ)
+file: net/minecraft/world/level/chunk/LevelChunk.java
+replace:
+        this.level = world;
+with:
+        this.level = (net.minecraft.server.level.ServerLevel) world; // CraftBukkit - type

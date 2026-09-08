@@ -31,6 +31,8 @@ python "$SHIFU/tools/add_new_files.py" "$SOURCES" . 2>/dev/null
 shifu_make_shim | tail -3
 # 可視性だけを広げる。修飾子 1 語だけで、命令列は変わらない。
 python "$SHIFU/tools/widen_access.py" "$SHIFU/patches/access" . $ACCESS_FLAGS
+# CraftBukkit が宣言の型を狭めるところ。狭めるだけなので入る値は同じ。
+python "$SHIFU/tools/patch_adapter.py" "$SHIFU/patches/narrow" . $ACCESS_FLAGS | tail -1
 python "$SHIFU/tools/apply_shim_adds.py" "$SHIFU/patches/shim" . "$SHIFU/patches/hand" "$SHIFU/patches/access" | tail -1
 python "$SHIFU/tools/apply_shim_adds.py" "$SHIFU/patches/hand" . | tail -1
 
