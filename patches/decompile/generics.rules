@@ -36,3 +36,23 @@ replace:
                 DismountOrSkipMounting.<LivingEntity>create(8, PiglinAi::wantsToStopRiding)
 with:
                 DismountOrSkipMounting.<Piglin>create(8, PiglinAi::wantsToStopRiding)
+
+# 逆コンパイラが基本型を型変数に直接 cast している。javac は箱に入れないと通さない。
+# 箱に入れるのは元から起きていること(List<T> に入れている)なので、結果は変わらない
+file: net/minecraft/nbt/TagParser.java
+replace:
+                list.add((T)((NumericTag)tag).getAsByte());
+with:
+                list.add((T)(Object)((NumericTag)tag).getAsByte());
+
+file: net/minecraft/nbt/TagParser.java
+replace:
+                list.add((T)((NumericTag)tag).getAsLong());
+with:
+                list.add((T)(Object)((NumericTag)tag).getAsLong());
+
+file: net/minecraft/nbt/TagParser.java
+replace:
+                list.add((T)((NumericTag)tag).getAsInt());
+with:
+                list.add((T)(Object)((NumericTag)tag).getAsInt());

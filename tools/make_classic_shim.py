@@ -45,28 +45,37 @@ ARG = re.compile(r"^(.*?[\w\]>])\s+\w+$")
 
 
 def tail(line):
-    """1 行に並んだ 2 つめ以降の宣言。字下げを揃えて返す。"""
-    text = fs.STRING.sub('""', line).split("//")[0]
+    """1 行に並んだ 2 つめ以降の宣言。字下げを揃えて返す。
 
-    if text.count(";") < 2:
+    区切りは波括弧の外の `;` だけ。中まで切ると
+    `... byType = Maps.newHashMap(); public Map<...> getData() { return this.byType; }`
+    のような「欄と読み出しを 1 行に並べた」書き方が壊れる。
+    """
+    text = fs.STRING.sub('""', line).split("//")[0]
+    lead = line[:len(line) - len(line.lstrip())]
+    cuts = []
+    depth = 0
+
+    for at, char in enumerate(text):
+        if char in "{([":
+            depth += 1
+        elif char in "})]":
+            depth -= 1
+        elif char == ";" and depth == 0:
+            cuts.append(at)
+
+    if not cuts:
         return []
 
-    lead = line[:len(line) - len(line.lstrip())]
     out = []
-    at = text.find(";") + 1
+    bounds = cuts + [len(line)]
 
-    while at < len(text):
-        end = text.find(";", at)
-
-        if end < 0:
-            break
-
-        piece = line[at:end + 1].strip()
+    for n, at in enumerate(cuts):
+        piece = line[at + 1:bounds[n + 1] + 1].strip()
+        piece = piece.split("//")[0].strip()
 
         if piece:
             out.append(lead + piece)
-
-        at = end + 1
 
     return out
 
