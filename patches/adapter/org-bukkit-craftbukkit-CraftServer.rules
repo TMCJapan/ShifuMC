@@ -12,10 +12,3 @@ replace:
     io.papermc.paper.configuration.GlobalConfiguration.get().misc.loadPermissionsYmlBeforePlugins
 with:
     true /* Shifu - Paper の設定は読まないので既定値を書く */
-
-# respawnDimension は Paper が PrimaryLevelData に足した欄。ServerLevel.serverLevelData の
-# 宣言の型は vanilla では ServerLevelData なので、読む側で降ろす。
-replace:
-        this.console.overworld().serverLevelData.respawnDimension = ((CraftWorld) world).getHandle().dimension();
-with:
-        ((net.minecraft.world.level.storage.PrimaryLevelData) this.console.overworld().serverLevelData).respawnDimension = ((CraftWorld) world).getHandle().dimension(); // Shifu - 欄の型は vanilla のまま

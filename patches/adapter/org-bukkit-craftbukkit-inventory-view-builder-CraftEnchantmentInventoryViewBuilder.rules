@@ -1,9 +1,0 @@
-# アダプタ層の書き換え。vanilla の行ではない。
-
-file: org/bukkit/craftbukkit/inventory/view/builder/CraftEnchantmentInventoryViewBuilder.java
-
-count: 2
-replace:
-    nextContainerCounter()
-with:
-    shifuNextContainerCounter()

@@ -1,8 +1,0 @@
-# アダプタ層の書き換え。vanilla の行ではない。
-
-file: io/papermc/paper/command/brigadier/PaperCommandSourceStack.java
-
-replace:
-            return this.getHandle().withEntity(((CraftEntity) executor).getHandle());
-with:
-            return dev.shifu.command.ApiSource.wrap(this.getHandle().withEntity(((CraftEntity) executor).getHandle())); // Shifu - NMS の CommandSourceStack は API の CommandSourceStack を実装していないので包んで返す

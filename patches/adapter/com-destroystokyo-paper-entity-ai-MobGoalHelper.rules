@@ -2,18 +2,6 @@
 
 file: com/destroystokyo/paper/entity/ai/MobGoalHelper.java
 
-# 原案の内容は正しい
-replace:
-                case UNKNOWN_BEHAVIOR -> GoalType.UNKNOWN_BEHAVIOR;
-with:
-                // Shifu - vanilla の Goal.Flag に UNKNOWN_BEHAVIOR は無いので分岐ごと落とす
-
-# 原案の内容は正しい
-replace:
-                case UNKNOWN_BEHAVIOR -> Goal.Flag.UNKNOWN_BEHAVIOR;
-with:
-                case UNKNOWN_BEHAVIOR -> null; // Shifu - vanilla に対応する旗が無い。呼び手で null を弾く
-
 # 原案どおり
 replace:
             for (GoalType type : types) {

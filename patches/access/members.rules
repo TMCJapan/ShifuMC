@@ -14,43 +14,15 @@ file: net/minecraft/server/network/ServerCommonPacketListenerImpl.java
 line:
     protected final Connection connection;
 
-# PaperPlayerLoginConnection がログイン中の名前と転送の有無を読む
-file: net/minecraft/server/network/ServerLoginPacketListenerImpl.java
-line:
-    @Nullable String requestedUsername;
-line:
-    private final boolean transferred;
-
-# CraftCopperGolem が風化の予定時刻を読み書きする
-file: net/minecraft/world/entity/animal/golem/CopperGolem.java
-line:
-    private static final long IGNORE_WEATHERING_TICK = -2L;
-line:
-    private static final long UNSET_WEATHERING_TICK = -1L;
-line:
-    private long nextWeatheringTick = -1L;
-
 # CraftLlama が隊列の後続と強さを読み書きする
 file: net/minecraft/world/entity/animal/horse/Llama.java
 line:
-    private @Nullable Llama caravanTail;
-line:
-    private void setStrength(final int strength) {
+    private void setStrength(int strength) {
 
 # CraftHumanEntity が動けない状態を見る
 file: net/minecraft/world/entity/player/Player.java
 line:
     protected boolean isImmobile() {
-
-# VanillaCommandWrapper がコマンドブロックの実行元を作る
-file: net/minecraft/world/level/BaseCommandBlock.java
-line:
-    private BaseCommandBlock.@Nullable CloseableCommandBlockSource createSource(final ServerLevel level) {
-
-# CraftVillager が職業の熟練度を上げる
-file: net/minecraft/world/entity/npc/Villager.java
-line:
-    private void increaseMerchantCareer(final ServerLevel level) {
 
 # FeatureHooks がチャンクごとのエンティティを数える
 file: net/minecraft/world/level/entity/LevelEntityGetterAdapter.java
@@ -61,11 +33,6 @@ line:
 file: net/minecraft/world/level/levelgen/structure/templatesystem/StructurePlaceSettings.java
 line:
     private int palette;
-
-# 検証して通した
-file: net/minecraft/server/MinecraftServer.java
-line:
-    private void updateEffectiveRespawnData() {
 
 # そのまま通した
 file: net/minecraft/world/entity/vehicle/AbstractMinecartContainer.java
@@ -93,21 +60,6 @@ line:
 file: net/minecraft/server/level/ChunkLevel.java
 line:
     private static final int FULL_CHUNK_LEVEL = 33;
-
-# Paper のプラグイン再マップ(ReobfServer)が実装クラスを直に閉じる
-file: net/neoforged/art/internal/RenamerImpl.java
-line:
-class RenamerImpl implements Renamer {
-
-# PaperWorldLoader が新しい世界のデータを作る
-file: net/minecraft/server/Main.java
-line:
-    private static WorldLoader.DataLoadOutput<WorldData> createNewWorldData(
-
-# CraftMannequin が取れる姿勢の一覧を読む
-file: net/minecraft/world/entity/decoration/Mannequin.java
-line:
-    private static final Set<Pose> VALID_POSES = Set.of(Pose.STANDING, Pose.CROUCHING, Pose.SWIMMING, Pose.FALL_FLYING, Pose.SLEEPING);
 
 # CraftWorld が gamerule の値を直に入れる。
 # 上書きしている 2 つは行が同じで 1 つに定まらないので patches/narrow で広げる。

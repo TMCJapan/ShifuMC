@@ -4,14 +4,10 @@
 # 実際に来るのは vanilla の dispatcher からの NMS の source。取り出す/包むで合わせる。
 
 file: io/papermc/paper/command/brigadier/argument/VanillaArgumentProviderImpl.java
-count: 12
+count: 7
 replace:
     (CommandSourceStack) sourceStack
 with:
     dev.shifu.command.ApiSource.unwrap(sourceStack)
 
 file: io/papermc/paper/command/brigadier/argument/WrappedArgumentCommandNode.java
-replace:
-        final API result = this.pureArgumentType.parse(reader, contextBuilder.getSource()); // Use the api argument parser
-with:
-        final API result = this.pureArgumentType.parse(reader, dev.shifu.command.ApiSource.wrap(dev.shifu.command.ApiSource.unwrap(contextBuilder.getSource()))); // Shifu - API の引数の型には包んだ source を渡す
