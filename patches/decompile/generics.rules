@@ -1,0 +1,38 @@
+# 逆コンパイラが型引数を落としたところ。javac が推論できないので、
+# **型の witness を書き足すだけ**にする。命令列は変わらない(ジェネリクスは消去される)。
+#
+# 1.20.6 の decompileJar は paperweight 自身がコンパイルしないので、
+# 出力がそのままでは通らないファイルがある。
+
+file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
+replace:
+            ImmutableList.of(
+                StopAttackingIfTargetInvalid.create(target -> !isNearestValidAttackTarget(piglin, target)),
+with:
+            ImmutableList.<net.minecraft.world.entity.ai.behavior.BehaviorControl<? super Piglin>>of(
+                StopAttackingIfTargetInvalid.create(target -> !isNearestValidAttackTarget(piglin, target)),
+
+# 逆コンパイラが書いた witness が広すぎる。Piglin の brain なので Piglin に絞る
+file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
+replace:
+                BehaviorBuilder.triggerIf(piglin -> !piglin.isDancing(), GoToTargetLocation.create(MemoryModuleType.CELEBRATE_LOCATION, 2, 1.0F)),
+with:
+                BehaviorBuilder.<Piglin>triggerIf(piglin -> !piglin.isDancing(), GoToTargetLocation.create(MemoryModuleType.CELEBRATE_LOCATION, 2, 1.0F)),
+
+file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
+replace:
+                new RunOne<LivingEntity>(
+with:
+                new RunOne<Piglin>(
+
+file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
+replace:
+                EraseMemoryIf.<PathfinderMob>create(PiglinAi::wantsToStopFleeing, MemoryModuleType.AVOID_TARGET)
+with:
+                EraseMemoryIf.<Piglin>create(PiglinAi::wantsToStopFleeing, MemoryModuleType.AVOID_TARGET)
+
+file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
+replace:
+                DismountOrSkipMounting.<LivingEntity>create(8, PiglinAi::wantsToStopRiding)
+with:
+                DismountOrSkipMounting.<Piglin>create(8, PiglinAi::wantsToStopRiding)

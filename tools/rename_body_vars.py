@@ -92,6 +92,36 @@ def enclosing(found, number):
     return before[-1] if before else None
 
 
+LOCAL = re.compile(r"^\s+(?:final\s+)?([\w$][\w$<>\[\],.?]*)\s+([\w$]+)\s*=[^=]")
+
+
+def locals_in(lines, start, depth):
+    """そのメソッドの中で宣言している局所変数を (型, 名前) で順に返す。
+
+    **引数だけでは足りない。** 差し込む本体は局所変数も参照する
+    (`itemInHand` は 1.20.6 では `itemStack`)。
+    """
+    out = []
+    level = 0
+    seen = False
+
+    for line in lines[start:]:
+        level += line.count("{") - line.count("}")
+
+        if level > 0:
+            seen = True
+
+        if seen and level <= 0:
+            break
+
+        match = LOCAL.match(line)
+
+        if match and match.group(1) not in ("return", "new", "else"):
+            out.append((match.group(1).replace(" ", ""), match.group(2)))
+
+    return out
+
+
 def failures(gap):
     """(ファイル, 行番号) -> 見つからない変数の名前。"""
     out = collections.defaultdict(set)
@@ -148,8 +178,12 @@ def main():
         if here is None or len(there) != 1:
             continue
 
+        pairs = list(zip(there[0][1], here[1]))
+        pairs += list(zip(locals_in(old, there[0][2], there[0][3]),
+                          locals_in(new, here[2], here[3])))
+
         for want in names:
-            for (old_type, old_name), (new_type, new_name) in zip(there[0][1], here[1]):
+            for (old_type, old_name), (new_type, new_name) in pairs:
                 if old_name == want and old_type == new_type:
                     table[target][want][new_name] += 1
 

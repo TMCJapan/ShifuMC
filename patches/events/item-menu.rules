@@ -47,9 +47,9 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/EnchantmentMenu.java.patch(EnchantItemEvent)
 file: net/minecraft/world/item/BoatItem.java
 anchor:
-    AbstractBoat boat = this.getBoat(level, playerPovHitResult, itemInHand, user);
+    AbstractBoat boat = this.getBoat(level, hitResult, itemInHand, user);
 insert:
-    if (!dev.shifu.event.ItemEvents.boatInteract(user, (net.minecraft.world.phys.BlockHitResult) playerPovHitResult, itemInHand, hand)) {
+    if (!dev.shifu.event.ItemEvents.boatInteract(user, (net.minecraft.world.phys.BlockHitResult) hitResult, itemInHand, hand)) {
         return InteractionResult.PASS;
     }
 
@@ -57,7 +57,7 @@ file: net/minecraft/world/item/BoatItem.java
 anchor:
     world.addFreshEntity(boat);
 insert:
-    if (!dev.shifu.event.ItemEvents.entityPlace(world, ((net.minecraft.world.phys.BlockHitResult) playerPovHitResult).getBlockPos(),
+    if (!dev.shifu.event.ItemEvents.entityPlace(world, ((net.minecraft.world.phys.BlockHitResult) hitResult).getBlockPos(),
             user.getDirection(), user, boat, hand)) {
         return InteractionResult.FAIL;
     }

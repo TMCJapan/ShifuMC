@@ -293,7 +293,7 @@ insert:
     if (dev.shifu.event.AnimalEvents.silentBarter()) {
 insert-after:
     } else {
-        final java.util.List<ItemStack> shifuOutcome = dev.shifu.event.AnimalEvents.piglinBarter(piglin, getBarterResponseItems(piglin), itemInHand);
+        final java.util.List<ItemStack> shifuOutcome = dev.shifu.event.AnimalEvents.piglinBarter(piglin, getBarterResponseItems(piglin), itemStack);
         if (shifuOutcome != null) {
             throwItems(piglin, shifuOutcome);
         }
