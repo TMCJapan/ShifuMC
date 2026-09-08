@@ -236,6 +236,26 @@ def ancestors(tree):
     return {name: walk(name, set()) for name in head}
 
 
+ASSIGN = re.compile(r"^\s*this\.([\w$]+)\s*=[^=]")
+INITIALISED = re.compile(r"^\s+(?:@[\w.]+\s+)*(?:(?:public|protected|private|static|final"
+                         r"|transient|volatile)\s+)*[\w$<>\[\],.?@]+\s+([\w$]+)\s*=")
+
+
+def buildable(block, old):
+    """その構築子を足せるか。
+
+    `AABB(double, ..., boolean)` のように多重定義を足すだけなら足せる。
+    **vanilla が宣言のところで値を入れている欄に代入する構築子は足せない。**
+    Paper が引数を足して中身を書き直した構築子がそれで、そのまま足すと
+    `cannot assign a value to final variable` になる(1.20.6 の ServerLevel で 15 件)。
+    そこは patches/hand の担当。
+    """
+    ready = {match.group(1) for line in old for match in [INITIALISED.match(line)] if match}
+
+    return not any(match.group(1) in ready
+                   for line in block for match in [ASSIGN.match(line)] if match)
+
+
 def type_name(lines, start):
     """本体を開いている型の名前。"""
     head = start
@@ -322,6 +342,9 @@ def main():
                 # 中に文脈が要るもの(内部クラスなど)は塊で取れない。
                 # 宣言だけを足しても意味が無いので飛ばす
                 if not ms.sound(block):
+                    continue
+
+                if member == owner and not buildable(block, old):
                     continue
 
                 blocks.append((owner, member, ms.unfinal(block)))
