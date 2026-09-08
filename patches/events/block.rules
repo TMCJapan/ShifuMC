@@ -8,21 +8,6 @@
 # vanilla の権限判定(canDestroyBlock / GameMasterBlock / blockActionRestricted)が
 # 全て終わったあと、最初の書き換えである playerWillDestroy の直前で発火する。
 # 取り消されなければ、以降は vanilla のまま。
-file: net/minecraft/server/level/ServerPlayerGameMode.java
-anchor:
-    BlockState blockState2 = block.playerWillDestroy(this.level, pos, blockState, this.player);
-insert:
-    if (!dev.shifu.event.ShifuEvents.blockBreak(this.player, pos)) {
-        return false;
-    }
-
-# TNTPrimeEvent
-#
-# 発火は TntBlock.prime の中(ゲームルールの判定を通ったあと、PrimedTnt を作る前)。
-# 理由は Paper が prime の署名に足した Supplier で運ぶが、Shifu は呼ぶ直前に置く
-# (tntPrimeCause)。爆発による誘爆は vanilla が prime を通らないので wasExploded で別に発火する。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/block/TntBlock.java.patch
 file: net/minecraft/world/level/block/TntBlock.java
 anchor:
     if (level instanceof ServerLevel serverLevel && serverLevel.getGameRules().get(GameRules.TNT_EXPLODES)) {

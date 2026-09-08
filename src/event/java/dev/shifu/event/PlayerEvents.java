@@ -78,99 +78,9 @@ public final class PlayerEvents {
     }
 
 
-    /**
-     * AsyncPlayerSendCommandsEvent と PlayerCommandSendEvent。木を組み終えて packet を送る直前。
-     * Paper は別スレッドで組んで 2 回発火するが、vanilla は同期なので 1 回(hasFiredAsync = false)。
-     * 外された名前は木から消す。
-     *
-     * 読んだ位置: paper-server patches/sources/net/minecraft/commands/Commands.java.patch(PlayerCommandSendEvent)
-     */
-    public static void commandSend(final ServerPlayer player, final RootCommandNode<CommandSourceStack> root) {
-        if (!listening(org.bukkit.event.player.PlayerCommandSendEvent.getHandlerList())
-                && !listening(com.destroystokyo.paper.event.brigadier.AsyncPlayerSendCommandsEvent.getHandlerList())) {
-            return;
-        }
 
-        final Collection<String> names = new LinkedHashSet<>();
 
-        for (final CommandNode<CommandSourceStack> node : root.getChildren()) {
-            names.add(node.getName());
-        }
 
-        new com.destroystokyo.paper.event.brigadier.AsyncPlayerSendCommandsEvent<io.papermc.paper.command.brigadier.CommandSourceStack>(player.getBukkitEntity(), (com.mojang.brigadier.tree.RootCommandNode) (Object) root, false).callEvent();
-        final org.bukkit.event.player.PlayerCommandSendEvent event = new org.bukkit.event.player.PlayerCommandSendEvent(
-                player.getBukkitEntity(), new LinkedHashSet<>(names));
-        event.callEvent();
-
-        for (final String name : names) {
-            if (!event.getCommands().contains(name)) {
-                root.removeCommand(name);
-            }
-        }
-    }
-
-    /**
-     * Player.setSleepingIgnored を入れた人が 1 人でも居るか。
-     * 誰も呼んでいなければ全員 false なので、vanilla の判定へ進んでよい。
-     */
-    public static boolean anySleepIgnored(final java.util.List<ServerPlayer> players) {
-        for (final ServerPlayer player : players) {
-            if (player.fauxSleeping) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * 「寝ている割合が足りているか」を、setSleepingIgnored の分も数えて出す。
-     *
-     * <p>Paper と同じで、**実際に深く寝ている人が 1 人も居なければ false**。
-     * 無人の夜が飛ばないようにするため。
-     *
-     * 読んだ位置: paper-server patches/sources/net/minecraft/server/players/SleepStatus.java.patch
-     */
-    public static boolean enoughDeepSleeping(final java.util.List<ServerPlayer> players,
-                                             final int deepSleepers, final int needed) {
-        int counted = deepSleepers;
-        boolean anyDeepSleep = false;
-
-        for (final ServerPlayer player : players) {
-            if (player.isSleepingLongEnough()) {
-                anyDeepSleep = true;
-            } else if (player.fauxSleeping) {
-                counted++;
-            }
-        }
-
-        return anyDeepSleep && counted >= needed;
-    }
-
-    /**
-     * AsyncPlayerSendSuggestionsEvent。補完候補をクライアントへ送る直前。
-     *
-     * 候補が空のときは既定で取り消し済みにして渡す(Paper と同じ)。登録が無ければ
-     * 発火せず、渡された候補をそのまま返すので vanilla の送信になる。
-     *
-     * @return 送る候補。差し替えられていなければ引数と同じもの。取り消されたら null
-     *
-     * 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch(AsyncPlayerSendSuggestionsEvent)
-     */
-    public static com.mojang.brigadier.suggestion.Suggestions sendSuggestions(
-            final ServerPlayer player, final String buffer,
-            final com.mojang.brigadier.suggestion.Suggestions suggestions) {
-        if (!listening(com.destroystokyo.paper.event.brigadier.AsyncPlayerSendSuggestionsEvent.getHandlerList())) {
-            return suggestions;
-        }
-
-        final com.destroystokyo.paper.event.brigadier.AsyncPlayerSendSuggestionsEvent event =
-                new com.destroystokyo.paper.event.brigadier.AsyncPlayerSendSuggestionsEvent(
-                        player.getBukkitEntity(), suggestions, buffer);
-        event.setCancelled(suggestions.isEmpty());
-
-        return event.callEvent() ? event.getSuggestions() : null;
-    }
 
     /**
      * PlayerCommandPreprocessEvent(署名の無いコマンド)。解析の前。
@@ -181,49 +91,7 @@ public final class PlayerEvents {
      */
     private static boolean rewritingCommand;
 
-    public static boolean commandPreprocess(final ServerGamePacketListenerImpl connection, final String command) {
-        if (rewritingCommand || !listening(org.bukkit.event.player.PlayerCommandPreprocessEvent.getHandlerList())) {
-            return true;
-        }
 
-        final org.bukkit.event.player.PlayerCommandPreprocessEvent event = new org.bukkit.event.player.PlayerCommandPreprocessEvent(
-                connection.player.getBukkitEntity(), "/" + command,
-                new org.bukkit.craftbukkit.util.LazyPlayerSet(connection.player.level().getServer()));
-
-        if (!event.callEvent()) {
-            return false;
-        }
-
-        final String changed = event.getMessage().substring(1);
-
-        if (changed.equals(command)) {
-            return true;
-        }
-
-        rewritingCommand = true;
-
-        try {
-            connection.shifuPerformUnsignedChatCommand(changed);
-        } finally {
-            rewritingCommand = false;
-        }
-
-        return false;
-    }
-
-    /**
-     * PlayerCommandPreprocessEvent(署名付きコマンド)。Paper も文の差し替えは解析に使わない
-     * (署名が合わなくなる)ので、取り消しだけ。
-     */
-    public static boolean commandPreprocessSigned(final ServerGamePacketListenerImpl connection, final String command) {
-        if (!listening(org.bukkit.event.player.PlayerCommandPreprocessEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new org.bukkit.event.player.PlayerCommandPreprocessEvent(
-                connection.player.getBukkitEntity(), "/" + command,
-                new org.bukkit.craftbukkit.util.LazyPlayerSet(connection.player.level().getServer())).callEvent();
-    }
 
 
     /**
@@ -277,162 +145,25 @@ public final class PlayerEvents {
         return event;
     }
 
-    /**
-     * TimeSkipEvent(/time set)。書く直前。量が差し替えられていたらここで書いて false。
-     *
-     * 読んだ位置: paper-server patches/sources/net/minecraft/server/commands/TimeCommand.java.patch
-     */
-    public static boolean timeSet(final ServerLevel level, final int time) {
-        if (!timeListening()) {
-            return true;
-        }
 
-        final long current = level.getDayTime();
-        final TimeSkipEvent event = timeSkip(level.getWorld(), TimeSkipEvent.SkipReason.COMMAND, time - current);
-
-        if (event.isCancelled()) {
-            return false;
-        }
-
-        if (current + event.getSkipAmount() == time) {
-            return true;
-        }
-
-        level.setDayTime(current + event.getSkipAmount());
-
-        return false;
-    }
-
-    /** TimeSkipEvent(/time add)。 */
-    public static boolean timeAdd(final ServerLevel level, final int amount) {
-        if (!timeListening()) {
-            return true;
-        }
-
-        final TimeSkipEvent event = timeSkip(level.getWorld(), TimeSkipEvent.SkipReason.COMMAND, amount);
-
-        if (event.isCancelled()) {
-            return false;
-        }
-
-        if (event.getSkipAmount() == amount) {
-            return true;
-        }
-
-        level.setDayTime(level.getDayTime() + event.getSkipAmount());
-
-        return false;
-    }
 
     /** 夜を飛ばす前の時刻。登録が無ければ読まずに 0。 */
     public static long nightBefore(final ServerLevel level) {
         return timeListening() ? level.getDayTime() : 0L;
     }
 
-    /**
-     * TimeSkipEvent(NIGHT_SKIP)。vanilla が朝へ動かしたあと。取り消されたら戻して、起こさない。
-     *
-     * @return 起こしてよいか
-     */
-    public static boolean nightSkipped(final ServerLevel level, final long before) {
-        if (!timeListening()) {
-            return true;
-        }
-
-        final long after = level.getDayTime();
-        final TimeSkipEvent event = timeSkip(level.getWorld(), TimeSkipEvent.SkipReason.NIGHT_SKIP, after - before);
-
-        if (event.isCancelled()) {
-            level.setDayTime(before);
-
-            return false;
-        }
-
-        if (before + event.getSkipAmount() != after) {
-            level.setDayTime(before + event.getSkipAmount());
-        }
-
-        return true;
-    }
 
     // ------------------------------------------------------------ 世界
 
-    /** WorldSaveEvent。保存の頭。 */
-    public static void worldSave(final ServerLevel level) {
-        if (!listening(org.bukkit.event.world.WorldSaveEvent.getHandlerList())) {
-            return;
-        }
 
-        new org.bukkit.event.world.WorldSaveEvent(level.getWorld()).callEvent();
-    }
-
-    /**
-     * MapInitializeEvent。{@code setMapData} で置く前。
-     * 地図の Bukkit 側({@code mapView})は誰も作らないので、無ければここで作る。
-     */
-    public static void mapInitialize(final MapId id, final MapItemSavedData data) {
-        if (!listening(org.bukkit.event.server.MapInitializeEvent.getHandlerList())) {
-            return;
-        }
-
-        initializedMaps.add(id);
-        data.id = id;
-
-        if (data.mapView == null) {
-            data.mapView = new org.bukkit.craftbukkit.map.CraftMapView(data);
-        }
-
-        new org.bukkit.event.server.MapInitializeEvent(data.mapView).callEvent();
-    }
 
     private static final java.util.Set<MapId> initializedMaps = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
 
-    /** 変える前のスポーン。登録が無ければ null。 */
-    public static Location spawnBefore(final ServerLevel level) {
-        if (!listening(org.bukkit.event.world.SpawnChangeEvent.getHandlerList())) {
-            return null;
-        }
-
-        return level.getWorld().getSpawnLocation();
-    }
-
-    /** SpawnChangeEvent。vanilla が書いたあと。位置が同じなら出さない(Paper と同じ)。 */
-    public static void spawnChanged(final ServerLevel level, final Location previous) {
-        if (previous == null) {
-            return;
-        }
-
-        final Location now = level.getWorld().getSpawnLocation();
-
-        if (now.getBlockX() == previous.getBlockX() && now.getBlockY() == previous.getBlockY() && now.getBlockZ() == previous.getBlockZ()
-                && now.getYaw() == previous.getYaw() && now.getPitch() == previous.getPitch()) {
-            return;
-        }
-
-        new org.bukkit.event.world.SpawnChangeEvent(level.getWorld(), previous).callEvent();
-    }
 
 
 
-    /**
-     * BlockDestroyEvent。壊す効果の前。取り消しは効く。
-     *
-     * @return イベント。登録が無ければ null
-     */
-    public static com.destroystokyo.paper.event.block.BlockDestroyEvent blockDestroy(
-            final Level level, final BlockPos pos, final BlockState state, final FluidState fluid, final boolean drop) {
-        if (!listening(com.destroystokyo.paper.event.block.BlockDestroyEvent.getHandlerList())) {
-            return null;
-        }
 
-        final int xp = state.getBlock().getExpDrop(state, (ServerLevel) level, pos, ItemStack.EMPTY, true);
-        final com.destroystokyo.paper.event.block.BlockDestroyEvent event = new com.destroystokyo.paper.event.block.BlockDestroyEvent(
-                CraftBlock.at(level, pos), org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(fluid.createLegacyBlock()), org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(state), xp, drop);
-        event.callEvent();
-
-        return event;
-    }
 
     /** 壊す効果を、イベントの値で出す(vanilla の行の代わり)。 */
     public static void destroyEffect(final Level level, final BlockPos pos, final BlockState state,
@@ -481,16 +212,6 @@ public final class PlayerEvents {
     }
 
 
-    /** SpawnerSpawnEvent。世界に入れる直前。 */
-    public static boolean spawnerSpawn(final Entity entity, final BlockPos pos) {
-        if (!listening(org.bukkit.event.entity.SpawnerSpawnEvent.getHandlerList())) {
-            return true;
-        }
-
-        entity.spawnReason = org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.SPAWNER;
-
-        return !CraftEventFactory.callSpawnerSpawnEvent(entity, pos).isCancelled();
-    }
 
     /** DragonEggFormEvent に登録が無いか(無ければ vanilla がそのまま置く)。 */
     public static boolean silentDragonEgg() {
@@ -502,55 +223,10 @@ public final class PlayerEvents {
 
     private static boolean borderApplying;
 
-    private static boolean borderReady(final WorldBorder border, final org.bukkit.event.HandlerList handlers) {
-        return !borderApplying && border.world != null && listening(handlers);
-    }
-
-    /**
-     * WorldBorderCenterChangeEvent。書く前。中心が差し替えられていたら、その値で自分を
-     * 呼び直して false(vanilla の引数は final)。
-     *
-     * 読んだ位置: paper-server patches/sources/net/minecraft/world/level/border/WorldBorder.java.patch
-     */
-    public static boolean borderCenter(final WorldBorder border, final double x, final double z) {
-        if (!borderReady(border, io.papermc.paper.event.world.border.WorldBorderCenterChangeEvent.getHandlerList())) {
-            return true;
-        }
-
-        final org.bukkit.World world = border.world.getWorld();
-        final io.papermc.paper.event.world.border.WorldBorderCenterChangeEvent event = new io.papermc.paper.event.world.border.WorldBorderCenterChangeEvent(
-                world, world.getWorldBorder(), new Location(world, border.getCenterX(), 0, border.getCenterZ()), new Location(world, x, 0, z));
-
-        if (!event.callEvent()) {
-            return false;
-        }
-
-        if (event.getNewCenter().getX() == x && event.getNewCenter().getZ() == z) {
-            return true;
-        }
-
-        borderApplying = true;
-
-        try {
-            border.setCenter(event.getNewCenter().getX(), event.getNewCenter().getZ());
-        } finally {
-            borderApplying = false;
-        }
-
-        return false;
-    }
 
 
 
-    /** WorldBorderBoundsChangeFinishEvent。動きが終わった tick。 */
-    public static void borderFinish(final WorldBorder border, final double from, final double to, final double duration) {
-        if (border.world == null || !listening(io.papermc.paper.event.world.border.WorldBorderBoundsChangeFinishEvent.getHandlerList())) {
-            return;
-        }
 
-        final org.bukkit.World world = border.world.getWorld();
-        new io.papermc.paper.event.world.border.WorldBorderBoundsChangeFinishEvent(world, world.getWorldBorder(), from, to, duration).callEvent();
-    }
 
     // ------------------------------------------------------------ ログイン・設定フェーズ
 
@@ -576,33 +252,6 @@ public final class PlayerEvents {
         return message;
     }
 
-    /**
-     * 同期のイベントを、サーバースレッドで発火して結果を待つ。
-     *
-     * <p>設定フェーズ({@code startConfiguration})は netty のスレッドで走るので、そのまま
-     * 発火すると Bukkit が「同期のイベントは同期でしか発火できない」で落とす。Paper は
-     * 設定フェーズをサーバースレッドへ寄せているが、それは vanilla の呼ぶ場所を変えることになる。
-     * 発火だけをサーバースレッドの待ち行列へ回して、返るまで待つ。
-     */
-    private static <T> T onServerThread(final java.util.function.Supplier<T> body) {
-        if (org.bukkit.Bukkit.isPrimaryThread()) {
-            return body.get();
-        }
-
-        final org.bukkit.craftbukkit.util.Waitable<T> waitable = new org.bukkit.craftbukkit.util.Waitable<>() {
-            @Override
-            protected T evaluate() {
-                return body.get();
-            }
-        };
-        net.minecraft.server.MinecraftServer.getServer().processQueue.add(waitable);
-
-        try {
-            return waitable.get();
-        } catch (final InterruptedException | java.util.concurrent.ExecutionException e) {
-            throw new IllegalStateException(e);
-        }
-    }
 
 
     // PlayerCodeOfConductSendEvent は 26.x で入った Paper のイベントで、1.21.11 の API には無い。
@@ -614,42 +263,6 @@ public final class PlayerEvents {
 
     private static boolean swapCancelled;
 
-    /**
-     * PlayerSwapHandItemsEvent。入れ替える前。取り消されたら {@link #swapHandsCancelled} が true。
-     * 物が差し替えられていたらここで持たせて false。
-     *
-     * @return vanilla の入れ替えを行ってよいか
-     */
-    public static boolean swapHands(final ServerPlayer player, final ItemStack swap) {
-        swapCancelled = false;
-
-        if (!listening(org.bukkit.event.player.PlayerSwapHandItemsEvent.getHandlerList())) {
-            return true;
-        }
-
-        final CraftItemStack mainHand = CraftItemStack.asCraftMirror(swap);
-        final CraftItemStack offHand = CraftItemStack.asCraftMirror(player.getItemInHand(InteractionHand.MAIN_HAND));
-        final org.bukkit.event.player.PlayerSwapHandItemsEvent event = new org.bukkit.event.player.PlayerSwapHandItemsEvent(
-                player.getBukkitEntity(), mainHand.clone(), offHand.clone());
-
-        if (!event.callEvent()) {
-            swapCancelled = true;
-
-            return false;
-        }
-
-        if (event.getOffHandItem().equals(offHand) && event.getMainHandItem().equals(mainHand)) {
-            return true;
-        }
-
-        final ItemStack newOff = event.getOffHandItem().equals(offHand)
-                ? player.getItemInHand(InteractionHand.MAIN_HAND) : CraftItemStack.asNMSCopy(event.getOffHandItem());
-        final ItemStack newMain = event.getMainHandItem().equals(mainHand) ? swap : CraftItemStack.asNMSCopy(event.getMainHandItem());
-        player.setItemInHand(InteractionHand.OFF_HAND, newOff);
-        player.setItemInHand(InteractionHand.MAIN_HAND, newMain);
-
-        return false;
-    }
 
     public static boolean swapHandsCancelled() {
         final boolean cancelled = swapCancelled;
@@ -757,28 +370,6 @@ public final class PlayerEvents {
         shieldAttacker = attacker;
     }
 
-    /**
-     * PlayerShieldDisableEvent。クールダウンを付ける前。
-     *
-     * @return 付ける tick 数。取り消されたら -1。攻撃者が置かれていなければ元の値
-     */
-    public static int shieldDisable(final net.minecraft.world.entity.player.Player player, final int cooldownTicks) {
-        if (!listening(io.papermc.paper.event.player.PlayerShieldDisableEvent.getHandlerList())) {
-            return cooldownTicks;
-        }
-
-        final LivingEntity attacker = shieldAttacker;
-        shieldAttacker = null;
-
-        if (attacker == null) {
-            return cooldownTicks;
-        }
-
-        final io.papermc.paper.event.player.PlayerShieldDisableEvent event = new io.papermc.paper.event.player.PlayerShieldDisableEvent(
-                (org.bukkit.entity.Player) player.getBukkitEntity(), attacker.getBukkitEntity(), cooldownTicks);
-
-        return event.callEvent() ? event.getCooldown() : -1;
-    }
 
     // EntityLungeEvent は 26.x で入った Paper のイベントで、1.21.11 の API には無い。
 

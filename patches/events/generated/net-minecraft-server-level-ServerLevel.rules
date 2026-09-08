@@ -1,13 +1,5 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
-# WorldSaveEvent
-file: net/minecraft/server/level/ServerLevel.java
-anchor:
-    if (progressListener != null) {
-    progressListener.progressStartNoAbort(Component.translatable("menu.savingLevel"));
-insert:
-    org.bukkit.Bukkit.getPluginManager().callEvent(new org.bukkit.event.world.WorldSaveEvent(this.getWorld())); // CraftBukkit
-
 # MapInitializeEvent
 file: net/minecraft/server/level/ServerLevel.java
 anchor:

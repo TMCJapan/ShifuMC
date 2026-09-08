@@ -57,6 +57,12 @@ def main():
 
         if place:
             add(place.group(1), match.group(1), match.group(2))
+        elif where:
+            # javac が location を出さないことがある(`this.player` のような
+            # 自分の型の要素)。そのときはエラーの出たファイルの型を owner にする。
+            # `(unqualified)` にすると、その名前を要求している型が分からなくなり、
+            # 生成器が「無関係な型の同名の宣言」と区別できない。
+            add(where.rsplit("/", 1)[-1][:-len(".java")], match.group(1), match.group(2))
         else:
             add("(unqualified)", match.group(1), match.group(2))
 

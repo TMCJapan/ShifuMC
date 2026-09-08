@@ -11,16 +11,6 @@
 # EntityCombustByBlockEvent(溶岩)
 file: net/minecraft/world/entity/Entity.java
 anchor:
-    level.addFreshEntity(itemEntity);
-    return itemEntity;
-insert:
-    if (!dev.shifu.event.EntityEvents.dropItem(this, itemEntity)) {
-        return null;
-    }
-
-# ハサミで全部外すときの手を置く(dropAllLeashConnections に手が無い)
-file: net/minecraft/world/entity/Entity.java
-anchor:
     if (itemInHand.is(Items.SHEARS) && this.shearOffAllLeashConnections(player)) {
 insert:
     if (itemInHand.is(Items.SHEARS)) {
@@ -40,36 +30,6 @@ insert-after:
     }
 
 # EntityAirChangeEvent
-file: net/minecraft/world/entity/Entity.java
-anchor:
-    this.entityData.set(DATA_AIR_SUPPLY_ID, air);
-insert:
-    if (dev.shifu.event.EntityEvents.airChange(this, air)) {
-insert-after:
-    }
-
-# EntityCombustByEntityEvent(雷)と HangingBreakByEntityEvent(雷が額縁に)
-file: net/minecraft/world/entity/Entity.java
-anchor:
-    this.hurtServer(level, this.damageSources().lightningBolt(), 5.0F);
-insert:
-    if (dev.shifu.event.EntityEvents.lightningHanging(this, lightning)) {
-insert-after:
-    }
-
-# EntityUnleashEvent(次元を移った)
-file: net/minecraft/world/entity/Entity.java
-anchor:
-    if (this.removalReason == null) {
-    this.removalReason = reason;
-    }
-insert:
-    dev.shifu.event.EntityEvents.removed(this, reason);
-
-# ============================================================ ExperienceOrb
-
-# EntityTargetLivingEntityEvent(追うプレイヤーが変わった)。vanilla が決めたあとに出し、
-# 取り消されたら前の相手に戻して、この tick は追わない。
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
     if (this.followingPlayer == null || this.followingPlayer.isSpectator() || this.followingPlayer.distanceToSqr(this) > 64.0) {
@@ -99,26 +59,6 @@ insert-after:
     }
 
 # PlayerPickupExperienceEvent、PlayerExpCooldownChangeEvent、PlayerExpChangeEvent
-file: net/minecraft/world/entity/ExperienceOrb.java
-anchor:
-    if (entity.takeXpDelay == 0) {
-    entity.takeXpDelay = 2;
-    entity.take(this, 1);
-    int i = this.repairPlayerItems(serverPlayer, this.getValue());
-    if (i > 0) {
-    entity.giveExperiencePoints(i);
-    }
-    
-    this.count--;
-    if (this.count == 0) {
-    this.discard();
-    }
-    }
-insert:
-    if (dev.shifu.event.EntityEvents.pickupExperience(serverPlayer, this)) {
-insert-after:
-    }
-
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
     entity.takeXpDelay = 2;
@@ -279,15 +219,6 @@ insert-after:
 # EntityRegainHealthEvent(ENDER_CRYSTAL)
 file: net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
 anchor:
-    this.setHealth(this.getHealth() + 1.0F);
-insert:
-    if (dev.shifu.event.EntityEvents.regain(this, 1.0F, org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason.ENDER_CRYSTAL)) {
-insert-after:
-    }
-
-# EntityDeathEvent(kill)
-file: net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
-anchor:
     entity.push(f / h * 4.0, 0.2F, g / h * 4.0);
 insert:
     dev.shifu.event.EntityEvents.pushedBy(this, entity);
@@ -330,56 +261,6 @@ insert-after:
     }
 
 # EntityDeathEvent(壊れた)。本体のアイテムも落とし物に載せるため、brokenByPlayer から控える。
-file: net/minecraft/world/entity/decoration/ArmorStand.java
-anchor:
-    Block.popResource(this.level(), this.blockPosition(), itemStack);
-insert:
-    dev.shifu.event.EntityEvents.armorStandBeginOuter();
-
-file: net/minecraft/world/entity/decoration/ArmorStand.java
-anchor:
-    this.dropAllDeathLoot(level, damageSource);
-insert:
-    final java.util.List<net.minecraft.world.entity.Entity.DefaultDrop> shifuDrops = dev.shifu.event.EntityEvents.armorStandBegin();
-
-file: net/minecraft/world/entity/decoration/BlockAttachedEntity.java
-anchor:
-    this.discard();
-    this.dropItem(serverLevel, null);
-insert:
-    if (dev.shifu.event.EntityEvents.hangingBreakTick(this)) {
-insert-after:
-    }
-
-# HangingBreakEvent(PHYSICS: 押された・動かされた)。move と push の 2 箇所。
-file: net/minecraft/world/entity/decoration/BlockAttachedEntity.java
-anchor:
-    this.kill(serverLevel);
-    this.dropItem(serverLevel, null);
-count: 2
-insert:
-    if (dev.shifu.event.EntityEvents.hangingBreak(this, org.bukkit.event.hanging.HangingBreakEvent.RemoveCause.PHYSICS)) {
-insert-after:
-    }
-
-# ============================================================ ItemFrame
-
-# PlayerItemFrameChangeEvent(PLACE)
-file: net/minecraft/world/entity/decoration/ItemFrame.java
-anchor:
-    this.setItem(itemStack);
-insert:
-    final int shifuFrame = dev.shifu.event.EntityEvents.frameChange(this, player, itemStack);
-    if (shifuFrame == 0) {
-        return InteractionResult.FAIL;
-    }
-    if (shifuFrame == 1) {
-insert-after:
-    }
-
-# ============================================================ LeashFenceKnotEntity
-
-# PlayerLeashEntityEvent(フェンスに繋ぐ・フェンスから自分へ)
 file: net/minecraft/world/entity/item/ItemEntity.java
 anchor:
     if (!this.level().isClientSide() && this.age >= 6000) {
@@ -393,31 +274,11 @@ insert:
 # PrePlayerAttackEntityEvent(attack)
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-    if (!this.cannotAttack(target)) {
-insert-after:
-    if (!dev.shifu.event.EntityEvents.preAttack(this, target)) {
-        return;
-    }
-
-# 飛び道具を弾くときの EntityDamageEvent に渡す元と量を置く
-file: net/minecraft/world/entity/player/Player.java
-anchor:
     if (!this.deflectProjectile(target)) {
 insert:
     dev.shifu.event.EntityEvents.attacking(target, damageSource, f1);
 
 # PlayerAttackEntityCooldownResetEvent
-file: net/minecraft/world/entity/player/Player.java
-anchor:
-    this.onAttack();
-insert:
-    if (dev.shifu.event.EntityEvents.attackCooldownReset(this, target)) {
-insert-after:
-    } else {
-        super.onAttack();
-    }
-
-# EntityPushedByEntityAttackEvent の主(薙ぎ払い)
 file: net/minecraft/world/entity/player/Player.java
 anchor:
     target.push(
@@ -427,16 +288,6 @@ insert:
     dev.shifu.event.EntityEvents.pushedBy(this, target);
 
 # PrePlayerAttackEntityEvent(stabAttack)
-file: net/minecraft/world/entity/player/Player.java
-anchor:
-    if (this.cannotAttack(target)) {
-        return false;
-    } else {
-insert-after:
-    if (!dev.shifu.event.EntityEvents.preAttack(this, target)) {
-        return false;
-    }
-
 file: net/minecraft/world/entity/player/Player.java
 anchor:
     if (knockback && this.deflectProjectile(target)) {
@@ -469,16 +320,6 @@ insert-after:
 # FireworkExplodeEvent。爆発する 3 箇所を同じ形で囲む。
 file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
-    this.timeUntilHooked = Mth.nextInt(this.random, 20, 80);
-insert-after:
-    if (!dev.shifu.event.EntityEvents.fishLured(this)) {
-        this.timeUntilHooked = 0;
-        return;
-    }
-
-# PlayerFishEvent(CAUGHT_FISH)。経験値はイベントの値で。
-file: net/minecraft/world/entity/projectile/FishingHook.java
-anchor:
     playerOwner.level()
         .addFreshEntity(
         new ExperienceOrb(
@@ -493,27 +334,6 @@ insert-after:
     }
 
 # PlayerFishEvent(IN_GROUND / REEL_IN)
-file: net/minecraft/world/entity/projectile/FishingHook.java
-anchor:
-    if (this.onGround()) {
-    i = 2;
-insert-after:
-    if (!dev.shifu.event.EntityEvents.fishState(this, playerOwner, org.bukkit.event.player.PlayerFishEvent.State.IN_GROUND)) {
-        return 0;
-    }
-
-file: net/minecraft/world/entity/projectile/FishingHook.java
-anchor:
-    this.discard();
-    return i;
-insert:
-    if (i == 0 && !dev.shifu.event.EntityEvents.fishState(this, playerOwner, org.bukkit.event.player.PlayerFishEvent.State.REEL_IN)) {
-        return 0;
-    }
-
-# ============================================================ AbstractArrow
-
-# EntityCombustByEntityEvent(燃える矢)
 file: net/minecraft/world/entity/projectile/AbstractArrow.java
 anchor:
     livingEntity.push(vec3.x, 0.1, vec3.z);
@@ -521,17 +341,6 @@ insert:
     dev.shifu.event.EntityEvents.pushedBy(this, livingEntity);
 
 # PlayerPickupArrowEvent
-file: net/minecraft/world/entity/projectile/AbstractArrow.java
-anchor:
-    if (this.tryPickup(player)) {
-insert:
-    if (dev.shifu.event.EntityEvents.arrowPickupListening() && !dev.shifu.event.EntityEvents.pickupArrow(this, player, this.getPickupItem())) {
-        return;
-    }
-
-# ============================================================ 火の玉・ウィザーの頭
-
-# ExplosionPrimeEvent(大きな火の玉)
 file: net/minecraft/world/entity/projectile/LargeFireball.java
 anchor:
     this.level().explode(this, this.getX(), this.getY(), this.getZ(), this.explosionPower, flag, Level.ExplosionInteraction.MOB);
@@ -594,50 +403,6 @@ insert-after:
 # ============================================================ 乗り物
 
 # VehicleDamageEvent と VehicleDestroyEvent
-file: net/minecraft/world/entity/vehicle/VehicleEntity.java
-anchor:
-    this.setHurtDir(-this.getHurtDir());
-insert:
-    if (!dev.shifu.event.EntityEvents.vehicleDamage(this, damageSource, amount)) {
-        return false;
-    }
-
-file: net/minecraft/world/entity/vehicle/VehicleEntity.java
-anchor:
-    this.discard();
-insert:
-    if (dev.shifu.event.EntityEvents.vehicleDestroy(this, damageSource)) {
-insert-after:
-    } else {
-        this.setDamage(40.0F);
-        return true;
-    }
-
-file: net/minecraft/world/entity/vehicle/VehicleEntity.java
-anchor:
-    this.destroy(level, damageSource);
-insert:
-    if (dev.shifu.event.EntityEvents.vehicleDestroy(this, damageSource)) {
-insert-after:
-    } else {
-        this.setDamage(40.0F);
-        return true;
-    }
-
-# VehicleEntityCollisionEvent(トロッコ。ぶつかると判定したあと)
-file: net/minecraft/world/entity/vehicle/AbstractMinecart.java
-anchor:
-    return AbstractBoat.canVehicleCollide(this, entity);
-insert:
-    if (dev.shifu.event.EntityEvents.vehicleCollideListening() && AbstractBoat.canVehicleCollide(this, entity)
-        && !dev.shifu.event.EntityEvents.vehicleCollide(this, entity)) {
-        return false;
-    }
-
-# EntityCombustByBlockEvent に載せる「燃やしたブロック」を覚える。
-# Paper は Entity.lastLavaContact という欄に同じものを入れる。入れるのは登録があるときだけ。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/Entity.java.patch:1708
 file: net/minecraft/world/entity/Entity.java
 anchor:
     vec3 = vec3.add(vec32);

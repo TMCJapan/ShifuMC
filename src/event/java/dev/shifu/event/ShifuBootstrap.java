@@ -57,18 +57,6 @@ public final class ShifuBootstrap {
         }
     }
 
-    /**
-     * 全体の設定とワールドの既定を読む。{@code GlobalConfiguration.get()} がここで入る。
-     * ワールドごとの設定は {@code ServerLevel} が自分で作る({@code shifuCreateConfigs})。
-     */
-    public static void initializeConfigurations(final MinecraftServer server) {
-        try {
-            server.paperConfigurations.initializeGlobalConfiguration(server.registryAccess());
-            server.paperConfigurations.initializeWorldDefaultsConfiguration(server.registryAccess());
-        } catch (final org.spongepowered.configurate.ConfigurateException e) {
-            throw new IllegalStateException("Paper の設定を読めない", e);
-        }
-    }
 
     /**
      * stop のあと JVM を終える。Bukkit のスケジューラ({@code CraftAsyncScheduler})の

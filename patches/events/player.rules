@@ -9,34 +9,6 @@
 # vanilla と同じ命令列にする。
 
 # PlayerJoinEvent
-file: net/minecraft/server/players/PlayerList.java
-anchor:
-    this.broadcastSystemMessage(mutableComponent.withStyle(ChatFormatting.YELLOW), false);
-insert:
-    if (dev.shifu.event.ShifuEvents.silentJoin()
-            || dev.shifu.event.ShifuEvents.playerJoin(player, mutableComponent.withStyle(ChatFormatting.YELLOW))) {
-insert-after:
-    }
-
-# PlayerQuitEvent
-file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
-anchor:
-    this.server
-        .getPlayerList()
-        .broadcastSystemMessage(Component.translatable("multiplayer.player.left", this.player.getDisplayName()).withStyle(ChatFormatting.YELLOW), false);
-insert:
-    if (dev.shifu.event.ShifuEvents.silentQuit()
-            || dev.shifu.event.ShifuEvents.playerQuit(this.player, Component.translatable("multiplayer.player.left", this.player.getDisplayName()).withStyle(ChatFormatting.YELLOW))) {
-insert-after:
-    }
-
-# PlayerMoveEvent
-#
-# vanilla が位置を確定させる absSnapTo(target...) の直前。Paper と同じ位置。
-# 登録が無ければ真偽値 1 つで抜ける。取り消しか行き先の変更があれば、
-# 以降(位置の確定・落下判定・統計)を飛ばす。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch:889
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     this.teleport(i, j, k, g, h);
@@ -50,20 +22,6 @@ insert:
 # 動かす前の場所は先に取っておく(登録が無ければ null)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch:986
-file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
-anchor:
-    this.player.teleportSetPosition(posMoveRotation, relatives);
-insert:
-    final org.bukkit.Location shifuTeleportFrom = dev.shifu.event.ShifuEvents.teleportFrom(this);
-
-file: net/minecraft/server/level/ServerPlayer.java
-anchor:
-    this.teleportSpectators(teleportTransition, serverLevel);
-insert-after:
-    dev.shifu.event.ShifuEvents.playerChangedWorld(this, serverLevel);
-
-# テレポートの理由。Paper は署名を増やして渡しているが、Shifu は呼ぶ直前に置く。
-# 登録が無ければ何もしない。
 file: net/minecraft/server/commands/TeleportCommand.java
 anchor:
     if (target.teleportTo(level, d, d1, d2, relatives, f2, f3, true)) {
@@ -110,27 +68,6 @@ insert-after:
 # 別の画面が開かれたら、Paper と同じくその画面を送り直して抜ける。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch:1989
-file: net/minecraft/world/entity/LivingEntity.java
-anchor:
-    this.level().addFreshEntity(itemEntity);
-    }
-
-    return itemEntity;
-insert:
-    if (!dev.shifu.event.ShifuEvents.playerDropItem(this, itemEntity, includeThrower)) {
-        return null;
-    }
-
-# PlayerDeathEvent
-#
-# 3 箇所で 1 組。
-#   1. 先頭で登録の有無を控える
-#   2. 登録があれば vanilla の死亡メッセージの告知を飛ばす(if で囲む)。
-#      発火のあとでイベントの文を送る
-#   3. 落とし物と経験値を出す if を囲む。前で控え始め、後で発火する
-# 落とし物は EntityDeathEvent と同じく、世界に入る手前で控える。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch:448
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
     this.gameEvent(GameEvent.ENTITY_DIE);
@@ -165,30 +102,6 @@ insert:
 # クリエイティブの即時破壊より前。Paper と同じ位置。拒まれたらブロックを送り直して抜ける。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayerGameMode.java.patch:172
-file: net/minecraft/server/players/PlayerList.java
-anchor:
-    NameAndId nameAndId = player.nameAndId();
-insert:
-    if (!dev.shifu.event.ShifuEvents.playerLogin(connection, player)) {
-        return;
-    }
-
-# PlayerGameModeChangeEvent
-#
-# 「同じモードなら何もしない」の判定のあと、書き換える前。Paper と同じ位置。
-# 理由は CraftPlayer.setGameMode(PLUGIN)と /gamemode(COMMAND)が呼ぶ直前に置く。
-# アンカーの 1 行目は 2 箇所にあるので、次の行まで含めて 1 箇所に定める。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayerGameMode.java.patch(PlayerGameModeChangeEvent)
-file: net/minecraft/server/level/ServerPlayerGameMode.java
-anchor:
-    Abilities abilities = this.player.getAbilities();
-    this.setGameModeForPlayer(gameModeForPlayer, this.gameModeForPlayer);
-insert:
-    if (!dev.shifu.event.ShifuEvents.gameModeChange(this.player, gameModeForPlayer)) {
-        return false;
-    }
-
 file: net/minecraft/server/commands/GameModeCommand.java
 anchor:
     if (setGameMode(context.getSource(), serverPlayer, gameType)) {
@@ -200,19 +113,6 @@ insert:
 # vanilla の代入を囲む。取り消されたら代入を飛ばし、クライアントに能力を送り直す。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch(PlayerToggleFlightEvent)
-file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
-anchor:
-    this.player.getAbilities().flying = packet.isFlying() && this.player.getAbilities().mayfly;
-insert:
-    if (dev.shifu.event.ShifuEvents.toggleFlight(this.player, packet.isFlying())) {
-insert-after:
-    }
-
-# PlayerBedEnterEvent
-#
-# vanilla が寝られると判定して、寝る直前。取り消されたら理由(OTHER_PROBLEM)を返して寝ない。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch(callPlayerBedEnterEvent)
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
     Either<Player.BedSleepingProblem, Unit> either = super.startSleepInBed(pos).ifRight(unit -> {
@@ -227,27 +127,3 @@ insert:
 # 食べ終える直前。取り消されたら消費せずに抜ける(手元を送り直す)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch(PlayerItemConsumeEvent)
-file: net/minecraft/world/entity/LivingEntity.java
-anchor:
-    ItemStack itemStack = this.useItem.finishUsingItem(this.level(), this);
-insert:
-    if (!dev.shifu.event.ShifuEvents.itemConsume(this, usedItemHand)) {
-        return;
-    }
-
-# ---------------------------------------------------------------- AsyncPlayerSendSuggestionsEvent
-#
-# 補完候補を送る直前。候補の差し替えと取り消しが効く。
-# vanilla の送信行はそのまま残し、差し替えられたときだけ別の行で送る。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch
-file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
-anchor:
-    this.send(new ClientboundCommandSuggestionsPacket(packet.getId(), suggestions2));
-insert:
-    final com.mojang.brigadier.suggestion.Suggestions shifuSuggestions = dev.shifu.event.PlayerEvents.sendSuggestions(this.player, packet.getCommand(), suggestions2);
-    if (shifuSuggestions == suggestions2) {
-insert-after:
-    } else if (shifuSuggestions != null) {
-        this.send(new ClientboundCommandSuggestionsPacket(packet.getId(), shifuSuggestions));
-    }

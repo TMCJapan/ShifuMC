@@ -6,12 +6,3 @@ anchor:
     this.setFlag(FLAG_SIT, sitting);
 insert:
     if (!new io.papermc.paper.event.entity.EntityToggleSitEvent(this.getBukkitEntity(), sitting).callEvent()) return; // Paper - Add EntityToggleSitEvent
-
-# EntityJumpEvent
-file: net/minecraft/world/entity/animal/Panda.java
-anchor:
-    panda.jumpFromGround();
-insert:
-    if (new com.destroystokyo.paper.event.entity.EntityJumpEvent(getBukkitLivingEntity()).callEvent()) { // Paper - Entity Jump API
-insert-after:
-    } else { this.setJumping(false); } // Paper - Entity Jump API; setJumping(false) stops a potential loop

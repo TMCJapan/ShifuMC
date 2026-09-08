@@ -97,30 +97,6 @@ public final class EntityEvents {
 
     // ------------------------------------------------------------ 自然湧き
 
-    /**
-     * PlayerNaturallySpawnCreaturesEvent。1 tick に 1 度、湧きを始める前に
-     * プレイヤーごとに出す。イベントは各 ServerPlayer に控えて、chunk を選ぶときに読む。
-     *
-     * <p>半径の既定は Paper と同じ min(spigot の mob-spawn-range, 視距離, 8) チャンク。
-     * 8 チャンクは vanilla の判定(16384 = 128 の 2 乗)と同じなので、
-     * プラグインが縮めない限り vanilla と同じ範囲になる。
-     *
-     * 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerChunkCache.java.patch
-     */
-    public static void naturallySpawnCreatures(final ServerLevel level) {
-        if (!listening(com.destroystokyo.paper.event.entity.PlayerNaturallySpawnCreaturesEvent.getHandlerList())) {
-            return;
-        }
-
-        for (final ServerPlayer player : level.players()) {
-            int chunkRange = Math.min(level.spigotConfig.mobSpawnRange, player.getBukkitEntity().getViewDistance());
-            chunkRange = Math.min(chunkRange, 8);
-            player.shifuNaturallySpawnedEvent =
-                    new com.destroystokyo.paper.event.entity.PlayerNaturallySpawnCreaturesEvent(
-                            player.getBukkitEntity(), (byte) chunkRange);
-            player.shifuNaturallySpawnedEvent.callEvent();
-        }
-    }
 
     /** 発火に登録があるか。ChunkMap が vanilla の判定と切り替えるのに使う。 */
     public static boolean naturallySpawnCreaturesListening() {
@@ -189,20 +165,6 @@ public final class EntityEvents {
 
 
 
-    /**
-     * HangingBreakByEntityEvent(雷が額縁や絵に当たった)。{@code thunderHit} の {@code hurtServer} を囲む。
-     *
-     * @return 傷つけてよいか
-     */
-    public static boolean lightningHanging(final Entity entity, final LightningBolt bolt) {
-        if (!(entity.getBukkitEntity() instanceof org.bukkit.entity.Hanging hanging)
-                || !listening(HangingBreakEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new HangingBreakByEntityEvent(hanging, bolt.getBukkitEntity(),
-                HangingBreakEvent.RemoveCause.ENTITY).callEvent();
-    }
 
     // ------------------------------------------------------------ 押し
 
@@ -225,21 +187,6 @@ public final class EntityEvents {
 
     // ------------------------------------------------------------ 落とし物
 
-    /**
-     * EntityDropItemEvent。{@code Entity.spawnAtLocation} の {@code addFreshEntity} の直前。
-     *
-     * <p>未対応: 死亡ドロップの控え中は Paper は出さない(EntityDeathEvent に載せるだけ)が、
-     * Shifu は控えの状態を発火層の外から見られないので出す。
-     *
-     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/Entity.java.patch(spawnAtLocation)
-     */
-    public static boolean dropItem(final Entity dropper, final ItemEntity item) {
-        if (!listening(EntityDropItemEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new EntityDropItemEvent(dropper.getBukkitEntity(), (org.bukkit.entity.Item) item.getBukkitEntity()).callEvent();
-    }
 
     // ------------------------------------------------------------ リード
 
@@ -273,35 +220,6 @@ public final class EntityEvents {
 
     private static boolean settingAir;
 
-    /**
-     * EntityAirChangeEvent。{@code setAirSupply} の代入を囲む。
-     *
-     * <p>効かないもの: 取り消したときのクライアントへの送り直し(Paper の {@code resendPossiblyDesyncedDataValues})。
-     *
-     * @return vanilla の代入へ進んでよいか。量が変えられていたら自分で入れて false
-     */
-    public static boolean airChange(final Entity entity, final int supply) {
-        if (settingAir || !entity.valid || !listening(EntityAirChangeEvent.getHandlerList())) {
-            return true;
-        }
-
-        final EntityAirChangeEvent event = new EntityAirChangeEvent(entity.getBukkitEntity(), supply);
-        event.callEvent();
-
-        if (event.isCancelled() && entity.getAirSupply() != supply) {
-            return false;
-        }
-
-        if (event.getAmount() == supply) {
-            return true;
-        }
-
-        settingAir = true;
-        entity.setAirSupply(event.getAmount());
-        settingAir = false;
-
-        return false;
-    }
 
     private static EntityRemoveEvent.Cause removeCause;
 
@@ -310,40 +228,6 @@ public final class EntityEvents {
         removeCause = cause;
     }
 
-    /**
-     * EntityRemoveEvent。{@code Entity.setRemoved} の先頭(Paper と同じ)。
-     *
-     * <p>理由は置かれていればそれ、無ければ vanilla の {@code RemovalReason} から決める:
-     * KILLED → DEATH、UNLOADED_TO_CHUNK → UNLOAD、UNLOADED_WITH_PLAYER → PLAYER_QUIT、
-     * DISCARDED → DESPAWN。Paper は discard の呼び出し側ごとに細かい理由(PICKUP、MERGE、HIT …)を
-     * 渡しているが、vanilla の呼び出し側は理由を持たないので DESPAWN とみなす。
-     * CHANGED_DIMENSION は Paper も出さない。世界に入る前の個体も出さない。
-     *
-     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/Entity.java.patch(setRemoved)、
-     * CraftEventFactory.callEntityRemoveEvent
-     */
-    public static void removed(final Entity entity, final Entity.RemovalReason reason) {
-        final EntityRemoveEvent.Cause stashed = removeCause;
-        removeCause = null;
-
-        if (entity instanceof ServerPlayer || !entity.valid || !listening(EntityRemoveEvent.getHandlerList())) {
-            return;
-        }
-
-        final EntityRemoveEvent.Cause cause = stashed != null ? stashed : switch (reason) {
-            case KILLED -> EntityRemoveEvent.Cause.DEATH;
-            case DISCARDED -> EntityRemoveEvent.Cause.DESPAWN;
-            case UNLOADED_TO_CHUNK -> EntityRemoveEvent.Cause.UNLOAD;
-            case UNLOADED_WITH_PLAYER -> EntityRemoveEvent.Cause.PLAYER_QUIT;
-            case CHANGED_DIMENSION -> null;
-        };
-
-        if (cause == null) {
-            return;
-        }
-
-        new EntityRemoveEvent(entity.getBukkitEntity(), cause).callEvent();
-    }
 
     // ------------------------------------------------------------ 経験値オーブ
 
@@ -383,19 +267,6 @@ public final class EntityEvents {
         return cancelled;
     }
 
-    /**
-     * PlayerPickupExperienceEvent。{@code ExperienceOrb.playerTouch} の拾う塊を囲む。
-     * Paper と同じく、拾える tick({@code takeXpDelay == 0})だけ出す。
-     */
-    public static boolean pickupExperience(final ServerPlayer player, final ExperienceOrb orb) {
-        if (player.takeXpDelay != 0
-                || !listening(com.destroystokyo.paper.event.player.PlayerPickupExperienceEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new com.destroystokyo.paper.event.player.PlayerPickupExperienceEvent(
-                player.getBukkitEntity(), (org.bukkit.entity.ExperienceOrb) orb.getBukkitEntity()).callEvent();
-    }
 
     /** PlayerExpCooldownChangeEvent。vanilla が入れた直後に、イベントの値で入れ直す。 */
     public static int xpCooldown(final Player player, final int newCooldown, final PlayerExpCooldownChangeEvent.ChangeReason reason) {
@@ -718,37 +589,12 @@ public final class EntityEvents {
         return CraftEventFactory.callExplosionPrimeEvent(entity, radius, fire);
     }
 
-    /**
-     * EntityRegainHealthEvent(理由つき)。{@code setHealth(getHealth() + amount)} を囲む。
-     *
-     * @return vanilla の setHealth へ進んでよいか。量が変えられていたら自分で入れて false
-     */
-    public static boolean regain(final LivingEntity entity, final float amount, final EntityRegainHealthEvent.RegainReason reason) {
-        if (!listening(EntityRegainHealthEvent.getHandlerList())) {
-            return true;
-        }
-
-        final EntityRegainHealthEvent event = new EntityRegainHealthEvent(entity.getBukkitEntity(), amount, reason);
-
-        if (!event.callEvent()) {
-            return false;
-        }
-
-        if (event.getAmount() == amount) {
-            return true;
-        }
-
-        entity.setHealth((float) (entity.getHealth() + event.getAmount()));
-
-        return false;
-    }
 
 
 
     // ------------------------------------------------------------ 防具立て
 
     private static DamageSource armorStandSource;
-    private static List<Entity.DefaultDrop> armorStandOuter;
     private static ArmorStand armorStandDeathFired;
 
     /** 次の {@code ArmorStand.kill} が使う被害の元を置く(BYPASSES_INVULNERABILITY の経路)。 */
@@ -756,80 +602,14 @@ public final class EntityEvents {
         armorStandSource = source;
     }
 
-    /** {@code brokenByPlayer} で、本体のアイテムを落とす前から控え始める(本体も EntityDeathEvent の落とし物に載せる)。 */
-    public static void armorStandBeginOuter() {
-        armorStandOuter = ShifuEvents.beginDeathDrops();
-    }
 
-    /** {@code brokenByAnything} の先頭。外側で控え始めていればそれを引き継ぎ、無ければここから控える。 */
-    public static List<Entity.DefaultDrop> armorStandBegin() {
-        final List<Entity.DefaultDrop> outer = armorStandOuter;
-        armorStandOuter = null;
-
-        return outer != null ? outer : ShifuEvents.beginDeathDrops();
-    }
 
 
 
     // ------------------------------------------------------------ 額縁・絵・アイテム
 
-    /**
-     * HangingBreakEvent。{@code BlockAttachedEntity} の {@code discard / kill} と {@code dropItem} を囲む。
-     * 出したあとに消えていたら(プラグインが消した)、vanilla の分は飛ばす(Paper と同じ)。
-     */
-    public static boolean hangingBreak(final Entity entity, final HangingBreakEvent.RemoveCause cause) {
-        if (!(entity.getBukkitEntity() instanceof org.bukkit.entity.Hanging hanging)
-                || !listening(HangingBreakEvent.getHandlerList())) {
-            return true;
-        }
 
-        final HangingBreakEvent event = new HangingBreakEvent(hanging, cause);
-        event.callEvent();
 
-        return !entity.isRemoved() && !event.isCancelled();
-    }
-
-    /** {@code BlockAttachedEntity.tick} 用。ブロックに埋まっていれば OBSTRUCTION、そうでなければ PHYSICS。 */
-    public static boolean hangingBreakTick(final Entity entity) {
-        if (!listening(HangingBreakEvent.getHandlerList())) {
-            return true;
-        }
-
-        return hangingBreak(entity, entity.level().getBlockState(entity.blockPosition()).isAir()
-                ? HangingBreakEvent.RemoveCause.PHYSICS
-                : HangingBreakEvent.RemoveCause.OBSTRUCTION);
-    }
-
-    /**
-     * PlayerItemFrameChangeEvent(PLACE)。{@code ItemFrame.interact} の {@code setItem(itemStack)} を囲む。
-     *
-     * @return 0 = 取り消し(FAIL)、1 = vanilla、2 = 済み(差し替えた物を入れた)
-     */
-    public static int frameChange(final ItemFrame frame, final Player player, final ItemStack itemStack) {
-        if (!listening(io.papermc.paper.event.player.PlayerItemFrameChangeEvent.getHandlerList())) {
-            return 1;
-        }
-
-        final io.papermc.paper.event.player.PlayerItemFrameChangeEvent event =
-                new io.papermc.paper.event.player.PlayerItemFrameChangeEvent(
-                        (org.bukkit.entity.Player) player.getBukkitEntity(), (org.bukkit.entity.ItemFrame) frame.getBukkitEntity(),
-                        CraftItemStack.asBukkitCopy(itemStack),
-                        io.papermc.paper.event.player.PlayerItemFrameChangeEvent.ItemFrameChangeAction.PLACE);
-
-        if (!event.callEvent()) {
-            return 0;
-        }
-
-        final ItemStack chosen = CraftItemStack.asNMSCopy(event.getItemStack());
-
-        if (ItemStack.matches(chosen, itemStack)) {
-            return 1;
-        }
-
-        frame.setItem(chosen);
-
-        return 2;
-    }
 
     /** ItemDespawnEvent。{@code ItemEntity.tick} で消える tick に、消す前。 */
     public static boolean itemDespawn(final ItemEntity item) {
@@ -842,21 +622,6 @@ public final class EntityEvents {
 
     // ------------------------------------------------------------ プレイヤーの攻撃
 
-    /**
-     * PrePlayerAttackEntityEvent。{@code Player.attack} / {@code stabAttack} で、vanilla が
-     * 攻撃できると判定したあと。
-     *
-     * <p>未対応: 攻撃できない相手のとき Paper は {@code willAttack=false} で出す。
-     * ({@code cannotAttack} には副作用があるので 2 回呼べない。)
-     */
-    public static boolean preAttack(final Player player, final Entity target) {
-        if (!listening(io.papermc.paper.event.player.PrePlayerAttackEntityEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new io.papermc.paper.event.player.PrePlayerAttackEntityEvent(
-                (org.bukkit.entity.Player) player.getBukkitEntity(), target.getBukkitEntity(), true).callEvent();
-    }
 
     private static Entity attackTarget;
     private static DamageSource attackSource;
@@ -938,16 +703,6 @@ public final class EntityEvents {
         return false;
     }
 
-    /** PlayerAttackEntityCooldownResetEvent。{@code Player.attack} の {@code onAttack()} を囲む。 */
-    public static boolean attackCooldownReset(final Player player, final Entity target) {
-        if (!listening(com.destroystokyo.paper.event.player.PlayerAttackEntityCooldownResetEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new com.destroystokyo.paper.event.player.PlayerAttackEntityCooldownResetEvent(
-                (org.bukkit.entity.Player) player.getBukkitEntity(), target.getBukkitEntity(),
-                player.getAttackStrengthScale(0.0F)).callEvent();
-    }
 
     // ------------------------------------------------------------ 花火・釣り・矢
 
@@ -963,50 +718,13 @@ public final class EntityEvents {
         return fishingHand == null ? null : CraftEquipmentSlot.getHand(fishingHand);
     }
 
-    /** PlayerFishEvent(LURED)。{@code catchingFish} で食いつくまでの時間を決めた直後。 */
-    public static boolean fishLured(final FishingHook hook) {
-        final Player owner = hook.getPlayerOwner();
-
-        if (owner == null || !listening(PlayerFishEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new PlayerFishEvent((org.bukkit.entity.Player) owner.getBukkitEntity(), null,
-                (org.bukkit.entity.FishHook) hook.getBukkitEntity(), PlayerFishEvent.State.LURED).callEvent();
-    }
 
 
-    /** PlayerFishEvent(IN_GROUND / REEL_IN)。 */
-    public static boolean fishState(final FishingHook hook, final Player owner, final PlayerFishEvent.State state) {
-        if (!listening(PlayerFishEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new PlayerFishEvent((org.bukkit.entity.Player) owner.getBukkitEntity(), null,
-                (org.bukkit.entity.FishHook) hook.getBukkitEntity(), fishingSlot(), state).callEvent();
-    }
 
     public static boolean arrowPickupListening() {
         return listening(PlayerPickupArrowEvent.getHandlerList());
     }
 
-    /**
-     * PlayerPickupArrowEvent。{@code AbstractArrow.playerTouch} の {@code tryPickup} の前。
-     * Paper と同じく、拾える設定で、物があって、持てる余地があるときだけ出す。
-     *
-     * <p>効かないもの: 拾う物の差し替え(vanilla の tryPickup は自分で {@code getPickupItem} を見る)。
-     */
-    public static boolean pickupArrow(final AbstractArrow arrow, final Player player, final ItemStack pickupItem) {
-        if (arrow.pickup != AbstractArrow.Pickup.ALLOWED || pickupItem.isEmpty()
-                || player.getInventory().canHold(pickupItem) <= 0) {
-            return true;
-        }
-
-        final ItemEntity item = new ItemEntity(arrow.level(), arrow.getX(), arrow.getY(), arrow.getZ(), pickupItem);
-
-        return new PlayerPickupArrowEvent((org.bukkit.entity.Player) player.getBukkitEntity(),
-                (org.bukkit.entity.Item) item.getBukkitEntity(), (org.bukkit.entity.AbstractArrow) arrow.getBukkitEntity()).callEvent();
-    }
 
     // ------------------------------------------------------------ ポーションの飛沫
 
@@ -1025,44 +743,13 @@ public final class EntityEvents {
 
     // ------------------------------------------------------------ 乗り物
 
-    private static org.bukkit.entity.Entity attackerOf(final DamageSource source) {
-        final Entity direct = source.getDirectEntity();
 
-        return direct == null ? null : direct.getBukkitEntity();
-    }
 
-    /**
-     * VehicleDamageEvent。{@code VehicleEntity.hurtServer} で傷を付ける前。
-     *
-     * <p>効かないもの: ダメージの差し替え(vanilla の引数は final)。
-     */
-    public static boolean vehicleDamage(final VehicleEntity vehicle, final DamageSource source, final float damage) {
-        if (!listening(VehicleDamageEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new VehicleDamageEvent((org.bukkit.entity.Vehicle) vehicle.getBukkitEntity(),
-                attackerOf(source), damage).callEvent();
-    }
-
-    /** VehicleDestroyEvent。{@code discard} / {@code destroy} を囲む。取り消されたら傷を 40 にして true を返す(Paper)。 */
-    public static boolean vehicleDestroy(final VehicleEntity vehicle, final DamageSource source) {
-        if (!listening(VehicleDestroyEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new VehicleDestroyEvent((org.bukkit.entity.Vehicle) vehicle.getBukkitEntity(),
-                attackerOf(source)).callEvent();
-    }
 
     public static boolean vehicleCollideListening() {
         return listening(VehicleEntityCollisionEvent.getHandlerList());
     }
 
-    /** VehicleEntityCollisionEvent。{@code AbstractMinecart.canCollideWith} で、vanilla がぶつかると判定したあと。 */
-    public static boolean vehicleCollide(final Entity vehicle, final Entity other) {
-        return new VehicleEntityCollisionEvent((org.bukkit.entity.Vehicle) vehicle.getBukkitEntity(), other.getBukkitEntity()).callEvent();
-    }
 
     // io.papermc.paper.event.entity.EntityIgniteEvent は 26.x で入った Paper のイベントで、
     // 1.21.11 の API には無い。

@@ -79,89 +79,17 @@ public final class AnimalEvents {
 
     // ------------------------------------------------------------ カメ
 
-    /**
-     * TurtleGoHomeEvent。TurtleGoHomeGoal.canUse() の判定が全て通ったあと。
-     *
-     * <p>vanilla の判定は {@code getRandom().nextInt()} を消費するので、発火を前に出すと
-     * 乱数の消費が変わる。式の末尾に置いて、通ったときだけ出す(Paper と同じ位置)。
-     *
-     * @return 巣へ帰ってよいか
-     *
-     * 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/turtle/Turtle.java.patch
-     */
-    public static boolean turtleGoHome(final Turtle turtle) {
-        if (!listening(com.destroystokyo.paper.event.entity.TurtleGoHomeEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new com.destroystokyo.paper.event.entity.TurtleGoHomeEvent(
-                (org.bukkit.entity.Turtle) turtle.getBukkitEntity()).callEvent();
-    }
 
     // ------------------------------------------------------------ 座る
 
-    /**
-     * EntityToggleSitEvent。{@code TamableAnimal.setInSittingPose}、{@code Fox.setSitting}、
-     * {@code Panda.sit}、{@code Camel.sitDown / standUp / standUpInstantly} の先頭。Paper と同じ位置。
-     *
-     * @return 座り(立ち)状態を書き換えてよいか
-     */
-    public static boolean toggleSit(final Entity entity, final boolean sitting) {
-        if (!listening(io.papermc.paper.event.entity.EntityToggleSitEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new io.papermc.paper.event.entity.EntityToggleSitEvent(entity.getBukkitEntity(), sitting).callEvent();
-    }
 
     // ------------------------------------------------------------ 飼われている動物
 
-    /**
-     * TameableDeathMessageEvent。{@code TamableAnimal.die} で飼い主に死亡メッセージを送る直前。
-     * 文が差し替えられていればここで送り、vanilla の送信は飛ばす。
-     *
-     * @return vanilla の送信へ進んでよいか
-     */
-    public static boolean tameableDeathMessage(final TamableAnimal animal, final ServerPlayer owner) {
-        if (!listening(io.papermc.paper.event.entity.TameableDeathMessageEvent.getHandlerList())) {
-            return true;
-        }
-
-        final Component original = PaperAdventure.asAdventure(animal.getCombatTracker().getDeathMessage());
-        final io.papermc.paper.event.entity.TameableDeathMessageEvent event = new io.papermc.paper.event.entity.TameableDeathMessageEvent(
-                (org.bukkit.entity.Tameable) animal.getBukkitEntity(), original);
-
-        if (!event.callEvent()) {
-            return false;
-        }
-
-        if (event.deathMessage().equals(original)) {
-            return true;
-        }
-
-        owner.sendSystemMessage(PaperAdventure.asVanilla(event.deathMessage()));
-
-        return false;
-    }
 
 
     // ------------------------------------------------------------ 村人
 
 
-    /**
-     * VillagerReplenishTradeEvent。{@code Villager.restock} と {@code catchUpDemand} で
-     * 取引の使用回数を戻す直前(取引ごと)。
-     *
-     * @return 戻してよいか
-     */
-    public static boolean replenishTrade(final Villager villager, final MerchantOffer offer) {
-        if (!listening(org.bukkit.event.entity.VillagerReplenishTradeEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new org.bukkit.event.entity.VillagerReplenishTradeEvent(
-                (org.bukkit.entity.Villager) villager.getBukkitEntity(), offer.asBukkit()).callEvent();
-    }
 
 
     // ------------------------------------------------------------ 繁殖・手懐け
@@ -339,71 +267,13 @@ public final class AnimalEvents {
         return !CraftEventFactory.callEntityPickupItemEvent(mob, item, remaining, false).isCancelled();
     }
 
-    /**
-     * EntityDropItemEvent。{@code Fox.spitOutItem} / {@code Fox.dropItemStack} で落とし物を世界に置く直前。
-     * Paper は {@code spawnAtLocation} の中で発火する。
-     *
-     * @return 置いてよいか
-     */
-    public static boolean dropItem(final Entity entity, final ItemEntity item) {
-        if (!listening(org.bukkit.event.entity.EntityDropItemEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new org.bukkit.event.entity.EntityDropItemEvent(entity.getBukkitEntity(), (org.bukkit.entity.Item) item.getBukkitEntity()).callEvent();
-    }
 
     // ------------------------------------------------------------ 個別の動物
 
 
-    /**
-     * TurtleStartDiggingEvent。{@code Turtle.TurtleLayEggGoal.tick} で掘り始める直前。
-     *
-     * @return 掘り始めてよいか。取り消されたら呼ぶ側が {@code setLayingEgg(false)} にする(Paper と同じ)
-     */
-    public static boolean turtleStartDigging(final Turtle turtle, final BlockPos pos) {
-        if (!listening(com.destroystokyo.paper.event.entity.TurtleStartDiggingEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new com.destroystokyo.paper.event.entity.TurtleStartDiggingEvent(
-                (org.bukkit.entity.Turtle) turtle.getBukkitEntity(), CraftLocation.toBukkit(pos, turtle.level())).callEvent();
-    }
-
-    /**
-     * CreeperIgniteEvent。{@code Creeper.ignite} の先頭。すでに点火していれば発火しない(Paper と同じ)。
-     *
-     * @return 点火状態を true にしてよいか(取り消し、または {@code setIgnited(false)} なら false)
-     */
-    public static boolean creeperIgnite(final Creeper creeper) {
-        if (!listening(com.destroystokyo.paper.event.entity.CreeperIgniteEvent.getHandlerList())) {
-            return true;
-        }
-
-        if (creeper.isIgnited()) {
-            return true;
-        }
-
-        final com.destroystokyo.paper.event.entity.CreeperIgniteEvent event = new com.destroystokyo.paper.event.entity.CreeperIgniteEvent(
-                (org.bukkit.entity.Creeper) creeper.getBukkitEntity(), true);
-
-        return event.callEvent() && event.isIgnited();
-    }
 
 
-    /**
-     * ShulkerDuplicateEvent。{@code Shulker.hitByShulkerBullet} で子を世界に置く直前。Paper と同じ位置。
-     *
-     * @return 置いてよいか
-     */
-    public static boolean shulkerDuplicate(final Shulker child, final Shulker parent) {
-        if (!listening(io.papermc.paper.event.entity.ShulkerDuplicateEvent.getHandlerList())) {
-            return true;
-        }
 
-        return new io.papermc.paper.event.entity.ShulkerDuplicateEvent(
-                (org.bukkit.entity.Shulker) child.getBukkitEntity(), (org.bukkit.entity.Shulker) parent.getBukkitEntity()).callEvent();
-    }
 
     /**
      * StriderTemperatureChangeEvent。{@code Strider.tick} で震えの状態が変わるときだけ発火する
@@ -464,21 +334,6 @@ public final class AnimalEvents {
 
     // ------------------------------------------------------------ スライム
 
-    /**
-     * SlimeSplitEvent。{@code Slime.remove} で分裂する直前。
-     *
-     * @return 分裂する数。取り消されたら 0(分裂しない)
-     */
-    public static int slimeSplit(final Slime cube, final int count) {
-        if (!listening(org.bukkit.event.entity.SlimeSplitEvent.getHandlerList())) {
-            return count;
-        }
-
-        final org.bukkit.event.entity.SlimeSplitEvent event = new org.bukkit.event.entity.SlimeSplitEvent(
-                (org.bukkit.entity.Slime) cube.getBukkitEntity(), count);
-
-        return event.callEvent() && event.getCount() > 0 ? event.getCount() : 0;
-    }
 
     private static Slime splitting;
     private static List<LivingEntity> splitCubes;
@@ -530,34 +385,16 @@ public final class AnimalEvents {
         return listening(com.destroystokyo.paper.event.entity.SlimeTargetLivingEntityEvent.getHandlerList());
     }
 
-    /**
-     * SlimeTargetLivingEntityEvent。{@code SlimeAttackGoal.canUse / canContinueToUse} で、
-     * vanilla が true を返す条件が揃っているときだけ発火する。
-     *
-     * @return 狙ってよいか
-     */
-    public static boolean slimeTarget(final Slime cube, final LivingEntity target) {
-        return new com.destroystokyo.paper.event.entity.SlimeTargetLivingEntityEvent(
-                (org.bukkit.entity.Slime) cube.getBukkitEntity(), (org.bukkit.entity.LivingEntity) target.getBukkitEntity()).callEvent();
-    }
 
     /** SlimeSwimEvent に登録があるか。 */
     public static boolean slimeSwimListening() {
         return listening(com.destroystokyo.paper.event.entity.SlimeSwimEvent.getHandlerList());
     }
 
-    /** SlimeSwimEvent。{@code SlimeFloatGoal.canUse} で vanilla が true を返す条件が揃っているとき。 */
-    public static boolean slimeSwim(final Slime cube) {
-        return new com.destroystokyo.paper.event.entity.SlimeSwimEvent((org.bukkit.entity.Slime) cube.getBukkitEntity()).callEvent();
-    }
 
     /** SlimeWanderEvent に登録があるか。 */
     public static boolean slimeWanderListening() {
         return listening(com.destroystokyo.paper.event.entity.SlimeWanderEvent.getHandlerList());
     }
 
-    /** SlimeWanderEvent。{@code SlimeKeepOnJumpingGoal.canUse} で vanilla が true を返す条件が揃っているとき。 */
-    public static boolean slimeWander(final Slime cube) {
-        return new com.destroystokyo.paper.event.entity.SlimeWanderEvent((org.bukkit.entity.Slime) cube.getBukkitEntity()).callEvent();
-    }
 }

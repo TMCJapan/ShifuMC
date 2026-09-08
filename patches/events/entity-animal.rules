@@ -8,90 +8,6 @@
 # Paper は setInSittingPose / setSitting / sit に発火の引数を足しているが、Shifu は先頭に差し込む。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/TamableAnimal.java.patch(EntityToggleSitEvent)
-file: net/minecraft/world/entity/TamableAnimal.java
-anchor:
-    public void setInSittingPose(boolean inSittingPose) {
-insert-after:
-    if (!dev.shifu.event.AnimalEvents.toggleSit(this, inSittingPose)) {
-        return;
-    }
-
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/fox/Fox.java.patch(EntityToggleSitEvent)
-file: net/minecraft/world/entity/animal/Fox.java
-anchor:
-    public void setSitting(boolean sitting) {
-insert-after:
-    if (!dev.shifu.event.AnimalEvents.toggleSit(this, sitting)) {
-        return;
-    }
-
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/panda/Panda.java.patch(EntityToggleSitEvent)
-file: net/minecraft/world/entity/animal/Panda.java
-anchor:
-    public void sit(boolean sitting) {
-insert-after:
-    if (!dev.shifu.event.AnimalEvents.toggleSit(this, sitting)) {
-        return;
-    }
-
-# ラクダ。Paper は if の条件に足している。Shifu は if の中の先頭で抜ける(if のあとに文は無い)。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/camel/Camel.java.patch(EntityToggleSitEvent)
-file: net/minecraft/world/entity/animal/camel/Camel.java
-anchor:
-    public void sitDown() {
-        if (!this.isCamelSitting()) {
-insert-after:
-    if (!dev.shifu.event.AnimalEvents.toggleSit(this, true)) {
-        return;
-    }
-
-file: net/minecraft/world/entity/animal/camel/Camel.java
-anchor:
-    public void standUp() {
-        if (this.isCamelSitting()) {
-insert-after:
-    if (!dev.shifu.event.AnimalEvents.toggleSit(this, false)) {
-        return;
-    }
-
-file: net/minecraft/world/entity/animal/camel/Camel.java
-anchor:
-    public void standUpInstantly() {
-insert-after:
-    if (this.isCamelSitting() && !dev.shifu.event.AnimalEvents.toggleSit(this, false)) {
-        return;
-    }
-
-# ============================================================ 飼われている動物
-
-# TameableDeathMessageEvent。文が差し替えられていれば発火層が送り、vanilla の送信は飛ばす。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/TamableAnimal.java.patch(TameableDeathMessageEvent)
-file: net/minecraft/world/entity/TamableAnimal.java
-anchor:
-    serverPlayer.sendSystemMessage(this.getCombatTracker().getDeathMessage());
-insert:
-    if (dev.shifu.event.AnimalEvents.tameableDeathMessage(this, serverPlayer)) {
-insert-after:
-    }
-
-# EntityTeleportEvent(飼い主のそばへ飛ぶ)。null なら取り消し、FALSE なら差し替え先へ飛ばし済み。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/TamableAnimal.java.patch(callEntityTeleportEvent)
-file: net/minecraft/world/entity/npc/Villager.java
-anchor:
-    merchantOffer.resetUses();
-count: 2
-insert:
-    if (dev.shifu.event.AnimalEvents.replenishTrade(this, merchantOffer)) {
-insert-after:
-    }
-
-# EntityBreedEvent(村人)。Paper は親の年齢を書き換える前に発火するが、Shifu は書き換えの
-# あと(子を置く直前)に発火して、取り消されたら年齢を控えに戻す。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/ai/behavior/VillagerMakeLove.java.patch
 file: net/minecraft/world/entity/ai/behavior/VillagerMakeLove.java
 anchor:
     parent.setAge(6000);
@@ -358,55 +274,6 @@ insert-after:
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/fox/Fox.java.patch(EntityDropItemEvent)
 # 吐き出す(spitOutItem)と落とす(dropItemStack)の 2 か所。どちらも同じ形
-file: net/minecraft/world/entity/animal/Fox.java
-anchor:
-    this.level().addFreshEntity(itemEntity);
-count: 2
-insert:
-    if (dev.shifu.event.AnimalEvents.dropItem(this, itemEntity)) {
-insert-after:
-    }
-
-# ============================================================ 個別の動物
-
-# PigZapEvent。変換の前(理由は AnimalEvents.pigZap)。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/pig/Pig.java.patch(callPigZapEvent)
-file: net/minecraft/world/entity/animal/Turtle.java
-anchor:
-    this.turtle.setLayingEgg(true);
-insert:
-    if (dev.shifu.event.AnimalEvents.turtleStartDigging(this.turtle, this.blockPos)) {
-insert-after:
-    } else {
-        this.turtle.setLayingEgg(false);
-    }
-
-# CreeperIgniteEvent。ignite の先頭。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/Creeper.java.patch(CreeperIgniteEvent)
-file: net/minecraft/world/entity/monster/Creeper.java
-anchor:
-    public void ignite() {
-insert-after:
-    if (!dev.shifu.event.AnimalEvents.creeperIgnite(this)) {
-        return;
-    }
-
-# ElderGuardianAppearanceEvent。効果をかけたあと、packet を送る前(理由は AnimalEvents.elderGuardianAppearance)。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/ElderGuardian.java.patch
-file: net/minecraft/world/entity/monster/Shulker.java
-anchor:
-    this.level().addFreshEntity(shulker);
-insert:
-    if (!dev.shifu.event.AnimalEvents.shulkerDuplicate(shulker, this)) {
-        return;
-    }
-
-# StriderTemperatureChangeEvent。状態が変わるときだけ発火。変わらないときは vanilla の代入がそのまま走る。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/Strider.java.patch
 file: net/minecraft/world/entity/monster/Strider.java
 anchor:
     this.setSuffocating(!bl || bl2);
@@ -444,13 +311,6 @@ insert-after:
 
 file: net/minecraft/world/entity/monster/Slime.java
 anchor:
-    for (int l = 0; l < k; l++) {
-insert:
-    k = dev.shifu.event.AnimalEvents.slimeSplit(this, k);
-    dev.shifu.event.AnimalEvents.splitBegin(this);
-
-file: net/minecraft/world/entity/monster/Slime.java
-anchor:
     super.remove(reason);
 insert:
     dev.shifu.event.AnimalEvents.splitEnd(this);
@@ -467,55 +327,6 @@ insert-after:
 # canContinueToUse の --growTiredTimer は減らさずに見る(vanilla の行が減らす)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/Slime.java.patch(Slime pathfinder events)
-file: net/minecraft/world/entity/monster/Slime.java
-anchor:
-    return livingEntity != null && this.slime.canAttack(livingEntity) && this.slime.getMoveControl() instanceof Slime.SlimeMoveControl;
-insert:
-    if (dev.shifu.event.AnimalEvents.slimeTargetListening()
-            && livingEntity != null && this.slime.canAttack(livingEntity) && this.slime.getMoveControl() instanceof Slime.SlimeMoveControl
-            && !dev.shifu.event.AnimalEvents.slimeTarget(this.slime, livingEntity)) {
-        return false;
-    }
-
-file: net/minecraft/world/entity/monster/Slime.java
-anchor:
-    return livingEntity != null && this.slime.canAttack(livingEntity) && --this.growTiredTimer > 0;
-insert:
-    if (dev.shifu.event.AnimalEvents.slimeTargetListening()
-            && livingEntity != null && this.slime.canAttack(livingEntity) && this.growTiredTimer - 1 > 0
-            && !dev.shifu.event.AnimalEvents.slimeTarget(this.slime, livingEntity)) {
-        return false;
-    }
-
-file: net/minecraft/world/entity/monster/Slime.java
-anchor:
-    return (this.slime.isInWater() || this.slime.isInLava()) && this.slime.getMoveControl() instanceof Slime.SlimeMoveControl;
-insert:
-    if (dev.shifu.event.AnimalEvents.slimeSwimListening()
-            && (this.slime.isInWater() || this.slime.isInLava()) && this.slime.getMoveControl() instanceof Slime.SlimeMoveControl
-            && !dev.shifu.event.AnimalEvents.slimeSwim(this.slime)) {
-        return false;
-    }
-
-file: net/minecraft/world/entity/monster/Slime.java
-anchor:
-    return !this.slime.isPassenger();
-insert:
-    if (dev.shifu.event.AnimalEvents.slimeWanderListening()
-            && !this.slime.isPassenger()
-            && !dev.shifu.event.AnimalEvents.slimeWander(this.slime)) {
-        return false;
-    }
-
-# ============================================================ 変身の理由(EntityTransformEvent)
-#
-# Paper は convertTo に TransformReason の引数を足して呼び出し側から渡す。Shifu は
-# 呼ぶ直前に置き、Mob.convertTo の中の発火(EntityEvents.transform)が取り出す。
-# 置くのは登録があるときだけ(EntityEvents.transformReason が見る)。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/**/*.java.patch(TransformReason)
-
-# キノコウシを刈る
 file: net/minecraft/world/entity/animal/MushroomCow.java
 anchor:
     this.convertTo(EntityType.COW, ConversionParams.single(this, false, false), cow -> {

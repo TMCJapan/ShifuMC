@@ -103,46 +103,6 @@ public final class ItemEvents {
         return before;
     }
 
-    /**
-     * InventoryDragEvent。vanilla がスロットと手持ちを置いたあと。取り消されたら控えに戻す。
-     * 通ったときはカーソルをイベントの値にする(Paper と同じ。プラグインが触っていなければ同じ中身)。
-     */
-    public static void drag(final AbstractContainerMenu menu, final Map<Slot, ItemStack[]> before,
-                            final ItemStack oldCarried, final boolean greedy) {
-        if (before == null) {
-            return;
-        }
-
-        final InventoryView view = menu.getBukkitView();
-        final Map<Integer, org.bukkit.inventory.ItemStack> items = new HashMap<>();
-
-        for (final Map.Entry<Slot, ItemStack[]> entry : before.entrySet()) {
-            final Slot slot = entry.getKey();
-
-            if (slot.getItem() != entry.getValue()[0]) {
-                items.put(slot.index, CraftItemStack.asBukkitCopy(slot.getItem()));
-            }
-        }
-
-        final org.bukkit.event.inventory.InventoryDragEvent event = new org.bukkit.event.inventory.InventoryDragEvent(
-                view, CraftItemStack.asCraftMirror(menu.getCarried()), CraftItemStack.asBukkitCopy(oldCarried), greedy, items);
-        event.callEvent();
-
-        if (event.getResult() != Event.Result.DENY) {
-            menu.setCarried(CraftItemStack.asNMSCopy(event.getCursor()));
-            return;
-        }
-
-        for (final Map.Entry<Slot, ItemStack[]> entry : before.entrySet()) {
-            final Slot slot = entry.getKey();
-
-            if (slot.getItem() != entry.getValue()[0]) {
-                slot.set(entry.getValue()[1]);
-            }
-        }
-
-        menu.setCarried(oldCarried);
-    }
 
     // ------------------------------------------------------------ PrepareResultEvent 系
 
@@ -170,29 +130,6 @@ public final class ItemEvents {
 
     // ------------------------------------------------------------ ビーコン
 
-    /**
-     * PlayerChangeBeaconEffectEvent。効果を書き込む前。取り消しと効果の差し替えは呼ぶ側が行う
-     * (vanilla の局所変数 primaryEffect / secondaryEffect に代入する)。登録が無ければ null。
-     *
-     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/BeaconMenu.java.patch
-     */
-    public static io.papermc.paper.event.player.PlayerChangeBeaconEffectEvent changeBeaconEffect(
-            final Player player, final ContainerLevelAccess access,
-            final Holder<net.minecraft.world.effect.MobEffect> primary, final Holder<net.minecraft.world.effect.MobEffect> secondary) {
-        if (!ShifuEvents.listening(io.papermc.paper.event.player.PlayerChangeBeaconEffectEvent.getHandlerList())) {
-            return null;
-        }
-
-        final org.bukkit.block.Block block = access.evaluate((level, pos) -> CraftBlock.at(level, pos)).orElse(null);
-        final io.papermc.paper.event.player.PlayerChangeBeaconEffectEvent event = new io.papermc.paper.event.player.PlayerChangeBeaconEffectEvent(
-                (org.bukkit.entity.Player) player.getBukkitEntity(),
-                primary == null ? null : CraftPotionEffectType.minecraftHolderToBukkit(primary),
-                secondary == null ? null : CraftPotionEffectType.minecraftHolderToBukkit(secondary),
-                block);
-        event.callEvent();
-
-        return event;
-    }
 
     public static Holder<net.minecraft.world.effect.MobEffect> effect(final org.bukkit.potion.PotionEffectType type) {
         return type == null ? null : CraftPotionEffectType.bukkitToMinecraftHolder(type);
@@ -230,24 +167,6 @@ public final class ItemEvents {
 
     // ------------------------------------------------------------ 書見台
 
-    /**
-     * PlayerLecternPageChangeEvent。ページを書き込む前。
-     *
-     * @return 新しいページ。取り消されたら {@link #CANCELLED}。登録が無ければ next
-     */
-    public static int lecternPage(final AbstractContainerMenu menu, final Player player,
-                                  final io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection direction,
-                                  final int current, final int next) {
-        if (!ShifuEvents.listening(io.papermc.paper.event.player.PlayerLecternPageChangeEvent.getHandlerList())) {
-            return next;
-        }
-
-        final CraftInventoryLectern inventory = (CraftInventoryLectern) menu.getBukkitView().getTopInventory();
-        final io.papermc.paper.event.player.PlayerLecternPageChangeEvent event = new io.papermc.paper.event.player.PlayerLecternPageChangeEvent(
-                (org.bukkit.entity.Player) player.getBukkitEntity(), inventory.getHolder(), inventory.getBook(), direction, current, next);
-
-        return event.callEvent() ? event.getNewPage() : CANCELLED;
-    }
 
     // ------------------------------------------------------------ 機織り機
 
@@ -258,37 +177,6 @@ public final class ItemEvents {
         }
     }
 
-    /**
-     * PlayerLoomPatternSelectEvent。模様を書き込む前。
-     *
-     * @return null なら vanilla のまま進める(登録が無い、または模様が変わっていない)。
-     *         それ以外は呼ぶ側が index と pattern を置く(一覧に無い模様は index が -1)
-     */
-    public static LoomChoice loomPattern(final AbstractContainerMenu menu, final Player player,
-                                        final List<Holder<BannerPattern>> patterns, final int buttonId) {
-        if (!ShifuEvents.listening(io.papermc.paper.event.player.PlayerLoomPatternSelectEvent.getHandlerList())) {
-            return null;
-        }
-
-        final io.papermc.paper.event.player.PlayerLoomPatternSelectEvent event = new io.papermc.paper.event.player.PlayerLoomPatternSelectEvent(
-                (org.bukkit.entity.Player) player.getBukkitEntity(),
-                (org.bukkit.inventory.LoomInventory) menu.getBukkitView().getTopInventory(),
-                org.bukkit.craftbukkit.block.banner.CraftPatternType.minecraftHolderToBukkit(patterns.get(buttonId)));
-
-        if (!event.callEvent()) {
-            return new LoomChoice(CANCELLED, null);
-        }
-
-        final Holder<BannerPattern> chosen = org.bukkit.craftbukkit.block.banner.CraftPatternType.bukkitToMinecraftHolder(event.getPatternType());
-
-        for (int i = 0; i < patterns.size(); i++) {
-            if (chosen.equals(patterns.get(i))) {
-                return i == buttonId ? null : new LoomChoice(i, patterns.get(i));
-            }
-        }
-
-        return new LoomChoice(-1, chosen);
-    }
 
     // ------------------------------------------------------------ 石切台
 
@@ -299,21 +187,6 @@ public final class ItemEvents {
         return ShifuEvents.listening(org.bukkit.event.block.BlockCanBuildEvent.getHandlerList());
     }
 
-    /**
-     * BlockCanBuildEvent。vanilla の判定の式は呼ぶ側が同じ形で評価して渡す。
-     *
-     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/item/BlockItem.java.patch、StandingAndWallBlockItem.java.patch
-     */
-    public static boolean canBuild(final Level level, final BlockPos pos, final Player player, final BlockState state,
-                                   final boolean vanilla, final InteractionHand hand) {
-        final org.bukkit.event.block.BlockCanBuildEvent event = new org.bukkit.event.block.BlockCanBuildEvent(
-                CraftBlock.at(level, pos),
-                player instanceof ServerPlayer serverPlayer ? serverPlayer.getBukkitEntity() : null,
-                org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(state), vanilla, CraftEquipmentSlot.getHand(hand));
-        event.callEvent();
-
-        return event.isBuildable();
-    }
 
     // ------------------------------------------------------------ ボート・トロッコ
 
@@ -348,43 +221,9 @@ public final class ItemEvents {
 
     // ------------------------------------------------------------ クロスボウ
 
-    /**
-     * EntityLoadCrossbowEvent。装填する前。
-     *
-     * <p>効かないもの: {@code setConsumeItem(false)}(vanilla の tryLoadProjectiles は必ず消費する)。
-     */
-    public static boolean loadCrossbow(final LivingEntity entity, final ItemStack stack) {
-        if (!ShifuEvents.listening(io.papermc.paper.event.entity.EntityLoadCrossbowEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new io.papermc.paper.event.entity.EntityLoadCrossbowEvent(
-                (org.bukkit.entity.LivingEntity) entity.getBukkitEntity(), CraftItemStack.asCraftMirror(stack),
-                CraftEquipmentSlot.getHand(entity.getUsedItemHand())).callEvent();
-    }
 
     // ------------------------------------------------------------ 染料
 
-    /**
-     * SheepDyeWoolEvent。色を書き込む前。
-     *
-     * @return 使う色。取り消されたら null。登録が無ければ color
-     */
-    public static DyeColor dyeWool(final Sheep sheep, final Player player, final DyeColor color) {
-        if (!ShifuEvents.listening(org.bukkit.event.entity.SheepDyeWoolEvent.getHandlerList())) {
-            return color;
-        }
-
-        final org.bukkit.event.entity.SheepDyeWoolEvent event = new org.bukkit.event.entity.SheepDyeWoolEvent(
-                (org.bukkit.entity.Sheep) sheep.getBukkitEntity(), org.bukkit.DyeColor.getByWoolData((byte) color.getId()),
-                (org.bukkit.entity.Player) player.getBukkitEntity());
-
-        if (!event.callEvent()) {
-            return null;
-        }
-
-        return DyeColor.byId((byte) event.getColor().getWoolData());
-    }
 
     // ------------------------------------------------------------ 投擲物(雪玉・卵・エンダーパール・経験値瓶・投げポーション)
 
@@ -421,16 +260,6 @@ public final class ItemEvents {
         return ShifuEvents.listening(org.bukkit.event.entity.EntityDropItemEvent.getHandlerList());
     }
 
-    /** EntityDropItemEvent。入れ物(アイテムエンティティ)が壊れて中身を出すとき、1 つずつ。 */
-    public static void containerDrop(final ItemEntity container, final Level level, final ItemStack stack) {
-        final ItemEntity dropped = new ItemEntity(level, container.getX(), container.getY(), container.getZ(), stack);
-        final org.bukkit.event.entity.EntityDropItemEvent event = new org.bukkit.event.entity.EntityDropItemEvent(
-                container.getBukkitEntity(), (org.bukkit.entity.Item) dropped.getBukkitEntity());
-
-        if (event.callEvent()) {
-            level.addFreshEntity(dropped);
-        }
-    }
 
     // ------------------------------------------------------------ リード
 
@@ -454,19 +283,6 @@ public final class ItemEvents {
         return leashHand == null || leashHandPlayer != player ? InteractionHand.MAIN_HAND : leashHand;
     }
 
-    /** HangingPlaceEvent。柵に新しく結び目を作るとき。 */
-    public static boolean knotPlace(final LeashFenceKnotEntity knot, final Player player, final Level level, final BlockPos pos) {
-        if (!ShifuEvents.listening(org.bukkit.event.hanging.HangingPlaceEvent.getHandlerList())) {
-            return true;
-        }
-
-        final org.bukkit.event.hanging.HangingPlaceEvent event = new org.bukkit.event.hanging.HangingPlaceEvent(
-                (org.bukkit.entity.Hanging) knot.getBukkitEntity(),
-                player != null ? (org.bukkit.entity.Player) player.getBukkitEntity() : null,
-                CraftBlock.at(level, pos), org.bukkit.block.BlockFace.SELF, CraftEquipmentSlot.getHand(peekLeashHand(player)));
-
-        return event.callEvent();
-    }
 
 
     // ------------------------------------------------------------ メイス
@@ -475,20 +291,6 @@ public final class ItemEvents {
 
     // ------------------------------------------------------------ 名札
 
-    /** PlayerNameEntityEvent。名前を書き込む前。登録が無い、またはプレイヤーでなければ null。 */
-    public static io.papermc.paper.event.player.PlayerNameEntityEvent nameEntity(final Player player, final LivingEntity target, final Component name) {
-        if (!(player instanceof ServerPlayer serverPlayer)
-                || !ShifuEvents.listening(io.papermc.paper.event.player.PlayerNameEntityEvent.getHandlerList())) {
-            return null;
-        }
-
-        final io.papermc.paper.event.player.PlayerNameEntityEvent event = new io.papermc.paper.event.player.PlayerNameEntityEvent(
-                serverPlayer.getBukkitEntity(), (org.bukkit.entity.LivingEntity) target.getBukkitEntity(),
-                PaperAdventure.asAdventure(name), true);
-        event.callEvent();
-
-        return event;
-    }
 
     /** 通った PlayerNameEntityEvent の中身を書き込む(vanilla の 2 文の代わり)。 */
     public static void applyName(final io.papermc.paper.event.player.PlayerNameEntityEvent event) {
@@ -502,19 +304,4 @@ public final class ItemEvents {
 
     // ------------------------------------------------------------ 道具の耐久
 
-    /**
-     * PlayerItemDamageEvent。耐久の減りが決まったあと、書き込む前。
-     *
-     * @return 減らす量。取り消されたら 0(vanilla は 0 なら何もしない)。登録が無ければ damage
-     */
-    public static int itemDamage(final ItemStack stack, final ServerPlayer player, final int damage, final int original) {
-        if (!ShifuEvents.listening(org.bukkit.event.player.PlayerItemDamageEvent.getHandlerList())) {
-            return damage;
-        }
-
-        final org.bukkit.event.player.PlayerItemDamageEvent event = new org.bukkit.event.player.PlayerItemDamageEvent(
-                player.getBukkitEntity(), CraftItemStack.asCraftMirror(stack), damage, original);
-
-        return event.callEvent() ? event.getDamage() : 0;
-    }
 }

@@ -1,25 +1,5 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
 
-// ServerLevel.tryAddFreshEntityWithPassengers
-    // reason は CreatureSpawnEvent 用。Paper は addEntity まで引数で運ぶが、Shifu は vanilla の
-    // 署名を変えないので Entity.spawnReason の欄に置いてから vanilla の版へ渡す
-    // (patches/events/entity-spawn.rules がその欄を読む)。
-    public boolean tryAddFreshEntityWithPassengers(final Entity entity,
-                                                   final org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason reason) {
-        entity.spawnReason = reason;
-        return this.tryAddFreshEntityWithPassengers(entity);
-    }
-
-// ServerLevel.addFreshEntity
-    // Paper の addFreshEntity(entity, reason)。LevelWriter の既定は false を返すだけで、
-    // Paper は ServerLevel で addEntity(entity, reason) に向けている。その版が無かったので
-    // CraftWorld.spawn(=プラグインが出すエンティティ)が全部無視されていた。bot で実測した。
-    public boolean addFreshEntity(final Entity entity,
-                                  final org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason reason) {
-        entity.spawnReason = reason;
-        return this.addFreshEntity(entity);
-    }
-
 // ServerLevel.explode0
     // vanilla の explode(13 引数) は void。ServerExplosion を返す形と wasCanceled は Paper の追加なので、
     // ここには何も足さない。呼び出し元は CraftWorld.createExplosion だけで、そちらを vanilla の explode へ向けた。

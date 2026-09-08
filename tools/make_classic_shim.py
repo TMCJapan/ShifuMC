@@ -354,9 +354,14 @@ def main():
                 # `CraftBlock` が `AABB` を要求していても、AABB は CraftBlock の
                 # 上にはいない。木にある型だけを手掛かりにする。
                 # 構築子は必ず自分の型に属するので、名前が型と同じなら通す。
+                #
+                # 照合は**両向き**。`CommandSource.getBukkitSender` が足りないという
+                # エラーは、実装している `Entity` の側に足して直る。要求元が上にいる
+                # ことも下にいることもある(1.20.6 で 145 件がこれだった)。
                 who = {one for one in asked.get(member, set()) if one in above}
 
-                if member != owner and who and not any(owner in above[one] for one in who):
+                if member != owner and who and not any(
+                        owner in above[one] or one in above.get(owner, {owner}) for one in who):
                     skipped += 1
                     continue
 

@@ -23,14 +23,6 @@
         return net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(this.getType()).toString();
     }
 
-// Entity.shifuAdoptBukkitEntity
-    // リスポーンで作り直された ServerPlayer に、古い方の CraftPlayer を付け替える。
-    // CraftBukkit はエンティティを作り直さないので、プラグインは Player の参照が
-    // リスポーン後も生きている前提で書かれている。
-    public void shifuAdoptBukkitEntity(final org.bukkit.craftbukkit.entity.CraftEntity entity) {
-        this.bukkitEntity = entity;
-    }
-
 // Entity.shifuLastLavaContact
     // 最後に触れた溶岩の位置。EntityCombustByBlockEvent に載せるためだけのもので、
     // 入れるのは EntityCombustEvent に登録があるときだけ(EntityEvents.lavaContact が見る)。

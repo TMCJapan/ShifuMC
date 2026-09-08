@@ -76,15 +76,6 @@ insert-after:
     }
 
 # BlockDispenseArmorEvent(装備を着せる)
-file: net/minecraft/core/dispenser/EquipmentDispenseItemBehavior.java
-anchor:
-    ItemStack itemStack = stack.split(1);
-insert:
-    if (!dev.shifu.event.BlockEvents.dispenseArmor(pointer, stack, livingEntity)) {
-        return false;
-    }
-
-# BlockDispenseEvent と BlockShearEntityEvent(ハサミ)
 file: net/minecraft/core/dispenser/ShearsDispenseItemBehavior.java
 anchor:
     if (!serverLevel.isClientSide()) {
@@ -113,16 +104,6 @@ insert:
     }
 
 # BlockDispenseArmorEvent(荷馬にチェスト)
-file: net/minecraft/core/dispenser/DispenseItemBehavior.java
-anchor:
-    if (slot != null && slot.set(stack)) {
-insert:
-    if (slot != null && !dev.shifu.event.BlockEvents.dispenseArmor(pointer, stack, abstractChestedHorse)) {
-        this.setSuccess(false);
-        return stack;
-    }
-
-# BlockDispenseEvent(TNT)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
     PrimedTnt primedTnt = new PrimedTnt(serverLevel, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5, null);
@@ -174,16 +155,6 @@ insert:
 # BlockDispenseArmorEvent(ブラシでアルマジロ)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    for (Armadillo armadillo : list) {
-insert:
-    if (!dev.shifu.event.BlockEvents.dispenseArmor(pointer, stack, list.get(0))) {
-        this.setSuccess(false);
-        return stack;
-    }
-
-# BlockDispenseEvent(ハニカムで蝋がけ)
-file: net/minecraft/core/dispenser/DispenseItemBehavior.java
-anchor:
     world.setBlockAndUpdate(blockPos, optional.get());
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, blockPos)) {
@@ -221,45 +192,6 @@ insert:
         return;
     }
 
-file: net/minecraft/world/world/block/DropperBlock.java
-anchor:
-    itemStack = HopperBlockEntity.addItem(dispenserBlockEntity, containerAt, stack.copyWithCount(1), direction.getOpposite());
-insert:
-    if (!dev.shifu.event.BlockEvents.moveItem(dispenserBlockEntity, containerAt, stack, true, null)) {
-        return;
-    }
-
-# InventoryMoveItemEvent(ホッパーが出す)
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/world/block/entity/HopperBlockEntity.java.patch
-file: net/minecraft/world/world/block/entity/HopperBlockEntity.java
-anchor:
-    ItemStack itemStack2 = addItem(blockEntity, container, blockEntity.removeItem(i, 1), direction);
-insert:
-    if (!dev.shifu.event.BlockEvents.moveItem(blockEntity, container, stack, true, blockEntity)) {
-        return false;
-    }
-
-# InventoryMoveItemEvent(ホッパーが取る)
-file: net/minecraft/world/world/block/entity/HopperBlockEntity.java
-anchor:
-    ItemStack itemStack2 = addItem(inventory, hopper, inventory.removeItem(slot, 1), null);
-insert:
-    if (!dev.shifu.event.BlockEvents.moveItem(inventory, hopper, stack, false,
-            hopper instanceof HopperBlockEntity shifuHopper ? shifuHopper : null)) {
-        return false;
-    }
-
-# InventoryPickupItemEvent
-file: net/minecraft/world/world/block/entity/HopperBlockEntity.java
-anchor:
-    ItemStack itemStack = itemEntity.getItem().copy();
-insert:
-    if (!dev.shifu.event.BlockEvents.pickupItem(container, itemEntity)) {
-        return false;
-    }
-
-# HopperInventorySearchEvent(出す先)
 file: net/minecraft/world/world/block/entity/HopperBlockEntity.java
 anchor:
     return getContainerAt(world, pos.relative(blockEntity.facing));
@@ -287,15 +219,6 @@ insert:
 # EntityInsideBlockEvent(火)
 file: net/minecraft/world/world/block/BaseFireBlock.java
 anchor:
-    effectApplier.apply(InsideBlockEffectType.CLEAR_FREEZE);
-insert:
-    if (!dev.shifu.event.BlockEvents.insideBlock(entity, world, pos)) {
-        return;
-    }
-
-# BlockFadeEvent(支えを失った火が消える)
-file: net/minecraft/world/world/block/BaseFireBlock.java
-anchor:
     world.removeBlock(pos, false);
 insert:
     if (dev.shifu.event.BlockEvents.fade(world, pos, Blocks.AIR.defaultBlockState())) {
@@ -303,59 +226,6 @@ insert-after:
     }
 
 # EntityInsideBlockEvent(サボテン)
-file: net/minecraft/world/world/block/CactusBlock.java
-anchor:
-    entity.hurt(world.damageSources().cactus(), 1.0F);
-insert:
-    if (!dev.shifu.event.BlockEvents.insideBlock(entity, world, pos)) {
-        return;
-    }
-
-# EntityInsideBlockEvent(大きなドリップリーフ)と PlayerInteractEvent(PHYSICAL)
-file: net/minecraft/world/world/block/BigDripleafBlock.java
-anchor:
-    if (!world.isClientSide()) {
-        if (state.getValue(TILT) == Tilt.NONE && canEntityTilt(pos, entity) && !world.hasNeighborSignal(pos)) {
-insert:
-    if (!dev.shifu.event.BlockEvents.insideBlock(entity, world, pos)) {
-        return;
-    }
-
-file: net/minecraft/world/world/block/BigDripleafBlock.java
-anchor:
-    this.setTiltAndScheduleTick(state, world, pos, Tilt.UNSTABLE, null);
-insert:
-    if (!dev.shifu.event.BlockEvents.physicalInteract(entity, world, pos)) {
-        return;
-    }
-
-# EntityInsideBlockEvent と EntityPortalEnterEvent(ネザーポータル)
-file: net/minecraft/world/world/block/NetherPortalBlock.java
-anchor:
-    ServerLevel level1 = world.getServer().getLevel(resourceKey);
-insert-after:
-    level1 = dev.shifu.event.BlockEvents.portalReady(entity, level1);
-
-# EntityPortalEvent / PlayerPortalEvent(出口を探す前)
-file: net/minecraft/world/world/block/PressurePlateBlock.java
-anchor:
-    return getEntityCount(world, TOUCH_AABB.move(pos), class_) > 0 ? 15 : 0;
-insert:
-    if (dev.shifu.event.BlockEvents.listeningPressurePlate() && this.getSignalForState(world.getBlockState(pos)) == 0) {
-        return dev.shifu.event.BlockEvents.pressurePlateCount(world, pos, TOUCH_AABB.move(pos), class_) > 0 ? 15 : 0;
-    }
-
-file: net/minecraft/world/world/block/WeightedPressurePlateBlock.java
-anchor:
-    int i = Math.min(getEntityCount(world, TOUCH_AABB.move(pos), Entity.class), this.maxWeight);
-insert:
-    if (dev.shifu.event.BlockEvents.listeningPressurePlate()) {
-        final int shifuCount = Math.min(dev.shifu.event.BlockEvents.pressurePlateCount(world, pos, TOUCH_AABB.move(pos), Entity.class), this.maxWeight);
-        return shifuCount > 0 ? Mth.ceil((float) Math.min(this.maxWeight, shifuCount) / this.maxWeight * 15.0F) : 0;
-    }
-
-# PlayerInteractEvent(PHYSICAL)/ EntityInteractEvent と EntityChangeBlockEvent(レッドストーン鉱石)
-# 殴る
 file: net/minecraft/world/world/block/RedStoneOreBlock.java
 anchor:
     interact(state, world, pos);
@@ -374,16 +244,6 @@ insert:
     dev.shifu.event.BlockEvents.oreToucher(player);
 
 # 踏む。取り消されたら interact を飛ばして super.stepOn だけ通す
-file: net/minecraft/world/world/block/RedStoneOreBlock.java
-anchor:
-    if (!entity.isSteppingCarefully()) {
-insert-after:
-    if (!dev.shifu.event.BlockEvents.physicalInteract(entity, world, pos)) {
-        super.stepOn(world, pos, state, entity);
-        return;
-    }
-    dev.shifu.event.BlockEvents.oreToucher(entity);
-
 file: net/minecraft/world/world/block/RedStoneOreBlock.java
 anchor:
     world.setBlock(pos, state.setValue(LIT, true), Block.UPDATE_ALL);
@@ -503,31 +363,6 @@ insert-after:
     }
 
 # EntityChangeBlockEvent(ケーキを食べる)
-file: net/minecraft/world/world/block/CakeBlock.java
-anchor:
-    player.awardStat(Stats.EAT_CAKE_SLICE);
-insert:
-    if (!dev.shifu.event.BlockEvents.cakeEat(world, pos, state, player)) {
-        return InteractionResult.PASS;
-    }
-
-# CompostItemEvent / EntityCompostItemEvent / EntityChangeBlockEvent(コンポスター)
-file: net/minecraft/world/world/block/ComposterBlock.java
-anchor:
-    if ((levelValue != 0 || !(_float > 0.0F)) && !(world.getRandom().nextDouble() < _float)) {
-insert-after:
-    dev.shifu.event.BlockEvents.compostItem(entity, world, pos, stack, state, false);
-
-file: net/minecraft/world/world/block/ComposterBlock.java
-anchor:
-    int i = levelValue + 1;
-    BlockState blockState = state.setValue(LEVEL, i);
-    world.setBlock(pos, blockState, Block.UPDATE_ALL);
-insert:
-    if (!dev.shifu.event.BlockEvents.compostItem(entity, world, pos, stack, state, true)) {
-        return state;
-    }
-
 file: net/minecraft/world/world/block/ComposterBlock.java
 anchor:
     stack.shrink(1);
@@ -546,37 +381,6 @@ insert-after:
     }
 
 # PlayerShearBlockEvent(蜂の巣をハサミで刈る)
-file: net/minecraft/world/world/block/BeehiveBlock.java
-anchor:
-    dropHoneycomb(serverLevel, stack, state, world.getBlockEntity(pos), player, pos);
-insert:
-    if (!dev.shifu.event.BlockEvents.shearBlock(player, world, pos, stack, hand)) {
-        return InteractionResult.PASS;
-    }
-
-# EntityEnterBlockEvent(ハチが巣に入る)
-file: net/minecraft/world/world/block/entity/BeehiveBlockEntity.java
-anchor:
-    entity.stopRiding();
-insert:
-    if (!dev.shifu.event.BlockEvents.enterHive(this, entity)) {
-        entity.setStayOutOfHiveCountdown(MIN_TICKS_BEFORE_REENTERING_HIVE);
-        return;
-    }
-
-# ------------------------------------------------------------ レッドストーン
-
-# BlockRedstoneEvent(トラップドア)
-file: net/minecraft/world/world/block/TargetBlock.java
-anchor:
-    if (!world.getBlockTicks().hasScheduledTick(hitResult.getBlockPos(), state.getBlock())) {
-insert:
-    final int shifuHit = dev.shifu.event.BlockEvents.targetHit(world, hitResult, projectile, redstoneStrength);
-    if (shifuHit < 0) {
-        return redstoneStrength;
-    }
-    redstoneStrength = shifuHit;
-
 file: net/minecraft/world/world/material/FlowingFluid.java
 anchor:
     this.spreadTo(world, blockPos, blockState2, Direction.DOWN, fluidState);
@@ -639,24 +443,6 @@ insert:
 # 結果を入れる所。burn は static で world も pos も受け取らないので、控えた位置で発火する
 file: net/minecraft/world/world/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
-    ItemStack itemStack3 = slots.get(2);
-    if (itemStack3.isEmpty()) {
-    slots.set(2, itemStack2.copy());
-    } else if (ItemStack.isSameItemSameComponents(itemStack3, itemStack2)) {
-    itemStack3.grow(1);
-    }
-insert:
-    itemStack2 = dev.shifu.event.BlockEvents.furnaceSmelt(slots, itemStack, itemStack2, recipe);
-    if (itemStack2 == null) {
-        return false;
-    }
-    if (!itemStack2.isEmpty()) {
-insert-after:
-    }
-
-# BlockExpEvent(かまどの経験値)
-file: net/minecraft/world/world/block/entity/AbstractFurnaceBlockEntity.java
-anchor:
     createExperience(world, popVec, entry.getIntValue(), ((AbstractCookingRecipe)recipeHolder.value()).experience());
 insert:
     dev.shifu.event.BlockEvents.furnaceExpAt(this.worldPosition);
@@ -683,20 +469,6 @@ insert-after:
     }
 
 # BrewingStartEvent
-file: net/minecraft/world/world/block/entity/BrewingStandBlockEntity.java
-anchor:
-    for (int i = 0; i < 3; i++) {
-    slots.set(i, potionBrewing.mix(itemStack, slots.get(i)));
-    }
-insert:
-    final java.util.List<ItemStack> shifuBrew = dev.shifu.event.BlockEvents.brew(world, pos, slots, itemStack, potionBrewing);
-    if (shifuBrew == null) {
-        return;
-    }
-insert-after:
-    dev.shifu.event.BlockEvents.brewApply(slots, shifuBrew);
-
-# BlockCookEvent(焚き火)
 file: net/minecraft/world/world/block/entity/CampfireBlockEntity.java
 anchor:
     Containers.dropItemStack(world, pos.getX(), pos.getY(), pos.getZ(), itemStack1);
@@ -712,15 +484,6 @@ insert:
     }
 
 # CampfireStartEvent
-file: net/minecraft/world/world/block/entity/CampfireBlockEntity.java
-anchor:
-    this.cookingTime[i] = recipeFor.get().value().cookingTime();
-insert-after:
-    this.cookingTime[i] = dev.shifu.event.BlockEvents.campfireStart(this, stack, recipeFor.get(), this.cookingTime[i]);
-
-# ------------------------------------------------------------ 看板・鐘・ビーコン・錠
-
-# SignChangeEvent
 file: net/minecraft/world/world/block/entity/SignBlockEntity.java
 anchor:
     this.updateText(signText -> this.setMessages(player, filteredText, signText), isFrontText);
@@ -733,40 +496,6 @@ anchor:
 insert-after:
     final SignText shifuOriginalText = text;
 
-file: net/minecraft/world/world/block/entity/SignBlockEntity.java
-anchor:
-    return text;
-    }
-    
-    public boolean setText(SignText text, boolean front) {
-insert:
-    text = dev.shifu.event.BlockEvents.signChange(this, player, shifuOriginalText, text, filteredText);
-
-# PlayerSignCommandPreprocessEvent
-file: net/minecraft/world/world/block/entity/SignBlockEntity.java
-anchor:
-    world.getServer().getCommands().performPrefixedCommand(createCommandSourceStack(player, world, pos), runCommand.command());
-insert:
-    if (!dev.shifu.event.BlockEvents.signCommand(this, world, player, runCommand.command(), isFrontText)) {
-        return false;
-    }
-
-# BellResonateEvent と BellRevealRaiderEvent
-file: net/minecraft/world/world/block/entity/BellBlockEntity.java
-anchor:
-    hearingEntities.stream().filter(entity -> isRaiderWithinRange(pos, entity)).forEach(BellBlockEntity::glow);
-insert:
-    dev.shifu.event.BlockEvents.bellResonate(world, pos, hearingEntities, entity -> isRaiderWithinRange(pos, entity));
-
-file: net/minecraft/world/world/block/entity/BellBlockEntity.java
-anchor:
-    entity.addEffect(new MobEffectInstance(MobEffects.GLOWING, 60));
-insert:
-    if (!dev.shifu.event.BlockEvents.revealRaider(entity)) {
-        return;
-    }
-
-# BeaconActivatedEvent / BeaconDeactivatedEvent
 file: net/minecraft/world/world/block/entity/BeaconBlockEntity.java
 anchor:
     if (blockEntity.lastCheckY >= l) {
@@ -780,23 +509,6 @@ insert:
     dev.shifu.event.BlockEvents.beaconDeactivated(this.level, this.worldPosition);
 
 # BeaconEffectEvent(1 つめと 2 つめの効果)
-file: net/minecraft/world/world/block/entity/BeaconBlockEntity.java
-anchor:
-    player.addEffect(new MobEffectInstance(primaryEffect, j, i, true, true));
-insert:
-    if (dev.shifu.event.BlockEvents.beaconEffect(world, pos, player, primaryEffect, j, i, true)) {
-insert-after:
-    }
-
-file: net/minecraft/world/world/block/entity/BeaconBlockEntity.java
-anchor:
-    player2.addEffect(new MobEffectInstance(secondaryEffect, j, 0, true, true));
-insert:
-    if (dev.shifu.event.BlockEvents.beaconEffect(world, pos, player2, secondaryEffect, j, 0, false)) {
-insert-after:
-    }
-
-# BlockLockCheckEvent(鍵つきの容器)
 file: net/minecraft/world/world/block/entity/BaseContainerBlockEntity.java
 anchor:
     return this.lockKey.canUnlock(player);
@@ -836,15 +548,6 @@ insert:
     }
 
 # BlockDropItemEvent(怪しい砂の中身)
-file: net/minecraft/world/world/block/entity/BrushableBlockEntity.java
-anchor:
-    world.addFreshEntity(itemEntity);
-insert:
-    if (dev.shifu.event.BlockEvents.brushDrop(this, world, brusher, itemEntity)) {
-insert-after:
-    }
-
-# TrialSpawnerSpawnEvent
 file: net/minecraft/core/cauldron/CauldronInteraction.java
 anchor:
     player.awardStat(Stats.ITEM_USED.get(stack));

@@ -39,24 +39,6 @@
 // ServerGamePacketListenerImpl.justTeleported
     private boolean justTeleported = false;
 
-// ServerGamePacketListenerImpl.shifuMoveFrom
-    // PlayerMoveEvent の from。まだ 1 度も発火していなければ、この packet を受ける前の位置。
-    // Paper の handleMovePlayer の「if (!this.hasMoved) { ... }」と同じ。
-    public org.bukkit.Location shifuMoveFrom(final double startX, final double startY, final double startZ,
-                                             final float startYRot, final float startXRot) {
-        if (!this.hasMoved) {
-            this.lastPosX = startX;
-            this.lastPosY = startY;
-            this.lastPosZ = startZ;
-            this.lastYRot = startYRot;
-            this.lastXRot = startXRot;
-            this.hasMoved = true;
-        }
-
-        return new org.bukkit.Location(this.player.level().getWorld(),
-                this.lastPosX, this.lastPosY, this.lastPosZ, this.lastYRot, this.lastXRot);
-    }
-
 // ServerGamePacketListenerImpl.shifuRememberMove
     // 発火した to を控える。
     public void shifuRememberMove(final org.bukkit.Location to) {

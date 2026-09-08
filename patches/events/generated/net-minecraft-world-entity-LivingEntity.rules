@@ -27,10 +27,3 @@ anchor:
     return;
 insert:
     if (this.getSharedFlag(Entity.FLAG_FALL_FLYING) && !CraftEventFactory.callToggleGlideEvent(this, false).isCancelled()) // CraftBukkit
-
-# PlayerStopUsingItemEvent
-file: net/minecraft/world/entity/LivingEntity.java
-anchor:
-    this.useItem.releaseUsing(this.level(), this, this.getUseItemRemainingTicks());
-insert:
-    if (this instanceof ServerPlayer) new io.papermc.paper.event.player.PlayerStopUsingItemEvent((org.bukkit.entity.Player) getBukkitEntity(), useItem.asBukkitMirror(), getTicksUsingItem()).callEvent(); // Paper - Add PlayerStopUsingItemEvent

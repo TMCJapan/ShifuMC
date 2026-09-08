@@ -111,23 +111,6 @@ public final class ShifuEvents {
 
     // ------------------------------------------------------------ ブロック
 
-    /**
-     * ブロックの破壊。
-     *
-     * <p>差し込む位置は、vanilla の権限判定が全て終わったあと、
-     * 最初の書き換え({@code playerWillDestroy})の直前。
-     *
-     * <p>未対応: {@code BlockBreakEvent#setExpToDrop}。
-     * 経験値の量を vanilla の落下処理へ渡す経路がまだ無い。
-     */
-    public static boolean blockBreak(final ServerPlayer player, final BlockPos pos) {
-        if (!listening(BlockBreakEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new BlockBreakEvent(
-                CraftBlock.at(player.level(), pos), player.getBukkitEntity()).callEvent();
-    }
 
     /** ブロックの設置を聞いている登録があるか。置く前の様子を控えるかの判断に使う。 */
     public static boolean blockPlaceListening() {
@@ -137,40 +120,6 @@ public final class ShifuEvents {
 
     // ------------------------------------------------------------ エンティティ
 
-    /**
-     * 体力の回復。
-     *
-     * <p><b>登録が無ければ null を返す。</b> 呼ぶ側は null のとき vanilla の
-     * 行をそのまま通す。Paper はここで vanilla の {@code setHealth} を
-     * 書き換えるが、Shifu は vanilla の行を残したまま前後で分岐する。
-     *
-     * <pre>
-     * final EntityRegainHealthEvent event = ShifuEvents.entityRegainHealth(this, heal);
-     * if (event == null) {
-     * this.setHealth(health + heal);          // vanilla の行。1 文字も変えない
-     * } else if (!event.isCancelled()) {
-     *     this.setHealth((float) (this.getHealth() + event.getAmount()));
-     * }
-     * </pre>
-     *
-     * <p>理由は常に {@code CUSTOM}。vanilla の {@code heal} には理由を運ぶ
-     * 引数が無く、Paper は呼び出し側の署名を増やして渡している。
-     *
-     * <p>参照した位置(Paper 26.2):
-     * {@code paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch:441}
-     */
-    public static EntityRegainHealthEvent entityRegainHealth(final LivingEntity entity, final float amount) {
-        if (!listening(EntityRegainHealthEvent.getHandlerList())) {
-            return null;
-        }
-
-        EntityRegainHealthEvent event = new EntityRegainHealthEvent(
-                entity.getBukkitEntity(), amount,
-                EntityRegainHealthEvent.RegainReason.CUSTOM);
-        event.callEvent();
-
-        return event;
-    }
 
     /**
      * 死んだときに世界へ出ようとする物の控え。{@link #beginDeathDrops} か
@@ -185,7 +134,6 @@ public final class ShifuEvents {
      * 1 つ前の控えを持って戻す。
      */
     private static final class DeathCapture {
-        final List<Entity.DefaultDrop> drops = new ArrayList<>();
         final List<ExperienceOrb> orbs = new ArrayList<>();
         final DeathCapture previous;
         DeathInventory inventory;
@@ -207,71 +155,8 @@ public final class ShifuEvents {
 
     private static DeathCapture capture;
 
-    /**
-     * 死亡ドロップを控え始める。
-     *
-     * <p>登録が無ければ null を返して何も控えない。そのとき落ちる物は
-     * vanilla のとおりその場で世界に入る。
-     */
-    public static List<Entity.DefaultDrop> beginDeathDrops() {
-        if (!listening(org.bukkit.event.entity.EntityDeathEvent.getHandlerList())) {
-            return null;
-        }
 
-        capture = new DeathCapture(capture);
 
-        return capture.drops;
-    }
-
-    /**
-     * 世界に入ろうとしている物を控えに移す。移したら true。
-     *
-     * <p>{@code ServerLevel.addEntity} から呼ぶ。控えている最中でなければ
-     * 何もしないので、プラグインを入れていないときに増える仕事は
-     * 参照 1 つの比較。
-     *
-     * <p>落とし物は vanilla が作った {@link ItemEntity} をそのまま控える。
-     * プラグインが触らなければ、あとで同じものを世界に入れるので、
-     * 速度や向きも vanilla が決めたままになる。差し替えられた分だけ
-     * {@code CraftEventFactory} が作り直す。経験値オーブも同じ。
-     */
-    public static boolean catchDrop(final Entity entity) {
-        final DeathCapture current = capture;
-
-        if (current == null) {
-            return false;
-        }
-
-        if (entity instanceof ItemEntity item) {
-            current.drops.add(new Entity.DefaultDrop(item.getItem(), stack -> {
-                item.setItem(stack);
-                item.level().addFreshEntity(item);
-            }));
-
-            return true;
-        }
-
-        if (entity instanceof ExperienceOrb orb) {
-            current.orbs.add(orb);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /** 控えを閉じて返す。渡された落とし物の控えと食い違っていたら、それが見つかるまで戻す。 */
-    private static DeathCapture endCapture(final List<Entity.DefaultDrop> drops) {
-        DeathCapture current = capture;
-
-        while (current != null && current.drops != drops) {
-            current = current.previous;
-        }
-
-        capture = current == null ? null : current.previous;
-
-        return current;
-    }
 
 
     /**
@@ -346,41 +231,7 @@ public final class ShifuEvents {
 
     // ------------------------------------------------------------ プレイヤー
 
-    /**
-     * 参加。
-     *
-     * <p>取り消せないが、メッセージは差し替えられる。
-     * 差し替えられていなければ true を返し、vanilla の告知をそのまま通す。
-     * 差し替えられたときはここで送って false を返す。
-     */
-    public static boolean playerJoin(final ServerPlayer player, final Component message) {
-        if (!listening(PlayerJoinEvent.getHandlerList())) {
-            return true;
-        }
 
-        net.kyori.adventure.text.Component original = PaperAdventure.asAdventure(message);
-        PlayerJoinEvent event = new PlayerJoinEvent(player.getBukkitEntity(), original);
-        event.callEvent();
-
-        return announce(player, original, event.joinMessage());
-    }
-
-    /**
-     * 退出。
-     *
-     * <p>参加と同じで、取り消せないがメッセージは差し替えられる。
-     */
-    public static boolean playerQuit(final ServerPlayer player, final Component message) {
-        if (!listening(PlayerQuitEvent.getHandlerList())) {
-            return true;
-        }
-
-        net.kyori.adventure.text.Component original = PaperAdventure.asAdventure(message);
-        PlayerQuitEvent event = new PlayerQuitEvent(player.getBukkitEntity(), original);
-        event.callEvent();
-
-        return announce(player, original, event.quitMessage());
-    }
 
     /**
      * 差し替えられたメッセージを送る。
@@ -454,38 +305,8 @@ public final class ShifuEvents {
 
 
 
-    /**
-     * {@code connection.teleport(destination, relatives)} の入口。
-     * 動かす前の場所を返す。発火しないときは null。
-     *
-     * <p>同じ世界の中のテレポートは全部ここを通る(コマンド、コーラスフルーツ、
-     * 位置がずれたときの戻し、参加、リスポーン)。
-     */
-    public static Location teleportFrom(final ServerGamePacketListenerImpl connection) {
-        final ServerPlayer player = connection.player;
-
-        if (silentTeleport == player) {
-            silentTeleport = null;
-
-            return null;
-        }
-
-        if (!listening(PlayerTeleportEvent.getHandlerList())) {
-            return null;
-        }
-
-        return player.getBukkitEntity().getLocation();
-    }
 
 
-    /** 別の世界へ移ったあと。Paper は {@code teleport(transition)} の末尾で発火する。 */
-    public static void playerChangedWorld(final ServerPlayer player, final ServerLevel oldLevel) {
-        if (!listening(org.bukkit.event.player.PlayerChangedWorldEvent.getHandlerList())) {
-            return;
-        }
-
-        new org.bukkit.event.player.PlayerChangedWorldEvent(player.getBukkitEntity(), oldLevel.getWorld()).callEvent();
-    }
 
     // ------------------------------------------------------------ チャット
 
@@ -545,67 +366,9 @@ public final class ShifuEvents {
         }
     }
 
-    /**
-     * 手放し。{@code LivingEntity.drop} で {@link ItemEntity} を作ったあと、
-     * 世界に入れる直前。プレイヤー以外と、死んで落とす分では発火しない。
-     *
-     * <p>取り消されたら Paper と同じ手順で手元に戻す。
-     *
-     * @return 世界に入れてよいか
-     *
-     * <p>参照した位置(Paper 26.2):
-     * {@code paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch:148}
-     */
-    public static boolean playerDropItem(final LivingEntity dropper, final ItemEntity entity, final boolean thrownFromHand) {
-        if (!(dropper instanceof ServerPlayer player)
-                || player.isDeadOrDying()
-                || !listening(org.bukkit.event.player.PlayerDropItemEvent.getHandlerList())) {
-            return true;
-        }
-
-        final org.bukkit.entity.Player bukkit = player.getBukkitEntity();
-        final org.bukkit.entity.Item drop = (org.bukkit.entity.Item) entity.getBukkitEntity();
-
-        if (new org.bukkit.event.player.PlayerDropItemEvent(bukkit, drop).callEvent()) {
-            return true;
-        }
-
-        final org.bukkit.inventory.ItemStack inHand = bukkit.getInventory().getItemInMainHand();
-
-        if (thrownFromHand && inHand.getAmount() == 0) {
-            // 手に持っていた分を丸ごと落とした
-            bukkit.getInventory().setItemInMainHand(drop.getItemStack());
-        } else if (thrownFromHand && inHand.isSimilar(drop.getItemStack())
-                && inHand.getAmount() < inHand.getMaxStackSize() && drop.getItemStack().getAmount() == 1) {
-            // 1 個だけ落とした
-            inHand.setAmount(inHand.getAmount() + 1);
-            bukkit.getInventory().setItemInMainHand(inHand);
-        } else {
-            bukkit.getInventory().addItem(drop.getItemStack());
-        }
-
-        return false;
-    }
 
     // ------------------------------------------------------------ 死亡とリスポーン
 
-    /**
-     * プレイヤーが死んで落とし物を出す直前。登録が無ければ null で vanilla のまま。
-     *
-     * <p>{@code setKeepInventory} と {@code getItemsToKeep} を後から効かせられるよう、
-     * 落とす前の持ち物を控える。Paper は先に発火して、通ってから落としているが、
-     * その順序は vanilla と違う。
-     */
-    public static List<Entity.DefaultDrop> beginPlayerDeath(final ServerPlayer player) {
-        if (!listening(org.bukkit.event.entity.PlayerDeathEvent.getHandlerList())) {
-            return null;
-        }
-
-        capture = new DeathCapture(capture);
-        capture.inventory = new DeathInventory(player.getInventory());
-
-        return capture.drops;
-    }
 
 
 
@@ -642,26 +405,6 @@ public final class ShifuEvents {
     // ------------------------------------------------------------ クリック
 
 
-    /**
-     * ブロックへの右クリックが拒まれたとき。Paper と同じくクライアントの画面を直して返る。
-     */
-    public static net.minecraft.world.InteractionResult interactBlockDenied(
-            final org.bukkit.event.player.PlayerInteractEvent event, final ServerPlayer player,
-            final net.minecraft.world.level.block.state.BlockState state) {
-        if (state.getBlock() instanceof net.minecraft.world.level.block.CakeBlock) {
-            player.getBukkitEntity().sendHealthUpdate(); // SPIGOT-1341 - ケーキの分の体力を戻す
-        } else if (state.is(net.minecraft.world.level.block.Blocks.JIGSAW)
-                || state.is(net.minecraft.world.level.block.Blocks.STRUCTURE_BLOCK)
-                || state.getBlock() instanceof net.minecraft.world.level.block.CommandBlock) {
-            player.connection.send(new net.minecraft.network.protocol.game.ClientboundContainerClosePacket(player.containerMenu.containerId));
-        }
-
-        player.containerMenu.sendAllDataToRemote();
-
-        return event.useItemInHand() != org.bukkit.event.Event.Result.ALLOW
-                ? net.minecraft.world.InteractionResult.SUCCESS
-                : net.minecraft.world.InteractionResult.PASS;
-    }
 
     /** 右クリックのうち、手に持った物の使用だけが拒まれたか。拒まれていれば手元を送り直す。 */
     public static boolean interactItemDenied(final org.bukkit.event.player.PlayerInteractEvent event, final ServerPlayer player) {
@@ -685,32 +428,6 @@ public final class ShifuEvents {
         return address instanceof java.net.InetSocketAddress inet ? inet.getAddress() : java.net.InetAddress.getLoopbackAddress();
     }
 
-    /**
-     * PlayerLoginEvent。世界に入れる直前({@code placeNewPlayer} の先頭)で、
-     * 禁止・ホワイトリスト・満員の判定は vanilla が済ませている。
-     * CraftBukkit が長く使っていた位置。Paper は設定フェーズへ移したが、
-     * そこでは ServerPlayer がまだ無い。
-     *
-     * @return 続けてよいか。弾かれたら切断して false
-     */
-    public static boolean playerLogin(final net.minecraft.network.Connection connection, final ServerPlayer player) {
-        if (!listening(org.bukkit.event.player.PlayerLoginEvent.getHandlerList())) {
-            return true;
-        }
-
-        final org.bukkit.event.player.PlayerLoginEvent event = new org.bukkit.event.player.PlayerLoginEvent(
-                player.getBukkitEntity(), connection.hostname,
-                inetAddress(connection.getRemoteAddress()), inetAddress(connection.channel.remoteAddress()));
-        event.callEvent();
-
-        if (event.getResult() != org.bukkit.event.player.PlayerLoginEvent.Result.ALLOWED) {
-            connection.disconnect(PaperAdventure.asVanilla(event.kickMessage()));
-
-            return false;
-        }
-
-        return true;
-    }
 
 
     // ------------------------------------------------------------ TNT
@@ -790,52 +507,7 @@ public final class ShifuEvents {
         gameModeCause = cause;
     }
 
-    /**
-     * PlayerGameModeChangeEvent。{@code changeGameModeForPlayer} で「同じモードなら何もしない」の
-     * 判定のあと、書き換える前。Paper と同じ位置。
-     *
-     * <p>未対応: cancelMessage(Paper の /gamemode はこれを送るが、vanilla のコマンドは読まない)。
-     *
-     * @return 変えてよいか
-     */
-    public static boolean gameModeChange(final ServerPlayer player, final net.minecraft.world.level.GameType mode) {
-        if (!listening(org.bukkit.event.player.PlayerGameModeChangeEvent.getHandlerList())) {
-            return true;
-        }
 
-        final org.bukkit.event.player.PlayerGameModeChangeEvent.Cause cause = gameModePlayer == player && gameModeCause != null
-                ? gameModeCause
-                : org.bukkit.event.player.PlayerGameModeChangeEvent.Cause.UNKNOWN;
-        gameModePlayer = null;
-        gameModeCause = null;
-
-        return new org.bukkit.event.player.PlayerGameModeChangeEvent(
-                player.getBukkitEntity(), org.bukkit.GameMode.getByValue(mode.getId()), cause, null).callEvent();
-    }
-
-    /**
-     * PlayerToggleFlightEvent。飛行の切り替えの packet で、vanilla が書き換える直前。
-     * 飛べない・変わらないなら発火しない(Paper と同じ)。取り消されたらクライアントに能力を送り直す。
-     *
-     * @return vanilla の代入へ進んでよいか
-     */
-    public static boolean toggleFlight(final ServerPlayer player, final boolean flying) {
-        if (!listening(org.bukkit.event.player.PlayerToggleFlightEvent.getHandlerList())) {
-            return true;
-        }
-
-        if (!player.getAbilities().mayfly || player.getAbilities().flying == flying) {
-            return true;
-        }
-
-        if (new org.bukkit.event.player.PlayerToggleFlightEvent(player.getBukkitEntity(), flying).callEvent()) {
-            return true;
-        }
-
-        player.onUpdateAbilities();
-
-        return false;
-    }
 
     /**
      * PlayerBedEnterEvent。vanilla が寝られると判定して、寝る直前。
@@ -857,55 +529,7 @@ public final class ShifuEvents {
         return result.left().isPresent() ? result : null;
     }
 
-    /**
-     * PlayerItemConsumeEvent。食べ終える直前。
-     *
-     * <p>未対応: {@code setItem} での差し替え(Paper は差し替えた物を消費するが、
-     * それは vanilla の行の書き換えになる)。取り消しは効く。
-     *
-     * @return 消費してよいか
-     */
-    public static boolean itemConsume(final LivingEntity entity, final net.minecraft.world.InteractionHand hand) {
-        if (!(entity instanceof ServerPlayer player)
-                || !listening(org.bukkit.event.player.PlayerItemConsumeEvent.getHandlerList())) {
-            return true;
-        }
-
-        final org.bukkit.event.player.PlayerItemConsumeEvent event = new org.bukkit.event.player.PlayerItemConsumeEvent(
-                player.getBukkitEntity(),
-                org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(player.getUseItem()),
-                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand));
-
-        if (event.callEvent()) {
-            return true;
-        }
-
-        player.containerMenu.sendAllDataToRemote();
-        player.getBukkitEntity().updateScaledHealth();
-        player.stopUsingItem();
-
-        return false;
-    }
 
     // ------------------------------------------------------------ コンソール
 
-    /**
-     * ServerCommandEvent。コンソールの入力を実行する直前。
-     *
-     * @return 実行する入力。取り消されたら null。文が差し替えられていれば新しい入力
-     */
-    public static net.minecraft.server.ConsoleInput serverCommand(final net.minecraft.server.MinecraftServer server,
-                                                                  final net.minecraft.server.ConsoleInput input) {
-        if (!listening(org.bukkit.event.server.ServerCommandEvent.getHandlerList())) {
-            return input;
-        }
-
-        final org.bukkit.event.server.ServerCommandEvent event = new org.bukkit.event.server.ServerCommandEvent(server.console, input.msg);
-
-        if (!event.callEvent()) {
-            return null;
-        }
-
-        return event.getCommand().equals(input.msg) ? input : new net.minecraft.server.ConsoleInput(event.getCommand(), input.source);
-    }
 }

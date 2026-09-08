@@ -11,25 +11,3 @@
     public void setSpawnSettings(final boolean spawnEnemies, final boolean spawnFriendlies) {
         this.setSpawnSettings(spawnEnemies);
     }
-
-// ServerChunkCache.getChunkAtIfCachedImmediately
-    // Paper が足しているもの。FastAsyncWorldEdit が直に呼ぶ(呼べないと //set が
-    // NoSuchMethodError で落ちる)。アダプタ層は使わないので shim の閉包には出てこない。
-    // 中身は Paper と同じ(キャッシュを通さずに visible chunk を見る)。
-    // 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerChunkCache.java.patch:85
-    public @Nullable LevelChunk getChunkAtIfCachedImmediately(final int x, final int z) {
-        final ChunkHolder holder = this.chunkMap.getVisibleChunkIfPresent(ChunkPos.asLong(x, z));
-
-        if (holder == null) {
-            return null;
-        }
-
-        return holder.getFullChunkNowUnchecked();
-    }
-
-// ServerChunkCache.getChunkAtIfLoadedImmediately
-    // 同上。Paper は fullChunks の表から引くが、vanilla にその表は無いので
-    // 「見えているホルダから完全なチャンクを取る」で代える。読む用途は同じ。
-    public @Nullable LevelChunk getChunkAtIfLoadedImmediately(final int x, final int z) {
-        return this.getChunkAtIfCachedImmediately(x, z);
-    }

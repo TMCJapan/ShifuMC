@@ -129,24 +129,6 @@ public final class BlockEvents {
         return dispense(source, dispensed, Vec3.ZERO);
     }
 
-    /**
-     * BlockDispenseArmorEvent。装備をディスペンサーで着せる直前(ラマの箱、アルマジロのブラシも)。
-     *
-     * <p>効かないもの: {@code setItem} での差し替え。
-     *
-     * @return 着せてよいか
-     */
-    public static boolean dispenseArmor(final BlockSource source, final ItemStack dispensed, final LivingEntity target) {
-        if (!listening(org.bukkit.event.block.BlockDispenseArmorEvent.getHandlerList())) {
-            return true;
-        }
-
-        final CraftItemStack craftItem = CraftItemStack.asCraftMirror(dispensed.isDamageableItem() ? dispensed : dispensed.copyWithCount(1));
-
-        return new org.bukkit.event.block.BlockDispenseArmorEvent(
-                bukkit(source.level(), source.pos()), craftItem.clone(),
-                (org.bukkit.craftbukkit.entity.CraftLivingEntity) target.getBukkitEntity()).callEvent();
-    }
 
     /**
      * BlockShearEntityEvent。ディスペンサーのハサミが生き物を刈る直前。
@@ -185,66 +167,13 @@ public final class BlockEvents {
 
     // ------------------------------------------------------------ 中に入った・踏んだ・触れた
 
-    /**
-     * EntityInsideBlockEvent。{@code entityInside} の先頭。
-     *
-     * @return 続けてよいか
-     */
-    public static boolean insideBlock(final Entity entity, final Level level, final BlockPos pos) {
-        if (!listening(io.papermc.paper.event.entity.EntityInsideBlockEvent.getHandlerList())) {
-            return true;
-        }
 
-        return new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), bukkit(level, pos)).callEvent();
-    }
-
-    /**
-     * 感圧板・レッドストーン鉱石・大きなドリップリーフを踏んだ。プレイヤーなら
-     * PlayerInteractEvent(PHYSICAL)、それ以外は EntityInteractEvent。
-     *
-     * @return 続けてよいか
-     */
-    public static boolean physicalInteract(final Entity entity, final Level level, final BlockPos pos) {
-        if (entity instanceof net.minecraft.world.entity.player.Player player) {
-            if (!listening(org.bukkit.event.player.PlayerInteractEvent.getHandlerList())) {
-                return true;
-            }
-
-            return !CraftEventFactory.callPlayerInteractEvent(player, org.bukkit.event.block.Action.PHYSICAL, pos, null, null, null).isCancelled();
-        }
-
-        if (!listening(org.bukkit.event.entity.EntityInteractEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new org.bukkit.event.entity.EntityInteractEvent(entity.getBukkitEntity(), bukkit(level, pos)).callEvent();
-    }
 
     private static boolean listeningPhysical() {
         return listening(org.bukkit.event.player.PlayerInteractEvent.getHandlerList())
                 || listening(org.bukkit.event.entity.EntityInteractEvent.getHandlerList());
     }
 
-    /**
-     * 感圧板の信号。Paper は上に乗っている全部について発火し、取り消されなかったものだけ数える。
-     * vanilla の {@code getEntityCount} は数しか返さないので、同じ絞り方で自分で引く
-     * (登録があるときだけ。絞り方は {@code BasePressurePlateBlock.getEntityCount} と同じ)。
-     *
-     * @return 取り消されなかったものの数
-     */
-    public static int pressurePlateCount(final Level level, final BlockPos pos, final net.minecraft.world.phys.AABB box,
-                                         final Class<? extends Entity> entityClass) {
-        int count = 0;
-
-        for (final Entity entity : level.getEntitiesOfClass(entityClass, box,
-                net.minecraft.world.entity.EntitySelector.NO_SPECTATORS.and(e -> !e.isIgnoringBlockTriggers()))) {
-            if (physicalInteract(entity, level, pos)) {
-                count++;
-            }
-        }
-
-        return count;
-    }
 
     /** 感圧板の側で、登録があるときだけ生き物の一覧を取るための判定。 */
     public static boolean listeningPressurePlate() {
@@ -295,32 +224,6 @@ public final class BlockEvents {
         return listening(org.bukkit.event.entity.EntityChangeBlockEvent.getHandlerList());
     }
 
-    /**
-     * ケーキを食べる。EntityChangeBlockEvent。取り消されたら体力の表示を送り直して PASS。
-     *
-     * @return 食べてよいか
-     */
-    public static boolean cakeEat(final LevelAccessor level, final BlockPos pos, final BlockState state,
-                                  final net.minecraft.world.entity.player.Player player) {
-        if (!listening(org.bukkit.event.entity.EntityChangeBlockEvent.getHandlerList())) {
-            return true;
-        }
-
-        final int bites = state.getValue(net.minecraft.world.level.block.CakeBlock.BITES);
-        final BlockState newState = bites < net.minecraft.world.level.block.CakeBlock.MAX_BITES
-                ? state.setValue(net.minecraft.world.level.block.CakeBlock.BITES, bites + 1)
-                : level.getFluidState(pos).createLegacyBlock();
-
-        if (CraftEventFactory.callEntityChangeBlockEvent(player, pos, newState)) {
-            return true;
-        }
-
-        if (player instanceof ServerPlayer serverPlayer) {
-            serverPlayer.getBukkitEntity().sendHealthUpdate();
-        }
-
-        return false;
-    }
 
 
     // ------------------------------------------------------------ ブロックの消滅・生成・変化
@@ -447,54 +350,6 @@ public final class BlockEvents {
 
     private static boolean compostNotConsumed;
 
-    /**
-     * CompostItemEvent / EntityCompostItemEvent。段が上がるときは上がる直前、上がらないときは
-     * vanilla がそう決めたあと。そのあと EntityChangeBlockEvent(上がるときだけ)。
-     *
-     * <p>効かないもの: 上がらないと決まったあとに {@code setWillRaiseLevel(true)} で上げること。
-     *
-     * @return 続けてよいか(上げてよいか)。取り消されたときはアイテムを消費しない
-     */
-    public static boolean compostItem(final Entity sourceEntity, final LevelAccessor level, final BlockPos pos,
-                                      final ItemStack itemStack, final BlockState state, final boolean willRaiseLevel) {
-        final boolean listeningCompost = sourceEntity == null
-                ? listening(io.papermc.paper.event.block.CompostItemEvent.getHandlerList())
-                : listening(io.papermc.paper.event.entity.EntityCompostItemEvent.getHandlerList());
-
-        if (!listeningCompost && !(willRaiseLevel && sourceEntity != null && listeningEntityChangeBlock())) {
-            return true;
-        }
-
-        boolean raise = willRaiseLevel;
-
-        if (listeningCompost) {
-            final io.papermc.paper.event.block.CompostItemEvent event = sourceEntity == null
-                    ? new io.papermc.paper.event.block.CompostItemEvent(bukkit(level, pos), CraftItemStack.asCraftMirror(itemStack), willRaiseLevel)
-                    : new io.papermc.paper.event.entity.EntityCompostItemEvent(sourceEntity.getBukkitEntity(), bukkit(level, pos), CraftItemStack.asCraftMirror(itemStack), willRaiseLevel);
-
-            if (!event.callEvent()) {
-                compostNotConsumed = true;
-
-                return false;
-            }
-
-            raise = event.willRaiseLevel();
-        }
-
-        if (!willRaiseLevel || !raise) {
-            return raise && willRaiseLevel;
-        }
-
-        if (sourceEntity != null && listeningEntityChangeBlock()
-                && !CraftEventFactory.callEntityChangeBlockEvent(sourceEntity, pos,
-                        state.setValue(net.minecraft.world.level.block.ComposterBlock.LEVEL, state.getValue(net.minecraft.world.level.block.ComposterBlock.LEVEL) + 1))) {
-            compostNotConsumed = true;
-
-            return false;
-        }
-
-        return true;
-    }
 
     /** 入れた側で、取り消されたときはアイテムを減らさない。 */
     public static boolean compostConsumes() {
@@ -506,60 +361,8 @@ public final class BlockEvents {
 
     // ------------------------------------------------------------ ホッパー・ドロッパー
 
-    private static org.bukkit.inventory.Inventory inventoryOf(final Container container) {
-        if (container instanceof net.minecraft.world.CompoundContainer compound) {
-            return new org.bukkit.craftbukkit.inventory.CraftInventoryDoubleChest(compound);
-        }
 
-        if (container.getOwner() != null) {
-            return container.getOwner().getInventory();
-        }
 
-        return new org.bukkit.craftbukkit.inventory.CraftInventory(container);
-    }
-
-    /**
-     * InventoryMoveItemEvent。ホッパーとドロッパーが容器へ 1 個入れる直前、ホッパーが容器から
-     * 1 個取る直前。
-     *
-     * <p>効かないもの: {@code setItem} での差し替え(vanilla の行が取り出して渡す)。
-     * Spigot の hopperAmount(まとめて運ぶ数)は入れていない。
-     *
-     * @return 運んでよいか。取り消されたら Paper と同じくホッパーに待ち時間 8 tick を置く
-     */
-    public static boolean moveItem(final Container from, final Container to, final ItemStack itemStack, final boolean didSourceInitiate,
-                                   final net.minecraft.world.level.block.entity.HopperBlockEntity cooldownTarget) {
-        if (!listening(org.bukkit.event.inventory.InventoryMoveItemEvent.getHandlerList())) {
-            return true;
-        }
-
-        final org.bukkit.event.inventory.InventoryMoveItemEvent event = new org.bukkit.event.inventory.InventoryMoveItemEvent(
-                inventoryOf(from), CraftItemStack.asCraftMirror(itemStack.copyWithCount(1)), inventoryOf(to), didSourceInitiate);
-
-        if (event.callEvent()) {
-            return true;
-        }
-
-        if (cooldownTarget != null) {
-            cooldownTarget.setCooldown(8);
-        }
-
-        return false;
-    }
-
-    /**
-     * InventoryPickupItemEvent。ホッパーが落ちているアイテムを拾う直前。
-     *
-     * @return 拾ってよいか
-     */
-    public static boolean pickupItem(final Container container, final ItemEntity entity) {
-        if (!listening(org.bukkit.event.inventory.InventoryPickupItemEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new org.bukkit.event.inventory.InventoryPickupItemEvent(
-                inventoryOf(container), (org.bukkit.entity.Item) entity.getBukkitEntity()).callEvent();
-    }
 
     public static boolean listeningHopperSearch() {
         return listening(org.bukkit.event.inventory.HopperInventorySearchEvent.getHandlerList());
@@ -583,23 +386,6 @@ public final class BlockEvents {
 
 
 
-    /**
-     * TargetHitEvent。的に投射物が当たった。
-     *
-     * @return プラグインが決めた強さ。取り消されたら -1
-     */
-    public static int targetHit(final LevelAccessor level, final net.minecraft.world.phys.BlockHitResult hitResult, final Entity entity, final int strength) {
-        if (!(entity instanceof net.minecraft.world.entity.projectile.Projectile)
-                || !listening(io.papermc.paper.event.block.TargetHitEvent.getHandlerList())) {
-            return strength;
-        }
-
-        final io.papermc.paper.event.block.TargetHitEvent event = new io.papermc.paper.event.block.TargetHitEvent(
-                (org.bukkit.entity.Projectile) entity.getBukkitEntity(), CraftBlock.at(level, hitResult.getBlockPos()),
-                CraftBlock.notchToBlockFace(hitResult.getDirection()), strength);
-
-        return event.callEvent() ? event.getSignalStrength() : -1;
-    }
 
     // ------------------------------------------------------------ トリップワイヤーフック
 
@@ -665,25 +451,6 @@ public final class BlockEvents {
     // ------------------------------------------------------------ ポータル
 
 
-    /**
-     * EntityPortalReadyEvent。行き先の世界が決まった直後。
-     *
-     * @return 行き先の世界。取り消されたら null(vanilla は null なら移動しない)
-     */
-    public static ServerLevel portalReady(final Entity entity, final ServerLevel newLevel) {
-        if (!listening(io.papermc.paper.event.entity.EntityPortalReadyEvent.getHandlerList())) {
-            return newLevel;
-        }
-
-        final io.papermc.paper.event.entity.EntityPortalReadyEvent event = new io.papermc.paper.event.entity.EntityPortalReadyEvent(
-                entity.getBukkitEntity(), newLevel == null ? null : newLevel.getWorld(), org.bukkit.PortalType.NETHER);
-
-        if (!event.callEvent()) {
-            return null;
-        }
-
-        return event.getTargetWorld() == null ? null : ((org.bukkit.craftbukkit.CraftWorld) event.getTargetWorld()).getHandle();
-    }
 
 
     public static boolean listeningPortal() {
@@ -702,138 +469,15 @@ public final class BlockEvents {
         signFront = front;
     }
 
-    /**
-     * SignChangeEvent。文を組み立てたあと、返す直前。
-     *
-     * @return 返す文。取り消されたら元の文
-     */
-    public static net.minecraft.world.level.block.entity.SignText signChange(final net.minecraft.world.level.block.entity.SignBlockEntity sign,
-                                                                              final net.minecraft.world.entity.player.Player player,
-                                                                              final net.minecraft.world.level.block.entity.SignText original,
-                                                                              final net.minecraft.world.level.block.entity.SignText text,
-                                                                              final List<net.minecraft.server.network.FilteredText> lines) {
-        if (!(player instanceof ServerPlayer serverPlayer) || !listening(org.bukkit.event.block.SignChangeEvent.getHandlerList())) {
-            return text;
-        }
 
-        final List<net.kyori.adventure.text.Component> componentLines = new ArrayList<>();
-
-        for (int i = 0; i < lines.size(); i++) {
-            componentLines.add(io.papermc.paper.adventure.PaperAdventure.asAdventure(text.getMessage(i, player.isTextFilteringEnabled())));
-        }
-
-        final org.bukkit.event.block.SignChangeEvent event = new org.bukkit.event.block.SignChangeEvent(
-                bukkit(sign.getLevel(), sign.getBlockPos()), serverPlayer.getBukkitEntity(), new ArrayList<>(componentLines),
-                signFront ? org.bukkit.block.sign.Side.FRONT : org.bukkit.block.sign.Side.BACK);
-
-        if (!event.callEvent()) {
-            return original;
-        }
-
-        net.minecraft.world.level.block.entity.SignText result = text;
-        final net.minecraft.network.chat.Component[] components = org.bukkit.craftbukkit.block.CraftSign.sanitizeLines(event.lines());
-
-        for (int i = 0; i < components.length; i++) {
-            if (!java.util.Objects.equals(componentLines.get(i), event.line(i))) {
-                result = result.setMessage(i, components[i]);
-            }
-        }
-
-        return result;
-    }
-
-    /**
-     * PlayerSignCommandPreprocessEvent。看板のコマンドを実行する直前。
-     *
-     * <p>効かないもの: {@code setMessage} での差し替え、実行するプレイヤーの差し替え。
-     *
-     * @return 実行してよいか
-     */
-    public static boolean signCommand(final net.minecraft.world.level.block.entity.SignBlockEntity sign, final ServerLevel level,
-                                      final net.minecraft.world.entity.player.Player player, final String command, final boolean isFrontText) {
-        if (!(player instanceof ServerPlayer serverPlayer)
-                || !listening(io.papermc.paper.event.player.PlayerSignCommandPreprocessEvent.getHandlerList())) {
-            return true;
-        }
-
-        final String commandLine = command.startsWith("/") ? command : "/" + command;
-
-        return new io.papermc.paper.event.player.PlayerSignCommandPreprocessEvent(serverPlayer.getBukkitEntity(), commandLine,
-                new org.bukkit.craftbukkit.util.LazyPlayerSet(level.getServer()),
-                (org.bukkit.block.Sign) bukkit(sign.getLevel(), sign.getBlockPos()).getState(),
-                isFrontText ? org.bukkit.block.sign.Side.FRONT : org.bukkit.block.sign.Side.BACK).callEvent();
-    }
 
     private static BlockPos bellPos;
     private static java.util.Set<LivingEntity> bellHidden;
 
-    /**
-     * BellResonateEvent。光らせる襲撃者の一覧をプラグインが変えられる。vanilla の stream は
-     * 変えられないので、外されたものは {@link #revealRaider} で止め、足されたものはここで光らせる。
-     *
-     * @param inRange vanilla と同じ条件で絞った襲撃者
-     */
-    public static void bellResonate(final Level level, final BlockPos pos, final List<LivingEntity> nearby,
-                                    final java.util.function.Predicate<LivingEntity> inRange) {
-        bellPos = pos;
-        bellHidden = null;
 
-        if (!listening(org.bukkit.event.block.BellResonateEvent.getHandlerList())) {
-            return;
-        }
-
-        final List<LivingEntity> vanilla = nearby.stream().filter(inRange).toList();
-        final List<org.bukkit.entity.LivingEntity> raiders = new ArrayList<>();
-
-        for (final LivingEntity entity : vanilla) {
-            raiders.add((org.bukkit.entity.LivingEntity) entity.getBukkitEntity());
-        }
-
-        final java.util.Set<LivingEntity> chosen = new java.util.HashSet<>(
-                CraftEventFactory.handleBellResonateEvent(level, pos, raiders).toList());
-        final java.util.Set<LivingEntity> hidden = new java.util.HashSet<>(vanilla);
-        hidden.removeAll(chosen);
-        bellHidden = hidden;
-
-        for (final LivingEntity entity : chosen) {
-            if (!vanilla.contains(entity) && revealRaider(entity)) {
-                entity.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.GLOWING, 60));
-            }
-        }
-    }
-
-    /**
-     * BellRevealRaiderEvent。1 体ずつ光らせる直前。
-     *
-     * @return 光らせてよいか
-     */
-    public static boolean revealRaider(final LivingEntity raider) {
-        if (bellHidden != null && bellHidden.contains(raider)) {
-            return false;
-        }
-
-        if (bellPos == null || !listening(io.papermc.paper.event.block.BellRevealRaiderEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new io.papermc.paper.event.block.BellRevealRaiderEvent(bukkit(raider.level(), bellPos),
-                (org.bukkit.entity.Raider) raider.getBukkitEntity()).callEvent();
-    }
 
     // ------------------------------------------------------------ ミツバチ
 
-    /**
-     * EntityEnterBlockEvent。ハチが巣に入る直前。
-     *
-     * @return 入ってよいか
-     */
-    public static boolean enterHive(final BlockEntity hive, final net.minecraft.world.entity.animal.Bee bee) {
-        if (hive.getLevel() == null || !listening(org.bukkit.event.entity.EntityEnterBlockEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new org.bukkit.event.entity.EntityEnterBlockEvent(bee.getBukkitEntity(), bukkit(hive.getLevel(), hive.getBlockPos())).callEvent();
-    }
 
     // ------------------------------------------------------------ 醸造台
 
@@ -877,43 +521,6 @@ public final class BlockEvents {
     }
 
 
-    /**
-     * BrewEvent。醸造の結果を入れる直前。結果は vanilla と同じ {@code mix} で先に求める。
-     *
-     * @return 入れる結果(3 つ)。取り消されたら null。登録が無ければ null でなく空の一覧
-     */
-    public static List<ItemStack> brew(final Level level, final BlockPos pos, final net.minecraft.core.NonNullList<ItemStack> items,
-                                       final ItemStack ingredient, final net.minecraft.world.item.alchemy.PotionBrewing potionBrewing) {
-        if (!listening(org.bukkit.event.inventory.BrewEvent.getHandlerList())) {
-            return List.of();
-        }
-
-        if (!(level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.BrewingStandBlockEntity entity)
-                || entity.getOwner() == null) {
-            return List.of();
-        }
-
-        final List<org.bukkit.inventory.ItemStack> results = new ArrayList<>(3);
-
-        for (int dest = 0; dest < 3; dest++) {
-            results.add(dest, CraftItemStack.asCraftMirror(potionBrewing.mix(ingredient, items.get(dest))));
-        }
-
-        final org.bukkit.event.inventory.BrewEvent event = new org.bukkit.event.inventory.BrewEvent(
-                bukkit(level, pos), (org.bukkit.inventory.BrewerInventory) entity.getOwner().getInventory(), results, entity.fuel);
-
-        if (!event.callEvent()) {
-            return null;
-        }
-
-        final List<ItemStack> out = new ArrayList<>(3);
-
-        for (int dest = 0; dest < 3; dest++) {
-            out.add(dest < results.size() ? CraftItemStack.asNMSCopy(results.get(dest)) : ItemStack.EMPTY);
-        }
-
-        return out;
-    }
 
     /** vanilla が結果を入れたあと、プラグインが差し替えた結果で置き直す。 */
     public static void brewApply(final net.minecraft.core.NonNullList<ItemStack> items, final List<ItemStack> results) {
@@ -1010,20 +617,6 @@ public final class BlockEvents {
         furnaceSmeltPos = pos;
     }
 
-    /** 位置を控えから取る版。 */
-    public static ItemStack furnaceSmelt(final net.minecraft.core.NonNullList<ItemStack> items, final ItemStack ingredient, final ItemStack result,
-                                         final net.minecraft.world.item.crafting.RecipeHolder<? extends net.minecraft.world.item.crafting.AbstractCookingRecipe> recipe) {
-        final ServerLevel level = furnaceSmeltLevel;
-        final BlockPos pos = furnaceSmeltPos;
-        furnaceSmeltLevel = null;
-        furnaceSmeltPos = null;
-
-        if (level == null || pos == null) {
-            return result;
-        }
-
-        return furnaceSmelt(level, pos, items, ingredient, result, recipe);
-    }
 
     private static BlockPos furnaceAt;
 
@@ -1079,24 +672,6 @@ public final class BlockEvents {
         return CraftItemStack.asNMSCopy(event.getResult());
     }
 
-    /**
-     * CampfireStartEvent。焚き火に置いた直後(vanilla が時間を入れたあと)。
-     *
-     * @return 焼くのにかかる時間
-     */
-    public static int campfireStart(final BlockEntity campfire, final ItemStack placeItem,
-                                    final net.minecraft.world.item.crafting.RecipeHolder<net.minecraft.world.item.crafting.CampfireCookingRecipe> recipe, final int vanilla) {
-        if (!listening(org.bukkit.event.block.CampfireStartEvent.getHandlerList())) {
-            return vanilla;
-        }
-
-        final org.bukkit.event.block.CampfireStartEvent event = new org.bukkit.event.block.CampfireStartEvent(
-                bukkit(campfire.getLevel(), campfire.getBlockPos()), CraftItemStack.asCraftMirror(placeItem),
-                (org.bukkit.inventory.CampfireRecipe) recipe.toBukkitRecipe());
-        event.callEvent();
-
-        return event.getTotalCookTime();
-    }
 
     // ------------------------------------------------------------ 怪しい砂・トライアルスポナー・宝物庫
 
@@ -1114,24 +689,6 @@ public final class BlockEvents {
         return CraftEventFactory.callEntityChangeBlockEvent(user, brushable.getBlockPos(), next);
     }
 
-    /**
-     * BlockDropItemEvent(怪しい砂の中身が出る)。世界に足す直前。
-     *
-     * @return 足してよいか(取り消されたか、一覧から外されたら足さない)
-     */
-    public static boolean brushDrop(final BlockEntity brushable, final Level level, final LivingEntity user, final ItemEntity entity) {
-        if (!(user instanceof ServerPlayer player) || !listening(org.bukkit.event.block.BlockDropItemEvent.getHandlerList())) {
-            return true;
-        }
-
-        final org.bukkit.block.Block block = bukkit(level, brushable.getBlockPos());
-        final List<org.bukkit.entity.Item> items = new ArrayList<>();
-        items.add((org.bukkit.entity.Item) entity.getBukkitEntity());
-        final org.bukkit.event.block.BlockDropItemEvent event = new org.bukkit.event.block.BlockDropItemEvent(
-                block, block.getState(), player.getBukkitEntity(), items);
-
-        return event.callEvent() && items.contains(entity.getBukkitEntity());
-    }
 
 
 
@@ -1164,57 +721,9 @@ public final class BlockEvents {
         new io.papermc.paper.event.block.BeaconDeactivatedEvent(bukkit(level, pos)).callEvent();
     }
 
-    /**
-     * BeaconEffectEvent。1 人ずつ効果を掛ける直前。
-     *
-     * <p>{@code setEffect} で差し替えられたときは、発火層が差し替えた効果を掛けて false を返す
-     * (vanilla の行は飛ばす)。差し替えが無ければ vanilla の行がそのまま掛ける。
-     *
-     * @return vanilla の行で掛けてよいか
-     */
-    public static boolean beaconEffect(final Level level, final BlockPos pos, final net.minecraft.world.entity.player.Player player,
-                                       final net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> effect, final int duration, final int amplifier, final boolean primary) {
-        if (!listening(com.destroystokyo.paper.event.block.BeaconEffectEvent.getHandlerList())) {
-            return true;
-        }
-
-        final org.bukkit.potion.PotionEffect vanilla = org.bukkit.craftbukkit.potion.CraftPotionUtil.toBukkit(
-                new net.minecraft.world.effect.MobEffectInstance(effect, duration, amplifier, true, true));
-        final com.destroystokyo.paper.event.block.BeaconEffectEvent event = new com.destroystokyo.paper.event.block.BeaconEffectEvent(
-                bukkit(level, pos), vanilla, (org.bukkit.entity.Player) player.getBukkitEntity(), primary);
-
-        if (!event.callEvent()) {
-            return false;
-        }
-
-        if (vanilla.equals(event.getEffect())) {
-            return true;
-        }
-
-        player.addEffect(org.bukkit.craftbukkit.potion.CraftPotionUtil.fromBukkit(event.getEffect()));
-
-        return false;
-    }
 
     // ------------------------------------------------------------ ハチの巣を刈る
 
-    /**
-     * PlayerShearBlockEvent。ハチの巣をハサミで刈る直前。
-     *
-     * <p>効かないもの: {@code getDrops} の書き換え(落とすのは vanilla のルートテーブル)。
-     * イベントの drops は空(落とす物は vanilla が決めるまで分からない)。
-     *
-     * @return 刈ってよいか
-     */
-    public static boolean shearBlock(final net.minecraft.world.entity.player.Player player, final Level level, final BlockPos pos,
-                                     final ItemStack itemStack, final net.minecraft.world.InteractionHand hand) {
-        if (!(player instanceof ServerPlayer serverPlayer) || !listening(io.papermc.paper.event.block.PlayerShearBlockEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new io.papermc.paper.event.block.PlayerShearBlockEvent(serverPlayer.getBukkitEntity(), bukkit(level, pos),
-                CraftItemStack.asCraftMirror(itemStack), org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand), new ArrayList<>()).callEvent();
-    }
 
     // ------------------------------------------------------------ 生長と広がり(置く前に発火する形)
 

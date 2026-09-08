@@ -17,19 +17,6 @@ insert:
     final java.util.Map<Slot, ItemStack[]> shifuDragBefore = dev.shifu.event.ItemEvents.dragBefore(this.quickcraftSlots);
     final ItemStack shifuDragCarried = shifuDragBefore == null ? null : this.getCarried().copy();
 
-file: net/minecraft/world/inventory/AbstractContainerMenu.java
-anchor:
-    itemStack2.setCount(k);
-    this.setCarried(itemStack2);
-insert-after:
-    dev.shifu.event.ItemEvents.drag(this, shifuDragBefore, shifuDragCarried, this.quickcraftType == QUICKCRAFT_TYPE_GREEDY);
-
-# ---------------------------------------------------------------- PrepareResultEvent 系
-#
-# Paper は slotsChanged で createResult のあとに callPrepareResultEvent を呼ぶ。同じ位置。
-# createResult の中で Paper が setItem を callPrepareAnvilEvent などに置き換えている 5 + 2 箇所は、
-# setItem と同じ働きしかしない(発火はここ)ので触らない。
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/ItemCombinerMenu.java.patch:60
 file: net/minecraft/world/inventory/GrindstoneMenu.java
 anchor:
     ExperienceOrb.award((ServerLevel)world, Vec3.atCenterOf(pos), this.getExperienceAmount(world));
@@ -46,21 +33,6 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/BeaconMenu.java.patch
 file: net/minecraft/world/inventory/BeaconMenu.java
 anchor:
-    this.beaconData.set(1, encodeEffect(primary.orElse(null)));
-insert:
-    final io.papermc.paper.event.player.PlayerChangeBeaconEffectEvent shifuBeacon =
-            dev.shifu.event.ItemEvents.changeBeaconEffect(this.inventory.player, this.access,
-                    primary.orElse(null), secondary.orElse(null));
-    if (shifuBeacon != null) {
-        if (shifuBeacon.isCancelled()) {
-            return;
-        }
-        primary = java.util.Optional.ofNullable(dev.shifu.event.ItemEvents.effect(shifuBeacon.getPrimary()));
-        secondary = java.util.Optional.ofNullable(dev.shifu.event.ItemEvents.effect(shifuBeacon.getSecondary()));
-    }
-
-file: net/minecraft/world/inventory/BeaconMenu.java
-anchor:
     this.paymentSlot.remove(1);
 insert:
     if (shifuBeacon == null || shifuBeacon.willConsumeItem()) {
@@ -73,86 +45,6 @@ insert-after:
 # vanilla の局所変数 newEnchantment に代入して vanilla のループに付けさせる。
 # PrepareItemEnchantEvent は patches/events/generated にある。
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/EnchantmentMenu.java.patch(EnchantItemEvent)
-file: net/minecraft/world/inventory/LecternMenu.java
-anchor:
-    this.setData(0, k - 1);
-insert:
-    final int shifuPage = dev.shifu.event.ItemEvents.lecternPage(this, user,
-            io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection.LEFT, k, k - 1);
-    if (shifuPage == dev.shifu.event.ItemEvents.CANCELLED) {
-        return false;
-    }
-    if (shifuPage != k - 1) {
-        this.setData(0, shifuPage);
-        return true;
-    }
-
-file: net/minecraft/world/inventory/LecternMenu.java
-anchor:
-    this.setData(0, j + 1);
-insert:
-    final int shifuPage = dev.shifu.event.ItemEvents.lecternPage(this, user,
-            io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection.RIGHT, j, j + 1);
-    if (shifuPage == dev.shifu.event.ItemEvents.CANCELLED) {
-        return false;
-    }
-    if (shifuPage != j + 1) {
-        this.setData(0, shifuPage);
-        return true;
-    }
-
-# ---------------------------------------------------------------- PlayerLoomPatternSelectEvent
-#
-# 模様を書き込む前。差し替えられたときは自分で書いて抜ける。取り消しは手元を送り直して false。
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/LoomMenu.java.patch(PlayerLoomPatternSelectEvent)
-file: net/minecraft/world/inventory/LoomMenu.java
-anchor:
-    this.selectedBannerPatternIndex.set(id);
-    this.setupResultSlot(this.selectablePatterns.get(id));
-insert:
-    final dev.shifu.event.ItemEvents.LoomChoice shifuLoom = dev.shifu.event.ItemEvents.loomPattern(
-            this, user, this.selectablePatterns, id);
-    if (shifuLoom != null) {
-        if (shifuLoom.cancelled()) {
-            user.containerMenu.sendAllDataToRemote();
-            return false;
-        }
-        this.selectedBannerPatternIndex.set(shifuLoom.index());
-        this.setupResultSlot(shifuLoom.pattern());
-        return true;
-    }
-
-# ---------------------------------------------------------------- PlayerStonecutterRecipeSelectEvent
-#
-# vanilla が番号を書き込んだあと、結果を置く前(Paper と同じ)。
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/StonecutterMenu.java.patch
-file: net/minecraft/world/item/BlockItem.java
-anchor:
-    return (!this.mustSurvive() || state.canSurvive(context.getLevel(), context.getClickedPos()))
-insert:
-    if (dev.shifu.event.ItemEvents.canBuildListening()) {
-        return dev.shifu.event.ItemEvents.canBuild(context.getLevel(), context.getClickedPos(), user, state,
-                (!this.mustSurvive() || state.canSurvive(context.getLevel(), context.getClickedPos()))
-                        && context.getLevel().isUnobstructed(state, context.getClickedPos(), CollisionContext.placementContext(user)),
-                context.getHand());
-    }
-
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/StandingAndWallBlockItem.java.patch
-file: net/minecraft/world/item/StandingAndWallBlockItem.java
-anchor:
-    return blockState2 != null && levelReader.isUnobstructed(blockState2, blockPos, CollisionContext.empty()) ? blockState2 : null;
-insert:
-    if (blockState2 != null && dev.shifu.event.ItemEvents.canBuildListening()) {
-        return dev.shifu.event.ItemEvents.canBuild(context.getLevel(), blockPos, context.getPlayer(), blockState2,
-                levelReader.isUnobstructed(blockState2, blockPos, CollisionContext.empty()), context.getHand())
-                ? blockState2 : null;
-    }
-
-# ---------------------------------------------------------------- ボート
-#
-# 置く前の PlayerInteractEvent(RIGHT_CLICK_BLOCK)、足す前の EntityPlaceEvent。
-# スポーン系に登録があるときは Paper と同じく addFreshEntity の返り値を見て PASS で抜ける。
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/BoatItem.java.patch
 file: net/minecraft/world/item/BoatItem.java
 anchor:
     AbstractBoat boat = this.getBoat(level, playerPovHitResult, itemInHand, user);
@@ -202,38 +94,6 @@ insert-after:
 #
 # 装填する前。vanilla の判定(tickPercent、isCharged)は副作用が無いので、先に同じ判定をして発火する。
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/CrossbowItem.java.patch
-file: net/minecraft/world/item/CrossbowItem.java
-anchor:
-    if (f >= 1.0F && !isCharged(stack) && tryLoadProjectiles(user, stack)) {
-insert:
-    if (f >= 1.0F && !isCharged(stack) && !dev.shifu.event.ItemEvents.loadCrossbow(user, stack)) {
-        return;
-    }
-
-# ---------------------------------------------------------------- SheepDyeWoolEvent
-#
-# 色を書き込む前。差し替えは vanilla の局所変数に代入する。
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/DyeItem.java.patch
-file: net/minecraft/world/item/DyeItem.java
-anchor:
-    sheep.setColor(this.dyeColor);
-insert:
-    final net.minecraft.world.item.DyeColor shifuDye = dev.shifu.event.ItemEvents.dyeWool(sheep, user, this.dyeColor);
-    if (shifuDye == null) {
-        return InteractionResult.PASS;
-    }
-    if (shifuDye != this.dyeColor) {
-        sheep.setColor(shifuDye);
-    } else {
-insert-after:
-    }
-
-# ---------------------------------------------------------------- PlayerLaunchProjectileEvent(投擲物 5 種)
-#
-# 登録があるときは ItemEvents.launch が「生成 → 発火 → 音 → 世界に足す → 統計 → 消費」を行い、
-# vanilla の音・生成・統計・消費の行を飛ばす。無ければ vanilla の行がそのまま走る。
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/SnowballItem.java.patch ほか同形 4 件
-
 file: net/minecraft/world/item/SnowballItem.java
 anchor:
     world.playSound(
@@ -380,21 +240,6 @@ insert:
 insert-after:
     }
 
-file: net/minecraft/world/item/ItemUtils.java
-anchor:
-    contents.forEach(stack -> level.addFreshEntity(new ItemEntity(level, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(), stack)));
-insert:
-    if (!dev.shifu.event.ItemEvents.containerDropListening()) {
-insert-after:
-    } else {
-        contents.forEach(stack -> dev.shifu.event.ItemEvents.containerDrop(itemEntity, level, stack));
-    }
-
-# ---------------------------------------------------------------- リード
-#
-# vanilla の bindPlayerMobs は手を受け取らない。useOn から呼ぶ直前に手を置く。
-# FenceBlock からも呼ばれる(そちらは手を置かないので、置いた相手が違えば MAIN_HAND とみなす)。
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/LeadItem.java.patch
 file: net/minecraft/world/item/LeadItem.java
 anchor:
     return bindPlayerMobs(user, level, clickedPos);
@@ -417,43 +262,3 @@ insert-after:
 #
 # vanilla の判定の前。DENY なら何もせず抜ける(vanilla の if のあとには何も無い)。
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/MaceItem.java.patch
-file: net/minecraft/world/item/NameTagItem.java
-anchor:
-    entity.setCustomName(component);
-    if (entity instanceof Mob mob) {
-    mob.setPersistenceRequired();
-    }
-insert:
-    final io.papermc.paper.event.player.PlayerNameEntityEvent shifuName = dev.shifu.event.ItemEvents.nameEntity(user, entity, component);
-    if (shifuName != null) {
-        if (shifuName.isCancelled()) {
-            return InteractionResult.PASS;
-        }
-        dev.shifu.event.ItemEvents.applyName(shifuName);
-    } else {
-insert-after:
-    }
-
-# ---------------------------------------------------------------- PlayerItemDamageEvent
-#
-# 減りが決まったあと。取り消しは 0 にして vanilla の「0 なら何もしない」に乗せる。
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/ItemStack.java.patch(PlayerItemDamageEvent)
-file: net/minecraft/world/item/ItemStack.java
-anchor:
-    int i = this.processDurabilityChange(damage, level, user);
-insert-after:
-    if (i > 0 && user != null) {
-        i = dev.shifu.event.ItemEvents.itemDamage(this, user, i, damage);
-    }
-
-file: net/minecraft/world/item/ItemStack.java
-anchor:
-    int min = Math.min(this.getDamageValue() + i, this.getMaxDamage() - 1);
-insert-after:
-    if (min - this.getDamageValue() > 0) {
-        final int shifuDamage = dev.shifu.event.ItemEvents.itemDamage(this, serverPlayer, min - this.getDamageValue(), damage);
-        if (shifuDamage == 0) {
-            return;
-        }
-        min = Math.min(this.getDamageValue() + shifuDamage, this.getMaxDamage() - 1);
-    }

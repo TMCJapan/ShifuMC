@@ -9,24 +9,6 @@
 # 署名を変えないので理由は CUSTOM 固定になる。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch:441
-file: net/minecraft/world/entity/LivingEntity.java
-anchor:
-    this.setHealth(f + amount);
-insert:
-    final org.bukkit.event.entity.EntityRegainHealthEvent shifuRegain =
-            dev.shifu.event.ShifuEvents.entityRegainHealth(this, amount);
-    if (shifuRegain == null) {
-insert-after:
-    } else if (!shifuRegain.isCancelled()) {
-        this.setHealth((float) (this.getHealth() + shifuRegain.getAmount()));
-    }
-
-# FoodLevelChangeEvent
-#
-# 空腹による減少。食事の側(FoodData.eat)は Paper が新しい引数付きの版を
-# 足して呼び出し側から呼ばせているので、ここでは入れていない。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/food/FoodData.java.patch:39
 file: net/minecraft/world/food/FoodData.java
 anchor:
     this.foodLevel = Math.max(this.foodLevel - 1, 0);

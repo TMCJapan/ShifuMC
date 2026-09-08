@@ -21,18 +21,3 @@
 # 読んだ位置(Paper 26.2):
 #   paper-server patches/sources/net/minecraft/server/level/ServerLevel.java.patch:667
 #   paper-server src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:721
-file: net/minecraft/server/level/ServerLevel.java
-anchor:
-    return this.entityManager.addNewEntity(entity);
-insert:
-    if (dev.shifu.event.ShifuEvents.catchDrop(entity)) {
-        return true;
-    }
-
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.doEntityAddEventCalling(
-            this, entity,
-            entity.spawnReason != null
-                    ? entity.spawnReason
-                    : org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.DEFAULT)) {
-        return false;
-    }

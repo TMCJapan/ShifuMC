@@ -6,12 +6,3 @@
 # 差し替えた入力で実行する。input は vanilla の局所変数(final ではない)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/dedicated/DedicatedServer.java.patch(ServerCommandEvent)
-file: net/minecraft/server/dedicated/DedicatedServer.java
-anchor:
-    ConsoleInput consoleInput = this.consoleInput.remove(0);
-insert-after:
-    final ConsoleInput shifuInput = dev.shifu.event.ShifuEvents.serverCommand(this, consoleInput);
-    if (shifuInput == null) {
-        continue;
-    }
-    consoleInput = shifuInput;
