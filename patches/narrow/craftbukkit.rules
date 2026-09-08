@@ -55,3 +55,11 @@ with:
         public void deserialize(String value) {
             this.value = safeParse(value);
         }
+
+# Paper は HangingEntity.offs を static にして、絵の当たり判定を作るときに
+# 型の側から呼ぶ。中身は引数だけで決まるので、static にしても結果は同じ
+file: net/minecraft/world/entity/decoration/HangingEntity.java
+replace:
+    private double offs(int i) {
+with:
+    private static double offs(int i) {

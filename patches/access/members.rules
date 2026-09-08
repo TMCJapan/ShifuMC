@@ -114,3 +114,10 @@ line:
 file: net/minecraft/world/level/GameRules.java
 line:
         protected abstract void deserialize(String value);
+
+# Brigadier の API は CommandSourceStack が Bukkit 側の口を持っている前提で書かれている
+file: net/minecraft/commands/CommandSourceStack.java
+line:
+public class CommandSourceStack implements ExecutionCommandSource<CommandSourceStack>, SharedSuggestionProvider {
+implements:
+    io.papermc.paper.command.brigadier.PaperCommandSourceStack

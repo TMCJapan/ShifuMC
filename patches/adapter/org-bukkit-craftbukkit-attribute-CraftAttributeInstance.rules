@@ -1,0 +1,14 @@
+# 1.20.6 の AttributeModifier は record なので、欄には外から届かない。
+# 同じ値を返す読み出しに替える。
+
+file: org/bukkit/craftbukkit/attribute/CraftAttributeInstance.java
+replace:
+        return new AttributeModifier(nms.id(), nms.name, nms.amount(), AttributeModifier.Operation.values()[nms.operation().ordinal()]);
+with:
+        return new AttributeModifier(nms.id(), nms.name(), nms.amount(), AttributeModifier.Operation.values()[nms.operation().ordinal()]);
+
+file: org/bukkit/craftbukkit/attribute/CraftAttributeInstance.java
+replace:
+        return new AttributeModifier(nms.id(), nms.name, nms.amount(), AttributeModifier.Operation.values()[nms.operation().ordinal()], org.bukkit.craftbukkit.CraftEquipmentSlot.getSlot(slot)); // Paper
+with:
+        return new AttributeModifier(nms.id(), nms.name(), nms.amount(), AttributeModifier.Operation.values()[nms.operation().ordinal()], org.bukkit.craftbukkit.CraftEquipmentSlot.getSlot(slot)); // Paper
