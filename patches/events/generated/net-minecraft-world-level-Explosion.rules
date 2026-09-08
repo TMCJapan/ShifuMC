@@ -1,0 +1,27 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+# 1.20.6 の爆発は ServerExplosion ではなく Explosion。
+
+# callEntityKnockbackEvent
+file: net/minecraft/world/level/Explosion.java
+anchor:
+    entity.setDeltaMovement(entity.getDeltaMovement().add(vec32));
+insert:
+    // CraftBukkit start - Call EntityKnockbackEvent
+    if (entity instanceof LivingEntity) {
+        // Paper start - knockback events
+        io.papermc.paper.event.entity.EntityKnockbackEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityKnockbackEvent((org.bukkit.craftbukkit.entity.CraftLivingEntity) entity.getBukkitEntity(), this.damageSource.getEntity() != null ? this.damageSource.getEntity() : this.source, io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.EXPLOSION, ad, vec32);
+        vec32 = event.isCancelled() ? Vec3.ZERO : org.bukkit.craftbukkit.util.CraftVector.toNMS(event.getKnockback());
+        // Paper end - knockback events
+    }
+    // CraftBukkit end
+
+# callBlockIgniteEvent
+file: net/minecraft/world/level/Explosion.java
+anchor:
+    this.level.setBlockAndUpdate(blockPos2, BaseFireBlock.getState(this.level, blockPos2));
+insert:
+    // CraftBukkit start - Ignition by explosion
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(this.level, blockPos2, this).isCancelled()) {
+insert-after:
+    }
+    // CraftBukkit end

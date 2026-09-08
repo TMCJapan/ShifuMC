@@ -1,0 +1,5 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// Boat.lastLocation
+    // VehicleMoveEvent が前の位置を要る。Paper は Boat の欄として持っている
+    public org.bukkit.Location lastLocation;

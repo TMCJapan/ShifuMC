@@ -34,11 +34,12 @@ anchor:
 insert:
     dev.shifu.event.ShifuEvents.teleportCause(serverPlayer, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.ENDER_PEARL);
 
-file: net/minecraft/world/item/consume_effects/TeleportRandomlyConsumeEffect.java
+# 1.20.6 のコーラスフルーツは ChorusFruitItem が直接飛ばす
+file: net/minecraft/world/item/ChorusFruitItem.java
 anchor:
-    if (entity.randomTeleport(d, d1, d2, true)) {
+    if (user.randomTeleport(d, e, f, true)) {
 insert:
-    dev.shifu.event.ShifuEvents.teleportCause(entity, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.CHORUS_FRUIT);
+    dev.shifu.event.ShifuEvents.teleportCause(user, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.CHORUS_FRUIT);
 
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:

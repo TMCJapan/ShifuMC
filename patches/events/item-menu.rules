@@ -36,7 +36,7 @@ anchor:
 insert:
     if (!dev.shifu.event.ItemEvents.entityPlace(level, clickedPos, context.getClickedFace(), context.getPlayer(), abstractMinecart, context.getHand())) {
         if (context.getPlayer() != null) {
-            context.getPlayer().containerMenu.forceHeldSlot(context.getHand());
+            context.getPlayer().containerMenu.sendAllDataToRemote();
         }
         return InteractionResult.FAIL;
     }
@@ -177,7 +177,7 @@ insert:
     if (shifuFireworkConsume) {
 insert-after:
     } else {
-        context.getPlayer().containerMenu.forceHeldSlot(context.getHand());
+        context.getPlayer().containerMenu.sendAllDataToRemote();
     }
 
 # 飛行中に使う: PlayerElytraBoostEvent。登録があれば ItemEvents.elytraBoost が vanilla と同じ順で行う。

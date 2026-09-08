@@ -23,7 +23,7 @@ insert-after:
 # BlockPreDispenseEvent
 file: net/minecraft/world/level/block/DispenserBlock.java
 anchor:
-    dispenserBlockEntity.setItem(i, dispenseItemBehavior.dispense(pointer, itemStack));
+    dispenserBlockEntity.setItem(i, dispenseItemBehavior.dispense(blockSource, itemStack));
 insert:
     if (!dev.shifu.event.BlockEvents.preDispense(world, pos, itemStack, i)) {
         return;
@@ -47,12 +47,12 @@ insert:
         return stack;
     }
 
-# BlockDispenseEvent(トロッコ)
-file: net/minecraft/core/dispenser/MinecartDispenseItemBehavior.java
+# BlockDispenseEvent(トロッコ)。1.20.6 は MinecartItem の中の無名クラスが出す
+file: net/minecraft/world/item/MinecartItem.java
 anchor:
-    AbstractMinecart abstractMinecart = AbstractMinecart.createMinecart(
+    AbstractMinecart abstractMinecart = AbstractMinecart.createMinecart(serverLevel, d, e + g, f, ((MinecartItem)stack.getItem()).type, stack, null);
 insert:
-    if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, vec31)) {
+    if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, new net.minecraft.world.phys.Vec3(d, e + g, f))) {
         return stack;
     }
 
@@ -115,7 +115,7 @@ insert:
 # BlockDispenseEvent(ウィザースケルトンの頭)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (world.isEmptyBlock(blockPos) && WitherSkullBlock.canSpawnMob(world, blockPos, stack)) {
+    if (level.isEmptyBlock(blockPos) && WitherSkullBlock.canSpawnMob(level, blockPos, stack)) {
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, blockPos)) {
         this.setSuccess(false);
@@ -125,7 +125,7 @@ insert:
 # BlockDispenseEvent(くり抜かれたカボチャ)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (world.isEmptyBlock(blockPos) && carvedPumpkinBlock.canSpawnGolem(world, blockPos)) {
+    if (level.isEmptyBlock(blockPos) && carvedPumpkinBlock.canSpawnGolem(level, blockPos)) {
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, blockPos)) {
         this.setSuccess(false);
@@ -145,7 +145,7 @@ insert:
 # BlockDispenseEvent(グロウストーンでリスポーンアンカー)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    RespawnAnchorBlock.charge(null, world, blockPos, blockState);
+    RespawnAnchorBlock.charge(null, level, blockPos, blockState);
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, blockPos)) {
         this.setSuccess(false);
@@ -155,7 +155,7 @@ insert:
 # BlockDispenseArmorEvent(ブラシでアルマジロ)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    world.setBlockAndUpdate(blockPos, optional.get());
+    level.setBlockAndUpdate(blockPos, optional.get());
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, blockPos)) {
         this.setSuccess(false);
@@ -186,7 +186,7 @@ insert-after:
 
 file: net/minecraft/world/level/block/DropperBlock.java
 anchor:
-    itemStack2 = DISPENSE_BEHAVIOUR.dispense(pointer, itemStack);
+    itemStack2 = DISPENSE_BEHAVIOUR.dispense(blockSource, itemStack);
 insert:
     if (!dev.shifu.event.BlockEvents.preDispense(world, pos, itemStack, i)) {
         return;
@@ -328,13 +328,13 @@ insert:
         return super.updateShape(state, world, scheduledTickAccess, pos, direction, neighborPos, neighborState, random);
     }
 
-# BlockPhysicsEvent(草花が支えを失う)
-file: net/minecraft/world/world/block/VegetationBlock.java
+# BlockPhysicsEvent(草花が支えを失う)。1.20.6 は BushBlock
+file: net/minecraft/world/level/block/BushBlock.java
 anchor:
-    return !state.canSurvive(world, pos)
+    return !state.canSurvive(world, pos) ? Blocks.AIR.defaultBlockState() : super.updateShape(state, direction, neighborState, world, pos, neighborPos);
 insert:
     if (!dev.shifu.event.BlockEvents.vegetationPhysics(state, world, pos)) {
-        return super.updateShape(state, world, scheduledTickAccess, pos, direction, neighborPos, neighborState, random);
+        return super.updateShape(state, direction, neighborState, world, pos, neighborPos);
     }
 
 # SpongeAbsorbEvent
@@ -355,11 +355,11 @@ insert:
 
 file: net/minecraft/world/level/block/CakeBlock.java
 anchor:
-    if (stack.is(ItemTags.CANDLES) && state.getValue(BITES) == 0 && Block.byItem(stack) instanceof CandleBlock candleBlock) {
+    if (stack.is(ItemTags.CANDLES) && state.getValue(BITES) == 0 && Block.byItem(item) instanceof CandleBlock candleBlock) {
 insert-after:
     if (!dev.shifu.event.BlockEvents.entityChangeBlock(player, pos, CandleCakeBlock.byCandle(candleBlock))) {
-        player.containerMenu.forceHeldSlot(hand);
-        return InteractionResult.TRY_WITH_EMPTY_HAND;
+        player.containerMenu.sendAllDataToRemote();
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
 # EntityChangeBlockEvent(ケーキを食べる)
@@ -449,9 +449,9 @@ insert:
 
 file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
-    ExperienceOrb.award(world, popVec, floor);
+    ExperienceOrb.award(world, pos, i);
 insert:
-    floor = dev.shifu.event.BlockEvents.furnaceExp(world, floor);
+    i = dev.shifu.event.BlockEvents.furnaceExp(world, i);
 
 # BrewingStandFuelEvent
 file: net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
@@ -550,7 +550,7 @@ insert:
 # BlockDropItemEvent(怪しい砂の中身)
 file: net/minecraft/core/cauldron/CauldronInteraction.java
 anchor:
-    player.awardStat(Stats.ITEM_USED.get(stack));
+    player.awardStat(Stats.ITEM_USED.get(item));
     LayeredCauldronBlock.lowerFillLevel(state, world, pos);
 insert:
     dev.shifu.event.BlockEvents.cauldronCause(player, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.BOTTLE_FILL);
@@ -738,7 +738,7 @@ insert:
     }
 
 # ------------------------------------------------------------ 水入り瓶が火を消す
-file: net/minecraft/world/entity/projectile/throwableitemprojectile/AbstractThrownPotion.java
+file: net/minecraft/world/entity/projectile/ThrownPotion.java
 anchor:
     this.level().destroyBlock(pos, false, this);
 insert:
@@ -746,7 +746,7 @@ insert:
 insert-after:
     }
 
-file: net/minecraft/world/entity/projectile/throwableitemprojectile/AbstractThrownPotion.java
+file: net/minecraft/world/entity/projectile/ThrownPotion.java
 anchor:
     AbstractCandleBlock.extinguish(null, blockState, this.level(), pos);
 insert:
@@ -754,11 +754,11 @@ insert:
 insert-after:
     }
 
-file: net/minecraft/world/entity/projectile/throwableitemprojectile/AbstractThrownPotion.java
+file: net/minecraft/world/entity/projectile/ThrownPotion.java
 anchor:
-    this.level().levelEvent(null, LevelEvent.SOUND_EXTINGUISH_FIRE, pos, 0);
+    this.level().levelEvent(null, 1009, pos, 0);
     CampfireBlock.dowse(this.getOwner(), this.level(), pos, blockState);
-    this.level().setBlockAndUpdate(pos, blockState.setValue(CampfireBlock.LIT, false));
+    this.level().setBlockAndUpdate(pos, blockState.setValue(CampfireBlock.LIT, Boolean.valueOf(false)));
 insert:
     if (dev.shifu.event.BlockEvents.entityChangeBlock(this, pos, blockState.setValue(CampfireBlock.LIT, false))) {
 insert-after:

@@ -7,7 +7,7 @@ anchor:
 insert:
     // Paper start - call change block event
     if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(player, pos, CandleCakeBlock.byCandle(candleBlock))) {
-        player.containerMenu.forceHeldSlot(hand); // update inv because candle could decrease
-        return InteractionResult.TRY_WITH_EMPTY_HAND;
+        player.containerMenu.sendAllDataToRemote(); // update inv because candle could decrease
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
     // Paper end - call change block event

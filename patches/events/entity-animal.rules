@@ -63,20 +63,6 @@ insert-after:
         return;
     }
 
-# オウムガイ。外れたときは音も出す。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/nautilus/AbstractNautilus.java.patch
-file: net/minecraft/world/item/animal/nautilus/AbstractNautilus.java
-anchor:
-    private void tryToTame(Player player) {
-    if (this.random.nextInt(3) == 0) {
-insert-after:
-    if (!dev.shifu.event.AnimalEvents.tame(this, player)) {
-        this.level().broadcastEntityEvent(this, (byte) 6);
-        this.playEatingSound();
-        return;
-    }
-
 # ヤマネコ(信頼)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/feline/Ocelot.java.patch
@@ -217,15 +203,6 @@ insert:
 
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/golem/SnowGolem.java.patch(handlePlayerShearEntityEvent)
 file: net/minecraft/world/entity/animal/SnowGolem.java
-anchor:
-    this.shear(serverLevel, SoundSource.PLAYERS, itemInHand);
-insert:
-    if (!dev.shifu.event.AnimalEvents.shear(player, this, itemInHand, hand)) {
-        return InteractionResult.PASS;
-    }
-
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/golem/CopperGolem.java.patch(handlePlayerShearEntityEvent)
-file: net/minecraft/world/item/animal/golem/CopperGolem.java
 anchor:
     this.shear(serverLevel, SoundSource.PLAYERS, itemInHand);
 insert:
@@ -463,7 +440,7 @@ insert:
 
 file: net/minecraft/world/entity/animal/IronGolem.java
 anchor:
-    this.setTarget((LivingEntity)item);
+    this.setTarget((LivingEntity)entity);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.COLLISION);
 
@@ -606,10 +583,10 @@ anchor:
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.AXOLOTL);
 
-# スプラッシュポーション
-file: net/minecraft/world/item/projectile/throwableitemprojectile/ThrownSplashPotion.java
+# スプラッシュポーション。1.20.6 は ThrownPotion が splash と lingering の両方を持つ
+file: net/minecraft/world/entity/projectile/ThrownPotion.java
 anchor:
-    livingEntity.addEffect(mobEffectInstance1, effectSource);
+    livingEntity.addEffect(mobEffectInstance2, entity2);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.POTION_SPLASH);
 
@@ -721,13 +698,6 @@ anchor:
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.FOOD);
 
-# オウムガイ
-file: net/minecraft/world/item/animal/nautilus/AbstractNautilus.java
-anchor:
-    player.addEffect(new MobEffectInstance(MobEffects.BREATH_OF_THE_NAUTILUS, 60, 0, true, true, true));
-insert:
-    dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.NAUTILUS);
-
 # ハチの毒針
 file: net/minecraft/world/entity/animal/Bee.java
 anchor:
@@ -746,6 +716,6 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/monster/Ravager.java.patch
 file: net/minecraft/world/entity/monster/Ravager.java
 anchor:
-    item.push(d / f * 4.0, 0.2, e / f * 4.0);
+    entity.push(d / f * 4.0, 0.2, e / f * 4.0);
 insert:
-    dev.shifu.event.EntityEvents.pushedBy(this, item);
+    dev.shifu.event.EntityEvents.pushedBy(this, entity);
