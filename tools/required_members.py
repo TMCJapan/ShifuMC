@@ -13,7 +13,7 @@ import sys
 WHERE = re.compile(r"^(?:minecraft|main)[\\/]java[\\/](.+?\.java):(\d+): error:")
 SYMBOL = re.compile(r"^\s*symbol:\s+(class|method|variable) ([\w$]+)")
 LOCATION = re.compile(r"^\s*location: (?:class|interface|variable \w+ of type|@?interface) ([\w.<>]+)")
-MEMBER = re.compile(r"method ([\w$]+) in (?:class|interface) ([\w.]+(?:<[^>]*>)?) cannot be applied")
+MEMBER = re.compile(r"(?:method|constructor) ([\w$]+) in (?:class|interface|record) ([\w.]+(?:<[^>]*>)?) cannot be applied")
 ACCESS = re.compile(r"([\w$]+) has (?:private|protected) access in ([\w.]+)")
 ABSTRACT = re.compile(r"does not override abstract method (\w+)\(")
 # 引数違いは 2 つの形で出る。片方だけ見ていると、Paper が足した多重定義

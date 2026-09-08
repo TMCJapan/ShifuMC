@@ -1,1 +1,9 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// Container.shifuLectern
+    // 書見台の入れ物かどうかを外から見分けるための追加。
+    // vanilla の LecternBlockEntity.bookAccess は無名クラスなので instanceof が使えない。
+    // 既定は null。書見台の無名クラスだけが patches/anon で上書きして自身を返す。
+    default net.minecraft.world.level.block.entity.LecternBlockEntity shifuLectern() {
+        return null;
+    }
