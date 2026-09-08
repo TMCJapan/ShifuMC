@@ -30,6 +30,8 @@ SYMBOL = re.compile(r"^\s*symbol:\s+variable ([\w$]+)")
 HEAD = re.compile(r"^(\s+)(?:(?:public|private|protected|static|final|abstract|synchronized|"
                   r"default|native)\s+)*(?:[\w.<>,?\[\]$]+\s+)?([\w$]+)\s*\(([^;{]*)\)\s*\{?\s*$")
 ARG = re.compile(r"^(.*?[\w\]>])\s+([\w$]+)$")
+# 規則の対象。ここから次の file: までが 1 つの塊
+FILE = re.compile(r"^\s*file:\s*(\S+)\s*$")
 
 
 def args_of(text):
@@ -199,18 +201,33 @@ def main():
                 text = io.open(path, encoding="utf-8").read()
                 out = text
 
-                for target, pairs in table.items():
-                    if f"file: {target}" not in out:
+                # **`file:` の塊ごとに分けて当てる。**ファイル全体に当てると、
+                # その対象と関係の無い規則の本体と、`file:` のパスそのものまで
+                # 書き換わる(`world/level/block` が `world/world/block` になった)。
+                lines = out.split("\n")
+                target = None
+
+                for number, line in enumerate(lines):
+                    spot = FILE.match(line)
+
+                    if spot:
+                        target = spot.group(1)
                         continue
 
-                    for want, choices in pairs.items():
+                    if target not in table:
+                        continue
+
+                    for want, choices in table[target].items():
                         if len(choices) != 1:
                             continue
 
                         to = next(iter(choices))
                         # 直前が `.` の語(メンバー名)と直後が `(` の語(メソッド名)は触らない
-                        out = re.sub(r"(?<![\w$.])" + re.escape(want) + r"(?![\w$]|\s*\()",
-                                     to, out)
+                        lines[number] = re.sub(
+                            r"(?<![\w$.])" + re.escape(want) + r"(?![\w$]|\s*\()",
+                            to, lines[number])
+
+                out = "\n".join(lines)
 
                 if out == text:
                     continue

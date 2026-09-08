@@ -159,11 +159,22 @@ public final class PlayerEvents {
 
     private static final java.util.Set<MapId> initializedMaps = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
+    /**
+     * BlockDestroyEvent。壊す効果の前。登録が無ければ null を返し、呼ぶ側は vanilla のまま進む。
+     */
+    public static com.destroystokyo.paper.event.block.BlockDestroyEvent blockDestroy(
+            final Level level, final BlockPos pos, final BlockState state, final FluidState fluid, final boolean drop) {
+        if (!listening(com.destroystokyo.paper.event.block.BlockDestroyEvent.getHandlerList())) {
+            return null;
+        }
 
+        final int xp = state.getBlock().getExpDrop(state, (ServerLevel) level, pos, ItemStack.EMPTY, true);
+        final com.destroystokyo.paper.event.block.BlockDestroyEvent event = new com.destroystokyo.paper.event.block.BlockDestroyEvent(
+                CraftBlock.at(level, pos), org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(fluid.createLegacyBlock()), org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(state), xp, drop);
+        event.callEvent();
 
-
-
-
+        return event;
+    }
 
     /** 壊す効果を、イベントの値で出す(vanilla の行の代わり)。 */
     public static void destroyEffect(final Level level, final BlockPos pos, final BlockState state,

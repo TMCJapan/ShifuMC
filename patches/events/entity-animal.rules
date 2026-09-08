@@ -8,7 +8,7 @@
 # Paper は setInSittingPose / setSitting / sit に発火の引数を足しているが、Shifu は先頭に差し込む。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/TamableAnimal.java.patch(EntityToggleSitEvent)
-file: net/minecraft/world/item/ai/behavior/VillagerMakeLove.java
+file: net/minecraft/world/entity/ai/behavior/VillagerMakeLove.java
 anchor:
     parent.setAge(6000);
 insert:
@@ -16,7 +16,7 @@ insert:
     final int shifuSourceAge = shifuBreedListening ? parent.getAge() : 0;
     final int shifuTargetAge = shifuBreedListening ? partner.getAge() : 0;
 
-file: net/minecraft/world/item/ai/behavior/VillagerMakeLove.java
+file: net/minecraft/world/entity/ai/behavior/VillagerMakeLove.java
 anchor:
     level.addFreshEntityWithPassengers(breedOffspring);
 insert:
@@ -29,7 +29,7 @@ insert:
 # ItemTransportingEntityValidateTargetEvent。vanilla の判定が通ったときだけ発火する(短絡)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/ai/behavior/TransportItemsBetweenContainers.java.patch
-file: net/minecraft/world/item/ai/goal/RunAroundLikeCrazyGoal.java
+file: net/minecraft/world/entity/ai/goal/RunAroundLikeCrazyGoal.java
 anchor:
     if (maxTemper > 0 && this.horse.getRandom().nextInt(maxTemper) < temper) {
 insert-after:
@@ -37,29 +37,29 @@ insert-after:
         this.horse.modifyTemper(5);
         this.horse.ejectPassengers();
         this.horse.makeMad();
-        this.horse.level().broadcastEntityEvent(this.horse, EntityEvent.TAMING_FAILED);
+        this.horse.level().broadcastEntityEvent(this.horse, (byte) 6);
         return;
     }
 
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/feline/Cat.java.patch(callEntityTameEvent)
-file: net/minecraft/world/item/animal/Cat.java
+file: net/minecraft/world/entity/animal/Cat.java
 anchor:
     private void tryToTame(Player player) {
     if (this.random.nextInt(3) == 0) {
 insert-after:
     if (!dev.shifu.event.AnimalEvents.tame(this, player)) {
-        this.level().broadcastEntityEvent(this, EntityEvent.TAMING_FAILED);
+        this.level().broadcastEntityEvent(this, (byte) 6);
         return;
     }
 
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/wolf/Wolf.java.patch(callEntityTameEvent)
-file: net/minecraft/world/item/animal/Wolf.java
+file: net/minecraft/world/entity/animal/Wolf.java
 anchor:
     private void tryToTame(Player player) {
     if (this.random.nextInt(3) == 0) {
 insert-after:
     if (!dev.shifu.event.AnimalEvents.tame(this, player)) {
-        this.level().broadcastEntityEvent(this, EntityEvent.TAMING_FAILED);
+        this.level().broadcastEntityEvent(this, (byte) 6);
         return;
     }
 
@@ -72,7 +72,7 @@ anchor:
     if (this.random.nextInt(3) == 0) {
 insert-after:
     if (!dev.shifu.event.AnimalEvents.tame(this, player)) {
-        this.level().broadcastEntityEvent(this, EntityEvent.TAMING_FAILED);
+        this.level().broadcastEntityEvent(this, (byte) 6);
         this.playEatingSound();
         return;
     }
@@ -80,7 +80,7 @@ insert-after:
 # ヤマネコ(信頼)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/feline/Ocelot.java.patch
-file: net/minecraft/world/item/animal/Ocelot.java
+file: net/minecraft/world/entity/animal/Ocelot.java
 anchor:
     if (!this.level().isClientSide()) {
         if (this.random.nextInt(3) == 0) {
@@ -92,24 +92,24 @@ insert-after:
     }
 
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/parrot/Parrot.java.patch
-file: net/minecraft/world/item/animal/Parrot.java
+file: net/minecraft/world/entity/animal/Parrot.java
 anchor:
     if (!this.level().isClientSide()) {
         if (this.random.nextInt(10) == 0) {
 insert-after:
     if (!dev.shifu.event.AnimalEvents.tame(this, player)) {
-        this.level().broadcastEntityEvent(this, EntityEvent.TAMING_FAILED);
+        this.level().broadcastEntityEvent(this, (byte) 6);
         return InteractionResult.SUCCESS;
     }
 
 # ============================================================ 誘い(EntityTargetLivingEntityEvent TEMPT)
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/ai/sensing/TemptingSensor.java.patch
-file: net/minecraft/world/item/ai/sensing/TemptingSensor.java
+file: net/minecraft/world/entity/ai/sensing/TemptingSensor.java
 anchor:
     brain.setMemory(MemoryModuleType.TEMPTING_PLAYER, player);
 insert:
-    final int shifuTempt = dev.shifu.event.AnimalEvents.tempt(item, player);
+    final int shifuTempt = dev.shifu.event.AnimalEvents.tempt(entity, player);
     if (shifuTempt == dev.shifu.event.AnimalEvents.CANCEL) {
         return;
     }
@@ -126,7 +126,7 @@ insert-after:
 # EntityEnterLoveModeEvent。tick 数の差し替えが効く。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/Animal.java.patch(callEntityEnterLoveModeEvent)
-file: net/minecraft/world/item/animal/Animal.java
+file: net/minecraft/world/entity/animal/Animal.java
 anchor:
     this.inLove = 600;
 insert:
@@ -143,7 +143,7 @@ insert-after:
 # EntityBreedEvent(動物)。Paper と同じ位置。取り消しは resetLove(Paper と同じ)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/Animal.java.patch(callEntityBreedEvent)
-file: net/minecraft/world/item/animal/Animal.java
+file: net/minecraft/world/entity/animal/Animal.java
 anchor:
     this.finalizeSpawnChildFromBreeding(level, partner, breedOffspring);
 insert:
@@ -156,7 +156,7 @@ insert:
 # EntityBreedEvent(キツネ)。Paper と同じ位置(統計の前)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/fox/Fox.java.patch(callEntityBreedEvent)
-file: net/minecraft/world/item/animal/Fox.java
+file: net/minecraft/world/entity/animal/Fox.java
 anchor:
     if (serverPlayer3 != null) {
     serverPlayer3.awardStat(Stats.ANIMALS_BRED);
@@ -171,7 +171,7 @@ insert:
 # EntityFertilizeEggEvent(カエル)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/frog/Frog.java.patch
-file: net/minecraft/world/item/animal/frog/Frog.java
+file: net/minecraft/world/entity/animal/frog/Frog.java
 anchor:
     this.finalizeSpawnChildFromBreeding(world, other, null);
 insert:
@@ -182,7 +182,7 @@ insert:
 # EntityFertilizeEggEvent(カメ)。Paper と同じ位置(統計の前)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/turtle/Turtle.java.patch(callEntityFertilizeEggEvent)
-file: net/minecraft/world/item/animal/Turtle.java
+file: net/minecraft/world/entity/animal/Turtle.java
 anchor:
     if (serverPlayer != null) {
     serverPlayer.awardStat(Stats.ANIMALS_BRED);
@@ -198,7 +198,7 @@ insert:
 # 自分で引くので、空のリストを載せて、取り消しだけ効かせる。取り消しは PASS(Paper と同じ)。
 
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/sheep/Sheep.java.patch(handlePlayerShearEntityEvent)
-file: net/minecraft/world/item/animal/Sheep.java
+file: net/minecraft/world/entity/animal/Sheep.java
 anchor:
     this.shear(serverLevel, SoundSource.PLAYERS, itemInHand);
 insert:
@@ -207,7 +207,7 @@ insert:
     }
 
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/cow/MushroomCow.java.patch(handlePlayerShearEntityEvent)
-file: net/minecraft/world/item/animal/MushroomCow.java
+file: net/minecraft/world/entity/animal/MushroomCow.java
 anchor:
     this.shear(serverLevel, SoundSource.PLAYERS, itemInHand);
 insert:
@@ -216,7 +216,7 @@ insert:
     }
 
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/golem/SnowGolem.java.patch(handlePlayerShearEntityEvent)
-file: net/minecraft/world/item/animal/SnowGolem.java
+file: net/minecraft/world/entity/animal/SnowGolem.java
 anchor:
     this.shear(serverLevel, SoundSource.PLAYERS, itemInHand);
 insert:
@@ -234,7 +234,7 @@ insert:
     }
 
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/monster/skeleton/Bogged.java.patch(handlePlayerShearEntityEvent)
-file: net/minecraft/world/item/monster/Bogged.java
+file: net/minecraft/world/entity/monster/Bogged.java
 anchor:
     this.shear(serverLevel, SoundSource.PLAYERS, itemInHand);
 insert:
@@ -248,7 +248,7 @@ insert:
 # EntityPickupItemEvent(キツネ)。拾えると判定した直後。登録があれば拾う物を読み直す(Paper と同じ)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/fox/Fox.java.patch(callEntityPickupItemEvent)
-file: net/minecraft/world/item/animal/Fox.java
+file: net/minecraft/world/entity/animal/Fox.java
 anchor:
     if (this.canHoldItem(itemStack)) {
 insert-after:
@@ -262,7 +262,7 @@ insert-after:
 # EntityPickupItemEvent(パンダ)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/panda/Panda.java.patch(callEntityPickupItemEvent)
-file: net/minecraft/world/item/animal/Panda.java
+file: net/minecraft/world/entity/animal/Panda.java
 anchor:
     if (this.getItemBySlot(EquipmentSlot.MAINHAND).isEmpty() && canPickUpAndEat(item)) {
 insert-after:
@@ -274,7 +274,7 @@ insert-after:
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/fox/Fox.java.patch(EntityDropItemEvent)
 # 吐き出す(spitOutItem)と落とす(dropItemStack)の 2 か所。どちらも同じ形
-file: net/minecraft/world/item/monster/Strider.java
+file: net/minecraft/world/entity/monster/Strider.java
 anchor:
     this.setSuffocating(!bl || bl2);
 insert:
@@ -286,7 +286,7 @@ insert-after:
 # EntityCombustByEntityEvent(ゾンビの攻撃で燃える)。秒数の差し替えが効く。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/monster/zombie/Zombie.java.patch
-file: net/minecraft/world/item/monster/piglin/PiglinAi.java
+file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
 anchor:
     throwItems(piglin, getBarterResponseItems(piglin));
 insert:
@@ -302,20 +302,20 @@ insert-after:
 # RaidTriggerEvent。vanilla が先に襲撃を登録するので、取り消されたらこの呼び出しで登録した分を外す。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/raid/Raids.java.patch(callRaidTriggerEvent)
-file: net/minecraft/world/item/raid/Raids.java
+file: net/minecraft/world/entity/raid/Raids.java
 anchor:
     Raid raid = this.getOrCreateRaid(serverLevel, blockPos);
 insert-after:
     final boolean shifuNewRaid = dev.shifu.event.AnimalEvents.raidTriggerListening()
             && !raid.isStarted() && !this.raidMap.containsValue(raid);
 
-file: net/minecraft/world/item/monster/Slime.java
+file: net/minecraft/world/entity/monster/Slime.java
 anchor:
     super.remove(reason);
 insert:
     dev.shifu.event.AnimalEvents.splitEnd(this);
 
-file: net/minecraft/world/item/monster/Slime.java
+file: net/minecraft/world/entity/monster/Slime.java
 anchor:
     mob.snapTo(this.getX() + f1, this.getY() + 0.5, this.getZ() + f2, this.random.nextFloat() * 360.0F, 0.0F);
 insert-after:
@@ -327,63 +327,63 @@ insert-after:
 # canContinueToUse の --growTiredTimer は減らさずに見る(vanilla の行が減らす)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/monster/Slime.java.patch(Slime pathfinder events)
-file: net/minecraft/world/item/animal/MushroomCow.java
+file: net/minecraft/world/entity/animal/MushroomCow.java
 anchor:
     this.convertTo(EntityType.COW, ConversionParams.single(this, false, false), cow -> {
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.SHEARED);
 
 # オタマジャクシがカエルになる
-file: net/minecraft/world/item/animal/frog/Tadpole.java
+file: net/minecraft/world/entity/animal/frog/Tadpole.java
 anchor:
     this.convertTo(EntityType.FROG, ConversionParams.single(this, false, false), mob -> {
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.METAMORPHOSIS);
 
 # ホグリンがゾグリンになる
-file: net/minecraft/world/item/monster/hoglin/Hoglin.java
+file: net/minecraft/world/entity/monster/hoglin/Hoglin.java
 anchor:
     this.convertTo(EntityType.ZOGLIN, ConversionParams.single(this, true, false), mob -> mob.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 200, 0)));
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.PIGLIN_ZOMBIFIED);
 
 # ピグリンがゾンビピグリンになる
-file: net/minecraft/world/item/monster/piglin/AbstractPiglin.java
+file: net/minecraft/world/entity/monster/piglin/AbstractPiglin.java
 anchor:
     this.convertTo(
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.PIGLIN_ZOMBIFIED);
 
 # スケルトンがストレイになる
-file: net/minecraft/world/item/monster/Skeleton.java
+file: net/minecraft/world/entity/monster/Skeleton.java
 anchor:
     this.convertTo(EntityType.STRAY, ConversionParams.single(this, true, true), mob -> {
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.FROZEN);
 
 # ゾンビが溺死ゾンビになる
-file: net/minecraft/world/item/monster/Zombie.java
+file: net/minecraft/world/entity/monster/Zombie.java
 anchor:
     this.convertTo(
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.DROWNED);
 
 # ゾンビが村人を感染させる
-file: net/minecraft/world/item/monster/Zombie.java
+file: net/minecraft/world/entity/monster/Zombie.java
 anchor:
     ZombieVillager zombieVillager = villager.convertTo(EntityType.ZOMBIE_VILLAGER, ConversionParams.single(villager, true, true), mob -> {
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.INFECTION);
 
 # ゾンビ村人が治る
-file: net/minecraft/world/item/monster/ZombieVillager.java
+file: net/minecraft/world/entity/monster/ZombieVillager.java
 anchor:
     this.convertTo(
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.CURED);
 
 # 村人が雷でウィッチになる
-file: net/minecraft/world/item/npc/Villager.java
+file: net/minecraft/world/entity/npc/Villager.java
 anchor:
     Witch witch = this.convertTo(EntityType.WITCH, ConversionParams.single(this, false, false), witch1 -> {
 insert:
@@ -398,26 +398,26 @@ insert:
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/**/*.java.patch(TargetReason)
 
-file: net/minecraft/world/item/ai/goal/target/DefendVillageTargetGoal.java
+file: net/minecraft/world/entity/ai/goal/target/DefendVillageTargetGoal.java
 anchor:
     this.golem.setTarget(this.potentialTarget);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.DEFEND_VILLAGE);
 
-file: net/minecraft/world/item/ai/goal/target/HurtByTargetGoal.java
+file: net/minecraft/world/entity/ai/goal/target/HurtByTargetGoal.java
 anchor:
     this.mob.setTarget(this.mob.getLastHurtByMob());
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.TARGET_ATTACKED_ENTITY);
 
-file: net/minecraft/world/item/ai/goal/target/HurtByTargetGoal.java
+file: net/minecraft/world/entity/ai/goal/target/HurtByTargetGoal.java
 anchor:
     mob.setTarget(target);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.TARGET_ATTACKED_NEARBY_ENTITY);
 
 # 相手がプレイヤーかどうかで理由が変わる(Paper と同じ式)
-file: net/minecraft/world/item/ai/goal/target/NearestAttackableTargetGoal.java
+file: net/minecraft/world/entity/ai/goal/target/NearestAttackableTargetGoal.java
 anchor:
     this.mob.setTarget(this.target);
 insert:
@@ -425,56 +425,56 @@ insert:
             ? org.bukkit.event.entity.EntityTargetEvent.TargetReason.CLOSEST_PLAYER
             : org.bukkit.event.entity.EntityTargetEvent.TargetReason.CLOSEST_ENTITY);
 
-file: net/minecraft/world/item/ai/goal/target/OwnerHurtByTargetGoal.java
+file: net/minecraft/world/entity/ai/goal/target/OwnerHurtByTargetGoal.java
 anchor:
     this.mob.setTarget(this.ownerLastHurtBy);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.TARGET_ATTACKED_OWNER);
 
-file: net/minecraft/world/item/ai/goal/target/OwnerHurtTargetGoal.java
+file: net/minecraft/world/entity/ai/goal/target/OwnerHurtTargetGoal.java
 anchor:
     this.mob.setTarget(this.ownerLastHurt);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.OWNER_ATTACKED_TARGET);
 
-file: net/minecraft/world/item/ai/goal/target/TargetGoal.java
+file: net/minecraft/world/entity/ai/goal/target/TargetGoal.java
 anchor:
     this.mob.setTarget(target);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.CLOSEST_ENTITY);
 
-file: net/minecraft/world/item/ai/goal/target/TargetGoal.java
+file: net/minecraft/world/entity/ai/goal/target/TargetGoal.java
 anchor:
     this.mob.setTarget(null);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.FORGOT_TARGET);
 
-file: net/minecraft/world/item/animal/Bee.java
+file: net/minecraft/world/entity/animal/Bee.java
 anchor:
     mob.setTarget(target);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.TARGET_ATTACKED_ENTITY);
 
-file: net/minecraft/world/item/animal/horse/TraderLlama.java
+file: net/minecraft/world/entity/animal/horse/TraderLlama.java
 anchor:
     this.mob.setTarget(this.ownerLastHurtBy);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.TARGET_ATTACKED_OWNER);
 
-file: net/minecraft/world/item/animal/IronGolem.java
+file: net/minecraft/world/entity/animal/IronGolem.java
 anchor:
     this.setTarget((LivingEntity)item);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.COLLISION);
 
-file: net/minecraft/world/item/animal/Panda.java
+file: net/minecraft/world/entity/animal/Panda.java
 anchor:
     mob.setTarget(target);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.TARGET_ATTACKED_ENTITY);
 
 # 飼い主が座らせた(同じ行が別のメソッドにもあるので、前の 2 行まで含めて定める)
-file: net/minecraft/world/item/animal/Wolf.java
+file: net/minecraft/world/entity/animal/Wolf.java
 anchor:
     this.jumping = false;
     this.navigation.stop();
@@ -482,26 +482,26 @@ anchor:
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.FORGOT_TARGET);
 
-file: net/minecraft/world/item/monster/Phantom.java
+file: net/minecraft/world/entity/monster/Phantom.java
 anchor:
     Phantom.this.setTarget(player);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.CLOSEST_PLAYER);
 
-file: net/minecraft/world/item/monster/Vex.java
+file: net/minecraft/world/entity/monster/Vex.java
 anchor:
     Vex.this.setTarget(owner != null ? owner.getTarget() : null);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.OWNER_ATTACKED_TARGET);
 
-file: net/minecraft/world/item/monster/Zombie.java
+file: net/minecraft/world/entity/monster/Zombie.java
 anchor:
     zombie.setTarget(target);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.REINFORCEMENT_TARGET);
 
 # stream の forEach が何体にも setTarget する。文の前で置いて、文のあとで外す
-file: net/minecraft/world/item/monster/ZombifiedPiglin.java
+file: net/minecraft/world/entity/monster/ZombifiedPiglin.java
 anchor:
     this.level()
     .getEntitiesOfClass(ZombifiedPiglin.class, aABB, EntitySelector.NO_SPECTATORS)
@@ -515,14 +515,14 @@ insert:
 insert-after:
     dev.shifu.event.EntityEvents.targetReasonDone();
 
-file: net/minecraft/world/item/NeutralMob.java
+file: net/minecraft/world/entity/NeutralMob.java
 anchor:
     this.setTarget(null);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.FORGOT_TARGET);
 
 # 襲撃者の呼びかけ。どちらも for のループなので、ループの前で置いてあとで外す
-file: net/minecraft/world/item/raid/Raider.java
+file: net/minecraft/world/entity/raid/Raider.java
 anchor:
     for (Raider raider : getServerLevel(this.mob)
     .getNearbyEntities(Raider.class, this.shoutTargeting, this.mob, this.mob.getBoundingBox().inflate(8.0, 8.0, 8.0))) {
@@ -533,7 +533,7 @@ insert:
 insert-after:
     dev.shifu.event.EntityEvents.targetReasonDone();
 
-file: net/minecraft/world/item/raid/Raider.java
+file: net/minecraft/world/entity/raid/Raider.java
 anchor:
     for (Raider raider : getServerLevel(this.mob)
     .getNearbyEntities(Raider.class, this.shoutTargeting, this.mob, this.mob.getBoundingBox().inflate(8.0, 8.0, 8.0))) {
@@ -556,7 +556,7 @@ insert-after:
 
 # ゾンビ村人が治る途中(弱化を消して力を付ける)
 # 弱化を消して力を付ける 2 つが続くので、その間だけ置く
-file: net/minecraft/world/item/monster/ZombieVillager.java
+file: net/minecraft/world/entity/monster/ZombieVillager.java
 anchor:
     this.removeEffect(MobEffects.WEAKNESS);
     this.addEffect(new MobEffectInstance(MobEffects.STRENGTH, villagerConversionTime, Math.min(this.level().getDifficulty().getId() - 1, 0)));
@@ -566,27 +566,27 @@ insert-after:
     dev.shifu.event.EntityEvents.effectCauseDone();
 
 # 治った村人の吐き気
-file: net/minecraft/world/item/monster/ZombieVillager.java
+file: net/minecraft/world/entity/monster/ZombieVillager.java
 anchor:
     mob.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 200, 0));
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.CONVERSION);
 
 # フグ
-file: net/minecraft/world/item/animal/Pufferfish.java
+file: net/minecraft/world/entity/animal/Pufferfish.java
 anchor:
     mob.addEffect(new MobEffectInstance(MobEffects.POISON, 60 * i, 0), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
-file: net/minecraft/world/item/animal/Pufferfish.java
+file: net/minecraft/world/entity/animal/Pufferfish.java
 anchor:
     mob.addEffect(new MobEffectInstance(MobEffects.POISON, 60 * i, 0), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
 # イルカ(同じ行が 2 箇所にある)
-file: net/minecraft/world/item/animal/Dolphin.java
+file: net/minecraft/world/entity/animal/Dolphin.java
 anchor:
     this.player.addEffect(new MobEffectInstance(MobEffects.DOLPHINS_GRACE, 100), this.dolphin);
 count: 2
@@ -594,13 +594,13 @@ insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.DOLPHIN);
 
 # ウーパールーパー
-file: net/minecraft/world/item/animal/axolotl/Axolotl.java
+file: net/minecraft/world/entity/animal/axolotl/Axolotl.java
 anchor:
     player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, j, 0), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.AXOLOTL);
 
-file: net/minecraft/world/item/animal/axolotl/Axolotl.java
+file: net/minecraft/world/entity/animal/axolotl/Axolotl.java
 anchor:
     player.removeEffect(MobEffects.MINING_FATIGUE);
 insert:
@@ -614,21 +614,21 @@ insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.POTION_SPLASH);
 
 # シュルカーの弾
-file: net/minecraft/world/item/projectile/ShulkerBullet.java
+file: net/minecraft/world/entity/projectile/ShulkerBullet.java
 anchor:
     livingEntity2.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 200), MoreObjects.firstNonNull(entity2, this));
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
 # 光の矢
-file: net/minecraft/world/item/projectile/SpectralArrow.java
+file: net/minecraft/world/entity/projectile/SpectralArrow.java
 anchor:
     target.addEffect(mobEffectInstance, this.getEffectSource());
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ARROW);
 
 # 効果付きの矢。1 本に効果が複数あるので、文の間だけ置く
-file: net/minecraft/world/item/projectile/Arrow.java
+file: net/minecraft/world/entity/projectile/Arrow.java
 anchor:
     potionContents.forEachEffect(mobEffectInstance -> target.addEffect(mobEffectInstance, effectSource), potionDurationScale);
 insert:
@@ -637,28 +637,28 @@ insert-after:
     dev.shifu.event.EntityEvents.effectCauseDone();
 
 # カメの甲羅
-file: net/minecraft/world/item/player/Player.java
+file: net/minecraft/world/entity/player/Player.java
 anchor:
     this.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 200, 0, false, false, true));
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.TURTLE_HELMET);
 
 # 村人の取引
-file: net/minecraft/world/item/npc/Villager.java
+file: net/minecraft/world/entity/npc/Villager.java
 anchor:
     this.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 200, 0));
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.VILLAGER_TRADE);
 
 # ハスク
-file: net/minecraft/world/item/monster/Husk.java
+file: net/minecraft/world/entity/monster/Husk.java
 anchor:
     ((LivingEntity)target).addEffect(new MobEffectInstance(MobEffects.HUNGER, 140 * (int)f), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
 # ウィッチがポーションを飲む。1 本に効果が複数あるので、文の間だけ置く
-file: net/minecraft/world/item/monster/Witch.java
+file: net/minecraft/world/entity/monster/Witch.java
 anchor:
     potionContents.forEachEffect(this::addEffect, mainHandItem.getOrDefault(DataComponents.POTION_DURATION_SCALE, 1.0F));
 insert:
@@ -667,55 +667,55 @@ insert-after:
     dev.shifu.event.EntityEvents.effectCauseDone();
 
 # 洞窟グモ
-file: net/minecraft/world/item/monster/CaveSpider.java
+file: net/minecraft/world/entity/monster/CaveSpider.java
 anchor:
     ((LivingEntity)target).addEffect(new MobEffectInstance(MobEffects.POISON, i * 20, 0), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
 # クモが湧くときに付く効果
-file: net/minecraft/world/item/monster/Spider.java
+file: net/minecraft/world/entity/monster/Spider.java
 anchor:
     this.addEffect(new MobEffectInstance(holder, -1));
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.SPIDER_SPAWN);
 
 # ウィザースケルトン
-file: net/minecraft/world/item/monster/WitherSkeleton.java
+file: net/minecraft/world/entity/monster/WitherSkeleton.java
 anchor:
     ((LivingEntity)target).addEffect(new MobEffectInstance(MobEffects.WITHER, 200), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
 # ウィザーの頭
-file: net/minecraft/world/item/projectile/WitherSkull.java
+file: net/minecraft/world/entity/projectile/WitherSkull.java
 anchor:
     livingEntity2.addEffect(new MobEffectInstance(MobEffects.WITHER, 20 * i, 1), this.getEffectSource());
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
 # 幻術師
-file: net/minecraft/world/item/monster/Illusioner.java
+file: net/minecraft/world/entity/monster/Illusioner.java
 anchor:
     Illusioner.this.getTarget().addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 400), Illusioner.this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
-file: net/minecraft/world/item/monster/Illusioner.java
+file: net/minecraft/world/entity/monster/Illusioner.java
 anchor:
     Illusioner.this.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 1200));
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ILLUSION);
 
 # エリアの効果雲
-file: net/minecraft/world/item/AreaEffectCloud.java
+file: net/minecraft/world/entity/AreaEffectCloud.java
 anchor:
     livingEntity.addEffect(new MobEffectInstance(mobEffectInstance2), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.AREA_EFFECT_CLOUD);
 
 # オウムがクッキーを食べる
-file: net/minecraft/world/item/animal/Parrot.java
+file: net/minecraft/world/entity/animal/Parrot.java
 anchor:
     this.addEffect(new MobEffectInstance(MobEffects.POISON, 900));
 insert:
@@ -729,14 +729,14 @@ insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.NAUTILUS);
 
 # ハチの毒針
-file: net/minecraft/world/item/animal/Bee.java
+file: net/minecraft/world/entity/animal/Bee.java
 anchor:
     livingEntity.addEffect(new MobEffectInstance(MobEffects.POISON, i * 20, 0), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
 # ハチに花を与える
-file: net/minecraft/world/item/animal/Bee.java
+file: net/minecraft/world/entity/animal/Bee.java
 anchor:
     this.addEffect(beeInteractionEffect);
 insert:
@@ -744,7 +744,7 @@ insert:
 
 # EntityPushedByEntityAttackEvent の主(ラヴェジャーの薙ぎ払い)
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/monster/Ravager.java.patch
-file: net/minecraft/world/item/monster/Ravager.java
+file: net/minecraft/world/entity/monster/Ravager.java
 anchor:
     item.push(d / f * 4.0, 0.2, e / f * 4.0);
 insert:

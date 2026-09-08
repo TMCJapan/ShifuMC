@@ -50,14 +50,14 @@ insert-after:
 # ============================================================ 世界
 
 # WorldSaveEvent。保存の頭
-file: net/minecraft/server/world/ServerLevel.java
+file: net/minecraft/server/level/ServerLevel.java
 anchor:
     if (this.sleepStatus.areEnoughSleeping(i) && this.sleepStatus.areEnoughDeepSleeping(i, this.players)) {
 insert-after:
     boolean shifuWake = true;
     final long shifuNight = dev.shifu.event.PlayerEvents.nightBefore(this);
 
-file: net/minecraft/server/world/ServerLevel.java
+file: net/minecraft/server/level/ServerLevel.java
 anchor:
     this.wakeUpAllPlayers();
 insert:
@@ -65,8 +65,28 @@ insert:
 insert-after:
     }
 
-# MapInitializeEvent。置く前
-file: net/minecraft/world/world/Level.java
+# BlockDestroyEvent。壊す効果の前。効果の差し替えは発火層が出す。落とすかは vanilla と
+# イベントの両方が真のときだけ
+#
+# 読んだ位置: Paper-Server src/main/java/net/minecraft/world/level/Level.java(BlockDestroyEvent)
+file: net/minecraft/world/level/Level.java
+anchor:
+    if (!(blockState.getBlock() instanceof BaseFireBlock)) {
+    this.levelEvent(2001, pos, Block.getId(blockState));
+    }
+insert:
+    final com.destroystokyo.paper.event.block.BlockDestroyEvent shifuDestroy =
+            dev.shifu.event.PlayerEvents.blockDestroy(this, pos, blockState, fluidState, drop);
+    if (shifuDestroy != null && shifuDestroy.isCancelled()) {
+        return false;
+    }
+    if (shifuDestroy == null) {
+insert-after:
+    } else {
+        dev.shifu.event.PlayerEvents.destroyEffect(this, pos, blockState, shifuDestroy);
+    }
+
+file: net/minecraft/world/level/Level.java
 anchor:
     if (drop) {
     BlockEntity blockEntity = blockState.hasBlockEntity() ? this.getBlockEntity(pos) : null;
@@ -80,7 +100,7 @@ insert-after:
 # PreCreatureSpawnEvent(自然湧き)。位置の判定の前
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/world/NaturalSpawner.java.patch
-file: net/minecraft/world/world/NaturalSpawner.java
+file: net/minecraft/world/level/NaturalSpawner.java
 anchor:
     return entityType.getCategory() != MobCategory.MISC
 insert:
@@ -108,7 +128,7 @@ insert-after:
     strings = dev.shifu.event.PlayerEvents.queryPlayers(strings);
 
 # MapInitializeEvent。読み込んだとき(Paper は getMapData でも出す)
-file: net/minecraft/world/world/NaturalSpawner.java
+file: net/minecraft/world/level/NaturalSpawner.java
 anchor:
     if (mob.isMaxGroupSizeReached(p)) {
     break;
@@ -125,7 +145,7 @@ insert-after:
 # PlayerSpawnChangeEvent / PlayerSetSpawnEvent。setRespawnPosition の頭
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/world/ServerPlayer.java.patch(PlayerSetSpawnEvent)
-file: net/minecraft/server/world/ServerPlayer.java
+file: net/minecraft/server/level/ServerPlayer.java
 anchor:
     this.setRespawnPosition(
     new ServerPlayer.RespawnConfig(LevelData.RespawnData.of(this.level().dimension(), bedPos, this.getYRot(), this.getXRot()), false), true
@@ -133,7 +153,7 @@ insert:
     dev.shifu.event.PlayerEvents.spawnCause(this, com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause.BED);
 
 # 理由(リスポーンで引き継ぐ)
-file: net/minecraft/server/world/ServerPlayer.java
+file: net/minecraft/server/level/ServerPlayer.java
 anchor:
     this.setRespawnPosition(player.respawnConfig, false);
 insert:

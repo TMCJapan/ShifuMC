@@ -414,7 +414,9 @@ public final class BlockEvents {
      *
      * @return 広がってよいか
      */
-    public static boolean fromTo(final ServerLevel level, final BlockPos from, final Direction direction) {
+    // 1.20.6 の FlowingFluid.spread は Level を受ける。中で使うのは CraftBlock.at だけなので
+    // LevelAccessor で足りる
+    public static boolean fromTo(final net.minecraft.world.level.LevelAccessor level, final BlockPos from, final Direction direction) {
         if (!listening(org.bukkit.event.block.BlockFromToEvent.getHandlerList())) {
             return true;
         }

@@ -11,7 +11,7 @@
 # BlockFailedDispenseEvent(空のディスペンサー)
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/world/block/DispenserBlock.java.patch
-file: net/minecraft/world/world/block/DispenserBlock.java
+file: net/minecraft/world/level/block/DispenserBlock.java
 anchor:
     world.levelEvent(LevelEvent.SOUND_DISPENSER_FAIL, pos, 0);
     world.gameEvent(GameEvent.BLOCK_ACTIVATE, pos, GameEvent.Context.of(dispenserBlockEntity.getBlockState()));
@@ -21,7 +21,7 @@ insert-after:
     }
 
 # BlockPreDispenseEvent
-file: net/minecraft/world/world/block/DispenserBlock.java
+file: net/minecraft/world/level/block/DispenserBlock.java
 anchor:
     dispenserBlockEntity.setItem(i, dispenseItemBehavior.dispense(pointer, itemStack));
 insert:
@@ -176,7 +176,7 @@ insert-after:
 # ------------------------------------------------------------ ドロッパー・ホッパー
 
 # BlockFailedDispenseEvent / BlockPreDispenseEvent / InventoryMoveItemEvent(ドロッパー)
-file: net/minecraft/world/world/block/DropperBlock.java
+file: net/minecraft/world/level/block/DropperBlock.java
 anchor:
     world.levelEvent(LevelEvent.SOUND_DISPENSER_FAIL, pos, 0);
 insert:
@@ -184,15 +184,15 @@ insert:
 insert-after:
     }
 
-file: net/minecraft/world/world/block/DropperBlock.java
+file: net/minecraft/world/level/block/DropperBlock.java
 anchor:
     itemStack2 = DISPENSE_BEHAVIOUR.dispense(pointer, itemStack);
 insert:
-    if (!dev.shifu.event.BlockEvents.preDispense(world, pos, itemStack, randomSlot)) {
+    if (!dev.shifu.event.BlockEvents.preDispense(world, pos, itemStack, i)) {
         return;
     }
 
-file: net/minecraft/world/world/block/entity/HopperBlockEntity.java
+file: net/minecraft/world/level/block/entity/HopperBlockEntity.java
 anchor:
     return getContainerAt(world, pos.relative(blockEntity.facing));
 insert:
@@ -203,7 +203,7 @@ insert:
     }
 
 # HopperInventorySearchEvent(取る元)
-file: net/minecraft/world/world/block/entity/HopperBlockEntity.java
+file: net/minecraft/world/level/block/entity/HopperBlockEntity.java
 anchor:
     return getContainerAt(world, pos, state, hopper.getLevelX(), hopper.getLevelY() + 1.0, hopper.getLevelZ());
 insert:
@@ -217,7 +217,7 @@ insert:
 # ------------------------------------------------------------ 中に入った・踏んだ
 
 # EntityInsideBlockEvent(火)
-file: net/minecraft/world/world/block/BaseFireBlock.java
+file: net/minecraft/world/level/block/BaseFireBlock.java
 anchor:
     world.removeBlock(pos, false);
 insert:
@@ -226,7 +226,7 @@ insert-after:
     }
 
 # EntityInsideBlockEvent(サボテン)
-file: net/minecraft/world/world/block/RedStoneOreBlock.java
+file: net/minecraft/world/level/block/RedStoneOreBlock.java
 anchor:
     interact(state, world, pos);
     super.attack(state, world, pos, player);
@@ -234,7 +234,7 @@ insert:
     dev.shifu.event.BlockEvents.oreToucher(player);
 
 # 使う
-file: net/minecraft/world/world/block/RedStoneOreBlock.java
+file: net/minecraft/world/level/block/RedStoneOreBlock.java
 anchor:
     interact(state, world, pos);
     }
@@ -244,7 +244,7 @@ insert:
     dev.shifu.event.BlockEvents.oreToucher(player);
 
 # 踏む。取り消されたら interact を飛ばして super.stepOn だけ通す
-file: net/minecraft/world/world/block/RedStoneOreBlock.java
+file: net/minecraft/world/level/block/RedStoneOreBlock.java
 anchor:
     world.setBlock(pos, state.setValue(LIT, true), Block.UPDATE_ALL);
 insert:
@@ -253,7 +253,7 @@ insert:
     }
 
 # BlockFadeEvent(光っていたレッドストーン鉱石が戻る)
-file: net/minecraft/world/world/block/RedStoneOreBlock.java
+file: net/minecraft/world/level/block/RedStoneOreBlock.java
 anchor:
     world.setBlock(pos, state.setValue(LIT, false), Block.UPDATE_ALL);
 insert:
@@ -264,7 +264,7 @@ insert:
 # ------------------------------------------------------------ 消える・固まる・燃える
 
 # BlockFadeEvent(氷が溶ける)
-file: net/minecraft/world/world/block/ScaffoldingBlock.java
+file: net/minecraft/world/level/block/ScaffoldingBlock.java
 anchor:
     if (state.getValue(DISTANCE) == 7) {
 insert:
@@ -274,7 +274,7 @@ insert:
     }
 
 # BlockFadeEvent(支えを失った火が消える。updateShape)
-file: net/minecraft/world/world/block/FireBlock.java
+file: net/minecraft/world/level/block/FireBlock.java
 anchor:
     return this.canSurvive(state, world, pos) ? this.getStateWithAge(world, pos, state.getValue(AGE)) : Blocks.AIR.defaultBlockState();
 insert:
@@ -284,7 +284,7 @@ insert:
     }
 
 # BlockIgniteEvent(SPREAD)と BlockSpreadEvent(火が広がる)
-file: net/minecraft/world/world/block/FireBlock.java
+file: net/minecraft/world/level/block/FireBlock.java
 anchor:
     world.setBlock(mutableBlockPos, this.getStateWithAge(world, mutableBlockPos, min1), Block.UPDATE_ALL);
 insert:
@@ -294,13 +294,13 @@ insert:
     }
 
 # BlockBurnEvent(隣が燃える)。燃やす側の位置は 6 回の呼び出しの前に置く。
-file: net/minecraft/world/world/block/FireBlock.java
+file: net/minecraft/world/level/block/FireBlock.java
 anchor:
     this.checkBurnOut(world, pos.east(), 300 + k, random, i);
 insert:
     dev.shifu.event.BlockEvents.fireSource(pos);
 
-file: net/minecraft/world/world/block/FireBlock.java
+file: net/minecraft/world/level/block/FireBlock.java
 anchor:
     BlockState blockState = world.getBlockState(pos);
 insert-after:
@@ -309,7 +309,7 @@ insert-after:
     }
 
 # BlockFormEvent(コンクリートパウダーが固まる)
-file: net/minecraft/world/world/block/ConcretePowderBlock.java
+file: net/minecraft/world/level/block/ConcretePowderBlock.java
 anchor:
     return shouldSolidify(blockGetter, blockPos, blockState) ? this.concrete.defaultBlockState() : super.getStateForPlacement(ctx);
 insert:
@@ -318,7 +318,7 @@ insert:
         return super.getStateForPlacement(ctx);
     }
 
-file: net/minecraft/world/world/block/ConcretePowderBlock.java
+file: net/minecraft/world/level/block/ConcretePowderBlock.java
 anchor:
     return touchesLiquid(world, pos)
 insert:
@@ -338,7 +338,7 @@ insert:
     }
 
 # SpongeAbsorbEvent
-file: net/minecraft/world/world/block/SpongeBlock.java
+file: net/minecraft/world/level/block/SpongeBlock.java
 anchor:
     return BlockPos.breadthFirstTraversal(
     pos,
@@ -346,14 +346,14 @@ anchor:
 insert:
     dev.shifu.event.BlockEvents.spongeBegin();
 
-file: net/minecraft/world/world/block/SpongeBlock.java
+file: net/minecraft/world/level/block/SpongeBlock.java
 anchor:
     world.setBlock(blockPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
 count: 2
 insert:
     dev.shifu.event.BlockEvents.spongeBefore(world, blockPos);
 
-file: net/minecraft/world/world/block/CakeBlock.java
+file: net/minecraft/world/level/block/CakeBlock.java
 anchor:
     if (stack.is(ItemTags.CANDLES) && state.getValue(BITES) == 0 && Block.byItem(stack) instanceof CandleBlock candleBlock) {
 insert-after:
@@ -363,7 +363,7 @@ insert-after:
     }
 
 # EntityChangeBlockEvent(ケーキを食べる)
-file: net/minecraft/world/world/block/ComposterBlock.java
+file: net/minecraft/world/level/block/ComposterBlock.java
 anchor:
     stack.shrink(1);
 insert:
@@ -371,7 +371,7 @@ insert:
 insert-after:
     }
 
-file: net/minecraft/world/world/block/ComposterBlock.java
+file: net/minecraft/world/level/block/ComposterBlock.java
 anchor:
     public static BlockState extractProduce(Entity user, BlockState state, Level world, BlockPos pos) {
 insert-after:
@@ -381,16 +381,16 @@ insert-after:
     }
 
 # PlayerShearBlockEvent(蜂の巣をハサミで刈る)
-file: net/minecraft/world/world/material/FlowingFluid.java
+file: net/minecraft/world/level/material/FlowingFluid.java
 anchor:
     this.spreadTo(world, blockPos, blockState2, Direction.DOWN, fluidState);
 insert:
-    if (!dev.shifu.event.BlockEvents.fromTo(world, pos, Direction.DOWN)) {
+    if (!dev.shifu.event.BlockEvents.fromTo(world, fluidPos, Direction.DOWN)) {
         return;
     }
 
 # BlockFromToEvent(横へ)
-file: net/minecraft/world/world/material/FlowingFluid.java
+file: net/minecraft/world/level/material/FlowingFluid.java
 anchor:
     this.spreadTo(world, blockPos, world.getBlockState(blockPos), direction, fluidState1);
 insert:
@@ -399,7 +399,7 @@ insert:
     }
 
 # FluidLevelChangeEvent(段が変わる。2 箇所とも同じ形)
-file: net/minecraft/world/world/material/FlowingFluid.java
+file: net/minecraft/world/level/material/FlowingFluid.java
 anchor:
     world.setBlock(pos, state, Block.UPDATE_ALL);
 count: 2
@@ -410,7 +410,7 @@ insert:
     }
 
 # BlockReceiveGameEvent(振動を受ける)
-file: net/minecraft/world/world/block/entity/AbstractFurnaceBlockEntity.java
+file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
     furnace.litTimeRemaining = furnace.getBurnDuration(world.fuelValues(), itemStack);
 insert-after:
@@ -419,7 +419,7 @@ insert-after:
         return;
     }
 
-file: net/minecraft/world/world/block/entity/AbstractFurnaceBlockEntity.java
+file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
     if (flag2) {
     Item stack = itemStack.getItem();
@@ -434,27 +434,27 @@ insert-after:
     }
 
 # FurnaceStartSmeltEvent
-file: net/minecraft/world/world/block/entity/AbstractFurnaceBlockEntity.java
+file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
     if (burn(world.registryAccess(), recipeHolder, singleRecipeInput, furnace.items, maxStackSize)) {
 insert:
     dev.shifu.event.BlockEvents.furnaceSmeltAt(world, pos);
 
 # 結果を入れる所。burn は static で world も pos も受け取らないので、控えた位置で発火する
-file: net/minecraft/world/world/block/entity/AbstractFurnaceBlockEntity.java
+file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
     createExperience(world, popVec, entry.getIntValue(), ((AbstractCookingRecipe)recipeHolder.value()).experience());
 insert:
     dev.shifu.event.BlockEvents.furnaceExpAt(this.worldPosition);
 
-file: net/minecraft/world/world/block/entity/AbstractFurnaceBlockEntity.java
+file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
     ExperienceOrb.award(world, popVec, floor);
 insert:
     floor = dev.shifu.event.BlockEvents.furnaceExp(world, floor);
 
 # BrewingStandFuelEvent
-file: net/minecraft/world/world/block/entity/BrewingStandBlockEntity.java
+file: net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
 anchor:
     blockEntity.fuel = 20;
     itemStack.shrink(1);
@@ -469,7 +469,7 @@ insert-after:
     }
 
 # BrewingStartEvent
-file: net/minecraft/world/world/block/entity/CampfireBlockEntity.java
+file: net/minecraft/world/level/block/entity/CampfireBlockEntity.java
 anchor:
     Containers.dropItemStack(world, pos.getX(), pos.getY(), pos.getZ(), itemStack1);
 insert:
@@ -484,32 +484,32 @@ insert:
     }
 
 # CampfireStartEvent
-file: net/minecraft/world/world/block/entity/SignBlockEntity.java
+file: net/minecraft/world/level/block/entity/SignBlockEntity.java
 anchor:
     this.updateText(signText -> this.setMessages(player, filteredText, signText), isFrontText);
 insert:
     dev.shifu.event.BlockEvents.signSide(isFrontText);
 
-file: net/minecraft/world/world/block/entity/SignBlockEntity.java
+file: net/minecraft/world/level/block/entity/SignBlockEntity.java
 anchor:
     private SignText setMessages(Player player, List<FilteredText> messages, SignText text) {
 insert-after:
     final SignText shifuOriginalText = text;
 
-file: net/minecraft/world/world/block/entity/BeaconBlockEntity.java
+file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
 anchor:
     if (blockEntity.lastCheckY >= l) {
 insert:
     dev.shifu.event.BlockEvents.beaconLevels(world, pos, i, blockEntity.levels);
 
-file: net/minecraft/world/world/block/entity/BeaconBlockEntity.java
+file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
 anchor:
     playSound(this.level, this.worldPosition, SoundEvents.BEACON_DEACTIVATE);
 insert:
     dev.shifu.event.BlockEvents.beaconDeactivated(this.level, this.worldPosition);
 
 # BeaconEffectEvent(1 つめと 2 つめの効果)
-file: net/minecraft/world/world/block/entity/BaseContainerBlockEntity.java
+file: net/minecraft/world/level/block/entity/BaseContainerBlockEntity.java
 anchor:
     return this.lockKey.canUnlock(player);
 insert:
@@ -517,7 +517,7 @@ insert:
         return org.bukkit.craftbukkit.event.CraftEventFactory.callBlockLockCheckEvent(this, this.lockKey, this.getDisplayName(), player);
     }
 
-file: net/minecraft/world/world/block/entity/BaseContainerBlockEntity.java
+file: net/minecraft/world/level/block/entity/BaseContainerBlockEntity.java
 anchor:
     Level world = player.level();
 insert:
@@ -526,7 +526,7 @@ insert:
         return;
     }
 
-file: net/minecraft/world/world/block/entity/BeaconBlockEntity.java
+file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
 anchor:
     if (this.lockKey.canUnlock(player)) {
 insert:
@@ -539,7 +539,7 @@ insert:
 # ------------------------------------------------------------ 怪しい砂・トライアルスポナー・宝物庫
 
 # EntityChangeBlockEvent(ブラシで削る)
-file: net/minecraft/world/world/block/entity/BrushableBlockEntity.java
+file: net/minecraft/world/level/block/entity/BrushableBlockEntity.java
 anchor:
     world.setBlock(this.getBlockPos(), blockState1, Block.UPDATE_ALL);
 insert:
@@ -577,19 +577,19 @@ insert:
     dev.shifu.event.BlockEvents.cauldronCause(player, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.ARMOR_WASH);
 
 # 燃えている生き物が入って火が消える。e はラムダの引数
-file: net/minecraft/world/world/block/LayeredCauldronBlock.java
+file: net/minecraft/world/level/block/LayeredCauldronBlock.java
 anchor:
     this.handleEntityOnFireInside(state, world, pos);
 insert:
-    dev.shifu.event.BlockEvents.cauldronCause(entity1, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.EXTINGUISH);
+    dev.shifu.event.BlockEvents.cauldronCause(entity, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.EXTINGUISH);
 
-file: net/minecraft/world/world/block/MushroomBlock.java
+file: net/minecraft/world/level/block/MushroomBlock.java
 anchor:
     for (int k = 0; k < 4; k++) {
 insert:
     final BlockPos shifuMushroomSource = pos;
 
-file: net/minecraft/world/world/block/MushroomBlock.java
+file: net/minecraft/world/level/block/MushroomBlock.java
 anchor:
     world.setBlock(blockPos1, state, Block.UPDATE_CLIENTS);
 insert:
@@ -600,13 +600,13 @@ insert-after:
 # ------------------------------------------------------------ スカルクの脈が広がる
 #
 # Paper は attemptPlaceSculk に originPos を足して渡す。Shifu は呼ぶ直前に置く。
-file: net/minecraft/world/world/block/SculkVeinBlock.java
+file: net/minecraft/world/level/block/SculkVeinBlock.java
 anchor:
     if (shouldConvertToBlock && this.attemptPlaceSculk(spreadManager, world, cursor.getPos(), random)) {
 insert:
-    dev.shifu.event.BlockEvents.spreadSource(pos);
+    dev.shifu.event.BlockEvents.spreadSource(catalystPos);
 
-file: net/minecraft/world/world/block/SculkVeinBlock.java
+file: net/minecraft/world/level/block/SculkVeinBlock.java
 anchor:
     world.setBlock(blockPos, blockState2, Block.UPDATE_ALL);
 insert:
@@ -617,25 +617,25 @@ insert:
 # ------------------------------------------------------------ 鍾乳石が伸びる
 #
 # Paper は createDripstone に source を足して渡す。Shifu は呼ぶ直前に置く。
-file: net/minecraft/world/world/block/PointedDripstoneBlock.java
+file: net/minecraft/world/level/block/PointedDripstoneBlock.java
 anchor:
     createDripstone(world, blockPos, direction, DripstoneThickness.TIP);
 insert:
     dev.shifu.event.BlockEvents.spreadSource(pos);
 
-file: net/minecraft/world/world/block/PointedDripstoneBlock.java
+file: net/minecraft/world/level/block/PointedDripstoneBlock.java
 anchor:
     createDripstone(world, blockPos2, Direction.DOWN, DripstoneThickness.TIP_MERGE);
 insert:
     dev.shifu.event.BlockEvents.spreadSource(pos);
 
-file: net/minecraft/world/world/block/PointedDripstoneBlock.java
+file: net/minecraft/world/level/block/PointedDripstoneBlock.java
 anchor:
     createDripstone(world, blockPos, Direction.UP, DripstoneThickness.TIP_MERGE);
 insert:
     dev.shifu.event.BlockEvents.spreadSource(pos);
 
-file: net/minecraft/world/world/block/PointedDripstoneBlock.java
+file: net/minecraft/world/level/block/PointedDripstoneBlock.java
 anchor:
     world.setBlock(pos, blockState, Block.UPDATE_ALL);
 insert:
@@ -663,7 +663,7 @@ insert-after:
 # ------------------------------------------------------------ アメジストの芽
 #
 # Paper は最初の 1 段を BlockSpreadEvent、その先を BlockGrowEvent にする。
-file: net/minecraft/world/world/block/BuddingAmethystBlock.java
+file: net/minecraft/world/level/block/BuddingAmethystBlock.java
 anchor:
     world.setBlockAndUpdate(blockPos, blockState2);
 insert:
@@ -676,7 +676,7 @@ insert-after:
 # 竹の新しい節は広がり。状態の式が重いので、登録が無いときは短絡させる。
 # Paper は下 2 段の葉の付け替えを発火のあとへ動かすが、それは vanilla の順を変えるので採らない
 # (取り消しても葉の付け替えは済んでいる)。
-file: net/minecraft/world/world/block/BambooStalkBlock.java
+file: net/minecraft/world/level/block/BambooStalkBlock.java
 anchor:
     world.setBlock(pos.above(), this.defaultBlockState().setValue(AGE, i).setValue(LEAVES, bambooLeaves).setValue(STAGE, i1), Block.UPDATE_ALL);
 insert:
@@ -689,7 +689,7 @@ insert-after:
 #
 # Paper は placeGrownFlower / placeDeadFlower の中の setBlock を発火側へ動かしている。
 # Shifu は vanilla の中身をそのままにして、呼ぶ側を囲む。
-file: net/minecraft/world/world/block/ChorusFlowerBlock.java
+file: net/minecraft/world/level/block/ChorusFlowerBlock.java
 anchor:
     world.setBlock(pos, ChorusPlantBlock.getStateWithConnections(world, pos, this.plant.defaultBlockState()), Block.UPDATE_CLIENTS);
     this.placeGrownFlower(world, blockPos, ageValue);
@@ -699,7 +699,7 @@ insert:
 insert-after:
     }
 
-file: net/minecraft/world/world/block/ChorusFlowerBlock.java
+file: net/minecraft/world/level/block/ChorusFlowerBlock.java
 anchor:
     this.placeGrownFlower(world, blockPos2, i + 1);
     bl3 = true;
@@ -710,7 +710,7 @@ insert-after:
     }
 
 # 枯れる 2 箇所。どちらも同じ形なので count で両方に入れる
-file: net/minecraft/world/world/block/ChorusFlowerBlock.java
+file: net/minecraft/world/level/block/ChorusFlowerBlock.java
 anchor:
     this.placeDeadFlower(world, pos);
 count: 2
@@ -766,7 +766,7 @@ insert-after:
 
 # リードのイベントの手。柵を素手で右クリックした経路は LeadItem を通らないので、
 # ここで MAIN_HAND を置く(ItemEvents 側の求め)。
-file: net/minecraft/world/world/block/FenceBlock.java
+file: net/minecraft/world/level/block/FenceBlock.java
 anchor:
         return (InteractionResult)(!world.isClientSide() ? LeadItem.bindPlayerMobs(player, world, pos) : InteractionResult.PASS);
 insert:
@@ -780,7 +780,7 @@ insert:
 # vanilla から来る方は plugin = false(Paper が seed 版に渡す値と同じ)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/world/storage/loot/LootTable.java.patch:26
-file: net/minecraft/world/world/storage/loot/LootTable.java
+file: net/minecraft/world/level/storage/loot/LootTable.java
 anchor:
     List<Integer> availableSlots = this.getAvailableSlots(container, random);
     this.shuffleAndSplitItems(randomItems, availableSlots.size(), random);
@@ -793,7 +793,7 @@ insert:
     randomItems = shifuLoot.getLoot().stream().map(org.bukkit.craftbukkit.inventory.CraftItemStack::asNMSCopy).collect(ObjectArrayList.toList());
 
 # patches/hand の fill(Container, LootParams, RandomSource, boolean)。アダプタ層はこちらを呼ぶ
-file: net/minecraft/world/world/storage/loot/LootTable.java
+file: net/minecraft/world/level/storage/loot/LootTable.java
 anchor:
     List<Integer> availableSlots = this.getAvailableSlots(container, random);
     this.shuffleAndSplitItems(itemStacks, availableSlots.size(), random);

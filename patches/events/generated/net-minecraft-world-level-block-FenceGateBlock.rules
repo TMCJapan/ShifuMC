@@ -1,7 +1,7 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # BlockRedstoneEvent
-file: net/minecraft/world/world/block/FenceGateBlock.java
+file: net/minecraft/world/level/block/FenceGateBlock.java
 anchor:
     if (state.getValue(POWERED) != bl) {
 insert:
