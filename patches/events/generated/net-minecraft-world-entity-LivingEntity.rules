@@ -3,18 +3,18 @@
 # EntityMoveEvent
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    if (this.level() instanceof ServerLevel serverLevel && this.isSensitiveToWater() && this.isInWaterOrRain()) {
+    if (!this.level().isClientSide && this.isSensitiveToWater() && this.isInWaterRainOrBubble()) {
 insert:
     // Paper start - Add EntityMoveEvent
     if (((ServerLevel) this.level()).hasEntityMoveEvent && !(this instanceof Player)) {
         if (this.xo != this.getX() || this.yo != this.getY() || this.zo != this.getZ() || this.yRotO != this.getYRot() || this.xRotO != this.getXRot()) {
-            Location from = new Location(this.level().getWorld(), this.xo, this.yo, this.zo, this.yRotO, this.xRotO);
-            Location to = new Location(this.level().getWorld(), this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
+            org.bukkit.Location from = new org.bukkit.Location(this.level().getWorld(), this.xo, this.yo, this.zo, this.yRotO, this.xRotO);
+            org.bukkit.Location to = new org.bukkit.Location(this.level().getWorld(), this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
             io.papermc.paper.event.entity.EntityMoveEvent event = new io.papermc.paper.event.entity.EntityMoveEvent(this.getBukkitLivingEntity(), from, to.clone());
             if (!event.callEvent()) {
-                this.absSnapTo(from.getX(), from.getY(), from.getZ(), from.getYaw(), from.getPitch());
+                this.absMoveTo(from.getX(), from.getY(), from.getZ(), from.getYaw(), from.getPitch());
             } else if (!to.equals(event.getTo())) {
-                this.absSnapTo(event.getTo().getX(), event.getTo().getY(), event.getTo().getZ(), event.getTo().getYaw(), event.getTo().getPitch());
+                this.absMoveTo(event.getTo().getX(), event.getTo().getY(), event.getTo().getZ(), event.getTo().getYaw(), event.getTo().getPitch());
             }
         }
     }
@@ -23,7 +23,8 @@ insert:
 # callToggleGlideEvent
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    this.setSharedFlag(Entity.FLAG_FALL_FLYING, false);
-    return;
+    if (this.onGround() && !this.level().isClientSide) {
+    this.setSharedFlag(7, false);
+    }
 insert:
-    if (this.getSharedFlag(Entity.FLAG_FALL_FLYING) && !CraftEventFactory.callToggleGlideEvent(this, false).isCancelled()) // CraftBukkit
+    if (this.getSharedFlag(7) && !org.bukkit.craftbukkit.event.CraftEventFactory.callToggleGlideEvent(this, false).isCancelled()) // CraftBukkit

@@ -395,29 +395,13 @@ insert-after:
 
 # ============================================================ ポーション
 
-# WaterBottleSplashEvent。割れた位置を置いてから、onHitAsWater の本体を囲む。
-file: net/minecraft/world/entity/projectile/throwableitemprojectile/AbstractThrownPotion.java
-# 同じ行が hand の splash(...)(vanilla の onHit の本体の写し)にもあるので、
-# hitResult を使う行まで含めて 1 箇所に定める
+# WaterBottleSplashEvent。割れた位置を置いてから、水の飛沫の本体を囲む。
+file: net/minecraft/world/entity/projectile/ThrownPotion.java
 anchor:
-    this.onHitAsWater(serverLevel);
-    } else if (potionContents.hasEffects()) {
-    this.onHitAsPotion(serverLevel, item, result);
+    if (potionContents.is(Potions.WATER)) {
+    this.applyWater();
 insert:
-    dev.shifu.event.EntityEvents.splashHit(result);
-
-file: net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownSplashPotion.java
-anchor:
-    if (!mobEffectInstance1.endsWithin(20)) {
-    livingEntity.addEffect(mobEffectInstance1, effectSource);
-    }
-    }
-    }
-    }
-    }
-    }
-insert-after:
-    }
+    dev.shifu.event.EntityEvents.splashHit(hitResult);
 
 # ============================================================ 乗り物
 

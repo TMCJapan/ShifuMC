@@ -83,3 +83,13 @@ anchor:
     LOGGER.info("Stopping server");
 insert:
     org.spigotmc.WatchdogThread.doStop();
+
+# EntityMoveEvent に登録があるかを、世界を回す前に控える(Paper と同じ位置)
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    this.getPlayerList().getPlayers().forEach(player -> player.connection.suspendFlushing());
+insert-after:
+    for (net.minecraft.server.level.ServerLevel shifuLevel : this.getAllLevels()) {
+        shifuLevel.hasEntityMoveEvent = io.papermc.paper.event.entity.EntityMoveEvent.getHandlerList().getRegisteredListeners().length > 0;
+    }
+
