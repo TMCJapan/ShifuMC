@@ -613,11 +613,14 @@ public final class BlockEvents {
         return replaced;
     }
 
-    private static ServerLevel furnaceSmeltLevel;
+    private static net.minecraft.world.level.Level furnaceSmeltLevel;
     private static BlockPos furnaceSmeltPos;
 
-    /** 焼き上がりを入れる前に、かまどの位置を置く(static な burn には渡らない)。 */
-    public static void furnaceSmeltAt(final ServerLevel level, final BlockPos pos) {
+    /**
+     * 焼き上がりを入れる前に、かまどの位置を置く(static な burn には渡らない)。
+     * 1.20.6 の serverTick は Level を受ける。
+     */
+    public static void furnaceSmeltAt(final net.minecraft.world.level.Level level, final BlockPos pos) {
         if (!listening(org.bukkit.event.inventory.FurnaceSmeltEvent.getHandlerList())) {
             return;
         }

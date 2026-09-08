@@ -178,7 +178,7 @@ insert-after:
 # BlockFailedDispenseEvent / BlockPreDispenseEvent / InventoryMoveItemEvent(ドロッパー)
 file: net/minecraft/world/level/block/DropperBlock.java
 anchor:
-    world.levelEvent(LevelEvent.SOUND_DISPENSER_FAIL, pos, 0);
+    world.levelEvent(1001, pos, 0);
 insert:
     if (dev.shifu.event.BlockEvents.failedDispense(world, pos)) {
 insert-after:
@@ -246,7 +246,7 @@ insert:
 # 踏む。取り消されたら interact を飛ばして super.stepOn だけ通す
 file: net/minecraft/world/level/block/RedStoneOreBlock.java
 anchor:
-    world.setBlock(pos, state.setValue(LIT, true), Block.UPDATE_ALL);
+    world.setBlock(pos, state.setValue(LIT, Boolean.valueOf(true)), 3);
 insert:
     if (!dev.shifu.event.BlockEvents.oreLight(world, pos, state.setValue(LIT, true))) {
         return;
@@ -255,7 +255,7 @@ insert:
 # BlockFadeEvent(光っていたレッドストーン鉱石が戻る)
 file: net/minecraft/world/level/block/RedStoneOreBlock.java
 anchor:
-    world.setBlock(pos, state.setValue(LIT, false), Block.UPDATE_ALL);
+    world.setBlock(pos, state.setValue(LIT, Boolean.valueOf(false)), 3);
 insert:
     if (!dev.shifu.event.BlockEvents.fade(world, pos, state.setValue(LIT, false))) {
         return;
@@ -401,7 +401,7 @@ insert:
 # FluidLevelChangeEvent(段が変わる。2 箇所とも同じ形)
 file: net/minecraft/world/level/material/FlowingFluid.java
 anchor:
-    world.setBlock(pos, state, Block.UPDATE_ALL);
+    world.setBlock(pos, blockState, 2);
 count: 2
 insert:
     state = dev.shifu.event.BlockEvents.fluidLevelChange(world, pos, state);
@@ -436,7 +436,7 @@ insert-after:
 # FurnaceStartSmeltEvent
 file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
-    if (burn(world.registryAccess(), recipeHolder, singleRecipeInput, furnace.items, maxStackSize)) {
+    if (burn(world.registryAccess(), recipeHolder, blockEntity.items, i)) {
 insert:
     dev.shifu.event.BlockEvents.furnaceSmeltAt(world, pos);
 
@@ -541,9 +541,9 @@ insert:
 # EntityChangeBlockEvent(ブラシで削る)
 file: net/minecraft/world/level/block/entity/BrushableBlockEntity.java
 anchor:
-    world.setBlock(this.getBlockPos(), blockState1, Block.UPDATE_ALL);
+    this.level.setBlock(this.getBlockPos(), blockState2, 3);
 insert:
-    if (!dev.shifu.event.BlockEvents.brush(this, brusher, blockState1)) {
+    if (!dev.shifu.event.BlockEvents.brush(this, player, blockState2)) {
         return false;
     }
 
@@ -591,9 +591,9 @@ insert:
 
 file: net/minecraft/world/level/block/MushroomBlock.java
 anchor:
-    world.setBlock(blockPos1, state, Block.UPDATE_CLIENTS);
+    world.setBlock(blockPos2, state, 2);
 insert:
-    if (dev.shifu.event.BlockEvents.spreadTo(world, shifuMushroomSource, blockPos1, state)) {
+    if (dev.shifu.event.BlockEvents.spreadTo(world, shifuMushroomSource, blockPos2, state)) {
 insert-after:
     }
 
@@ -608,7 +608,7 @@ insert:
 
 file: net/minecraft/world/level/block/SculkVeinBlock.java
 anchor:
-    world.setBlock(blockPos, blockState2, Block.UPDATE_ALL);
+    world.setBlock(blockPos, blockState3, 3);
 insert:
     if (!dev.shifu.event.BlockEvents.spreadFromSource(world, blockPos, blockState2)) {
         return false;
@@ -637,7 +637,7 @@ insert:
 
 file: net/minecraft/world/level/block/PointedDripstoneBlock.java
 anchor:
-    world.setBlock(pos, blockState, Block.UPDATE_ALL);
+    world.setBlock(pos, blockState, 3);
 insert:
     if (dev.shifu.event.BlockEvents.spreadFromSource(world, pos, blockState)) {
 insert-after:
@@ -678,10 +678,12 @@ insert-after:
 # (取り消しても葉の付け替えは済んでいる)。
 file: net/minecraft/world/level/block/BambooStalkBlock.java
 anchor:
-    world.setBlock(pos.above(), this.defaultBlockState().setValue(AGE, i).setValue(LEAVES, bambooLeaves).setValue(STAGE, i1), Block.UPDATE_ALL);
+    world.setBlock(
+    pos.above(), this.defaultBlockState().setValue(AGE, Integer.valueOf(i)).setValue(LEAVES, bambooLeaves).setValue(STAGE, Integer.valueOf(j)), 3
+    );
 insert:
     if (dev.shifu.event.BlockEvents.silentSpread()
-            || dev.shifu.event.BlockEvents.spreadTo(world, pos, pos.above(), this.defaultBlockState().setValue(AGE, i).setValue(LEAVES, bambooLeaves).setValue(STAGE, i1))) {
+            || dev.shifu.event.BlockEvents.spreadTo(world, pos, pos.above(), this.defaultBlockState().setValue(AGE, i).setValue(LEAVES, bambooLeaves).setValue(STAGE, j))) {
 insert-after:
     }
 

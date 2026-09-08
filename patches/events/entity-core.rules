@@ -318,19 +318,38 @@ insert-after:
 # ============================================================ FireworkRocketEntity
 
 # FireworkExplodeEvent。爆発する 3 箇所を同じ形で囲む。
+# PlayerFishEvent(LURED)
 file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
-    playerOwner.level()
-        .addFreshEntity(
-        new ExperienceOrb(
-        playerOwner.level(), playerOwner.getX(), playerOwner.getY() + 0.5, playerOwner.getZ() + 0.5, this.random.nextInt(6) + 1
-        )
-        );
+    this.timeUntilHooked = Mth.nextInt(this.random, 20, 80);
+insert-after:
+    if (!dev.shifu.event.EntityEvents.fishLured(this)) {
+        this.timeUntilHooked = 0;
+        return;
+    }
+
+# PlayerFishEvent(CAUGHT_FISH)。経験値はイベントの値で。
+file: net/minecraft/world/entity/projectile/FishingHook.java
+anchor:
+    ItemEntity itemEntity = new ItemEntity(this.level(), this.getX(), this.getY(), this.getZ(), itemStack);
+insert-after:
+    final org.bukkit.event.player.PlayerFishEvent shifuFish = dev.shifu.event.EntityEvents.fishCaught(this, player, itemEntity);
+    if (shifuFish != null && shifuFish.isCancelled()) {
+        return 0;
+    }
+
+file: net/minecraft/world/entity/projectile/FishingHook.java
+anchor:
+    player.level()
+    .addFreshEntity(new ExperienceOrb(player.level(), player.getX(), player.getY() + 0.5, player.getZ() + 0.5, this.random.nextInt(6) + 1));
+    if (itemStack.is(ItemTags.FISHES)) {
+    player.awardStat(Stats.FISH_CAUGHT, 1);
+    }
 insert:
     if (shifuFish == null) {
 insert-after:
     } else if (shifuFish.getExpToDrop() > 0) {
-        playerOwner.level().addFreshEntity(new ExperienceOrb(playerOwner.level(), playerOwner.getX(), playerOwner.getY() + 0.5, playerOwner.getZ() + 0.5, shifuFish.getExpToDrop()));
+        player.level().addFreshEntity(new ExperienceOrb(player.level(), player.getX(), player.getY() + 0.5, player.getZ() + 0.5, shifuFish.getExpToDrop()));
     }
 
 # PlayerFishEvent(IN_GROUND / REEL_IN)

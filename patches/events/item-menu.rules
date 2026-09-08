@@ -217,9 +217,9 @@ insert-after:
 
 file: net/minecraft/world/item/LeadItem.java
 anchor:
-    return bindPlayerMobs(user, level, clickedPos);
+    bindPlayerMobs(player, level, blockPos);
 insert:
-    dev.shifu.event.ItemEvents.leashHand(user, context.getHand());
+    dev.shifu.event.ItemEvents.leashHand(player, context.getHand());
 
 # HangingPlaceEvent(柵に新しく結び目を作るとき)は 1.21.11 では出せない。
 # vanilla の getOrCreateKnot は「新しく作ったか」を返さず、Paper は

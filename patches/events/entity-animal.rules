@@ -512,11 +512,11 @@ insert-after:
 
 file: net/minecraft/world/entity/raid/Raider.java
 anchor:
-    for (Raider raider : getServerLevel(this.mob)
+    for (Raider raider : this.mob
+    .level()
     .getNearbyEntities(Raider.class, this.shoutTargeting, this.mob, this.mob.getBoundingBox().inflate(8.0, 8.0, 8.0))) {
-    raider.setTarget(target);
+    raider.setTarget(livingEntity);
     raider.setAggressive(true);
-    }
 insert:
     dev.shifu.event.EntityEvents.targetReasonUntilDone(org.bukkit.event.entity.EntityTargetEvent.TargetReason.FOLLOW_LEADER);
 insert-after:

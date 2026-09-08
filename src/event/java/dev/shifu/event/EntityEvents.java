@@ -718,6 +718,40 @@ public final class EntityEvents {
         return fishingHand == null ? null : CraftEquipmentSlot.getHand(fishingHand);
     }
 
+    /** PlayerFishEvent(LURED)。かかるまでの間合いを決めた直後。 */
+    public static boolean fishLured(final FishingHook hook) {
+        final net.minecraft.world.entity.player.Player owner = hook.getPlayerOwner();
+
+        if (owner == null || !listening(PlayerFishEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new PlayerFishEvent((org.bukkit.entity.Player) owner.getBukkitEntity(), null,
+                (org.bukkit.entity.FishHook) hook.getBukkitEntity(), PlayerFishEvent.State.LURED).callEvent();
+    }
+
+    /**
+     * PlayerFishEvent(CAUGHT_FISH)。{@code retrieve} で釣った物を作った直後。
+     * 経験値は Paper と同じくここで乱数を引く(vanilla がオーブを作る式と同じ回数)。
+     *
+     * @return 発火したイベント。登録が無ければ null(vanilla の経験値オーブへ)
+     */
+    public static PlayerFishEvent fishCaught(final FishingHook hook,
+                                             final net.minecraft.world.entity.player.Player owner,
+                                             final net.minecraft.world.entity.item.ItemEntity caught) {
+        if (!listening(PlayerFishEvent.getHandlerList())) {
+            return null;
+        }
+
+        final PlayerFishEvent event = new PlayerFishEvent((org.bukkit.entity.Player) owner.getBukkitEntity(),
+                caught.getBukkitEntity(), (org.bukkit.entity.FishHook) hook.getBukkitEntity(),
+                PlayerFishEvent.State.CAUGHT_FISH);
+        event.setExpToDrop(hook.random.nextInt(6) + 1);
+        event.callEvent();
+
+        return event;
+    }
+
 
 
 
