@@ -170,13 +170,26 @@ shifu_make_shim() {
 shifu_stage_tree() {
     [ "$LAYOUT" = classic ] || return 0
 
-    # $TREE は git リポジトリなので `.` で写すと .git まで持っていく。
-    # * は隠しファイルに当たらないので、パッケージの階層だけが写る。
-    for _dir in "$TREE"/*; do
-        cp -r "$_dir" "$ADAPTER/"
+    # 写すのは 2 つ。**4029 件を全部ではない。**
+    #
+    #   1. Paper が持っている NMS のファイル。Paper のパッチが当たった中身なので、
+    #      vanilla に戻さないと挙動が変わる
+    #   2. Shifu が手を入れたファイル
+    #
+    # 残りは vanilla の jar から取る(Paper 自身がそうしている)。全部組み直すと
+    # 逆コンパイラの出力がそのままでは通らないファイルで止まる(1.20.6 で 173 件)。
+    # classic の decompileJar は paperweight 自身がコンパイルしないので、
+    # 通る保証が無い。jar から取るほうが Mojang のバイトコードそのものなので、
+    # vanilla 一致にも合う。
+    (
+        git -C "$PW/Paper-Server" ls-files -- src/main/java/net src/main/java/com \
+            src/main/java/ca | sed 's|^src/main/java/||'
+        git -C "$TREE" status --porcelain | sed 's/^...//'
+    ) | sort -u | while read -r _rel; do
+        [ -f "$TREE/$_rel" ] || continue
+        mkdir -p "$ADAPTER/$(dirname "$_rel")"
+        cp "$TREE/$_rel" "$ADAPTER/$_rel"
     done
-
-    unset _dir
 }
 
 # Minecraft のバージョン。jar の名前と run-shifu/versions/<版>/ に入る。
