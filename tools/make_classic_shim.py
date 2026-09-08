@@ -44,6 +44,33 @@ PATTERNS = (fs.DECL, fs.FIELD, fs.TYPE_NAME, fs.IFACE, fs.PLAIN_FIELD)
 ARG = re.compile(r"^(.*?[\w\]>])\s+\w+$")
 
 
+def tail(line):
+    """1 行に並んだ 2 つめ以降の宣言。字下げを揃えて返す。"""
+    text = fs.STRING.sub('""', line).split("//")[0]
+
+    if text.count(";") < 2:
+        return []
+
+    lead = line[:len(line) - len(line.lstrip())]
+    out = []
+    at = text.find(";") + 1
+
+    while at < len(text):
+        end = text.find(";", at)
+
+        if end < 0:
+            break
+
+        piece = line[at:end + 1].strip()
+
+        if piece:
+            out.append(lead + piece)
+
+        at = end + 1
+
+    return out
+
+
 def members(lines):
     """(所有する型の名前, 鍵) -> 宣言の塊。型の直下にあるものだけ。
 
@@ -98,6 +125,23 @@ def members(lines):
             if key not in out:
                 out[key] = (name, block)
                 order.append(key)
+
+            # **Paper は同じ行に宣言を並べる。** 差分を小さくするために
+            # vanilla の宣言の後ろに足す
+            # (`protected final ChunkPos chunkPos; public final long coordinateKey; ...`)。
+            # 1 行 1 宣言で見ると、先頭の vanilla の宣言しか拾えない。
+            if len(block) == 1:
+                for extra in tail(block[0]):
+                    hit = next((p.match(extra) for p in PATTERNS if p.match(extra)), None)
+
+                    if not hit:
+                        continue
+
+                    more = (owner, ms.key_of(hit.group(1), [extra]))
+
+                    if more not in out:
+                        out[more] = (hit.group(1), [extra])
+                        order.append(more)
 
             number += len(block)
 
