@@ -28,17 +28,6 @@ final class DeathInventory {
     private final NonNullList<ItemStack> items;
     private final Map<EquipmentSlot, ItemStack> equipment = new EnumMap<>(EquipmentSlot.class);
 
-    DeathInventory(final Inventory inventory) {
-
-        for (int i = 0; i < source.size(); i++) {
-        }
-
-        for (EquipmentSlot slot : EquipmentSlot.VALUES) {
-
-            if (!stack.isEmpty()) {
-            }
-        }
-    }
 
 
 

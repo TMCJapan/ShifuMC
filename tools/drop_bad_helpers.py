@@ -30,7 +30,7 @@ import sys
 
 ERROR = re.compile(r"^(.+?\.java):(\d+): error: (.*)$")
 SYMBOL = re.compile(r"^\s*symbol:\s+(?:class|method|variable)\s+([\w$]+)")
-METHOD = re.compile(r"^    (?:public|private|protected|static|final|\s)*[\w.<>,?\[\]@ ]+\s(\w+)\(")
+METHOD = re.compile(r"^    (?:public|private|protected|static|final|\s)*(?:[\w.<>,?\[\]@ ]+\s)?(\w+)\(")
 CALL = re.compile(r"dev\.shifu\.event\.(\w+)\.(\w+)\s*\(")
 
 
@@ -111,12 +111,19 @@ def main():
         names = {owner.get(n) for n in bad[name]} - {None}
         cut = set()
 
-        # メソッドの外(import と欄)。その版に無い型を指しているので落とす
+        # メソッドの外(import と欄)。その版に無い型を指しているので落とす。
+        # **メソッドの中の 1 行だけを消してはいけない。**構築子を見つけられずに
+        # 中の文を 1 行ずつ消して、for の本体が空のファイルを作ったことがある。
         for number in sorted(bad[name]):
             if owner.get(number) is not None or number > len(lines):
                 continue
 
             text = lines[number - 1].strip()
+
+            # 字下げが深い = 何かの本体の中。触らない
+            if lines[number - 1][:5].strip() and not lines[number - 1].startswith("import "):
+                if len(lines[number - 1]) - len(lines[number - 1].lstrip()) > 4:
+                    continue
 
             if text.startswith("import "):
                 cut.add(number)
