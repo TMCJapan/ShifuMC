@@ -3,22 +3,22 @@
 # FurnaceStartSmeltEvent
 file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
-    furnace.cookingTimer++;
+    blockEntity.cookingProgress++;
 insert:
     // CraftBukkit start
-    if (recipeHolder != null && furnace.cookingTimer == 0) {
-        org.bukkit.craftbukkit.inventory.CraftItemStack source = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(furnace.items.get(0));
+    if (recipeHolder != null && blockEntity.cookingProgress == 0) {
+        org.bukkit.craftbukkit.inventory.CraftItemStack source = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(blockEntity.items.get(0));
         org.bukkit.inventory.CookingRecipe<?> recipe = (org.bukkit.inventory.CookingRecipe<?>) recipeHolder.toBukkitRecipe();
 
         org.bukkit.event.inventory.FurnaceStartSmeltEvent event = new org.bukkit.event.inventory.FurnaceStartSmeltEvent(
-            org.bukkit.craftbukkit.block.CraftBlock.at(level, pos),
+            org.bukkit.craftbukkit.block.CraftBlock.at(world, pos),
             source,
             recipe,
-            getTotalCookTime(level, furnace, furnace.recipeType, furnace.cookSpeedMultiplier) // Paper - cook speed multiplier API
+            getTotalCookTime(world, blockEntity.recipeType, blockEntity, blockEntity.cookSpeedMultiplier) // Paper - cook speed multiplier API
         );
         event.callEvent();
 
-        furnace.cookingTotalTime = event.getTotalCookTime();
+        blockEntity.cookingTotalTime = event.getTotalCookTime();
     }
     // CraftBukkit end
 

@@ -3,6 +3,11 @@
 # WorldBorderBoundsChangeFinishEvent
 file: net/minecraft/world/level/border/WorldBorder.java
 anchor:
-    WorldBorder.this.setDirty();
+    return (WorldBorder.BorderExtent)(this.getLerpRemainingTime() <= 0L ? WorldBorder.this.new StaticBorderExtent(this.to) : this);
 insert:
-    if (world != null) new io.papermc.paper.event.world.border.WorldBorderBoundsChangeFinishEvent(world.getWorld(), world.getWorld().getWorldBorder(), this.from, this.to, this.lerpDuration).callEvent(); // Paper - Add worldborder events
+    // Paper - Add worldborder events
+    if (this.getLerpRemainingTime() <= 0L && WorldBorder.this.world != null) {
+        new io.papermc.paper.event.world.border.WorldBorderBoundsChangeFinishEvent(
+                WorldBorder.this.world.getWorld(), WorldBorder.this.world.getWorld().getWorldBorder(),
+                this.from, this.to, this.lerpDuration).callEvent();
+    }

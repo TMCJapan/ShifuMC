@@ -3,6 +3,6 @@
 # callPlayerRiptideEvent
 file: net/minecraft/world/item/TridentItem.java
 anchor:
-    player.push(f, f1, f2);
+    player.push((double)h, (double)k, (double)l);
 insert:
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerRiptideEvent(player, stack, f, f1, f2)) return false; // Paper - Add player riptide event
+    org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerRiptideEvent(player, stack, (float) h, (float) k, (float) l); // CraftBukkit - PlayerRiptideEvent

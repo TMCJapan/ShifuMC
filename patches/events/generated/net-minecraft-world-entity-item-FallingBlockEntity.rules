@@ -3,6 +3,6 @@
 # callEntityChangeBlockEvent
 file: net/minecraft/world/entity/item/FallingBlockEntity.java
 anchor:
-    level.setBlock(pos, state.getFluidState().createLegacyBlock(), Block.UPDATE_ALL);
+    world.setBlock(pos, state.getFluidState().createLegacyBlock(), 3);
 insert:
     if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(fallingBlockEntity, pos, state.getFluidState().createLegacyBlock())) return fallingBlockEntity; // CraftBukkit
