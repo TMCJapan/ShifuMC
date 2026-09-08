@@ -28,3 +28,16 @@ net/minecraft/world/level/block/SculkCatalystBlock.java SculkCatalystBlock.getEx
 
 # 可視性を広げるだけの構築子。patches/access で広げるので、Paper の宣言は足さない
 net/minecraft/world/phys/shapes/ArrayVoxelShape.java ArrayVoxelShape.ArrayVoxelShape
+
+# POI の読み書きを Paper のチャンク系に渡す欄。Paper は SectionStorage を
+# RegionFileStorage の下に付け替えているので、getPoiManager() をそのまま返せる。
+# vanilla の SectionStorage は IOWorker を使うので載らない。patches/hand に置き換えを書いた
+net/minecraft/server/level/ServerLevel.java ServerLevel.poiDataControllerNew
+
+# 抜けたときの文言。vanilla の remove(ServerPlayer) は何も返さないので、
+# Paper の三項演算子が載らない。patches/hand に 2 引数の版だけを呼ぶ形で書いた
+net/minecraft/server/network/ServerGamePacketListenerImpl.java ServerGamePacketListenerImpl.removePlayerFromWorld
+
+# Paper は hurtAndBreak の 3 つめを LivingEntity に替えている。vanilla は ServerPlayer なので、
+# 同じ本体のうち渡す実体だけを変えた版を patches/hand に置いた
+net/minecraft/world/item/ItemStack.java ItemStack.hurtAndBreakWithoutChecks

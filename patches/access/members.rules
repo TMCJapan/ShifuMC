@@ -139,3 +139,9 @@ implements:
 file: net/minecraft/world/phys/shapes/ArrayVoxelShape.java
 line:
     ArrayVoxelShape(DiscreteVoxelShape shape, DoubleList xPoints, DoubleList yPoints, DoubleList zPoints) {
+
+# ServerLevel の中に入る EntityRegionFileStorage が super で呼ぶ。
+# 同じパッケージの外からは見えないので public にする
+file: net/minecraft/world/level/chunk/storage/RegionFileStorage.java
+line:
+    RegionFileStorage(RegionStorageInfo storageKey, Path directory, boolean dsync) {

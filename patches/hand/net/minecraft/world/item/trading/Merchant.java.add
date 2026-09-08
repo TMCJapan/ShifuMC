@@ -1,1 +1,7 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// Merchant.processTrade
+    // Paper は PlayerPurchaseEvent を挟む。vanilla にその段は無いので、そのまま知らせる
+    default void processTrade(MerchantOffer merchantRecipe, @Nullable io.papermc.paper.event.player.PlayerPurchaseEvent event) {
+        this.notifyTrade(merchantRecipe);
+    }

@@ -1,1 +1,33 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// ItemStack.hurtAndBreakWithoutChecks
+    // vanilla の hurtAndBreak は 3 つめが ServerPlayer。上で作った entityplayer を渡す
+    public void hurtAndBreakWithoutChecks(int amount, LivingEntity entity, @org.checkerframework.checker.nullness.qual.Nullable EquipmentSlot slot) {
+        RandomSource randomsource = entity.getRandom();
+        ServerPlayer entityplayer;
+
+        if (entity instanceof ServerPlayer) {
+            ServerPlayer entityplayer1 = (ServerPlayer) entity;
+
+            entityplayer = entityplayer1;
+        } else {
+            entityplayer = null;
+        }
+
+        this.hurtAndBreak(amount, randomsource, entityplayer, () -> { // Paper - Add EntityDamageItemEvent
+            if (slot != null) entity.broadcastBreakEvent(slot); // Paper - ItemStack damage API - slot is nullable
+            Item item = this.getItem();
+            // CraftBukkit start - Check for item breaking
+            if (this.count == 1 && entity instanceof net.minecraft.world.entity.player.Player) {
+                org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerItemBreakEvent((net.minecraft.world.entity.player.Player) entity, this);
+            }
+            // CraftBukkit end
+
+            this.shrink(1);
+            if (entity instanceof net.minecraft.world.entity.player.Player) {
+                ((net.minecraft.world.entity.player.Player) entity).awardStat(Stats.ITEM_BROKEN.get(item));
+            }
+
+            this.setDamageValue(0);
+        });
+    }

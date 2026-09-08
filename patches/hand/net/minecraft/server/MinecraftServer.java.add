@@ -35,3 +35,9 @@
     public void motd(final net.kyori.adventure.text.Component motd) {
         this.setMotd(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(motd));
     }
+
+// MinecraftServer.setDifficulty
+    // Paper は世界ごとに難易度を持つ。vanilla は 1 つなので、どの世界かは落とす
+    public void setDifficulty(ServerLevel level, Difficulty difficulty, boolean forceUpdate) {
+        this.setDifficulty(difficulty, forceUpdate);
+    }

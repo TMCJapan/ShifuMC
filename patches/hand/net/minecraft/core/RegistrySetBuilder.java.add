@@ -1,7 +1,0 @@
-// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
-
-// EmptyTagRegistryLookup<T>.getValueForCopying
-        @Override
-        public Optional<T> getValueForCopying(final ResourceKey<T> resourceKey) {
-            return this.get(resourceKey).map(Holder.Reference::value);
-        }

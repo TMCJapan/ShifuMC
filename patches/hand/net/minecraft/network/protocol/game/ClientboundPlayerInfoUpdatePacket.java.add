@@ -1,15 +1,34 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
 
+// Entry.Entry
+    // Listing API 用。vanilla は一覧に載せる前提なので listed を受ける版が無い
+        Entry(ServerPlayer player, boolean listed) {
+            this(
+                player.getUUID(),
+                player.getGameProfile(),
+                listed,
+                player.connection.latency(),
+                player.gameMode.getGameModeForPlayer(),
+                player.getTabListDisplayName(),
+                Optionull.map(player.getChatSession(), RemoteChatSession::asData)
+            );
+        }
+
+// Entry.Entry
+        Entry(UUID profileId, boolean listed) {
+            this(profileId, null, listed, 0, GameType.DEFAULT_MODE, null, null);
+        }
+
 // ClientboundPlayerInfoUpdatePacket.ClientboundPlayerInfoUpdatePacket
-    // 出来上がった Entry から作る版。vanilla の 2 つのコンストラクタはどちらも
-    // ServerPlayer から Entry を作るので、Entry を直接受ける形が無い。
-    // 代入するのは vanilla と同じ 2 つのフィールドだけ。
-    public ClientboundPlayerInfoUpdatePacket(final EnumSet<ClientboundPlayerInfoUpdatePacket.Action> actions, final List<ClientboundPlayerInfoUpdatePacket.Entry> entries) {
+    // Listing API 用。vanilla は ServerPlayer の並びからしか作らない
+    public ClientboundPlayerInfoUpdatePacket(EnumSet<ClientboundPlayerInfoUpdatePacket.Action> actions, List<ClientboundPlayerInfoUpdatePacket.Entry> entries) {
         this.actions = actions;
         this.entries = entries;
     }
 
-    public ClientboundPlayerInfoUpdatePacket(final EnumSet<ClientboundPlayerInfoUpdatePacket.Action> actions, final ClientboundPlayerInfoUpdatePacket.Entry entry) {
+// ClientboundPlayerInfoUpdatePacket.ClientboundPlayerInfoUpdatePacket
+    public ClientboundPlayerInfoUpdatePacket(EnumSet<ClientboundPlayerInfoUpdatePacket.Action> actions, ClientboundPlayerInfoUpdatePacket.Entry entry) {
         this.actions = actions;
         this.entries = List.of(entry);
     }
+

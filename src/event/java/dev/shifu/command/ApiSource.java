@@ -41,12 +41,6 @@ public record ApiSource(net.minecraft.commands.CommandSourceStack handle) implem
         return this.handle;
     }
 
-    /** {@code withLocation} は API の interface が求める。NMS の同名メソッド(hand)へ渡す。 */
-    @Override
-    public CommandSourceStack withLocation(final org.bukkit.Location location) {
-        return wrap(this.handle.withLocation(location));
-    }
-
     /** NMS の source を API の型で見せる。 */
     public static CommandSourceStack wrap(final net.minecraft.commands.CommandSourceStack source) {
         if (source == null) {

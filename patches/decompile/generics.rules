@@ -56,3 +56,164 @@ replace:
                 list.add((T)((NumericTag)tag).getAsInt());
 with:
                 list.add((T)(Object)((NumericTag)tag).getAsInt());
+
+# 逆コンパイラが型引数を落としている。private の構築子はダイヤモンドで推論できない
+file: net/minecraft/util/SortedArraySet.java
+replace:
+        return new SortedArraySet<>(initialCapacity, Comparator.naturalOrder());
+with:
+        return new SortedArraySet<T>(initialCapacity, Comparator.naturalOrder());
+
+# MutableValue は Settings<T> の内部クラス。外側の実体を付けないと raw type になる
+file: net/minecraft/server/dedicated/Settings.java
+replace:
+        return new Settings.MutableValue<>(key, object, stringifier);
+with:
+        return this.new MutableValue<V>(key, object, stringifier);
+
+# ? を 2 つ書くと別々に capture される。T に揃える cast が要る
+file: net/minecraft/world/level/GameRules.java
+replace:
+        consumer.visit(key, type);
+        type.callVisitor(consumer, key);
+with:
+        consumer.visit((GameRules.Key<T>)key, (GameRules.Type<T>)type);
+        ((GameRules.Type<T>)type).callVisitor(consumer, (GameRules.Key<T>)key);
+
+# dispatchedMap の V が capture になって、書き出す側の Map と合わない
+file: net/minecraft/core/component/DataComponentPatch.java
+replace:
+    public static final Codec<DataComponentPatch> CODEC = Codec.dispatchedMap(DataComponentPatch.PatchKey.CODEC, DataComponentPatch.PatchKey::valueCodec)
+with:
+    public static final Codec<DataComponentPatch> CODEC = Codec.<DataComponentPatch.PatchKey, Object>dispatchedMap(DataComponentPatch.PatchKey.CODEC, DataComponentPatch.PatchKey::valueCodec)
+
+# toMap の K が Object に落ちて newEnumMap に渡らない
+file: net/minecraft/world/entity/animal/Sheep.java
+replace:
+        Arrays.stream(DyeColor.values()).collect(Collectors.toMap(color -> (DyeColor)color, Sheep::createSheepColor))
+with:
+        Arrays.stream(DyeColor.values()).collect(Collectors.<DyeColor, DyeColor, float[]>toMap(color -> color, Sheep::createSheepColor))
+
+# Either.right の左側が Object に落ちる
+file: net/minecraft/world/entity/Mob.java
+replace:
+            this.delayedLeashInfo = NbtUtils.readBlockPos(nbt, "leash").map(Either::right).orElse(null);
+with:
+            this.delayedLeashInfo = NbtUtils.readBlockPos(nbt, "leash").<Either<UUID, BlockPos>>map(Either::right).orElse(null);
+
+# Collection<RecipeHolder<?>> から Collection<RecipeHolder<T>> へは直に cast できない
+file: net/minecraft/world/item/crafting/RecipeManager.java
+replace:
+        return (Collection<RecipeHolder<T>>)this.byType.get(type);
+with:
+        return (Collection<RecipeHolder<T>>)(Collection)this.byType.get(type);
+
+# Stream.empty() の要素型が定まらず、joining に渡らない
+file: net/minecraft/commands/arguments/item/ItemInput.java
+replace:
+            return resourceLocation != null && !optional.isEmpty() ? Stream.of(resourceLocation.toString() + "=" + optional.get()) : Stream.empty();
+with:
+            return resourceLocation != null && !optional.isEmpty() ? Stream.of(resourceLocation.toString() + "=" + optional.get()) : Stream.<String>empty();
+
+# raw な Int2ObjectOpenHashMap のままだと ::get の返りが Object になる
+file: net/minecraft/util/datafix/DataFixers.java
+replace:
+                schema162, "Change cat variant type", References.ENTITY, "minecraft:cat", "CatType", Util.make(new Int2ObjectOpenHashMap(), catVariants -> {
+with:
+                schema162, "Change cat variant type", References.ENTITY, "minecraft:cat", "CatType", Util.make(new Int2ObjectOpenHashMap<String>(), catVariants -> {
+
+file: net/minecraft/util/datafix/DataFixers.java
+replace:
+                schema163, "Change frog variant type", References.ENTITY, "minecraft:frog", "Variant", Util.make(new Int2ObjectOpenHashMap(), frogVariants -> {
+with:
+                schema163, "Change frog variant type", References.ENTITY, "minecraft:frog", "Variant", Util.make(new Int2ObjectOpenHashMap<String>(), frogVariants -> {
+
+# holders の鍵は ResourceKey<Object>。ResourceKey<T> のままでは入らない
+file: net/minecraft/core/RegistrySetBuilder.java
+replace:
+            return (Holder.Reference<T>)this.holders.computeIfAbsent(key, key2 -> Holder.Reference.createStandAlone(this.owner, (ResourceKey<Object>)key2));
+with:
+            return (Holder.Reference<T>)this.holders.computeIfAbsent((ResourceKey<Object>)key, key2 -> Holder.Reference.createStandAlone(this.owner, (ResourceKey<Object>)key2));
+
+# HolderOwner<Object> を HolderOwner<T> として返すには cast が要る
+file: net/minecraft/core/RegistrySetBuilder.java
+replace:
+        public <T> HolderOwner<T> cast() {
+            return this;
+        }
+with:
+        public <T> HolderOwner<T> cast() {
+            return (HolderOwner<T>)this;
+        }
+
+# ResourceKey<? extends Registry<T>> から ResourceKey<WritableRegistry<?>> へは 1 段では届かない
+file: net/minecraft/core/registries/BuiltInRegistries.java
+replace:
+        WRITABLE_REGISTRY.register((ResourceKey<WritableRegistry<?>>)key, registry, RegistrationInfo.BUILT_IN);
+with:
+        WRITABLE_REGISTRY.register((ResourceKey<WritableRegistry<?>>)(ResourceKey<?>)key, registry, RegistrationInfo.BUILT_IN);
+
+# Paper が addEffect(MobEffectInstance, Cause) を足したので、null が両方に当たる
+file: net/minecraft/world/entity/LivingEntity.java
+replace:
+    public final boolean addEffect(MobEffectInstance effect) {
+        return this.addEffect(effect, null);
+    }
+with:
+    public final boolean addEffect(MobEffectInstance effect) {
+        return this.addEffect(effect, (Entity)null);
+    }
+
+# CommandNode<CommandSourceStack>.createBuilder() から見ると 1 段では届かない
+file: net/minecraft/commands/Commands.java
+replace:
+                ArgumentBuilder<SharedSuggestionProvider, ?> argumentBuilder = commandNode.createBuilder();
+with:
+                ArgumentBuilder<SharedSuggestionProvider, ?> argumentBuilder = (ArgumentBuilder<SharedSuggestionProvider, ?>)(ArgumentBuilder<?, ?>)commandNode.createBuilder();
+
+# Component::literal は MutableComponent を返す。Filterable の型引数を明示する
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+replace:
+            List<Filterable<Component>> list = pages.stream().map(page -> this.filterableFromOutgoing(page).map(Component::literal)).toList();
+with:
+            List<Filterable<Component>> list = pages.stream().map(page -> this.filterableFromOutgoing(page).<Component>map(Component::literal)).toList();
+
+# Object2IntMap.Entry のメソッド参照は受け手が Object になって当たらない
+file: net/minecraft/server/level/ServerLevel.java
+replace:
+                .sorted(Comparator.comparing(Entry::getIntValue).reversed())
+with:
+                .sorted(Comparator.comparingInt((it.unimi.dsi.fastutil.objects.Object2IntMap.Entry<String> entry) -> entry.getIntValue()).reversed())
+
+# 逆コンパイラが無名クラスの中の局所変数を外側と同じ名前にして、自分自身で初期化している。
+# Mojang の版は i1 / j1 / k1 / l1。外側の i / j を読む形に戻す
+file: net/minecraft/core/BlockPos.java
+replace:
+                        int i = this.index % i;
+                        int j = this.index / i;
+                        int k = j % j;
+                        int l = j / j;
+                        this.index++;
+                        return this.cursor.set(startX + i, startY + k, startZ + l);
+with:
+                        int i1 = this.index % i;
+                        int j1 = this.index / i;
+                        int k1 = j1 % j;
+                        int l1 = j1 / j;
+                        this.index++;
+                        return this.cursor.set(startX + i1, startY + k1, startZ + l1);
+
+# unwrapKey().map(...) と orElseGet の型が揃わない。どちらも文字列に直してから繋ぐ
+file: net/minecraft/commands/arguments/item/ItemInput.java
+replace:
+        return this.item.unwrapKey().map(ResourceKey::location).orElseGet(() -> "unknown[" + this.item + "]").toString();
+with:
+        return this.item.unwrapKey().<Object>map(ResourceKey::location).orElseGet(() -> "unknown[" + this.item + "]").toString();
+
+# 逆コンパイラが引数の名前を落として、宣言中の変数を自分で読ませている。
+# Mojang の版は new File(playerDataFolder, fileName + ".dat")
+file: net/minecraft/server/players/OldUsersConverter.java
+replace:
+                        File file = new File(file, fileName + ".dat");
+with:
+                        File file = new File(playerDataFolder, fileName + ".dat");

@@ -93,7 +93,7 @@ with:
 # Paper のチャンク系が型の側から呼ぶ。中身は引数だけで決まるので static にしても結果は同じ
 file: net/minecraft/server/level/ChunkMap.java
 replace:
-    private ChunkStatus getDependencyStatus(ChunkStatus centerChunkTargetStatus, int distance) {
+    public ChunkStatus getDependencyStatus(ChunkStatus centerChunkTargetStatus, int distance) {
 with:
     public static ChunkStatus getDependencyStatus(ChunkStatus centerChunkTargetStatus, int distance) { // Paper - static
 

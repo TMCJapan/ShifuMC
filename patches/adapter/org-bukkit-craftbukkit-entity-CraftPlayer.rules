@@ -2,8 +2,8 @@
 
 file: org/bukkit/craftbukkit/entity/CraftPlayer.java
 
-# vanilla の DiscardedPayload は成分が Identifier 1 つで、record の成分は足せない
+# vanilla の DiscardedPayload は成分が ResourceLocation 1 つで、record の成分は足せない
 replace:
-    new DiscardedPayload(id, message)
+    new DiscardedPayload(id, Unpooled.wrappedBuffer(message))
 with:
     new DiscardedPayload(id)

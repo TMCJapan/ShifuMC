@@ -20,3 +20,9 @@
         double liquidDistanceSquared = liquidResult == null ? Double.MAX_VALUE : c.getFrom().distanceToSqr(liquidResult.getLocation());
         return blockDistanceSquared <= liquidDistanceSquared ? blockResult : liquidResult;
     }
+
+// BlockGetter.clip
+    // canCollide は Paper の raytrace API 用。vanilla は当たり判定だけで決めるので渡さない
+    default BlockHitResult clip(ClipContext context, java.util.function.Predicate<? super org.bukkit.block.Block> canCollide) {
+        return this.clip(context);
+    }

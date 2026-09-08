@@ -1,0 +1,19 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// PlayerDataStorage.load
+    // CraftBukkit は繋いでいない人の記録を名前と UUID で読む。vanilla の版は Player を受けて
+    // 中身をその人に入れるので、ここではファイルを開いて返すだけにする
+    public java.util.Optional<net.minecraft.nbt.CompoundTag> load(String name, String uuid) {
+        java.io.File file = new java.io.File(this.playerDir, uuid + ".dat");
+
+        if (file.exists() && file.isFile()) {
+            try {
+                return java.util.Optional.of(net.minecraft.nbt.NbtIo.readCompressed(
+                    file.toPath(), net.minecraft.nbt.NbtAccounter.unlimitedHeap()));
+            } catch (Exception exception) {
+                LOGGER.warn("Failed to load player data for {}", name);
+            }
+        }
+
+        return java.util.Optional.empty();
+    }

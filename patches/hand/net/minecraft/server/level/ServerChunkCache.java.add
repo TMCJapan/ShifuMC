@@ -11,3 +11,9 @@
     public void setSpawnSettings(final boolean spawnEnemies, final boolean spawnFriendlies) {
         this.setSpawnSettings(spawnEnemies);
     }
+
+// ServerChunkCache.isPositionTicking
+    // Paper は実体を受ける版を足している。vanilla は長整数の位置で見るので、そこへ渡す
+    public boolean isPositionTicking(net.minecraft.world.entity.Entity entity) {
+        return this.isPositionTicking(net.minecraft.world.level.ChunkPos.asLong(entity.blockPosition()));
+    }

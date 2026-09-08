@@ -1,0 +1,16 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// ChunkHolder.broadcast
+    // Paper は「見ている人を自分で引いて送る」版を足している。vanilla の版は一覧を受け取る
+    public void broadcast(net.minecraft.network.protocol.Packet<?> packet, boolean onlyOnWatchDistanceEdge) {
+        this.broadcast(this.playerProvider.getPlayers(this.pos, onlyOnWatchDistanceEdge), packet);
+    }
+
+// ChunkHolder.ChunkHolder
+    // Paper のチャンク系が作る版。vanilla は読み込み段階を int で持つので、
+    // 何も読めていない値(ChunkLevel.MAX_LEVEL)で渡す。newChunkHolder は使わない
+    public ChunkHolder(ChunkPos pos, LevelHeightAccessor world, LevelLightEngine lightingProvider,
+                       ChunkHolder.PlayerProvider playersWatchingChunkProvider,
+                       io.papermc.paper.chunk.system.scheduling.NewChunkHolder newChunkHolder) {
+        this(pos, net.minecraft.server.level.ChunkLevel.MAX_LEVEL, world, lightingProvider, null, playersWatchingChunkProvider);
+    }

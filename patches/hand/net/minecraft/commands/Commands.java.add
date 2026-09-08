@@ -6,3 +6,17 @@
                                final boolean throwCommandError) {
         this.performCommand(command, commandString);
     }
+
+// Commands.performCommand
+    // label は Paper がイベントに渡す元の文字列。vanilla の版は持たないので落とす。
+    public void performCommand(final ParseResults<CommandSourceStack> command, final String commandString,
+                               final String label) {
+        this.performCommand(command, commandString);
+    }
+
+// Commands.performCommand
+    public void performCommand(final ParseResults<CommandSourceStack> command, final String commandString,
+                               final String label, final boolean throwCommandError) {
+        this.performCommand(command, commandString);
+    }
+

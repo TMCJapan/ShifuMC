@@ -31,3 +31,51 @@
 // ServerLevel.levelStorageAccess
     // Paper が構築子で入れる。CraftWorld と CraftServer が直に読む。
     public LevelStorageSource.LevelStorageAccess levelStorageAccess;
+
+// ServerLevel.poiDataControllerNew
+    // Paper のチャンク系は POI を自前の IO 糸で読み書きする。vanilla の SectionStorage は
+    // IOWorker を使うので RegionFileStorage として渡せない。Shifu は Paper のチャンク系を
+    // 繋いでいない(chunkTaskScheduler に何も入れていない)ので、ここに来たら落とす
+    public final io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController poiDataControllerNew
+        = new io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController(io.papermc.paper.chunk.system.io.RegionFileIOThread.RegionFileType.POI_DATA) {
+
+        @Override
+        public net.minecraft.world.level.chunk.storage.RegionFileStorage getCache() {
+            throw new UnsupportedOperationException("Shifu: POI は vanilla の IOWorker が読み書きする");
+        }
+
+        @Override
+        public void writeData(int chunkX, int chunkZ, net.minecraft.nbt.CompoundTag compound) {
+            throw new UnsupportedOperationException("Shifu: POI は vanilla の IOWorker が読み書きする");
+        }
+
+        @Override
+        public net.minecraft.nbt.CompoundTag readData(int chunkX, int chunkZ) {
+            throw new UnsupportedOperationException("Shifu: POI は vanilla の IOWorker が読み書きする");
+        }
+    };
+
+// ServerLevel.ServerLevel
+    // Paper が増やした 3 引数を受ける版。CraftServer.createWorld から呼ばれる。
+    // vanilla の 12 引数の版へ this(...) で渡してから、増えた分を欄へ入れる。
+    // environment と biomeProvider は使わない。入れ先の world (CraftWorld) は Level の
+    // 構築子の末尾(配線)で、次元から決めた environment を渡して作っている。
+    public ServerLevel(final MinecraftServer server,
+                       final Executor dispatcher,
+                       final LevelStorageSource.LevelStorageAccess levelStorageAccess,
+                       final ServerLevelData serverLevelData,
+                       final ResourceKey<Level> dimension,
+                       final LevelStem levelStem,
+                       final ChunkProgressListener worldGenerationProgressListener,
+                       final boolean isDebug,
+                       final long biomeZoomSeed,
+                       final List<CustomSpawner> customSpawners,
+                       final boolean tickTime,
+                       final @Nullable RandomSequences randomSequences,
+                       final org.bukkit.World.Environment environment,
+                       final org.bukkit.generator.ChunkGenerator generator,
+                       final org.bukkit.generator.BiomeProvider biomeProvider) {
+        this(server, dispatcher, levelStorageAccess, serverLevelData, dimension, levelStem,
+                worldGenerationProgressListener, isDebug, biomeZoomSeed, customSpawners, tickTime, randomSequences);
+        this.generator = generator;
+    }

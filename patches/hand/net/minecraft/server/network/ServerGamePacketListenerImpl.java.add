@@ -64,3 +64,18 @@
     public void shifuPerformUnsignedChatCommand(final String command) {
         this.performUnsignedChatCommand(command);
     }
+
+// ServerGamePacketListenerImpl.removePlayerFromWorld
+    // Paper は文言が無いときだけ remove(ServerPlayer) を呼んで戻り値を使う。
+    // vanilla のその版は void なので、いつも 2 引数の版へ渡す(中で null を見ている)。
+    private void removePlayerFromWorld(@Nullable net.kyori.adventure.text.Component quitMessage) {
+        this.chatMessageChain.close();
+        // CraftBukkit start - Replace vanilla quit message handling with our own.
+        this.player.disconnect();
+        quitMessage = this.server.getPlayerList().remove(this.player, quitMessage);
+        if ((quitMessage != null) && !quitMessage.equals(net.kyori.adventure.text.Component.empty())) {
+            this.server.getPlayerList().broadcastSystemMessage(io.papermc.paper.adventure.PaperAdventure.asVanilla(quitMessage), false);
+        }
+        // CraftBukkit end
+        this.player.getTextFilter().leave();
+    }

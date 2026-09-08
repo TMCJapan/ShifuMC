@@ -12,15 +12,38 @@ import sys
 
 WHERE = re.compile(r"^(?:minecraft|main)[\\/]java[\\/](.+?\.java):(\d+): error:")
 SYMBOL = re.compile(r"^\s*symbol:\s+(class|method|variable) ([\w$]+)")
-LOCATION = re.compile(r"^\s*location: (?:class|interface|variable \w+ of type|@?interface) ([\w.<>]+)")
+LOCATION = re.compile(r"^\s*location: (?:class|interface|variable \w+ of type|record component \w+ of type|@?interface) ([\w.<>]+)")
 MEMBER = re.compile(r"(?:method|constructor) ([\w$]+) in (?:class|interface|record) ([\w.]+(?:<[^>]*>)?) cannot be applied")
 ACCESS = re.compile(r"([\w$]+) has (?:private|protected) access in ([\w.]+)")
-ABSTRACT = re.compile(r"does not override abstract method (\w+)\(")
+# 総称メソッドは `<T>getEntitiesByClass(` の形で出る。型引数を飛ばす
+ABSTRACT = re.compile(r"does not override abstract method (?:<[^>]+>\s*)?(\w+)\(")
 # 引数違いは 2 つの形で出る。片方だけ見ていると、Paper が足した多重定義
 # (disconnect(Component, Cause) など)が要求に入らない。
 NO_METHOD = re.compile(r"no suitable (?:method|constructor) found for ([\w$]+)\(")
 # `cannot infer type arguments for PalettedContainer<>` は構築子の引数違い
 INFER = re.compile(r"cannot infer type arguments for ([\w$]+)<>")
+# `location: record component value of type T` の T は型変数。javac は続けて
+# `T extends Recipe<?> declared in record RecipeHolder` と書くので、上限の型に読み替える。
+# 型変数のままだと木に無い名前になって、要求元の型が分からなくなる。
+BOUND = re.compile(r"^\s+([A-Z]\w*) extends ([\w.$]+)[\w.<>,?$ ]* declared in ")
+
+
+def bound_of(lines, number, name):
+    """型変数なら、その直後の `where` が書いている上限の型。そうでなければそのまま。
+
+    型変数の名前はエラーごとに違うので、そのエラーの後ろだけを見る。
+    ファイル全体で 1 つの辞書にすると、別のエラーの T で上書きされる。
+    """
+    if not re.fullmatch(r"[A-Z]\w?", name):
+        return name
+
+    for line in lines[number:number + 8]:
+        hit = BOUND.match(line)
+
+        if hit and hit.group(1) == name:
+            return hit.group(2)
+
+    return name
 
 
 def main():
@@ -61,7 +84,7 @@ def main():
         place = LOCATION.match(lines[number + 1])
 
         if place:
-            add(place.group(1), match.group(1), match.group(2))
+            add(bound_of(lines, number, place.group(1)), match.group(1), match.group(2))
         elif where:
             # javac が location を出さないことがある(`this.player` のような
             # 自分の型の要素)。そのときはエラーの出たファイルの型を owner にする。

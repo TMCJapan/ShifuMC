@@ -1,0 +1,10 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// ChunkStorage.upgradeChunkTag
+    // Paper のチャンク系が呼ぶ版。次元の鍵と世界は vanilla の版が使わないので落とす
+    public CompoundTag upgradeChunkTag(ResourceKey<net.minecraft.world.level.dimension.LevelStem> levelStem, Supplier<DimensionDataStorage> persistentStateManagerFactory,
+                                       CompoundTag nbt, Optional<ResourceKey<MapCodec<? extends ChunkGenerator>>> generatorCodecKey,
+                                       ChunkPos pos, @Nullable net.minecraft.world.level.LevelAccessor level) {
+        return this.upgradeChunkTag(ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, levelStem.location()),
+                persistentStateManagerFactory, nbt, generatorCodecKey);
+    }

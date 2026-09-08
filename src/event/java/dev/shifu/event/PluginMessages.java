@@ -47,7 +47,36 @@ public final class PluginMessages {
     private PluginMessages() {
     }
 
+    /** プラグインが 1 つでも入っているか。入っていなければ vanilla のまま何もしない。 */
+    private static boolean enabled() {
+        final net.minecraft.server.MinecraftServer server = net.minecraft.server.MinecraftServer.getServer();
 
+        return server != null && server.server != null && server.server.getPluginManager().getPlugins().length != 0;
+    }
+
+    /**
+     * {@code DiscardedPayload} の codec が本文を捨てる直前。読むだけで reader index は動かさない。
+     *
+     * @param buf    これから捨てられる本文が入っている buffer
+     * @param length 本文の長さ(vanilla が数えた値)
+     */
+    public static void remember(final FriendlyByteBuf buf, final int length) {
+        if (length == 0 || !enabled()) {
+            return;
+        }
+
+        final byte[] data = new byte[length];
+        buf.getBytes(buf.readerIndex(), data);
+
+        final Deque<byte[]> queue = DECODED.get();
+
+        // 次の handler が拾わなかった分(プレイヤーの接続以外)が溜まらないように上限を置く
+        if (queue.size() >= 8) {
+            queue.removeFirst();
+        }
+
+        queue.addLast(data);
+    }
 
     /** 復号した packet が handler に着いたところ。控えを接続ごとの列へ移す。 */
     private static void afterDecode(final Connection connection, final Object message) {

@@ -1,0 +1,6 @@
+// RegionFile.RegionFile
+    // Paper は壊れたヘッダを作り直せる版のときだけ旗を立てる。vanilla は作り直さないので、
+    // 旗を受け取って捨てる。呼ぶのは Shifu が足した getRegionFile だけ
+    public RegionFile(RegionStorageInfo storageKey, Path directory, Path path, boolean dsync, boolean canRecalcHeader) throws IOException {
+        this(storageKey, directory, path, dsync);
+    }
