@@ -41,9 +41,9 @@ insert:
 
 file: net/minecraft/core/dispenser/BoatDispenseItemBehavior.java
 anchor:
-    AbstractBoat abstractBoat = this.type.create(serverLevel, EntitySpawnReason.DISPENSER);
+    Boat boat = (Boat)(this.isChestBoat ? new ChestBoat(serverLevel, e, f + h, g) : new Boat(serverLevel, e, f + h, g));
 insert:
-    if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, new net.minecraft.world.phys.Vec3(d1, d2 + d4, d3))) {
+    if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, new net.minecraft.world.phys.Vec3(e, f + h, g))) {
         return stack;
     }
 
@@ -59,7 +59,7 @@ insert:
 # BlockDispenseEvent(投射物)
 file: net/minecraft/core/dispenser/ProjectileDispenseBehavior.java
 anchor:
-    Projectile.spawnProjectileUsingShoot(
+    Projectile projectile = this.projectileItem.asProjectile(level, position, stack, direction);
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(pointer, stack,
             new net.minecraft.world.phys.Vec3(direction.getStepX(), direction.getStepY(), direction.getStepZ()))) {
@@ -135,8 +135,8 @@ insert:
 # BlockDispenseEvent(ガラス瓶で蜂の巣)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (blockState.is(
-    BlockTags.BEEHIVES,
+    if (blockState.is(BlockTags.BEEHIVES, state -> state.hasProperty(BeehiveBlock.HONEY_LEVEL) && state.getBlock() instanceof BeehiveBlock)
+    && blockState.getValue(BeehiveBlock.HONEY_LEVEL) >= 5) {
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, blockPos)) {
         return stack;

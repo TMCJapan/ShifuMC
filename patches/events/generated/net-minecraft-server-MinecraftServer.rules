@@ -5,12 +5,13 @@ file: net/minecraft/server/MinecraftServer.java
 anchor:
     this.tickCount++;
 insert:
+    this.currentTickStart = System.nanoTime(); // Shifu - ServerTickEndEvent が読む
     new com.destroystokyo.paper.event.server.ServerTickStartEvent(this.tickCount+1).callEvent(); // Paper - Server Tick Events
 
 # ServerTickEndEvent
 file: net/minecraft/server/MinecraftServer.java
 anchor:
-    profilerFiller.push("tallying");
+    this.profiler.push("tallying");
 insert:
     // Paper start - Server Tick Events
     long endTime = System.nanoTime();

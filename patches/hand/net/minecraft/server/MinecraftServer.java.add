@@ -41,3 +41,8 @@
     public void setDifficulty(ServerLevel level, Difficulty difficulty, boolean forceUpdate) {
         this.setDifficulty(difficulty, forceUpdate);
     }
+
+// MinecraftServer.currentTickStart
+    // ServerTickEndEvent が 1 tick の長さを出すのに要る。tick の頭で入れる(patches/events)
+    public long currentTickStart;
+
