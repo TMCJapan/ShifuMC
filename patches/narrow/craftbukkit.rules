@@ -63,3 +63,16 @@ replace:
     private double offs(int i) {
 with:
     private static double offs(int i) {
+
+# Paper は Goal.Flag に UNKNOWN_BEHAVIOR を足す。MobGoalHelper と PaperCustomGoal が
+# その名前で分岐する。列挙子は本体の末尾には足せないので、宣言の並びを置き換える。
+# 位置は Paper と同じ先頭にする(ordinal を合わせる)。
+# vanilla は Goal.Flag の ordinal を保存しないので、足しても記録の互換は変わらない
+file: net/minecraft/world/entity/ai/goal/Goal.java
+replace:
+    public static enum Flag {
+        MOVE,
+with:
+    public static enum Flag {
+        UNKNOWN_BEHAVIOR, // Paper - add UNKNOWN_BEHAVIOR
+        MOVE,

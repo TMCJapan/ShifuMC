@@ -121,3 +121,16 @@ line:
 public class CommandSourceStack implements ExecutionCommandSource<CommandSourceStack>, SharedSuggestionProvider {
 implements:
     io.papermc.paper.command.brigadier.PaperCommandSourceStack
+
+# CraftBukkit は看板と書見台をコマンドの送り手にする(/setblock などの実行元)
+file: net/minecraft/world/level/block/entity/SignBlockEntity.java
+line:
+public class SignBlockEntity extends BlockEntity {
+implements:
+    net.minecraft.commands.CommandSource
+
+file: net/minecraft/world/level/block/entity/LecternBlockEntity.java
+line:
+public class LecternBlockEntity extends BlockEntity implements Clearable, MenuProvider {
+implements:
+    net.minecraft.commands.CommandSource

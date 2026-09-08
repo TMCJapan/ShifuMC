@@ -39,7 +39,11 @@ spec.loader.exec_module(ms)
 fs = ms.fs
 
 # 宣言の行から名前を取る。make_shim が使っているものと同じ。
-PATTERNS = (fs.DECL, fs.FIELD, fs.TYPE_NAME, fs.IFACE, fs.PLAIN_FIELD)
+# 型引数で始まるメソッド(`<T> void getEntitiesByClass(...)`)。
+# filter_sources の形は「修飾子 + 型 + 名前」なので、型引数が前に付くと当たらない。
+GENERIC = re.compile(r"^\s+(?:(?:public|protected|private|static|final|default|abstract)\s+)*<[^>]+>\s+[\w$<>\[\],.?]+\s+([\w$]+)\s*\(")
+
+PATTERNS = (fs.DECL, fs.FIELD, fs.TYPE_NAME, fs.IFACE, fs.PLAIN_FIELD, GENERIC)
 # 型だけを残す。`final ItemStack stack` -> `ItemStack`
 ARG = re.compile(r"^(.*?[\w\]>])\s+\w+$")
 
@@ -105,10 +109,17 @@ def members(lines):
             name = None
 
             # 宣言が折り返していると 1 行では `;` `=` `(` `{` まで届かない。
-            # `public final ...ChunkDataController chunkDataControllerNew` のように
-            # 名前で行が終わるものがある。続きを繋いでから見る。
-            for probe in (line, line.rstrip() + " "
-                          + " ".join(l.strip() for l in lines[number + 1:number + 3])):
+            # 引数の途中で改行するもの(`..., List<? super T> into,` で終わる)もある。
+            # `;` か `{` が出るまで繋いでから見る。
+            joined = line.rstrip()
+
+            for more in lines[number + 1:number + 8]:
+                if ";" in joined or "{" in joined:
+                    break
+
+                joined += " " + more.strip()
+
+            for probe in (line, joined):
                 for pattern in PATTERNS:
                     hit = pattern.match(probe)
 
