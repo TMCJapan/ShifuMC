@@ -325,6 +325,19 @@ public final class ItemEvents {
         return leashHand == null || leashHandPlayer != player ? InteractionHand.MAIN_HAND : leashHand;
     }
 
+    /**
+     * PlayerLeashEntityEvent(縄で柵に繋ぐ。1 匹ずつ)。
+     * 1.20.6 に Leashable は無いので Mob を受ける。
+     */
+    public static boolean leash(final net.minecraft.world.entity.Mob mob,
+                                final net.minecraft.world.entity.Entity holder, final Player player) {
+        if (!ShifuEvents.listening(org.bukkit.event.entity.PlayerLeashEntityEvent.getHandlerList())) {
+            return true;
+        }
+
+        return !CraftEventFactory.callPlayerLeashEntityEvent(mob, holder, player, peekLeashHand(player)).isCancelled();
+    }
+
 
 
     // ------------------------------------------------------------ メイス

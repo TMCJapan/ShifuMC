@@ -274,6 +274,7 @@ insert:
 # PrePlayerAttackEntityEvent(attack)
 file: net/minecraft/world/entity/player/Player.java
 anchor:
+    g *= h;
     this.resetAttackStrengthTicker();
 insert:
     dev.shifu.event.EntityEvents.attacking(target, this.damageSources().playerAttack(this), f);

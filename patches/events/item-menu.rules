@@ -33,8 +33,9 @@ insert-after:
 file: net/minecraft/world/item/MinecartItem.java
 anchor:
     serverLevel.addFreshEntity(abstractMinecart);
+    serverLevel.gameEvent(GameEvent.ENTITY_PLACE, blockPos, GameEvent.Context.of(context.getPlayer(), serverLevel.getBlockState(blockPos.below())));
 insert:
-    if (!dev.shifu.event.ItemEvents.entityPlace(level, clickedPos, context.getClickedFace(), context.getPlayer(), abstractMinecart, context.getHand())) {
+    if (!dev.shifu.event.ItemEvents.entityPlace(level, blockPos, context.getClickedFace(), context.getPlayer(), abstractMinecart, context.getHand())) {
         if (context.getPlayer() != null) {
             context.getPlayer().containerMenu.sendAllDataToRemote();
         }
@@ -80,15 +81,8 @@ insert-after:
 
 file: net/minecraft/world/item/EggItem.java
 anchor:
-    level.playSound(
-        null,
-        user.getX(),
-        user.getY(),
-        user.getZ(),
-        SoundEvents.EGG_THROW,
-        SoundSource.PLAYERS,
-        0.5F,
-        0.4F / (level.getRandom().nextFloat() * 0.4F + 0.8F)
+    world.playSound(
+    null, user.getX(), user.getY(), user.getZ(), SoundEvents.EGG_THROW, SoundSource.PLAYERS, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F)
     );
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
@@ -226,10 +220,12 @@ insert:
 # MutableBoolean の出力引数を足して持ち帰っている。署名を変えないと同じ位置には置けない。
 # 置くなら LeashFenceKnotEntity 側の、作る枝が見えるところになる。
 
-# PlayerLeashEntityEvent(1 匹ずつ)。vanilla の if の中身を囲む。
+# PlayerLeashEntityEvent(1 匹ずつ)。vanilla の繋ぐ行を囲む。
 file: net/minecraft/world/item/LeadItem.java
 anchor:
-    flag = true;
+    mob.setLeashedTo(leashFenceKnotEntity, true);
+insert:
+    if (dev.shifu.event.ItemEvents.leash(mob, leashFenceKnotEntity, player)) {
 insert-after:
     }
 
