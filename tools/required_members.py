@@ -13,12 +13,14 @@ import sys
 WHERE = re.compile(r"^(?:minecraft|main)[\\/]java[\\/](.+?\.java):(\d+): error:")
 SYMBOL = re.compile(r"^\s*symbol:\s+(class|method|variable) ([\w$]+)")
 LOCATION = re.compile(r"^\s*location: (?:class|interface|variable \w+ of type|@?interface) ([\w.<>]+)")
-MEMBER = re.compile(r"method ([\w$]+) in (?:class|interface) ([\w.]+) cannot be applied")
+MEMBER = re.compile(r"method ([\w$]+) in (?:class|interface) ([\w.]+(?:<[^>]*>)?) cannot be applied")
 ACCESS = re.compile(r"([\w$]+) has (?:private|protected) access in ([\w.]+)")
 ABSTRACT = re.compile(r"does not override abstract method (\w+)\(")
 # 引数違いは 2 つの形で出る。片方だけ見ていると、Paper が足した多重定義
 # (disconnect(Component, Cause) など)が要求に入らない。
 NO_METHOD = re.compile(r"no suitable (?:method|constructor) found for ([\w$]+)\(")
+# `cannot infer type arguments for PalettedContainer<>` は構築子の引数違い
+INFER = re.compile(r"cannot infer type arguments for ([\w$]+)<>")
 
 
 def main():
@@ -41,6 +43,9 @@ def main():
 
         for name in NO_METHOD.findall(line):
             add("(unqualified)", "method", name)
+
+        for name in INFER.findall(line):
+            add(name, "method", name)
 
         for name, owner in ACCESS.findall(line):
             add(owner, "access", name)
