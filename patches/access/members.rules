@@ -108,3 +108,9 @@ line:
 file: net/minecraft/world/entity/decoration/Mannequin.java
 line:
     private static final Set<Pose> VALID_POSES = Set.of(Pose.STANDING, Pose.CROUCHING, Pose.SWIMMING, Pose.FALL_FLYING, Pose.SLEEPING);
+
+# CraftWorld が gamerule の値を直に入れる。
+# 上書きしている 2 つは行が同じで 1 つに定まらないので patches/narrow で広げる。
+file: net/minecraft/world/level/GameRules.java
+line:
+        protected abstract void deserialize(String value);
