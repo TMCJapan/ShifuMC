@@ -1,5 +1,18 @@
 # Paper が vanilla のメソッドの中で行う代入。既存の行は変えていない。
 
+# Paper と同じ順で、設定(spigot.yml と Paper の設定)を読んでからプラグインを読む。
+# SpigotConfig.init は CraftServer.loadPlugins でも呼ばれるが、Paper の設定の既定値が
+# SpigotWorldConfig を先に要求するので、ここでも先に読む。
+# GlobalConfiguration.get() はこれが済むまで null を返す(WatchdogThread が読む)。
+file: net/minecraft/server/dedicated/DedicatedServer.java
+anchor:
+    this.setPlayerList(new DedicatedPlayerList(this, this.registries(), this.playerDataStorage));
+insert-after:
+    org.spigotmc.SpigotConfig.init((java.io.File) this.options.valueOf("spigot-settings"));
+    dev.shifu.event.ShifuBootstrap.initializeConfigurations(this);
+    this.server.loadPlugins();
+    this.server.enablePlugins(org.bukkit.plugin.PluginLoadOrder.STARTUP);
+
 # 案の位置で通す。Paper と同じく、設定(spigot.yml と Paper の設定)を
 # 読んでからプラグインを読む(patches/sources/.../DedicatedServer.java.patch:100-107)。
 # SpigotConfig.init は CraftServer.loadPlugins でも呼ばれるが、Paper の設定の既定値が

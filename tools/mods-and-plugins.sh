@@ -14,7 +14,7 @@ set -o pipefail
 . "$(dirname "$0")/env.sh"
 RUN=$PW/run-mix
 DIST=$SHIFU/tools/build/dist
-ADDONS=$SHIFU/tools/build/addons
+ADDONS=$SHIFU/tools/build/addons/$MC_VERSION
 
 [ -f "$DIST/shifu-server.jar" ] || sh "$SHIFU/tools/dist.sh" --build
 
@@ -40,13 +40,13 @@ rm -f "$RUN/plugins"/packetevents-*.jar "$RUN/plugins"/grimac-*.jar "$RUN/plugin
 # 素のクライアントを弾く。bot は素のクライアントなので、遊びの確認をするときは外す。
 # 起動だけを見るなら SHIFU_CONTENT_MODS=1 で残す
 if [ -z "${SHIFU_CONTENT_MODS:-}" ]; then
-    mkdir -p "$SHIFU/tools/build/addons/content"
+    mkdir -p "$ADDONS/content"
     for jar in "$RUN"/mods/*.jar; do
         case "$(basename "$jar")" in
             fabric-api-*|lithium-*|ferrite-core-*|krypton-*|c2me-fabric-*|attributefix-*|prickle-*|ProbeMod.jar) ;;
             fabric-language-kotlin-*|carpet-*|alternate-current-*|servercore-*|vmp-fabric-*) ;;
             no-chat-reports-*|ledger-*|styled-chat-*|spark-*|chunky-*|architectury-api-*) ;;
-            *) mv "$jar" "$SHIFU/tools/build/addons/content/" ;;
+            *) mv "$jar" "$ADDONS/content/" ;;
         esac
     done
 fi
@@ -54,8 +54,8 @@ fi
 cp "$DIST/shifu.jar" "$RUN/"
 [ -f "$RUN/eula.txt" ] || printf 'eula=true\n' > "$RUN/eula.txt"
 [ -f "$RUN/server.properties" ] || printf 'online-mode=false\nserver-port=25593\nlevel-seed=1234567890\n' > "$RUN/server.properties"
-printf 'minecraft-version = %s\npaper-build = latest\nserver-paperclip = %s\nfabric-loader-version = 0.19.3\nvanilla-parity = true\njvm-args = -Xmx4G\n' \
-    "$MC_VERSION" "$(cygpath -m "$DIST/shifu-server.jar")" > "$RUN/shifu.properties"
+printf 'minecraft-version = %s\npaper-build = latest\nserver-paperclip = %s\nfabric-loader-version = %s\nvanilla-parity = true\njvm-args = -Xmx4G\n' \
+    "$MC_VERSION" "$(cygpath -m "$DIST/shifu-server.jar")" "$FABRIC_LOADER" > "$RUN/shifu.properties"
 
 # 前に組んだサーバーが残っていると、新しい jar で組み直さない
 rm -rf "$RUN/versions" "$RUN/libraries" "$RUN/cache" "$RUN/.shifu" "$RUN/world" "$RUN/world_nether" "$RUN/world_the_end"

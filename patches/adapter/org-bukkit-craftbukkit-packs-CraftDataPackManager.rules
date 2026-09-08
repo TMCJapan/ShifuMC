@@ -1,0 +1,16 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+# ServerLevel.serverLevelData の宣言の型は vanilla のまま(ServerLevelData)。
+# CraftBukkit は世界ごとに PrimaryLevelData を持つが、Shifu は vanilla の並べ方なので
+# ネザーと果ては DerivedLevelData になる。データパックの一覧は本編の世界のものを読む。
+file: org/bukkit/craftbukkit/packs/CraftDataPackManager.java
+replace:
+        return craftWorld.getHandle().serverLevelData.getDataConfiguration().dataPacks().getEnabled().stream().map(packName -> {
+with:
+        return net.minecraft.server.MinecraftServer.getServer().getWorldData().getDataConfiguration().dataPacks().getEnabled().stream().map(packName -> { // Shifu - 世界ごとの設定データは vanilla の型のまま
+
+file: org/bukkit/craftbukkit/packs/CraftDataPackManager.java
+replace:
+        return craftWorld.getHandle().serverLevelData.getDataConfiguration().dataPacks().getDisabled().stream().map(packName -> {
+with:
+        return net.minecraft.server.MinecraftServer.getServer().getWorldData().getDataConfiguration().dataPacks().getDisabled().stream().map(packName -> { // Shifu - 世界ごとの設定データは vanilla の型のまま

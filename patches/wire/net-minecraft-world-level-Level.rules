@@ -6,5 +6,20 @@ anchor:
         this.registryAccess = registryManager;
         this.damageSources = new DamageSources(registryManager);
 insert-after:
-    this.world = new org.bukkit.craftbukkit.CraftWorld((net.minecraft.server.level.ServerLevel) this, null, null, dimension == Level.OVERWORLD ? org.bukkit.World.Environment.NORMAL : dimension == Level.NETHER ? org.bukkit.World.Environment.NETHER : dimension == Level.END ? org.bukkit.World.Environment.THE_END : org.bukkit.World.Environment.CUSTOM);
+    // Paper は構築子の頭で spigotConfig と paperConfig を作る。1.20.6 の CraftWorld の
+    // 構築子は paperConfig() を読むので、CraftWorld より先に作る。
+    // 世界の名前は CraftBukkit の並べ方(overworld はそのまま、他は _nether / _the_end)。
+    final net.minecraft.server.MinecraftServer shifuServer = net.minecraft.server.MinecraftServer.getServer();
+    final String shifuLevelName = shifuServer.getWorldData().getLevelName();
+    final String shifuBukkitName = registryRef == Level.OVERWORLD ? shifuLevelName
+            : shifuLevelName + "_" + (registryRef == Level.NETHER ? "nether"
+                    : registryRef == Level.END ? "the_end"
+                            : registryRef.location().getNamespace() + "_" + registryRef.location().getPath());
+    this.spigotConfig = new org.spigotmc.SpigotWorldConfig(shifuBukkitName);
+    this.paperConfig = shifuServer.paperConfigurations.createWorldConfig(
+            io.papermc.paper.configuration.PaperConfigurations.createWorldContextMap(
+                    shifuServer.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT),
+                    shifuBukkitName, registryRef.location(), this.spigotConfig,
+                    registryManager, properties.getGameRules()));
+    this.world = new org.bukkit.craftbukkit.CraftWorld((net.minecraft.server.level.ServerLevel) this, null, null, registryRef == Level.OVERWORLD ? org.bukkit.World.Environment.NORMAL : registryRef == Level.NETHER ? org.bukkit.World.Environment.NETHER : registryRef == Level.END ? org.bukkit.World.Environment.THE_END : org.bukkit.World.Environment.CUSTOM);
 

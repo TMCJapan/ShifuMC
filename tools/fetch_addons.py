@@ -4,7 +4,8 @@
     python tools/fetch_addons.py <置き場所> [--only mods|plugins]
 
 置き場所の下に mods/ と plugins/ を作って入れる。既にあるものは飛ばす。
-対象は下の LIST。26.2 に対応した版が無いものは、その旨を出して飛ばす。
+対象は下の LIST。その版に対応したものが無いときは、その旨を出して飛ばす。
+どの版を探すかは環境変数 MC_VERSION(既定は 26.2)。
 """
 import io
 import json
@@ -13,7 +14,8 @@ import sys
 import urllib.parse
 import urllib.request
 
-GAME = "26.2"
+# 対象の Minecraft。tools/*.sh は env.sh の MC_VERSION を渡す。
+GAME = os.environ.get("MC_VERSION") or "26.2"
 API = "https://api.modrinth.com/v2"
 AGENT = "shifu-dev (https://github.com/asutarisucu)"
 

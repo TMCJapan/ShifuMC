@@ -20,15 +20,17 @@ if [ "$1" != "--skip-build" ]; then
     sh "$SHIFU/tools/postcompile.sh"
     # 26.x は createBundlerJar の 1 つだけ。1.21.x は mojmap と reobf に分かれる。
     # Shifu は実行時も mojmap なので mojmap の方を組む。
-    BUNDLE=createBundlerJar
+    BUNDLE=:paper-server:createBundlerJar
+    LIBS=$PW/paper-server/build/libs
 
-    if "$GRADLEW" --no-daemon ":paper-server:tasks" --all 2>/dev/null | grep -q createMojmapBundlerJar; then
-        BUNDLE=createMojmapBundlerJar
+    if "$GRADLEW" --no-daemon "tasks" --all 2>/dev/null | grep -q createMojmapBundlerJar; then
+        BUNDLE=:createMojmapBundlerJar
+        LIBS=$PW/build/libs
     fi
 
-    "$GRADLEW" --no-daemon ":paper-server:$BUNDLE" -x ":paper-server:compileJava" \
+    "$GRADLEW" --no-daemon "$BUNDLE" -x ":paper-server:compileJava" \
         "-Dorg.gradle.jvmargs=-Xmx6G -Duser.language=en -Duser.country=US"
-    JAR=$(ls "$PW"/paper-server/build/libs/*bundler*.jar 2>/dev/null | grep -v reobf | head -1)
+    JAR=$(ls "$LIBS"/*bundler*.jar 2>/dev/null | grep -v reobf | head -1)
 fi
 
 if [ -z "$JAR" ]; then

@@ -23,6 +23,12 @@ CLASSES=$PW/paper-server/build/classes/java/main
 # codebook で名前を戻したものを使う(バイトコードは公式のまま)。
 MOJANG=$(cygpath -m "$PW/paper-server/.gradle/caches/paperweight/taskCache/codebook-minecraft.jar")
 
+# classic(1.21.3 以前)は codebook を使わない。キャッシュはクローンの直下にあって、
+# mojmap に戻したものは minecraft.jar(decompileJar.jar はソースの jar なので当たらない)。
+if [ ! -f "$PW/paper-server/.gradle/caches/paperweight/taskCache/codebook-minecraft.jar" ]; then
+    MOJANG=$(cygpath -m "$PW/.gradle/caches/paperweight/taskCache/minecraft.jar")
+fi
+
 [ -f "$SHIFU/tools/build/lvtmatch/asm.cp" ] || sh "$SHIFU/tools/lvtmatch/build.sh"
 
 cd "$SHIFU"

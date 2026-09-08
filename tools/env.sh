@@ -192,6 +192,11 @@ shifu_stage_tree() {
     done
 }
 
+# Fabric Loader の版。MOD が要求する下限が版で違う
+# (1.20.6 の fabric-language-kotlin 1.14.1 は 0.19.5 以上)。
+FABRIC_LOADER=${SHIFU_FABRIC_LOADER:-0.19.5}
+export FABRIC_LOADER
+
 # Minecraft のバージョン。jar の名前と run-shifu/versions/<版>/ に入る。
 # Paper のクローンの gradle.properties が持っている。
 if [ -z "${MC_VERSION:-}" ] && [ -f "$PW/gradle.properties" ]; then

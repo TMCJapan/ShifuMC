@@ -68,6 +68,19 @@ public final class ShifuBootstrap {
      * 他に非デーモンのスレッドが無ければ、その前に vanilla と同じく自然に終わる。
      */
     /**
+     * Paper の設定(paper-global.yml と paper-world-defaults.yml)を読む。
+     * {@code GlobalConfiguration.get()} はこれが済むまで null を返す。
+     */
+    public static void initializeConfigurations(final net.minecraft.server.MinecraftServer server) {
+        try {
+            server.paperConfigurations.initializeGlobalConfiguration(server.registryAccess());
+            server.paperConfigurations.initializeWorldDefaultsConfiguration(server.registryAccess());
+        } catch (final org.spongepowered.configurate.ConfigurateException e) {
+            throw new IllegalStateException("Paper の設定を読めない", e);
+        }
+    }
+
+    /**
      * プラグインのログ(java.util.logging)を log4j に流し、System.out と System.err も向ける。
      *
      * <p>これが無いと、プラグインの {@code getLogger()} の出力が JUL の既定の書式で

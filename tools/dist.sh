@@ -32,9 +32,19 @@ echo "==== サーバー(paperclip)===="
 # gradle は出力の変化を見て再コンパイルするので、jar を作るときは compileJava を飛ばす。
 (cd "$PW" && "$GRADLEW" --no-daemon ":paper-server:compileJava" "-Dorg.gradle.jvmargs=-Xmx6G")
 sh "$SHIFU/tools/postcompile.sh"
-(cd "$PW" && "$GRADLEW" --no-daemon ":paper-server:createPaperclipJar" -x ":paper-server:compileJava" \
+# 26.x は :paper-server:createPaperclipJar の 1 つだけ。難読化があるバージョンは
+# mojmap と reobf に分かれ、タスクは根のプロジェクトにある(Shifu は実行時も mojmap)。
+PAPERCLIP=:paper-server:createPaperclipJar
+LIBS=$PW/paper-server/build/libs
+
+if (cd "$PW" && "$GRADLEW" --no-daemon "tasks" --all 2>/dev/null) | grep -q createMojmapPaperclipJar; then
+    PAPERCLIP=:createMojmapPaperclipJar
+    LIBS=$PW/build/libs
+fi
+
+(cd "$PW" && "$GRADLEW" --no-daemon "$PAPERCLIP" -x ":paper-server:compileJava" \
     "-Dorg.gradle.jvmargs=-Xmx6G -Duser.language=en -Duser.country=US")
-cp "$PW"/paper-server/build/libs/paper-paperclip-*.jar "$DIST/shifu-server.jar"
+cp "$(ls "$LIBS"/*paperclip*.jar | grep -v reobf | head -1)" "$DIST/shifu-server.jar"
 
 ls -la "$DIST"
 
@@ -49,8 +59,8 @@ cd "$RUN"
 cp "$DIST/shifu.jar" .
 printf 'eula=true\n' > eula.txt
 printf 'online-mode=false\nserver-port=25594\nlevel-seed=1234567890\n' > server.properties
-printf 'minecraft-version = %s\npaper-build = latest\nserver-paperclip = %s\nfabric-loader-version = 0.19.3\nvanilla-parity = true\njvm-args = -Xmx4G\n' \
-    "$MC_VERSION" "$(cygpath -m "$DIST/shifu-server.jar")" > shifu.properties
+printf 'minecraft-version = %s\npaper-build = latest\nserver-paperclip = %s\nfabric-loader-version = %s\nvanilla-parity = true\njvm-args = -Xmx4G\n' \
+    "$MC_VERSION" "$(cygpath -m "$DIST/shifu-server.jar")" "$FABRIC_LOADER" > shifu.properties
 
 # MOD とプラグインが両方効くかも見る
 [ -f "$PW/run-fabric/mods/ProbeMod.jar" ] && cp "$PW/run-fabric/mods/ProbeMod.jar" mods/
