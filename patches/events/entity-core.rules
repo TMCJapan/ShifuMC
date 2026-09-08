@@ -194,10 +194,10 @@ file: net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
 anchor:
     this.remove(Entity.RemovalReason.KILLED);
 insert:
-    if (dev.shifu.event.EntityEvents.damageCancelled(this, damageSource, amount, false, false)) {
+    if (dev.shifu.event.EntityEvents.damageCancelled(this, source, amount, false, false)) {
         return false;
     }
-    final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = damageSource.is(DamageTypeTags.IS_EXPLOSION)
+    final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = source.is(DamageTypeTags.IS_EXPLOSION)
         ? null
         : dev.shifu.event.EntityEvents.explosionPrime(this, 6.0F, false);
     if (shifuPrime != null && shifuPrime.isCancelled()) {
@@ -244,12 +244,12 @@ file: net/minecraft/world/entity/decoration/ArmorStand.java
 anchor:
     this.kill(level);
     return false;
-    } else if (this.isInvulnerableTo(level, damageSource) || this.invisible || this.isMarker()) {
+    } else if (this.isInvulnerableTo(level, source) || this.invisible || this.isMarker()) {
 insert:
-    if (dev.shifu.event.EntityEvents.damageCancelled(this, damageSource, amount, true, false)) {
+    if (dev.shifu.event.EntityEvents.damageCancelled(this, source, amount, true, false)) {
         return false;
     }
-    dev.shifu.event.EntityEvents.armorStandDeathSource(damageSource);
+    dev.shifu.event.EntityEvents.armorStandDeathSource(source);
 
 # EntityDamageEvent(爆発)
 file: net/minecraft/world/entity/decoration/ArmorStand.java
@@ -276,7 +276,7 @@ file: net/minecraft/world/entity/player/Player.java
 anchor:
     if (!this.deflectProjectile(target)) {
 insert:
-    dev.shifu.event.EntityEvents.attacking(target, damageSource, f1);
+    dev.shifu.event.EntityEvents.attacking(target, source, f1);
 
 # PlayerAttackEntityCooldownResetEvent
 file: net/minecraft/world/entity/player/Player.java
@@ -292,7 +292,7 @@ file: net/minecraft/world/entity/player/Player.java
 anchor:
     if (knockback && this.deflectProjectile(target)) {
 insert:
-    dev.shifu.event.EntityEvents.attacking(target, damageSource, f);
+    dev.shifu.event.EntityEvents.attacking(target, source, f);
 
 # EntityDamageEvent(飛び道具を弾く)。deflect の前に出す。
 file: net/minecraft/world/entity/player/Player.java

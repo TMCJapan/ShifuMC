@@ -50,7 +50,7 @@ anchor:
     AbstractBoat boat = this.getBoat(level, hitResult, itemInHand, user);
 insert:
     if (!dev.shifu.event.ItemEvents.boatInteract(user, (net.minecraft.world.phys.BlockHitResult) hitResult, itemInHand, hand)) {
-        return InteractionResult.PASS;
+        return net.minecraft.world.InteractionResult.PASS;
     }
 
 file: net/minecraft/world/item/BoatItem.java
@@ -59,11 +59,11 @@ anchor:
 insert:
     if (!dev.shifu.event.ItemEvents.entityPlace(world, ((net.minecraft.world.phys.BlockHitResult) hitResult).getBlockPos(),
             user.getDirection(), user, boat, hand)) {
-        return InteractionResult.FAIL;
+        return net.minecraft.world.InteractionResult.FAIL;
     }
     if (dev.shifu.event.ItemEvents.spawnCancelListening()) {
         if (!world.addFreshEntity(boat)) {
-            return InteractionResult.PASS;
+            return net.minecraft.world.InteractionResult.PASS;
         }
     } else {
 insert-after:

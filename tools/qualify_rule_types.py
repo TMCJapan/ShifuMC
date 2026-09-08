@@ -23,7 +23,9 @@ import sys
 
 ERROR = re.compile(r"^(.+?\.java):(\d+): error: (?:cannot find symbol|package ([\w$]+) "
                    r"does not exist)\s*$")
-SYMBOL = re.compile(r"^\s*symbol:\s+class ([\w$]+)")
+# javac は「解決できない修飾子」を variable として出す。
+# `InteractionResult.FAIL` の InteractionResult がそれ。大文字始まりなら型とみなす。
+SYMBOL = re.compile(r"^\s*symbol:\s+(?:class|variable) ([A-Z][\w$]*)")
 
 
 def index(tree):
