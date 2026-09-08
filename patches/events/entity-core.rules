@@ -134,10 +134,13 @@ insert:
     }
 
 # EntityTransformEvent
+#
+# 1.20.6 の convertTo は afterConversion を取らない。世界へ入れる直前で出す。
 file: net/minecraft/world/entity/Mob.java
 anchor:
-    afterConversion.finalizeConversion(mob);
-insert-after:
+    this.level().addFreshEntity(mob);
+    if (this.isPassenger()) {
+insert:
     if (!dev.shifu.event.EntityEvents.transform(this, mob)) {
         return null;
     }

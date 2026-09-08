@@ -555,7 +555,8 @@ public final class BlockEvents {
      *
      * @return 燃焼時間。取り消されたら -1(tick を抜ける。Paper と同じ)
      */
-    public static int furnaceBurn(final ServerLevel level, final BlockPos pos, final ItemStack fuel, final int burnTime) {
+    // 1.20.6 の serverTick は Level を受ける
+    public static int furnaceBurn(final net.minecraft.world.level.Level level, final BlockPos pos, final ItemStack fuel, final int burnTime) {
         furnaceConsumesFuel = true;
 
         if (!listening(org.bukkit.event.inventory.FurnaceBurnEvent.getHandlerList())) {

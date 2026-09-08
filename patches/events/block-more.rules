@@ -320,12 +320,11 @@ insert:
 
 file: net/minecraft/world/level/block/ConcretePowderBlock.java
 anchor:
-    return touchesLiquid(world, pos)
+    return touchesLiquid(world, pos) ? this.concrete.defaultBlockState() : super.updateShape(state, direction, neighborState, world, pos, neighborPos);
 insert:
     if (dev.shifu.event.BlockEvents.listeningForm() && touchesLiquid(world, pos)
-            && world instanceof net.minecraft.world.level.LevelAccessor shifuLevel
-            && !dev.shifu.event.BlockEvents.formReturn(shifuLevel, pos, this.concrete.defaultBlockState())) {
-        return super.updateShape(state, world, scheduledTickAccess, pos, direction, neighborPos, neighborState, random);
+            && !dev.shifu.event.BlockEvents.formReturn(world, pos, this.concrete.defaultBlockState())) {
+        return super.updateShape(state, direction, neighborState, world, pos, neighborPos);
     }
 
 # BlockPhysicsEvent(草花が支えを失う)。1.20.6 は BushBlock
@@ -412,20 +411,21 @@ insert:
 # BlockReceiveGameEvent(振動を受ける)
 file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
-    furnace.litTimeRemaining = furnace.getBurnDuration(world.fuelValues(), itemStack);
+    blockEntity.litTime = blockEntity.getBurnDuration(itemStack);
 insert-after:
-    furnace.litTimeRemaining = dev.shifu.event.BlockEvents.furnaceBurn(world, pos, itemStack, furnace.litTimeRemaining);
-    if (furnace.litTimeRemaining < 0) {
+    blockEntity.litTime = dev.shifu.event.BlockEvents.furnaceBurn(world, pos, itemStack, blockEntity.litTime);
+    if (blockEntity.litTime < 0) {
         return;
     }
 
 file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
-    if (flag2) {
-    Item stack = itemStack.getItem();
+    if (bl4) {
+    Item item = itemStack.getItem();
     itemStack.shrink(1);
     if (itemStack.isEmpty()) {
-    furnace.items.set(1, stack.getCraftingRemainder());
+    Item item2 = item.getCraftingRemainingItem();
+    blockEntity.items.set(1, item2 == null ? ItemStack.EMPTY : new ItemStack(item2));
     }
     }
 insert:

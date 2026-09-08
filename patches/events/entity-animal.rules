@@ -306,42 +306,42 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/monster/Slime.java.patch(Slime pathfinder events)
 file: net/minecraft/world/entity/animal/MushroomCow.java
 anchor:
-    this.convertTo(EntityType.COW, ConversionParams.single(this, false, false), cow -> {
+    Cow cow = EntityType.COW.create(this.level());
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.SHEARED);
 
 # オタマジャクシがカエルになる
 file: net/minecraft/world/entity/animal/frog/Tadpole.java
 anchor:
-    this.convertTo(EntityType.FROG, ConversionParams.single(this, false, false), mob -> {
+    Frog frog = EntityType.FROG.create(this.level());
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.METAMORPHOSIS);
 
 # ホグリンがゾグリンになる
 file: net/minecraft/world/entity/monster/hoglin/Hoglin.java
 anchor:
-    this.convertTo(EntityType.ZOGLIN, ConversionParams.single(this, true, false), mob -> mob.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 200, 0)));
+    Zoglin zoglin = this.convertTo(EntityType.ZOGLIN, true);
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.PIGLIN_ZOMBIFIED);
 
 # ピグリンがゾンビピグリンになる
 file: net/minecraft/world/entity/monster/piglin/AbstractPiglin.java
 anchor:
-    this.convertTo(
+    ZombifiedPiglin zombifiedPiglin = this.convertTo(EntityType.ZOMBIFIED_PIGLIN, true);
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.PIGLIN_ZOMBIFIED);
 
 # スケルトンがストレイになる
 file: net/minecraft/world/entity/monster/Skeleton.java
 anchor:
-    this.convertTo(EntityType.STRAY, ConversionParams.single(this, true, true), mob -> {
+    this.convertTo(EntityType.STRAY, true);
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.FROZEN);
 
 # ゾンビが溺死ゾンビになる
 file: net/minecraft/world/entity/monster/Zombie.java
 anchor:
-    this.convertTo(
+    Zombie zombie = this.convertTo(entityType, true);
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.DROWNED);
 
@@ -355,14 +355,14 @@ insert:
 # ゾンビ村人が治る
 file: net/minecraft/world/entity/monster/ZombieVillager.java
 anchor:
-    this.convertTo(
+    Villager villager = this.convertTo(EntityType.VILLAGER, false);
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.CURED);
 
 # 村人が雷でウィッチになる
 file: net/minecraft/world/entity/npc/Villager.java
 anchor:
-    Witch witch = this.convertTo(EntityType.WITCH, ConversionParams.single(this, false, false), witch1 -> {
+    Witch witch = EntityType.WITCH.create(world);
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.LIGHTNING);
 
@@ -637,7 +637,7 @@ insert:
 # ウィッチがポーションを飲む。1 本に効果が複数あるので、文の間だけ置く
 file: net/minecraft/world/entity/monster/Witch.java
 anchor:
-    potionContents.forEachEffect(this::addEffect, mainHandItem.getOrDefault(DataComponents.POTION_DURATION_SCALE, 1.0F));
+    potionContents.forEachEffect(this::addEffect);
 insert:
     dev.shifu.event.EntityEvents.effectCauseUntilDone(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 insert-after:
