@@ -405,8 +405,10 @@ def main():
                 # ことも下にいることもある(1.20.6 で 145 件がこれだった)。
                 who = {one for one in asked.get(member, set()) if one in above}
 
-                if member != owner and who and not any(
-                        owner in above[one] or one in above.get(owner, {owner}) for one in who):
+                # 入れ子の型(BlockStateBase など)は木の索引に無い。
+                # 継承をたどれないので、そこは絞らない
+                if (member != owner and who and owner in above and not any(
+                        owner in above[one] or one in above.get(owner, {owner}) for one in who)):
                     skipped += 1
                     continue
 

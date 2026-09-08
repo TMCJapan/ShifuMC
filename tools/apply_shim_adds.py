@@ -83,9 +83,38 @@ def existing(lines, body, name):
     return out
 
 
+NAMED = re.compile(r"\b(?:class|interface|enum|record|@interface)\s+([\w$]+)")
+
+
+def named_as(lines, body, owner):
+    """その本体を開いている型の名前が owner か。
+
+    `ms.is_type` は語で見るので、`record Data<T>(...)` は `Data<T>` になって
+    `Data` に一致しない。入れ子の型が見つからないと一番外側に入って、
+    同じ名前のメソッドが二重になる。
+    """
+    head = body[0]
+
+    while head > 0 and not lines[head - 1].rstrip().endswith((";", "{", "}")):
+        head -= 1
+
+    # 前の行から続きを繋ぐと外側の型の宣言まで入るので、**最後の宣言**を見る
+    found = NAMED.findall(" ".join(lines[head:body[0] + 1]))
+
+    return bool(found) and found[-1] == owner
+
+
 def body_for(lines, owner):
-    """その所有クラスの本体。見つからなければ一番外側。"""
+    """その所有クラスの本体。見つからなければ一番外側。
+
+    まず宣言している名前で厳密に探す。`(supertype)` のように型の名前でない
+    目印もあるので、見つからなければ語で探す従来の見方に落とす。
+    """
     bodies = fs.type_bodies(lines)
+
+    for body in bodies:
+        if named_as(lines, body, owner):
+            return body
 
     for body in bodies:
         if ms.is_type(lines, body, (owner,)):
