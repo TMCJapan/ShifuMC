@@ -26,3 +26,32 @@ replace:
         this.level = world;
 with:
         this.level = (net.minecraft.server.level.ServerLevel) world; // CraftBukkit - type
+
+# 型を狭めたので、入れるところで絞る
+file: net/minecraft/server/level/ServerLevel.java
+replace:
+        this.serverLevelData = properties;
+with:
+        this.serverLevelData = (net.minecraft.world.level.storage.PrimaryLevelData) properties; // CraftBukkit - type
+
+# 抽象宣言を public にしたので、上書きしている 2 つも合わせる。
+# 可視性だけで、行そのものは同じなので patches/access では 1 つに定まらない
+file: net/minecraft/world/level/GameRules.java
+replace:
+        protected void deserialize(String value) {
+            this.value = Boolean.parseBoolean(value);
+        }
+with:
+        public void deserialize(String value) {
+            this.value = Boolean.parseBoolean(value);
+        }
+
+file: net/minecraft/world/level/GameRules.java
+replace:
+        protected void deserialize(String value) {
+            this.value = safeParse(value);
+        }
+with:
+        public void deserialize(String value) {
+            this.value = safeParse(value);
+        }
