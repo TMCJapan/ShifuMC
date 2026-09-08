@@ -1,0 +1,29 @@
+# tools/apply_classic_by_file.py がハンクを 1 つ違う位置に当てた。
+# `--server-name` の受け口は無名の OptionParser の中に要るのに、
+# preloadClasses の末尾に入っている(そこでは acceptsAll が見えない)。
+# 正しい位置へ移す。行の中身は Paper のまま。
+
+file: org/bukkit/craftbukkit/Main.java
+replace:
+                this.acceptsAll(Main.asList("nogui"), "Disables the graphical console");
+with:
+                // Paper start
+                this.acceptsAll(Main.asList("server-name"), "Name of the server")
+                        .withRequiredArg()
+                        .ofType(String.class)
+                        .defaultsTo("Unknown Server")
+                        .describedAs("Name");
+                // Paper end
+
+                this.acceptsAll(Main.asList("nogui"), "Disables the graphical console");
+
+file: org/bukkit/craftbukkit/Main.java
+replace:
+                // Paper start
+                acceptsAll(asList("server-name"), "Name of the server")
+                        .withRequiredArg()
+                        .ofType(String.class)
+                        .defaultsTo("Unknown Server")
+                        .describedAs("Name");
+                // Paper end
+with:

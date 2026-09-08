@@ -1,9 +1,1 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
-
-// SmithingTransformRecipe.copyDataComponents
-    // Paper は「データコンポーネントを引き継ぐか」を構築子で受けるが、vanilla の
-    // 4 引数の構築子は代入する場所が無い。宣言そのものをここに書いて初期値で埋める。
-    // 値は vanilla の assemble と同じ「引き継ぐ」。
-    // 目印に copyDataComponents と書いた時点で make_shim はこの名前を足さなくなるので、
-    // 初期化子だけを書くと代入する相手が居なくなる。
-    private final boolean copyDataComponents = true;

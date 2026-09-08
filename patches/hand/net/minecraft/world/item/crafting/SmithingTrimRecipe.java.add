@@ -1,6 +1,1 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
-
-// SmithingTrimRecipe.copyDataComponents
-    // SmithingTransformRecipe と同じ。宣言そのものをここに書いて初期値で埋める。
-    // 値は vanilla の applyTrim と同じ「引き継ぐ」。
-    private final boolean copyDataComponents = true;
