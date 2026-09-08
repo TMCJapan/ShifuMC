@@ -416,7 +416,8 @@ insert:
 
 file: net/minecraft/world/entity/ai/goal/target/TargetGoal.java
 anchor:
-    this.mob.setTarget(target);
+    this.mob.setTarget(livingEntity);
+    return true;
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.CLOSEST_ENTITY);
 
@@ -607,7 +608,9 @@ insert:
 # 効果付きの矢。1 本に効果が複数あるので、文の間だけ置く
 file: net/minecraft/world/entity/projectile/Arrow.java
 anchor:
-    potionContents.forEachEffect(mobEffectInstance -> target.addEffect(mobEffectInstance, effectSource), potionDurationScale);
+    for (MobEffectInstance mobEffectInstance2 : potionContents.customEffects()) {
+    target.addEffect(mobEffectInstance2, entity);
+    }
 insert:
     dev.shifu.event.EntityEvents.effectCauseUntilDone(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ARROW);
 insert-after:
@@ -704,13 +707,6 @@ anchor:
     ((LivingEntity)target).addEffect(new MobEffectInstance(MobEffects.POISON, i * 20, 0), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
-
-# ハチに花を与える
-file: net/minecraft/world/entity/animal/Bee.java
-anchor:
-    this.addEffect(beeInteractionEffect);
-insert:
-    dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.FOOD);
 
 # EntityPushedByEntityAttackEvent の主(ラヴェジャーの薙ぎ払い)
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/monster/Ravager.java.patch

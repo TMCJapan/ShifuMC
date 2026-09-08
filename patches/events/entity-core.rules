@@ -274,25 +274,20 @@ insert:
 # PrePlayerAttackEntityEvent(attack)
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-    if (!this.deflectProjectile(target)) {
+    this.resetAttackStrengthTicker();
 insert:
-    dev.shifu.event.EntityEvents.attacking(target, source, f1);
+    dev.shifu.event.EntityEvents.attacking(target, this.damageSources().playerAttack(this), f);
 
 # PlayerAttackEntityCooldownResetEvent
 file: net/minecraft/world/entity/player/Player.java
 anchor:
     target.push(
-    -Mth.sin(this.getYRot() * (float) (Math.PI / 180.0)) * strength, 0.1, Mth.cos(this.getYRot() * (float) (Math.PI / 180.0)) * strength
+    (double)(-Mth.sin(this.getYRot() * (float) (Math.PI / 180.0)) * (float)i * 0.5F),
+    0.1,
+    (double)(Mth.cos(this.getYRot() * (float) (Math.PI / 180.0)) * (float)i * 0.5F)
     );
 insert:
     dev.shifu.event.EntityEvents.pushedBy(this, target);
-
-# PrePlayerAttackEntityEvent(stabAttack)
-file: net/minecraft/world/entity/player/Player.java
-anchor:
-    if (knockback && this.deflectProjectile(target)) {
-insert:
-    dev.shifu.event.EntityEvents.attacking(target, source, f);
 
 # EntityDamageEvent(飛び道具を弾く)。deflect の前に出す。
 file: net/minecraft/world/entity/player/Player.java
@@ -424,10 +419,9 @@ anchor:
 insert:
     dev.shifu.event.EntityEvents.exhaustionReason(org.bukkit.event.entity.EntityExhaustionEvent.ExhaustionReason.DAMAGED);
 
-# 攻撃したとき。同じ行が 2 箇所にある
+# 攻撃したとき
 file: net/minecraft/world/entity/player/Player.java
 anchor:
     this.causeFoodExhaustion(0.1F);
-count: 2
 insert:
     dev.shifu.event.EntityEvents.exhaustionReason(org.bukkit.event.entity.EntityExhaustionEvent.ExhaustionReason.ATTACK);

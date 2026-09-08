@@ -163,11 +163,13 @@ insert-after:
 # PlayerShieldDisableEvent。クールダウンを付ける前。攻撃者は Player.blockUsingItem で置く(担当範囲外)
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/component/BlocksAttacks.java.patch
-file: net/minecraft/world/food/FoodProperties.java
+# 1.20.6 は Player.eat が食べる。FoodProperties は成分から取る
+file: net/minecraft/world/entity/player/Player.java
 anchor:
-    player.getFoodData().eat(this);
+    this.getFoodData().eat(stack);
 insert:
-    if (dev.shifu.event.PlayerEvents.eatFood(player, this, stack)) {
+    final net.minecraft.world.food.FoodProperties shifuFood = stack.get(net.minecraft.core.component.DataComponents.FOOD);
+    if (shifuFood == null || dev.shifu.event.PlayerEvents.eatFood(this, shifuFood, stack)) {
 insert-after:
     }
 
@@ -175,6 +177,7 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/player/Player.java.patch(PlayerShieldDisableEvent)
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-            blocksAttacks.disable(world, this, secondsToDisableBlocking, itemBlockingWith);
+    if (attacker.canDisableShield()) {
+    this.disableShield();
 insert:
-    dev.shifu.event.PlayerEvents.shieldAttacker(entity);
+    dev.shifu.event.PlayerEvents.shieldAttacker(attacker);
