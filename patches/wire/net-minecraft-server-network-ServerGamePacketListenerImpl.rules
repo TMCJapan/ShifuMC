@@ -1,12 +1,1 @@
-# Bukkit 層の配線。Paper は構築子の末尾で PaperPlayerGameConnection を作る
-# (patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch:92)。
-# CraftPlayer.getConnection() がここを読む。
-file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
-anchor:
-    this.chatMessageChain = new FutureChain(server);
-insert-after:
-    this.playerGameConnection = new io.papermc.paper.connection.PaperPlayerGameConnection(this);
-    this.tickEndEvent = new io.papermc.paper.event.packet.ClientTickEndEvent(player.getBukkitEntity());
 
-# 本編の listener は handleCustomPayload を空で上書きしている。共通側の配線は届かないので、
-# ここにも同じものを置く(設定フェーズは共通側が受ける)。

@@ -1,3 +1,4 @@
+
 # Bukkit 層の配線。Paper は構築子で表示名などを入れる
 # (patches/sources/net/minecraft/server/level/ServerPlayer.java.patch:112)。
 # CraftPlayer.displayName() と ChatProcessor がここを読む。null のままだと
@@ -9,13 +10,6 @@ insert-after:
     this.displayName = this.getScoreboardName();
     this.adventure$displayName = net.kyori.adventure.text.Component.text(this.getScoreboardName());
     this.bukkitPickUpLoot = true;
-
-# クライアントの言語。Player.locale() がここを読む(同 patch:1346)。
-file: net/minecraft/server/level/ServerPlayer.java
-anchor:
-    this.language = clientOptions.language();
-insert-after:
-    this.adventure$locale = java.util.Objects.requireNonNullElse(net.kyori.adventure.translation.Translator.parseLocale(this.language), java.util.Locale.US);
 
 # タブ一覧の表示名(Player.setPlayerListName)
 #

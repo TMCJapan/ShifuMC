@@ -1,3 +1,4 @@
+
 # 足したが誰も代入しない欄への配線(手書き)。生成器(tools/make_wires.py)が出せなかった
 # もののうち、Paper が別のファイルや別の形で代入しているもの。vanilla の行は変えていない。
 
@@ -18,17 +19,6 @@ anchor:
     NameAndId nameAndId = player.nameAndId();
 insert:
     player.loginTime = System.currentTimeMillis();
-
-# ServerPlayer.compassTarget。Paper は send() で既定のスポーン位置の packet を見て入れる。
-# 読んだ位置: patches/sources/net/minecraft/server/network/ServerCommonPacketListenerImpl.java.patch(send)
-file: net/minecraft/server/network/ServerCommonPacketListenerImpl.java
-anchor:
-    if (packet.isTerminal()) {
-insert:
-    if (packet instanceof net.minecraft.network.protocol.game.ClientboundSetDefaultSpawnPositionPacket shifuSpawn
-            && this instanceof ServerGamePacketListenerImpl shifuGame) {
-        shifuGame.player.compassTarget = org.bukkit.craftbukkit.util.CraftLocation.toBukkit(shifuSpawn.respawnData().pos(), shifuGame.getPlayer().level());
-    }
 
 # MapItemSavedData.id。Paper は getMapData / setMapData で入れる。getMapData は return の式しか無いので、
 # 同じ読み出しを先に 1 回して id を入れる(2 回目は cache に当たる)。

@@ -55,7 +55,7 @@ file: net/minecraft/world/inventory/DispenserMenu.java
 anchor:
     super(MenuType.GENERIC_3x3, syncId);
 insert-after:
-    this.player = inventory;
+    this.player = playerInventory;
 
 # EnchantmentMenu.player(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/EnchantmentMenu.java
@@ -76,7 +76,7 @@ file: net/minecraft/world/inventory/HopperMenu.java
 anchor:
     this.hopper = inventory;
 insert-after:
-    this.player = inventory;
+    this.player = playerInventory;
 
 # LoomMenu.player(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/LoomMenu.java

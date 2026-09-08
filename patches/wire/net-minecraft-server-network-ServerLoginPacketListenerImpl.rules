@@ -1,8 +1,1 @@
-# Bukkit 層の配線。Paper は構築子で PaperPlayerLoginConnection を作る
-# (patches/sources/net/minecraft/server/network/ServerLoginPacketListenerImpl.java.patch:41)。
-# AsyncPlayerPreLoginEvent がこれを受け取る。
-file: net/minecraft/server/network/ServerLoginPacketListenerImpl.java
-anchor:
-    this.transferred = transferred;
-insert-after:
-    this.paperLoginConnection = new io.papermc.paper.connection.PaperPlayerLoginConnection(this);
+
