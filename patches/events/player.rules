@@ -90,6 +90,20 @@ anchor:
 insert-after:
     }
 
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    if (!this.isSpectator()) {
+    this.dropAllDeathLoot(damageSource);
+    }
+insert:
+    final java.util.List<net.minecraft.world.entity.Entity.DefaultDrop> shifuDeathDrops =
+            shifuDeath ? dev.shifu.event.ShifuEvents.beginPlayerDeath(this) : null;
+insert-after:
+    if (!dev.shifu.event.ShifuEvents.playerDeath(this, damageSource, shifuDeathDrops,
+            this.level().getGameRules().getBoolean(GameRules.RULE_SHOWDEATHMESSAGES))) {
+        return;
+    }
+
 # PlayerInteractEvent(ブロックへの右クリック)
 #
 # useItemOn の先頭、状態を読んだ直後。Paper と同じ位置。ブロックの使用が拒まれたら

@@ -128,6 +128,82 @@ public final class PluginMessages {
     }
 
 
+    private static final ResourceLocation REGISTER = new ResourceLocation("register");
+    private static final ResourceLocation UNREGISTER = new ResourceLocation("unregister");
+
+    /**
+     * {@code handleCustomPayload}(vanilla は空)の中身。
+     *
+     * <p>Paper と同じことをする: {@code minecraft:register} / {@code unregister} は
+     * チャンネルの登録、{@code minecraft:brand} はクライアントの名乗り、それ以外は
+     * Bukkit の Messenger へ渡す。
+     *
+     * <p>Paper は読めない本文で接続を切るが、vanilla は何もしないので切らずに記録だけ残す。
+     *
+     * <p>1.20.6 の {@code ServerCommonPacketListenerImpl} は自分では人を持たない
+     * (欄は本編の listener 側にある)ので、そちらから取る。設定フェーズは null で、
+     * その間のプラグインメッセージは Paper もチャンネル登録しか見ていない。
+     */
+    public static void handle(final ServerCommonPacketListenerImpl listener, final ServerboundCustomPayloadPacket packet) {
+        if (!enabled()) {
+            return;
+        }
+
+        final net.minecraft.server.level.ServerPlayer player =
+                listener instanceof net.minecraft.server.network.ServerGamePacketListenerImpl game ? game.player : null;
+
+        if (packet.payload() instanceof BrandPayload brand) {
+            if (player != null) {
+                player.clientBrandName = brand.brand();
+            }
+
+            return;
+        }
+
+        if (player == null || !(packet.payload() instanceof DiscardedPayload discarded)) {
+            return;
+        }
+
+        // vanilla は捨てる packet なので、ここから先はサーバースレッドで行う。
+        // 控えを取り出すのは待ち行列へ回したあと(先に取り出すと、回された 2 回目で列がずれる)。
+        net.minecraft.network.protocol.PacketUtils.ensureRunningOnSameThread(packet, listener, player.serverLevel());
+
+        final byte[] data = take(listener.connection);
+
+        if (data == null) {
+            return;
+        }
+
+        final ResourceLocation identifier = discarded.id();
+        final org.bukkit.craftbukkit.entity.CraftPlayer bukkit = player.getBukkitEntity();
+
+        try {
+            final boolean register = REGISTER.equals(identifier);
+
+            if (register || UNREGISTER.equals(identifier)) {
+                for (final String channel : new String(data, StandardCharsets.UTF_8).split("\0")) {
+                    if (channel.isEmpty()) {
+                        continue;
+                    }
+
+                    if (register) {
+                        bukkit.addChannel(channel);
+                    } else {
+                        bukkit.removeChannel(channel);
+                    }
+                }
+
+                return;
+            }
+
+            net.minecraft.server.MinecraftServer.getServer().server.getMessenger()
+                    .dispatchIncomingMessage(bukkit, identifier.toString(), data);
+        } catch (final RuntimeException e) {
+            org.slf4j.LoggerFactory.getLogger(PluginMessages.class)
+                    .error("チャンネル {} のプラグインメッセージを処理できない", identifier, e);
+        }
+    }
+
     private static byte[] take(final Connection connection) {
         final Deque<byte[]> queue = PENDING.get(connection);
 

@@ -13,3 +13,13 @@ anchor:
     entity.updateDynamicGameEventListener(DynamicGameEventListener::remove);
 insert-after:
     entity.valid = false;
+
+# 死亡の落とし物と経験値オーブを控えに移す。控えている最中でなければ何もしないので、
+# プラグインを入れていないときに増える仕事は参照 1 つの比較。
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    private boolean addEntity(Entity entity) {
+insert-after:
+    if (dev.shifu.event.ShifuEvents.catchDrop(entity)) {
+        return true;
+    }

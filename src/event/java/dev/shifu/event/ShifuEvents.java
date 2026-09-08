@@ -134,6 +134,7 @@ public final class ShifuEvents {
      * 1 つ前の控えを持って戻す。
      */
     private static final class DeathCapture {
+        final List<net.minecraft.world.entity.Entity.DefaultDrop> drops = new ArrayList<>();
         final List<ExperienceOrb> orbs = new ArrayList<>();
         final DeathCapture previous;
         DeathInventory inventory;
@@ -155,8 +156,70 @@ public final class ShifuEvents {
 
     private static DeathCapture capture;
 
+    /**
+     * 世界に入ろうとしている物を控えに移す。移したら true。
+     *
+     * <p>{@code ServerLevel.addEntity} から呼ぶ。控えている最中でなければ
+     * 何もしないので、プラグインを入れていないときに増える仕事は参照 1 つの比較。
+     *
+     * <p>落とし物は vanilla が作った {@link net.minecraft.world.entity.item.ItemEntity} を
+     * そのまま控える。プラグインが触らなければ、あとで同じものを世界に入れるので、
+     * 速度や向きも vanilla が決めたままになる。経験値オーブも同じ。
+     */
+    public static boolean catchDrop(final net.minecraft.world.entity.Entity entity) {
+        final DeathCapture current = capture;
 
+        if (current == null) {
+            return false;
+        }
 
+        if (entity instanceof net.minecraft.world.entity.item.ItemEntity item) {
+            current.drops.add(new net.minecraft.world.entity.Entity.DefaultDrop(item.getItem(), stack -> {
+                item.setItem(stack);
+                item.level().addFreshEntity(item);
+            }));
+
+            return true;
+        }
+
+        if (entity instanceof ExperienceOrb orb) {
+            current.orbs.add(orb);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /** 控えを閉じて返す。渡された落とし物の控えと食い違っていたら、それが見つかるまで戻す。 */
+    private static DeathCapture endCapture(final List<net.minecraft.world.entity.Entity.DefaultDrop> drops) {
+        DeathCapture current = capture;
+
+        while (current != null && current.drops != drops) {
+            current = current.previous;
+        }
+
+        capture = current == null ? null : current.previous;
+
+        return current;
+    }
+
+    /**
+     * 落とす物を実際に落とす。
+     *
+     * <p>プラグインが差し替えたものは Bukkit の側から、触っていないものは
+     * vanilla が作った NMS の {@code ItemStack} のまま落とす({@code runConsumer} の判定)。
+     */
+    private static void dropAllItems(final List<net.minecraft.world.entity.Entity.DefaultDrop> drops,
+                                     final org.bukkit.World world, final org.bukkit.Location at) {
+        for (final net.minecraft.world.entity.Entity.DefaultDrop drop : drops) {
+            if (drop == null || drop.stack() == null || drop.stack().getType() == org.bukkit.Material.AIR) {
+                continue;
+            }
+
+            drop.runConsumer(world, at);
+        }
+    }
 
 
     /**
@@ -369,11 +432,170 @@ public final class ShifuEvents {
 
     // ------------------------------------------------------------ 死亡とリスポーン
 
+    /**
+     * プレイヤーが死んで落とし物を出す直前。登録が無ければ null で vanilla のまま。
+     *
+     * <p>{@code setKeepInventory} と {@code getItemsToKeep} を後から効かせられるよう、
+     * 落とす前の持ち物を控える。Paper は先に発火して、通ってから落としているが、
+     * その順序は vanilla と違う。
+     */
+    public static List<net.minecraft.world.entity.Entity.DefaultDrop> beginPlayerDeath(final ServerPlayer player) {
+        if (!listening(org.bukkit.event.entity.PlayerDeathEvent.getHandlerList())) {
+            return null;
+        }
 
+        capture = new DeathCapture(capture);
+        capture.inventory = new DeathInventory(player.getInventory());
 
+        return capture.drops;
+    }
 
+    /**
+     * プレイヤーの死亡。vanilla が落とし物と経験値を出し終えた直後。
+     *
+     * <p>死亡メッセージの告知は、発火する前に vanilla が済ませないよう
+     * 呼ぶ側で飛ばしてある。ここでイベントの結果に従って送る。
+     *
+     * <p>取り消されたら控えた持ち物を戻し、落とし物と経験値は捨て、
+     * 体力を戻して false を返す。呼ぶ側は統計や死亡地点の記録へ進まない。
+     * その前に走った肩の生き物の解放と、周りの生き物への通知は戻せない。
+     *
+     * <p>死亡音は vanilla の {@code LivingEntity.die} が鳴らしているので、ここでは鳴らさない
+     * (Paper はイベントのあとに鳴らす形に変えていて、{@code setDeathSound} が効く)。
+     *
+     * @return vanilla の続き(統計・死亡地点)へ進んでよいか
+     */
+    public static boolean playerDeath(final ServerPlayer player,
+                                      final net.minecraft.world.damagesource.DamageSource source,
+                                      final List<net.minecraft.world.entity.Entity.DefaultDrop> drops,
+                                      final boolean showDeathMessage) {
+        if (drops == null) {
+            return true;
+        }
 
+        final DeathCapture current = endCapture(drops);
 
+        if (current == null) {
+            return true;
+        }
+
+        final int experience = current.experience();
+        final boolean keepInventoryRule =
+                player.level().getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_KEEPINVENTORY);
+        final boolean keepInventory = keepInventoryRule || player.isSpectator();
+        final Component defaultMessage = player.getCombatTracker().getDeathMessage();
+
+        player.keepLevel = keepInventory; // SPIGOT-2222: Paper と同じく先に入れておく
+
+        final org.bukkit.event.entity.PlayerDeathEvent event = new org.bukkit.event.entity.PlayerDeathEvent(
+                player.getBukkitEntity(),
+                new org.bukkit.craftbukkit.damage.CraftDamageSource(source),
+                new io.papermc.paper.util.TransformingRandomAccessList<>(
+                        drops, net.minecraft.world.entity.Entity.DefaultDrop::stack,
+                        org.bukkit.craftbukkit.event.CraftEventFactory.FROM_FUNCTION),
+                experience,
+                0,
+                PaperAdventure.asAdventure(defaultMessage));
+        event.setKeepInventory(keepInventory);
+        event.setKeepLevel(player.keepLevel);
+        event.setReviveHealth(player.getBukkitEntity()
+                .getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue());
+        event.callEvent();
+
+        if (event.isCancelled()) {
+            current.inventory.restore(player.getInventory());
+
+            if (player.getHealth() <= 0) {
+                player.setHealth((float) event.getReviveHealth());
+            }
+
+            return false;
+        }
+
+        player.keepLevel = event.getKeepLevel();
+        player.newLevel = event.getNewLevel();
+        player.newTotalExp = event.getNewTotalExp();
+        player.expToDrop = event.getDroppedExp();
+        player.newExp = event.getNewExp();
+        player.shifuDeathEvent = true;
+        player.shifuKeepInventory = event.getKeepInventory();
+
+        if (event.getKeepInventory()) {
+            if (!keepInventory) {
+                // vanilla は落とし終えている。控えから戻す
+                current.inventory.restore(player.getInventory());
+            }
+        } else if (keepInventory) {
+            // vanilla は残している。Paper と同じく空にする(残す指定の物は除く)
+            current.inventory.clear(player.getInventory(), event.getItemsToKeep());
+        } else {
+            current.inventory.restoreKept(player.getInventory(), event.getItemsToKeep());
+        }
+
+        // 残す指定に入っていて持ち物に無かった物(Paper と同じ扱い)
+        for (final org.bukkit.inventory.ItemStack stack : event.getItemsToKeep()) {
+            player.getBukkitEntity().getInventory().addItem(stack);
+        }
+
+        dropAllItems(drops, player.getBukkitEntity().getWorld(), player.getBukkitEntity().getLocation());
+        releaseExperience(player, current, event.getDroppedExp());
+        announceDeath(player, event, showDeathMessage);
+
+        return true;
+    }
+
+    /**
+     * 死亡メッセージを送る。vanilla の {@code ServerPlayer.die} の前半と同じ手順で、
+     * 文だけをイベントのものにする。
+     */
+    private static void announceDeath(final ServerPlayer player,
+                                      final org.bukkit.event.entity.PlayerDeathEvent event,
+                                      final boolean showDeathMessage) {
+        final net.kyori.adventure.text.Component apiMessage = event.deathMessage() != null
+                ? event.deathMessage()
+                : net.kyori.adventure.text.Component.empty();
+        final Component message = PaperAdventure.asVanilla(apiMessage);
+
+        if (apiMessage != net.kyori.adventure.text.Component.empty() && showDeathMessage) {
+            sendCombatKill(player, true, message);
+
+            final net.minecraft.world.scores.Team team = player.getTeam();
+            final net.minecraft.server.players.PlayerList list = player.server.getPlayerList();
+
+            if (team == null || team.getDeathMessageVisibility() == net.minecraft.world.scores.Team.Visibility.ALWAYS) {
+                list.broadcastSystemMessage(message, false);
+            } else if (team.getDeathMessageVisibility() == net.minecraft.world.scores.Team.Visibility.HIDE_FOR_OTHER_TEAMS) {
+                list.broadcastSystemToTeam(player, message);
+            } else if (team.getDeathMessageVisibility() == net.minecraft.world.scores.Team.Visibility.HIDE_FOR_OWN_TEAM) {
+                list.broadcastSystemToAllExceptTeam(player, message);
+            }
+        } else {
+            sendCombatKill(player, showDeathMessage, message);
+        }
+    }
+
+    /** 死亡画面の packet。vanilla の {@code die} と同じく、長すぎる文は差し替える。 */
+    private static void sendCombatKill(final ServerPlayer player, final boolean display, final Component message) {
+        if (!display || message == net.minecraft.network.chat.CommonComponents.EMPTY) {
+            player.connection.send(new net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket(
+                    player.getId(), net.minecraft.network.chat.CommonComponents.EMPTY));
+
+            return;
+        }
+
+        player.connection.send(
+                new net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket(player.getId(), message),
+                net.minecraft.network.PacketSendListener.exceptionallySend(() -> {
+                    final String cut = message.getString(256);
+                    final Component tooLong = Component.translatable("death.attack.message_too_long",
+                            Component.literal(cut).withStyle(net.minecraft.ChatFormatting.YELLOW));
+                    final Component fallback = Component.translatable("death.attack.even_more_magic", player.getDisplayName())
+                            .withStyle(style -> style.withHoverEvent(new net.minecraft.network.chat.HoverEvent(
+                                    net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT, tooLong)));
+
+                    return new net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket(player.getId(), fallback);
+                }));
+    }
 
     // ------------------------------------------------------------ ブロックの変化
 

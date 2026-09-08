@@ -1,1 +1,13 @@
+# Bukkit 層の配線。vanilla の行は変えていない。
 
+# プラグインメッセージ(Bukkit の Messenger)。vanilla の handleCustomPayload は空で、
+# DiscardedPayload の codec は本文を捨てる。捨てる直前に控えた本文を
+# (patches/wire/net-minecraft-network-protocol-common-custom-DiscardedPayload.rules)
+# ここで取り出して Messenger へ渡す。プラグインが 1 つも入っていなければ何もしない。
+#
+# 読んだ位置: Paper-Server src/main/java/net/minecraft/server/network/ServerCommonPacketListenerImpl.java:150
+file: net/minecraft/server/network/ServerCommonPacketListenerImpl.java
+anchor:
+    public void handleCustomPayload(ServerboundCustomPayloadPacket packet) {
+insert-after:
+    dev.shifu.event.PluginMessages.handle(this, packet);
