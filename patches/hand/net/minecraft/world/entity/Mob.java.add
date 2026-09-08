@@ -1,6 +1,20 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
 
 // Mob.setTarget
+    // 1.20.6 の CraftBukkit は 3 引数で呼ぶ(発火するかどうかを渡す)。
+    // 発火は vanilla の中で出るので、渡さないときは理由を置かずに通す。
+    public boolean setTarget(final LivingEntity target,
+                             final org.bukkit.event.entity.EntityTargetEvent.TargetReason reason,
+                             final boolean fireEvent) {
+        if (fireEvent) {
+            dev.shifu.event.EntityEvents.targetReason(reason);
+        }
+
+        this.setTarget(target);
+        return true;
+    }
+
+// Mob.setTarget
     // 理由を発火層に置いてから vanilla の setTarget(LivingEntity) へ渡す。
     // EntityTargetLivingEntityEvent は vanilla の中で出る(patches/events/entity-core.rules)。
     // 返り値は「取り消されなかったか」だが、vanilla の版は返さないので常に true。

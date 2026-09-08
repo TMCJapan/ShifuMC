@@ -17,3 +17,11 @@ net/minecraft/world/level/GameRules.java IntegerValue.create
 # vanilla の SectionStorage は IOWorker を使うので、read/write の上書きは載らない
 net/minecraft/world/entity/ai/village/poi/PoiManager.java PoiManager.read
 net/minecraft/world/entity/ai/village/poi/PoiManager.java PoiManager.write
+
+# Paper は tryDropExperience を「経験値を出さずに量を返す」形に**書き換えて**いる
+# (CraftBukkit が BlockExpEvent を出してから落とすため)。vanilla はその場で出すので、
+# その形を前提にした getExpDrop は載らない。
+net/minecraft/world/level/block/DropExperienceBlock.java DropExperienceBlock.getExpDrop
+net/minecraft/world/level/block/SculkSensorBlock.java SculkSensorBlock.getExpDrop
+net/minecraft/world/level/block/SculkShriekerBlock.java SculkShriekerBlock.getExpDrop
+net/minecraft/world/level/block/SculkCatalystBlock.java SculkCatalystBlock.getExpDrop
