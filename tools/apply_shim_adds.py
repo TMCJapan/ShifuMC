@@ -25,7 +25,7 @@ ms = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ms)
 fs = ms.fs
 
-MARK = re.compile(r"^// (\S+)\.(\w+)$")
+MARK = re.compile(r"^// (\S+)\.([\w$]+)$")
 
 
 def parse(text):
