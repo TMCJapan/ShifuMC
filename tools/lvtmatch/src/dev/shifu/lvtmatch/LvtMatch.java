@@ -439,14 +439,29 @@ public final class LvtMatch {
             }
         }
 
-        // 公式の番号を引く。同じ名前が複数あるときは出てくる順に対応させる
+        // 公式の番号を引く。同じ名前が複数あるときは出てくる順に対応させる。
+        //
+        // **同じ名前・型・元の番号の欄はまとめて 1 つの変数として扱う。**逆コンパイルした
+        // ソースを組み直すと、1 つの変数が if / else の合流で 2 つの LVT の欄に割れることが
+        // ある(`crashReport` が start=39 と start=73 の 2 つ)。片方だけ動かすと、
+        // 分岐の先で slot が食い違って `Inconsistent stackmap frames` になる。
         List<Local> wanted = new ArrayList<>(locals);
         wanted.sort((a, b) -> Integer.compare(b.to - b.from, a.to - a.from));
         Map<String, Integer> used = new HashMap<>();
         Map<Local, Integer> target = new IdentityHashMap<>();
+        Map<String, Integer> group = new HashMap<>();
 
         for (Local local : wanted) {
-            Integer slot = officialSlot(moj, local.node, used);
+            String key = local.node.name + local.node.desc + "#" + local.node.index;
+            Integer slot = group.get(key);
+
+            if (slot == null) {
+                slot = officialSlot(moj, local.node, used);
+
+                if (slot != null) {
+                    group.put(key, slot);
+                }
+            }
 
             if (slot != null && slot < size) {
                 target.put(local, slot);
