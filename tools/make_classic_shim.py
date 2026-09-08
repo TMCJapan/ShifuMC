@@ -281,8 +281,9 @@ def ancestors(tree):
 
 
 ASSIGN = re.compile(r"^\s*this\.([\w$]+)\s*=[^=]")
-INITIALISED = re.compile(r"^\s+(?:@[\w.]+\s+)*(?:(?:public|protected|private|static|final"
-                         r"|transient|volatile)\s+)*[\w$<>\[\],.?@]+\s+([\w$]+)\s*=")
+# **final で初期化子が付いた欄**だけ。構築子で代入し直せないのはこれだけで、
+# メソッドの中の局所変数を数えると足せる構築子まで弾く
+INITIALISED = re.compile(r"^\s+(?:@[\w.]+\s+)*(?:(?:public|protected|private|static|transient|volatile)\s+)*final\s+[\w$<>\[\],.?@]+\s+([\w$]+)\s*=")
 
 
 def skips(path):
