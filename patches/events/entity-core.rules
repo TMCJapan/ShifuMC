@@ -38,12 +38,14 @@ anchor:
     if (this.followingPlayer != null) {
     Vec3 vec3 = new Vec3(
     this.followingPlayer.getX() - this.getX(),
-    this.followingPlayer.getY() + this.followingPlayer.getEyeHeight() / 2.0 - this.getY(),
+    this.followingPlayer.getY() + (double)this.followingPlayer.getEyeHeight() / 2.0 - this.getY(),
     this.followingPlayer.getZ() - this.getZ()
     );
     double d = vec3.lengthSqr();
-    double d1 = 1.0 - Math.sqrt(d) / 8.0;
-    this.setDeltaMovement(this.getDeltaMovement().add(vec3.normalize().scale(d1 * d1 * 0.1)));
+    if (d < 64.0) {
+    double e = 1.0 - Math.sqrt(d) / 8.0;
+    this.setDeltaMovement(this.getDeltaMovement().add(vec3.normalize().scale(e * e * 0.1)));
+    }
     }
 insert:
     boolean shifuCancelled = false;
@@ -62,26 +64,24 @@ anchor:
 insert-after:
     player.takeXpDelay = dev.shifu.event.EntityEvents.xpCooldown(player, player.takeXpDelay, org.bukkit.event.player.PlayerExpCooldownChangeEvent.ChangeReason.PICKUP_ORB);
 
+# EntityPotionEffectEvent(CLEARED)。1.20.6 の removeAllEffects は iterator で消す。
+# 残す指定があれば、消したあとに戻す。
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    Map<Holder<MobEffect>, MobEffectInstance> map = Maps.newHashMap(this.activeEffects);
+    Iterator<MobEffectInstance> iterator = this.activeEffects.values().iterator();
 insert:
     final java.util.List<MobEffectInstance> shifuKept = dev.shifu.event.EntityEvents.clearEffects(this, this.activeEffects.values());
 
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    Map<Holder<MobEffect>, MobEffectInstance> map = Maps.newHashMap(this.activeEffects);
-    this.activeEffects.clear();
+    for (bl = false; iterator.hasNext(); bl = true) {
+    this.onEffectRemoved(iterator.next());
+    iterator.remove();
+    }
 insert-after:
-    shifuKept.forEach(shifuEffect -> map.remove(shifuEffect.getEffect()));
     shifuKept.forEach(shifuEffect -> this.activeEffects.put(shifuEffect.getEffect(), shifuEffect));
 
-# 全部取り消されたら false(Paper の !toRemove.isEmpty())
-file: net/minecraft/world/entity/LivingEntity.java
-anchor:
-    this.onEffectsRemoved(map.values());
-insert-after:
-    if (map.isEmpty()) {
+    if (!shifuKept.isEmpty() && this.activeEffects.size() == shifuKept.size()) {
         return false;
     }
 
@@ -151,8 +151,8 @@ insert:
 file: net/minecraft/world/entity/ambient/Bat.java
 anchor:
     this.setResting(false);
-    if (!isSilent) {
-        level.levelEvent(null, LevelEvent.SOUND_BAT_LIFTOFF, blockPos, 0);
+    if (!bl) {
+    this.level().levelEvent(null, 1025, blockPos, 0);
     }
 count: 2
 insert:
