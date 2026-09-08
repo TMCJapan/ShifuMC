@@ -3,8 +3,8 @@
 # BlockRedstoneEvent
 file: net/minecraft/world/level/block/CommandBlock.java
 anchor:
-    commandBlockEntity.setPowered(bl);
-insert:
+    boolean bl2 = commandBlockEntity.isPowered();
+insert-after:
     // CraftBukkit start
     org.bukkit.block.Block bukkitBlock = org.bukkit.craftbukkit.block.CraftBlock.at(world, pos);
     int old = bl2 ? 15 : 0;

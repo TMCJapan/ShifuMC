@@ -347,10 +347,10 @@ insert:
 
 file: net/minecraft/world/level/block/SpongeBlock.java
 anchor:
-    world.setBlock(blockPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+    world.setBlock(currentPos, Blocks.AIR.defaultBlockState(), 3);
 count: 2
 insert:
-    dev.shifu.event.BlockEvents.spongeBefore(world, blockPos);
+    dev.shifu.event.BlockEvents.spongeBefore(world, currentPos);
 
 file: net/minecraft/world/level/block/CakeBlock.java
 anchor:
@@ -401,10 +401,9 @@ insert:
 file: net/minecraft/world/level/material/FlowingFluid.java
 anchor:
     world.setBlock(pos, blockState, 2);
-count: 2
 insert:
-    state = dev.shifu.event.BlockEvents.fluidLevelChange(world, pos, state);
-    if (state == null) {
+    blockState = dev.shifu.event.BlockEvents.fluidLevelChange(world, pos, blockState);
+    if (blockState == null) {
         return;
     }
 
@@ -509,33 +508,6 @@ insert:
     dev.shifu.event.BlockEvents.beaconDeactivated(this.level, this.worldPosition);
 
 # BeaconEffectEvent(1 つめと 2 つめの効果)
-file: net/minecraft/world/level/block/entity/BaseContainerBlockEntity.java
-anchor:
-    return this.lockKey.canUnlock(player);
-insert:
-    if (dev.shifu.event.BlockEvents.listeningLockCheck()) {
-        return org.bukkit.craftbukkit.event.CraftEventFactory.callBlockLockCheckEvent(this, this.lockKey, this.getDisplayName(), player);
-    }
-
-file: net/minecraft/world/level/block/entity/BaseContainerBlockEntity.java
-anchor:
-    Level world = player.level();
-insert:
-    if (dev.shifu.event.BlockEvents.listeningLockCheck()
-            && org.bukkit.craftbukkit.event.CraftEventFactory.sendChestLockedNotifications(pos)) {
-        return;
-    }
-
-file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
-anchor:
-    if (this.lockKey.canUnlock(player)) {
-insert:
-    if (dev.shifu.event.BlockEvents.listeningLockCheck()
-            && !org.bukkit.craftbukkit.event.CraftEventFactory.callBlockLockCheckEvent(this, this.lockKey, this.getDisplayName(), player)) {
-        BaseContainerBlockEntity.sendChestLockedNotifications(net.minecraft.world.phys.Vec3.atCenterOf(this.getBlockPos()), player, this.getDisplayName());
-        return null;
-    }
-
 # ------------------------------------------------------------ 怪しい砂・トライアルスポナー・宝物庫
 
 # EntityChangeBlockEvent(ブラシで削る)

@@ -436,7 +436,8 @@ public final class BlockEvents {
      *
      * @return 置く状態。取り消されたら null
      */
-    public static BlockState fluidLevelChange(final ServerLevel level, final BlockPos pos, final BlockState newState) {
+    // 1.20.6 の FlowingFluid.spreadTo は Level を受ける
+    public static BlockState fluidLevelChange(final net.minecraft.world.level.Level level, final BlockPos pos, final BlockState newState) {
         if (!listening(org.bukkit.event.block.FluidLevelChangeEvent.getHandlerList())) {
             return newState;
         }
