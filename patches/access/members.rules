@@ -134,3 +134,8 @@ line:
 public class LecternBlockEntity extends BlockEntity implements Clearable, MenuProvider {
 implements:
     net.minecraft.commands.CommandSource
+
+# Paper の当たり判定の道具が別のパッケージから作る
+file: net/minecraft/world/phys/shapes/ArrayVoxelShape.java
+line:
+    ArrayVoxelShape(DiscreteVoxelShape shape, DoubleList xPoints, DoubleList yPoints, DoubleList zPoints) {

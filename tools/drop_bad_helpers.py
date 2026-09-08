@@ -48,7 +48,7 @@ def failures(gap):
             rel = match.group(1).replace("\\", "/")
             current = None
 
-            if "/dev/shifu/event/" in rel:
+            if "/dev/shifu/" in rel:
                 current = (rel.rsplit("/", 1)[-1], int(match.group(2)))
                 out[current[0]].add(current[1])
                 reason[current].add(match.group(3).split(":")[0].strip())

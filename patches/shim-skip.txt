@@ -25,3 +25,6 @@ net/minecraft/world/level/block/DropExperienceBlock.java DropExperienceBlock.get
 net/minecraft/world/level/block/SculkSensorBlock.java SculkSensorBlock.getExpDrop
 net/minecraft/world/level/block/SculkShriekerBlock.java SculkShriekerBlock.getExpDrop
 net/minecraft/world/level/block/SculkCatalystBlock.java SculkCatalystBlock.getExpDrop
+
+# 可視性を広げるだけの構築子。patches/access で広げるので、Paper の宣言は足さない
+net/minecraft/world/phys/shapes/ArrayVoxelShape.java ArrayVoxelShape.ArrayVoxelShape
