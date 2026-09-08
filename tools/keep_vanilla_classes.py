@@ -42,19 +42,26 @@ def git(args, cwd=TREE):
     return done.stdout.decode("utf-8", "replace").split("\n")
 
 
-def _at(subject):
-    """paperweight が積むコミットを題名で引く。ハッシュは版ごとに変わる。"""
+def _at(subject, required=True):
+    """paperweight が積むコミットを題名で引く。ハッシュは版ごとに変わる。
+
+    classic(1.21.3 以前)の木は「paper Imports」1 つしか積まないので、
+    Mache や paper ATs は無い。無いときは None を返す。
+    """
     for line in git(["log", "--format=%H %s"]):
         if line.endswith(" " + subject):
             return line.split(" ", 1)[0]
 
-    raise SystemExit("履歴に %r のコミットが無い" % subject)
+    if required:
+        raise SystemExit("履歴に %r のコミットが無い" % subject)
+
+    return None
 
 
 def touched_sources():
     """Shifu が手を入れたファイルと、AT が触ったファイル(どちらも .java の相対パス)。"""
-    vanilla = _at("Mache")     # 逆コンパイルの手直しまで
-    with_ats = _at("paper ATs")  # 可視性を広げる
+    vanilla = _at("Mache", required=False)     # 逆コンパイルの手直しまで
+    with_ats = _at("paper ATs", required=False)  # 可視性を広げる
     ours = set()
 
     for line in git(["status", "--porcelain"]):
@@ -63,7 +70,11 @@ def touched_sources():
         if path.endswith(".java"):
             ours.add(path)
 
-    ats = set(p.strip() for p in git(["diff", "--name-only", vanilla, with_ats]) if p.strip().endswith(".java"))
+    ats = set()
+
+    if vanilla and with_ats:
+        ats = set(p.strip() for p in git(["diff", "--name-only", vanilla, with_ats])
+                  if p.strip().endswith(".java"))
 
     return ours, ats
 
