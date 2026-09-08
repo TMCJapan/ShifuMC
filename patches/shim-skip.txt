@@ -1,0 +1,14 @@
+# make_classic_shim が足してはいけない宣言。
+#
+# Paper が vanilla の宣言を**書き換えている**ものは、足すと二重になる。
+# 生成器は「vanilla に無い鍵」で見るので、引数の型が変わっただけの書き換えを
+# 追加と読んでしまう。そこはここに書いて外す。
+#
+#     <相対パス> <所有クラス>.<名前>
+
+# 世界ごとの gamerule。Paper は BiConsumer<MinecraftServer, T> を
+# BiConsumer<ServerLevel, T> に**替えて**いる。消去後の署名が同じなので name clash になる
+net/minecraft/world/level/GameRules.java GameRules.create
+net/minecraft/world/level/GameRules.java Type.create
+net/minecraft/world/level/GameRules.java BooleanValue.create
+net/minecraft/world/level/GameRules.java IntegerValue.create

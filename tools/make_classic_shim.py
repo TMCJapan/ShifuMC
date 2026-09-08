@@ -241,6 +241,26 @@ INITIALISED = re.compile(r"^\s+(?:@[\w.]+\s+)*(?:(?:public|protected|private|sta
                          r"|transient|volatile)\s+)*[\w$<>\[\],.?@]+\s+([\w$]+)\s*=")
 
 
+def skips(path):
+    """足してはいけない宣言。(相対パス, 所有クラス, 名前) の集合。"""
+    out = set()
+
+    if not path or not os.path.exists(path):
+        return out
+
+    for line in io.open(path, encoding="utf-8"):
+        text = line.split("#")[0].strip()
+
+        if not text:
+            continue
+
+        rel, _, member = text.partition(" ")
+        owner, _, name = member.strip().rpartition(".")
+        out.add((rel, owner, name))
+
+    return out
+
+
 def buildable(block, old):
     """その構築子を足せるか。
 
@@ -274,6 +294,7 @@ def main():
     wanted = ms.load_required(required)
     asked = required_owners(required)
     above = ancestors(tree)
+    skip = skips(os.path.join(os.path.dirname(HERE), "patches", "shim-skip.txt"))
     files = 0
     total = 0
     skipped = 0
@@ -345,6 +366,9 @@ def main():
                     continue
 
                 if member == owner and not buildable(block, old):
+                    continue
+
+                if (rel, owner, member) in skip:
                     continue
 
                 blocks.append((owner, member, ms.unfinal(block)))

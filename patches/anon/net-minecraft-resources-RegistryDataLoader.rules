@@ -7,7 +7,7 @@ anchor:
     public <T> Optional<RegistryOps.RegistryInfo<T>> lookup(ResourceKey<? extends Registry<? extends T>> registryRef) {
 insert:
     @Override
-    public HolderLookup.Provider lookupForValueCopyViaBuilders() {
-        return HolderLookup.Provider.create(java.util.stream.Stream.concat(registryLookups.stream(), loaders.stream().map(RegistryDataLoader.Loader::registry)));
+    public net.minecraft.core.HolderLookup.Provider lookupForValueCopyViaBuilders() {
+        return net.minecraft.core.HolderLookup.Provider.create(java.util.stream.Stream.concat(registryLookups.stream(), loaders.stream().map(RegistryDataLoader.Loader::registry)));
     }
 
