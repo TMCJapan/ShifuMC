@@ -1,0 +1,21 @@
+# main(26.2)の規則を 1.20.6 の行に当て直したもの。
+
+# main(26.2)の規則を reanchor.py で局所変数の名前だけ当て直したもの。
+
+# PlayerFlowerPotManipulateEvent
+file: net/minecraft/world/level/block/FlowerPotBlock.java
+anchor:
+    if (!player.addItem(itemStack)) {
+insert:
+    // Paper start - Add PlayerFlowerPotManipulateEvent
+    org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(world, pos);
+    org.bukkit.inventory.ItemStack pottedStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(itemStack);
+
+    io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent event = new io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent((org.bukkit.entity.Player) player.getBukkitEntity(), block, pottedStack, false);
+    if (!event.callEvent()) {
+        // Update client
+        player.containerMenu.sendAllDataToRemote();
+
+        return InteractionResult.PASS;
+    }
+    // Paper end - Add PlayerFlowerPotManipulateEvent

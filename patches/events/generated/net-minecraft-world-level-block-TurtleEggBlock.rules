@@ -1,5 +1,7 @@
 # main(26.2)の規則を reanchor.py で局所変数の名前だけ当て直したもの。
 
+# main(26.2)の規則を reanchor.py で局所変数の名前だけ当て直したもの。
+
 # callBlockFadeEvent
 file: net/minecraft/world/level/block/TurtleEggBlock.java
 anchor:

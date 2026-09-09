@@ -1,0 +1,16 @@
+# main(26.2)の規則を 1.20.6 の行に当て直したもの。
+
+# main(26.2)の規則を reanchor.py で局所変数の名前だけ当て直したもの。
+
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# PlayerChunkLoadEvent
+file: net/minecraft/server/network/PlayerChunkSender.java
+anchor:
+    ChunkPos chunkPos = chunk.getPos();
+insert:
+    // Paper start - PlayerChunkLoadEvent
+    if (io.papermc.paper.event.packet.PlayerChunkLoadEvent.getHandlerList().getRegisteredListeners().length > 0) {
+        new io.papermc.paper.event.packet.PlayerChunkLoadEvent(new org.bukkit.craftbukkit.CraftChunk(chunk), handler.getPlayer().getBukkitEntity()).callEvent();
+    }
+    // Paper end - PlayerChunkLoadEvent

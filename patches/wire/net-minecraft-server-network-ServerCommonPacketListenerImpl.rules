@@ -20,3 +20,15 @@ anchor:
     public void handleCustomPayload(ServerboundCustomPayloadPacket packet) {
 insert-after:
     dev.shifu.event.PluginMessages.handle(this, packet);
+
+# Player.getCompassTarget() が読む欄。CraftBukkit は「ここでは直に入れず、
+# packet を送るところで入れる」形にしている(CraftPlayer.setCompassTarget の注記)。
+# 入れないと getCompassTarget() が null を返す。
+file: net/minecraft/server/network/ServerCommonPacketListenerImpl.java
+anchor:
+    public void send(Packet<?> packet, @Nullable PacketSendListener callbacks) {
+insert-after:
+    if (packet instanceof net.minecraft.network.protocol.game.ClientboundSetDefaultSpawnPositionPacket shifuSpawn && this.player != null) {
+        this.player.compassTarget = org.bukkit.craftbukkit.util.CraftLocation.toBukkit(
+                shifuSpawn.pos, this.player.level().getWorld());
+    }

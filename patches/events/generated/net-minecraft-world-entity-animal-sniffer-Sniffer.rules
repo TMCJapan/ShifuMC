@@ -14,3 +14,13 @@ insert:
         return;
     }
     // CraftBukkit end
+
+# callEntityFertilizeEggEvent
+file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
+anchor:
+    ItemStack itemStack = new ItemStack(Items.SNIFFER_EGG);
+insert:
+    // Paper start - Add EntityFertilizeEggEvent event
+    final io.papermc.paper.event.entity.EntityFertilizeEggEvent result = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityFertilizeEggEvent(this, other);
+    if (result.isCancelled()) return;
+    // Paper end - Add EntityFertilizeEggEvent event

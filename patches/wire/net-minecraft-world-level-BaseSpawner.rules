@@ -1,0 +1,9 @@
+# Bukkit 層の配線。vanilla の行は変えない。
+
+# Entity.fromMobSpawner() が読む印。Paper は湧かせる直前で立てる
+# (Paper-Server 17a604cf7 src/main/java/net/minecraft/world/level/BaseSpawner.java:195)。
+file: net/minecraft/world/level/BaseSpawner.java
+anchor:
+    if (!world.tryAddFreshEntityWithPassengers(entity)) {
+insert:
+    entity.spawnedViaMobSpawner = true;

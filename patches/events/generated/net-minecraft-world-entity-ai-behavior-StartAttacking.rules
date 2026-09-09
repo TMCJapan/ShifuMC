@@ -1,0 +1,22 @@
+# main(26.2)の規則を 1.20.6 の行に当て直したもの。
+
+# main(26.2)の規則を reanchor.py で局所変数の名前だけ当て直したもの。
+
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityTargetLivingEvent
+file: net/minecraft/world/entity/ai/behavior/StartAttacking.java
+anchor:
+    attackTarget.set(livingEntity);
+insert:
+    // CraftBukkit start
+    org.bukkit.event.entity.EntityTargetEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTargetLivingEvent(entity, livingEntity, (livingEntity instanceof net.minecraft.server.level.ServerPlayer) ? org.bukkit.event.entity.EntityTargetEvent.TargetReason.CLOSEST_PLAYER : org.bukkit.event.entity.EntityTargetEvent.TargetReason.CLOSEST_ENTITY);
+    if (event.isCancelled()) {
+        return false;
+    }
+    if (event.getTarget() == null) {
+        attackTarget.erase();
+        return true;
+    }
+    livingEntity = ((org.bukkit.craftbukkit.entity.CraftLivingEntity) event.getTarget()).getHandle();
+    // CraftBukkit end
