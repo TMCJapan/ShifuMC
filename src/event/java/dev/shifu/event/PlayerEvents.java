@@ -128,6 +128,47 @@ public final class PlayerEvents {
     private static io.papermc.paper.command.brigadier.CommandSourceStack difficultySource;
 
 
+    /**
+     * PlayerCommandPreprocessEvent。コマンドを実行する直前。
+     *
+     * <p>文が差し替えられたら、差し替えた文で vanilla の私有メソッドを呼び直して false を返す。
+     * 呼び直しの中でもう 1 度発火しないように旗で止める(Paper も同じ形)。
+     *
+     * @return vanilla の実行へ進んでよいか
+     */
+    public static boolean commandPreprocess(final net.minecraft.server.network.ServerGamePacketListenerImpl connection,
+                                            final String command) {
+        if (rewritingCommand
+                || !listening(org.bukkit.event.player.PlayerCommandPreprocessEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.event.player.PlayerCommandPreprocessEvent event =
+                new org.bukkit.event.player.PlayerCommandPreprocessEvent(
+                        connection.player.getBukkitEntity(), "/" + command,
+                        new org.bukkit.craftbukkit.util.LazyPlayerSet(connection.player.level().getServer()));
+
+        if (!event.callEvent()) {
+            return false;
+        }
+
+        final String changed = event.getMessage().substring(1);
+
+        if (changed.equals(command)) {
+            return true;
+        }
+
+        rewritingCommand = true;
+
+        try {
+            connection.shifuPerformUnsignedChatCommand(changed);
+        } finally {
+            rewritingCommand = false;
+        }
+
+        return false;
+    }
+
     // ------------------------------------------------------------ 眠り
 
     /**

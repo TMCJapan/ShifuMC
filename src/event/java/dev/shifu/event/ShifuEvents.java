@@ -497,6 +497,82 @@ public final class ShifuEvents {
     // ------------------------------------------------------------ 移動
 
 
+    // ------------------------------------------------------------ 移動
+
+    /**
+     * 移動。
+     *
+     * <p>{@code handleMovePlayer} の中で、vanilla が {@code absMoveTo(target...)} で
+     * 位置を確定させる直前。その時点で位置は {@code move()} で動いたあと、
+     * 回転は動く前のまま。
+     *
+     * <p>Paper と同じく、発火の前に位置を packet を受ける前の場所へ戻し、
+     * {@code from} は直前に発火した {@code to}(接続が控えている)にする。
+     * 1/256 ブロック・10 度に満たない動きでは発火しない。これも Paper と同じ。
+     *
+     * <p>乗り物に乗っている間の移動では発火しない。Paper はそこでプレイヤーを
+     * 乗り物の位置へ動かす細工をしてから発火していて、細工そのものが vanilla の位置を変える。
+     *
+     * @return vanilla の {@code absMoveTo(target...)} へ進んでよいか
+     */
+    public static boolean playerMove(final net.minecraft.server.network.ServerGamePacketListenerImpl connection,
+                                     final double startX, final double startY, final double startZ,
+                                     final double targetX, final double targetY, final double targetZ,
+                                     final float targetYRot, final float targetXRot) {
+        final boolean moveListening = listening(org.bukkit.event.player.PlayerMoveEvent.getHandlerList());
+
+        if (!moveListening
+                && !listening(com.destroystokyo.paper.event.player.PlayerJumpEvent.getHandlerList())) {
+            return true;
+        }
+
+        final ServerPlayer player = connection.player;
+        final float startYRot = player.getYRot();
+        final float startXRot = player.getXRot();
+        final org.bukkit.Location from = connection.shifuMoveFrom(startX, startY, startZ, startYRot, startXRot);
+        final org.bukkit.Location to = new org.bukkit.Location(
+                player.level().getWorld(), targetX, targetY, targetZ, targetYRot, targetXRot);
+
+        // 1 ピクセルに満たない動きで 40 回発火するのを防ぐ(Paper と同じ閾値)
+        final double delta = net.minecraft.util.Mth.square(from.getX() - to.getX())
+                + net.minecraft.util.Mth.square(from.getY() - to.getY())
+                + net.minecraft.util.Mth.square(from.getZ() - to.getZ());
+        final float deltaAngle = Math.abs(from.getYaw() - to.getYaw()) + Math.abs(from.getPitch() - to.getPitch());
+
+        if (!(delta > 1f / 256 || deltaAngle > 10.0F) || player.isImmobile()) {
+            return true;
+        }
+
+        connection.shifuRememberMove(to);
+
+        if (!moveListening) {
+            return true;
+        }
+
+        // 発火の前に packet を受ける前の場所へ戻す(Paper と同じ)
+        player.absMoveTo(startX, startY, startZ, startYRot, startXRot);
+
+        final org.bukkit.Location oldTo = to.clone();
+        final org.bukkit.event.player.PlayerMoveEvent event =
+                new org.bukkit.event.player.PlayerMoveEvent(player.getBukkitEntity(), from, to);
+        event.callEvent();
+
+        if (event.isCancelled()) {
+            connection.internalTeleport(from);
+
+            return false;
+        }
+
+        if (!oldTo.equals(event.getTo())) {
+            player.getBukkitEntity().teleport(event.getTo(), TeleportCause.PLUGIN);
+
+            return false;
+        }
+
+        // イベントの中でプラグインがテレポートさせたなら、この packet の位置は使わない
+        return from.equals(player.getBukkitEntity().getLocation()) || !connection.shifuTakeJustTeleported();
+    }
+
     // ------------------------------------------------------------ テレポート
 
     /** 次に {@code connection.teleport} を通る相手のうち、発火しないもの。 */

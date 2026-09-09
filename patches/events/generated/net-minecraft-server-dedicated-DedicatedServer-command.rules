@@ -1,6 +1,7 @@
 # main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
 
 # ServerCommandEvent。コンソールの入力を実行する直前。
+
 # 取り消されたら飛ばし、差し替えられたら新しい入力で実行する。
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:

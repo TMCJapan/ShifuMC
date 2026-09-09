@@ -25,6 +25,16 @@ anchor:
 insert:
     dev.shifu.event.PlayerEvents.spawnCause(serverPlayer, com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause.COMMAND);
 
+# PlayerCommandPreprocessEvent。コマンドを組み立てる直前。
+# 差し替えられたら、差し替えた文で呼び直して vanilla の続きを飛ばす。
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    ParseResults<CommandSourceStack> parseResults = this.parseCommand(command);
+insert:
+    if (!dev.shifu.event.PlayerEvents.commandPreprocess(this, command)) {
+        return;
+    }
+
 # ============================================================ サーバー
 
 # WorldDifficultyChangeEvent。ロックの判定のあと、書く前

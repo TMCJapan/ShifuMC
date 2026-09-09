@@ -37,6 +37,20 @@ anchor:
 insert:
     dev.shifu.event.ShifuEvents.silentTeleport(this);
 
+# PlayerMoveEvent
+#
+# vanilla が位置を確定させる absMoveTo(d, e, f, g, h) の直前。Paper と同じ位置。
+# 登録が無ければ真偽値 1 つで抜ける。取り消しか行き先の変更があれば、
+# 以降(位置の確定・落下判定・統計)を飛ばす。
+# 1.20.6 の局所変数は 動く前が i/j/k、行き先が d/e/f/g/h。
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player.absMoveTo(d, e, f, g, h);
+insert:
+    if (!dev.shifu.event.ShifuEvents.playerMove(this, i, j, k, d, e, f, g, h)) {
+        return;
+    }
+
 # PlayerTeleportEvent(同じ世界の中)
 #
 # connection.teleport(destination, relatives) の中。vanilla が位置を確定させて

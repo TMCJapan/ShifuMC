@@ -79,3 +79,40 @@
         // CraftBukkit end
         this.player.getTextFilter().leave();
     }
+
+// ServerGamePacketListenerImpl.internalTeleport
+    // Paper は vanilla の teleport を internalTeleport に改名して、teleport の側に
+    // PlayerTeleportEvent を入れている。Shifu は vanilla の teleport をそのまま残し、
+    // その中に発火を差し込んでいるので、発火しない印を付けてから vanilla の版へ渡す。
+    // justTeleported は PlayerMoveEvent の中でプラグインがテレポートさせたかの判定に使う。
+    public void internalTeleport(final double x, final double y, final double z,
+                                 final float yRot, final float xRot,
+                                 final java.util.Set<net.minecraft.world.entity.RelativeMovement> relatives) {
+        dev.shifu.event.ShifuEvents.silentTeleport(this);
+        this.justTeleported = true;
+        this.teleport(x, y, z, yRot, xRot, relatives);
+    }
+
+    // アダプタ層が呼ぶ短縮形。同じ目印の下に置く(別々に書くと後の方だけが残る)。
+    public void internalTeleport(final org.bukkit.Location dest) {
+        this.internalTeleport(dest.getX(), dest.getY(), dest.getZ(), dest.getYaw(), dest.getPitch(),
+                java.util.Collections.emptySet());
+    }
+
+// ServerGamePacketListenerImpl.shifuMoveFrom
+    // PlayerMoveEvent の from。まだ 1 度も発火していなければ、この packet を受ける前の位置。
+    // Paper の handleMovePlayer の「if (!this.hasMoved) { ... }」と同じ。
+    public org.bukkit.Location shifuMoveFrom(final double startX, final double startY, final double startZ,
+                                             final float startYRot, final float startXRot) {
+        if (!this.hasMoved) {
+            this.lastPosX = startX;
+            this.lastPosY = startY;
+            this.lastPosZ = startZ;
+            this.lastYRot = startYRot;
+            this.lastXRot = startXRot;
+            this.hasMoved = true;
+        }
+
+        return new org.bukkit.Location(this.player.level().getWorld(),
+                this.lastPosX, this.lastPosY, this.lastPosZ, this.lastYRot, this.lastXRot);
+    }

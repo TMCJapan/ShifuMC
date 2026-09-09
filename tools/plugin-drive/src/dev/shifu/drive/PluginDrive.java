@@ -23,7 +23,18 @@ public final class PluginDrive extends JavaPlugin implements Listener {
     private Location origin;
     private int pickedUp;
 
+    private int moves;
     private int blockBreaks;
+
+    @EventHandler
+    public void onMove(final org.bukkit.event.player.PlayerMoveEvent event) {
+        this.moves++;
+    }
+
+    @EventHandler
+    public void onCommandPreprocess(final org.bukkit.event.player.PlayerCommandPreprocessEvent event) {
+        this.note("PlayerCommandPreprocessEvent " + event.getMessage());
+    }
     private int blockPlaces;
     private int creatureSpawns;
 
@@ -195,6 +206,7 @@ public final class PluginDrive extends JavaPlugin implements Listener {
                     + " (BlockBreakEvent " + this.blockBreaks + " 件)"));
         });
 
+        this.later(288, () -> this.note("PlayerMoveEvent = " + this.moves));
         this.later(290, () -> this.note("CreatureSpawnEvent = " + this.creatureSpawns
                 + ", ItemSpawnEvent = " + this.itemSpawns));
 
