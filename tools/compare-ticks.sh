@@ -63,7 +63,13 @@ for n in $(seq 1 "$RUNS"); do
     NAMES="$NAMES $VANILLA/ticks-$n"
 done
 
-run "$PARITY" ticks.log -Dlog4j.configurationFile="file:///$(cygpath -m "$SHIFU/tools/log4j2-sync.xml")" -jar "$JAR"
+SYNC="-Dlog4j.configurationFile=file:///$(cygpath -m "$SHIFU/tools/log4j2-sync.xml")"
+run "$PARITY" ticks.log "$SYNC" -jar "$JAR"
+rm -rf "$PARITY/ticks-2nd"
+mv "$PARITY/world" "$PARITY/ticks-2nd"
+
+# Shifu 側のばらつきも差し引く。片側だけ引くと、もう片側のばらつきが実差に見える。
+run "$PARITY" ticks-2.log "$SYNC" -jar "$JAR"
 
 cd "$SHIFU"
 set -- $NAMES
@@ -72,4 +78,4 @@ shift
 echo "==== vanilla-1 vs vanilla-2(ばらつきそのもの、$N tick)===="
 python tools/compare_worlds.py "$BASE" "$VANILLA/ticks-2" | tail -3
 echo "==== vanilla-1 vs Shifu($N tick、vanilla を $RUNS 回でばらつきを除く)===="
-python tools/compare_worlds.py "$BASE" "$PARITY/world" "$@" | tail -5
+python tools/compare_worlds.py "$BASE" "$PARITY/world" "$@" --right-control "$PARITY/ticks-2nd" | tail -6

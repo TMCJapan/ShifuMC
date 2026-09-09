@@ -70,13 +70,19 @@ for n in $(seq 1 "$RUNS"); do
     NAMES="$NAMES $VANILLA/world-$n"
 done
 
-run "$PARITY" worldgen.log -Dlog4j.configurationFile="file:///$(cygpath -m "$SHIFU/tools/log4j2-sync.xml")" -jar "$JAR"
+SYNC="-Dlog4j.configurationFile=file:///$(cygpath -m "$SHIFU/tools/log4j2-sync.xml")"
+run "$PARITY" worldgen.log "$SYNC" -jar "$JAR"
+rm -rf "$PARITY/world-2nd"
+mv "$PARITY/world" "$PARITY/world-2nd"
+
+# Shifu 側のばらつきも差し引く。片側だけ引くと、もう片側のばらつきが実差に見える。
+run "$PARITY" worldgen-2.log "$SYNC" -jar "$JAR"
 
 cd "$SHIFU"
 set -- $NAMES
 BASE=$1
 shift
 echo "==== vanilla-1 vs Shifu(vanilla を $RUNS 回走らせてばらつきを除く)===="
-python tools/compare_worlds.py "$BASE" "$PARITY/world" "$@" | tail -5
+python tools/compare_worlds.py "$BASE" "$PARITY/world" "$@" --right-control "$PARITY/world-2nd" | tail -6
 echo "==== vanilla-1 vs vanilla-2(ばらつきそのもの)===="
 python tools/compare_worlds.py "$BASE" "$VANILLA/world-2" | tail -2

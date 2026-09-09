@@ -15,6 +15,12 @@ tick される範囲で、mob の湧きも乱数の消費も走った時間で�
     # vanilla をもう何回か走らせた世界を渡すと、実行のたびに変わる分を除く
     python tools/compare_worlds.py <vanilla の world> <Shifu の world> <vanilla の world 2> ...
 
+    # Shifu 側のばらつきも除く(--right-control のあとが右のもう 1 回)
+    python tools/compare_worlds.py <vanilla> <Shifu> <vanilla 2> --right-control <Shifu 2>
+
+**片側だけ差し引くと、もう片側のばらつきが実差に見える。** 1.20.6 の 1200 tick では
+vanilla を 4 回引いても 1 チャンク残り、Shifu をもう 1 度走らせると別のチャンクが残った。
+
 3 つめ以降を渡した形で差が 0 なら、tick されない範囲では vanilla と一致している。
 
 **2 回では足りない。**「たまたま揃ったチャンク」がばらつきに数えられず、
@@ -127,7 +133,13 @@ def unstable_between(left, right):
 
 def main():
     left, right = sys.argv[1:3]
-    controls = sys.argv[3:]
+    rest = sys.argv[3:]
+
+    if "--right-control" in rest:
+        cut = rest.index("--right-control")
+        controls, right_controls = rest[:cut], rest[cut + 1:]
+    else:
+        controls, right_controls = rest, []
 
     skip = set()
 
@@ -135,8 +147,17 @@ def main():
         skip |= unstable_between(left, control)
 
     if controls:
-        print("vanilla を %d 回走らせて変わるチャンク: %d(この分は除く)"
+        print("左を %d 回走らせて変わるチャンク: %d(この分は除く)"
               % (len(controls) + 1, len(skip)))
+
+    if right_controls:
+        before = len(skip)
+
+        for control in right_controls:
+            skip |= unstable_between(right, control)
+
+        print("右を %d 回走らせて変わるチャンク: %d(この分は除く)"
+              % (len(right_controls) + 1, len(skip) - before))
 
     a, b = world_chunks(left), world_chunks(right)
     shared = (set(a) & set(b)) - skip
