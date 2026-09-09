@@ -1,0 +1,29 @@
+# main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
+
+# WorldSaveEvent。保存の頭
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+        ServerChunkCache serverChunkCache = this.getChunkSource();
+insert:
+    dev.shifu.event.PlayerEvents.worldSave(this);
+
+# SpawnChangeEvent。書いたあと(位置が同じなら出さない)
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+        BlockPos blockPos = this.levelData.getSpawnPos();
+        float f = this.levelData.getSpawnAngle();
+insert:
+    final org.bukkit.Location shifuSpawnBefore = dev.shifu.event.PlayerEvents.spawnBefore(this);
+
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+            this.getServer().getPlayerList().broadcastAll(new ClientboundSetDefaultSpawnPositionPacket(pos, angle));
+insert-after:
+    dev.shifu.event.PlayerEvents.spawnChanged(this, shifuSpawnBefore);
+
+# MapInitializeEvent。置く前
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    public void setMapData(MapId id, MapItemSavedData state) {
+insert-after:
+    dev.shifu.event.PlayerEvents.mapInitialize(id, state);

@@ -625,4 +625,53 @@ public final class PlayerEvents {
 
         return names == null ? vanilla : names;
     }
+
+    /** WorldSaveEvent。保存の頭。 */
+    public static void worldSave(final ServerLevel level) {
+        if (!listening(org.bukkit.event.world.WorldSaveEvent.getHandlerList())) {
+            return;
+        }
+
+        new org.bukkit.event.world.WorldSaveEvent(level.getWorld()).callEvent();
+    }
+
+    /** SpawnChangeEvent の前。登録が無ければ控えない。 */
+    public static org.bukkit.Location spawnBefore(final ServerLevel level) {
+        return listening(org.bukkit.event.world.SpawnChangeEvent.getHandlerList())
+                ? level.getWorld().getSpawnLocation()
+                : null;
+    }
+
+    /** SpawnChangeEvent。vanilla が書いたあと。位置が同じなら出さない(Paper と同じ)。 */
+    public static void spawnChanged(final ServerLevel level, final org.bukkit.Location previous) {
+        if (previous == null) {
+            return;
+        }
+
+        final org.bukkit.Location now = level.getWorld().getSpawnLocation();
+
+        if (now.getBlockX() == previous.getBlockX() && now.getBlockY() == previous.getBlockY()
+                && now.getBlockZ() == previous.getBlockZ()
+                && now.getYaw() == previous.getYaw() && now.getPitch() == previous.getPitch()) {
+            return;
+        }
+
+        new org.bukkit.event.world.SpawnChangeEvent(level.getWorld(), previous).callEvent();
+    }
+
+    /**
+     * MapInitializeEvent。{@code setMapData} で置く前。
+     * 1.20.6 の {@code MapItemSavedData.mapView} は欄の初期化子で作られるので、ここでは作らない。
+     */
+    public static void mapInitialize(final net.minecraft.world.level.saveddata.maps.MapId id,
+                                     final net.minecraft.world.level.saveddata.maps.MapItemSavedData data) {
+        if (!listening(org.bukkit.event.server.MapInitializeEvent.getHandlerList())
+                || !initializedMaps.add(id)) {
+            return;
+        }
+
+        data.id = id;
+        new org.bukkit.event.server.MapInitializeEvent(data.mapView).callEvent();
+    }
+
 }
