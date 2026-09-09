@@ -3,6 +3,19 @@
 # アンカーは vanilla のソースそのまま。Minecraft が更新されて行が変わったら
 # apply_events.py が失敗するので、発火が黙って消えることはない。
 
+# BlockBreakEvent
+#
+# vanilla の権限判定(冒険モード・保護・GameMasterBlock・blockActionRestricted)が
+# 全て終わったあと、最初の書き換えである playerWillDestroy の直前で発火する。
+# 取り消されなければ、以降は vanilla のまま。
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+anchor:
+    BlockState blockState2 = block.playerWillDestroy(this.level, pos, blockState, this.player);
+insert:
+    if (!dev.shifu.event.ShifuEvents.blockBreak(this.player, pos)) {
+        return false;
+    }
+
 # TNTPrimeEvent
 #
 # 1.20.6 の TntBlock は prime ではなく explode。真偽値を返さないので、

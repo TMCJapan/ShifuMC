@@ -285,6 +285,16 @@ public final class Bot {
                     new net.minecraft.network.protocol.game.ServerboundChatCommandPacket(rest));
             case "click" -> this.connection.send(new ServerboundContainerClickPacket(0, 0, Integer.parseInt(rest), 0,
                     ClickType.PICKUP, ItemStack.EMPTY, new Int2ObjectOpenHashMap<>()));
+            // ブロックを壊す。クリエイティブなら START だけで壊れるが、両方送る
+            case "break" -> {
+                final String[] shifuAt = rest.split(",");
+                final BlockPos target = new BlockPos(Integer.parseInt(shifuAt[0]),
+                        Integer.parseInt(shifuAt[1]), Integer.parseInt(shifuAt[2]));
+                this.connection.send(new ServerboundPlayerActionPacket(
+                        ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, target, Direction.UP, 0));
+                this.connection.send(new ServerboundPlayerActionPacket(
+                        ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, target, Direction.UP, 0));
+            }
             case "drop" -> this.connection.send(new ServerboundPlayerActionPacket(
                     ServerboundPlayerActionPacket.Action.DROP_ITEM, BlockPos.ZERO, Direction.DOWN, 0));
             case "respawn" -> this.connection.send(new ServerboundClientCommandPacket(ServerboundClientCommandPacket.Action.PERFORM_RESPAWN));

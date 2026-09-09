@@ -95,6 +95,15 @@ public final class EntityEvents {
         return ShifuEvents.listening(handlers);
     }
 
+    /** PlayerExpChangeEvent。Paper と同じく、残りが正のときだけ出す。 */
+    public static int expChange(final Player player, final int amount) {
+        if (amount <= 0 || !listening(org.bukkit.event.player.PlayerExpChangeEvent.getHandlerList())) {
+            return amount;
+        }
+
+        return CraftEventFactory.callPlayerExpChangeEvent(player, amount).getAmount();
+    }
+
     // ------------------------------------------------------------ 自然湧き
 
 

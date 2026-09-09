@@ -12,3 +12,10 @@ insert:
         return;
     }
     // Paper end - call other merge event
+
+# PlayerExpChangeEvent。経験値を渡す直前
+file: net/minecraft/world/entity/ExperienceOrb.java
+anchor:
+    player.giveExperiencePoints(i);
+insert:
+    i = dev.shifu.event.EntityEvents.expChange(player, i);

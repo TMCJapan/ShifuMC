@@ -23,7 +23,20 @@ public final class PluginDrive extends JavaPlugin implements Listener {
     private Location origin;
     private int pickedUp;
 
+    private int blockBreaks;
+    private int blockPlaces;
     private int creatureSpawns;
+
+    @EventHandler
+    public void onBlockBreak(final org.bukkit.event.block.BlockBreakEvent event) {
+        this.blockBreaks++;
+        this.note("BlockBreakEvent " + event.getBlock().getType() + " by " + event.getPlayer().getName());
+    }
+
+    @EventHandler
+    public void onBlockPlace(final org.bukkit.event.block.BlockPlaceEvent event) {
+        this.blockPlaces++;
+    }
     private int itemSpawns;
 
     @EventHandler
@@ -172,6 +185,15 @@ public final class PluginDrive extends JavaPlugin implements Listener {
         });
         this.later(270, () -> this.note("pickup events = " + this.pickedUp
                 + ", diamonds in inventory = " + bot.getInventory().all(Material.DIAMOND).size()));
+
+        // BlockBreakEvent。足場を置いて、bot に壊させる
+        this.later(240, () -> {
+            final Location at = bot.getLocation().clone().add(1, -1, 0);
+            at.getBlock().setType(Material.STONE);
+            this.tell(bot, "!bot break " + at.getBlockX() + "," + at.getBlockY() + "," + at.getBlockZ());
+            this.later(20, () -> this.note("break -> " + at.getBlock().getType()
+                    + " (BlockBreakEvent " + this.blockBreaks + " 件)"));
+        });
 
         this.later(290, () -> this.note("CreatureSpawnEvent = " + this.creatureSpawns
                 + ", ItemSpawnEvent = " + this.itemSpawns));

@@ -27,3 +27,17 @@ insert-after:
                             blockPlaceContext.getLevel(),
                             blockPlaceContext.getClickedPos()).getState()
                     : null;
+
+# 置いたあとに発火する。取り消されたら控えへ戻して FAIL を返す
+file: net/minecraft/world/item/BlockItem.java
+anchor:
+    SoundType soundType = blockState2.getSoundType();
+insert:
+    if (shifuReplaced != null && level instanceof net.minecraft.server.level.ServerLevel shifuLevel
+            && !dev.shifu.event.ShifuEvents.blockPlace(
+                    shifuLevel, player, blockPlaceContext.getHand(), shifuReplaced,
+                    blockPlaceContext.getClickedPos())) {
+        shifuLevel.setBlock(blockPos, ((org.bukkit.craftbukkit.block.CraftBlockState) shifuReplaced).getHandle(),
+                net.minecraft.world.level.block.Block.UPDATE_ALL);
+        return InteractionResult.FAIL;
+    }

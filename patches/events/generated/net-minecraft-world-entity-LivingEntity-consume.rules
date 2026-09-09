@@ -1,0 +1,10 @@
+# main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
+
+# PlayerItemConsumeEvent。食べ終える直前
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    ItemStack itemStack = this.useItem.finishUsingItem(this.level(), this);
+insert:
+    if (!dev.shifu.event.ShifuEvents.itemConsume(this, interactionHand)) {
+        return;
+    }

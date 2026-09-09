@@ -132,6 +132,49 @@ public final class ShifuEvents {
 
     // ------------------------------------------------------------ ブロック
 
+    /**
+     * ブロックの破壊。
+     *
+     * <p>差し込む位置は、vanilla の権限判定が全て終わったあと、
+     * 最初の書き換え({@code playerWillDestroy})の直前。
+     *
+     * <p>未対応: {@code BlockBreakEvent#setExpToDrop}。
+     * 経験値の量を vanilla の落下処理へ渡す経路がまだ無い。
+     */
+    public static boolean blockBreak(final ServerPlayer player, final BlockPos pos) {
+        if (!listening(BlockBreakEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new BlockBreakEvent(
+                CraftBlock.at(player.level(), pos), player.getBukkitEntity()).callEvent();
+    }
+
+    /**
+     * ブロックの設置。
+     *
+     * <p>Paper はブロックキャプチャで「置く前に発火して、通ったら置く」に
+     * 作り変える。あれは設置そのものを遅らせるので、周囲への更新順が変わる。
+     * Shifu は <b>vanilla のとおり先に置いてから</b>発火し、取り消された
+     * ときだけ控えておいた元の状態に戻す。通る経路が vanilla のままになる。
+     *
+     * @param replaced 置く前にその場所から取った控え。{@code null} なら発火しない
+     * @return vanilla の続き(音・gameEvent・手持ちの減り)へ進んでよいか
+     */
+    public static boolean blockPlace(final ServerLevel level,
+                                     final net.minecraft.world.entity.player.Player player,
+                                     final net.minecraft.world.InteractionHand hand,
+                                     final org.bukkit.block.BlockState replaced,
+                                     final BlockPos clickedPos) {
+        if (replaced == null || player == null) {
+            return true;
+        }
+
+        final org.bukkit.event.block.BlockPlaceEvent event = CraftEventFactory.callBlockPlaceEvent(
+                level, player, hand, replaced, clickedPos.getX(), clickedPos.getY(), clickedPos.getZ());
+
+        return !event.isCancelled() && event.canBuild();
+    }
 
     /** ブロックの設置を聞いている登録があるか。置く前の様子を控えるかの判断に使う。 */
     public static boolean blockPlaceListening() {
@@ -140,6 +183,81 @@ public final class ShifuEvents {
 
 
     // ------------------------------------------------------------ エンティティ
+
+    /**
+     * 体力の回復。
+     *
+     * <p><b>登録が無ければ null を返す。</b> 呼ぶ側は null のとき vanilla の
+     * 行をそのまま通す。Paper はここで vanilla の {@code setHealth} を
+     * 書き換えるが、Shifu は vanilla の行を残したまま前後で分岐する。
+     *
+     * <p>理由は常に {@code CUSTOM}。vanilla の {@code heal} には理由を運ぶ
+     * 引数が無く、Paper は呼び出し側の署名を増やして渡している。
+     */
+    public static EntityRegainHealthEvent entityRegainHealth(final LivingEntity entity, final float amount) {
+        if (!listening(EntityRegainHealthEvent.getHandlerList())) {
+            return null;
+        }
+
+        final EntityRegainHealthEvent event = new EntityRegainHealthEvent(
+                entity.getBukkitEntity(), amount, EntityRegainHealthEvent.RegainReason.CUSTOM);
+        event.callEvent();
+
+        return event;
+    }
+
+    /**
+     * PlayerItemConsumeEvent。食べ終える直前。
+     *
+     * <p>未対応: {@code setItem} での差し替え(Paper は差し替えた物を消費するが、
+     * それは vanilla の行の書き換えになる)。取り消しは効く。
+     *
+     * @return 消費してよいか
+     */
+    public static boolean itemConsume(final LivingEntity entity, final net.minecraft.world.InteractionHand hand) {
+        if (!(entity instanceof ServerPlayer player)
+                || !listening(org.bukkit.event.player.PlayerItemConsumeEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.event.player.PlayerItemConsumeEvent event = new org.bukkit.event.player.PlayerItemConsumeEvent(
+                player.getBukkitEntity(),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(player.getUseItem()),
+                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand));
+
+        if (event.callEvent()) {
+            return true;
+        }
+
+        player.containerMenu.sendAllDataToRemote();
+        player.getBukkitEntity().updateScaledHealth();
+        player.stopUsingItem();
+
+        return false;
+    }
+
+    /**
+     * ServerCommandEvent。コンソールの入力を実行する直前。
+     *
+     * @return 実行する入力。取り消されたら null。文が差し替えられていれば新しい入力
+     */
+    public static net.minecraft.server.ConsoleInput serverCommand(final net.minecraft.server.MinecraftServer server,
+                                                                  final net.minecraft.server.ConsoleInput input) {
+        if (!listening(org.bukkit.event.server.ServerCommandEvent.getHandlerList())) {
+            return input;
+        }
+
+        final org.bukkit.event.server.ServerCommandEvent event =
+                new org.bukkit.event.server.ServerCommandEvent(server.console, input.msg);
+
+        if (!event.callEvent()) {
+            return null;
+        }
+
+        return event.getCommand().equals(input.msg)
+                ? input
+                : new net.minecraft.server.ConsoleInput(event.getCommand(), input.source);
+    }
 
 
     /**

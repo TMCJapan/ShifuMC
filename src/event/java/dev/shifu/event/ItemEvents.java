@@ -80,6 +80,24 @@ public final class ItemEvents {
     private ItemEvents() {
     }
 
+    /**
+     * PlayerItemDamageEvent。耐久の減りが決まったあと、書き込む前。
+     *
+     * @return 減らす量。取り消されたら 0(vanilla は 0 なら何もしない)。登録が無ければ damage
+     */
+    public static int itemDamage(final ItemStack stack, final net.minecraft.server.level.ServerPlayer player,
+                                 final int damage) {
+        if (player == null || !ShifuEvents.listening(org.bukkit.event.player.PlayerItemDamageEvent.getHandlerList())) {
+            return damage;
+        }
+
+        final org.bukkit.event.player.PlayerItemDamageEvent event = new org.bukkit.event.player.PlayerItemDamageEvent(
+                player.getBukkitEntity(),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack), damage);
+
+        return event.callEvent() ? event.getDamage() : 0;
+    }
+
     // ------------------------------------------------------------ InventoryDragEvent
 
     /**
