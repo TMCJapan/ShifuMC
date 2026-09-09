@@ -172,9 +172,14 @@ file: net/minecraft/server/level/ServerPlayer.java
 anchor:
     Either<Player.BedSleepingProblem, Unit> either = super.startSleepInBed(pos).ifRight(unit -> {
 insert:
-    final Either<Player.BedSleepingProblem, Unit> shifuBed = dev.shifu.event.ShifuEvents.bedEnter(this, pos);
-    if (shifuBed != null) {
-        return shifuBed;
+    // 波括弧で囲って、局所変数の生存範囲をここで終わらせる。囲まないと
+    // すぐ下の either が公式より 1 つ後ろの slot に入る(javac は scope の
+    // 終わりまで slot を空けない)。
+    {
+        final Either<Player.BedSleepingProblem, Unit> shifuBed = dev.shifu.event.ShifuEvents.bedEnter(this, pos);
+        if (shifuBed != null) {
+            return shifuBed;
+        }
     }
 
 # PlayerItemConsumeEvent

@@ -1,0 +1,8 @@
+// 自前で書いた追加。
+
+// AbstractMinecart.shifuLastLocation
+    // VehicleMoveEvent が動く前の位置を要る。Paper は tick の中で局所変数として持つが、
+    // それだと公式の変数の slot が 5 つ動く(Boat.lastLocation と同じ形にした)。
+    // 入れるのは dev.shifu.event.EntityEvents.vehicleMoveBefore、
+    // 読んで消すのは vehicleMoveAfter。登録が無ければ null のまま。
+    public org.bukkit.Location shifuLastLocation;

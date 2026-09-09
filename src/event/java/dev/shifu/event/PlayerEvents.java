@@ -186,9 +186,56 @@ public final class PlayerEvents {
 
 
 
-    /** 夜を飛ばす前の時刻。登録が無ければ読まずに 0。 */
-    public static long nightBefore(final ServerLevel level) {
-        return timeListening() ? level.getDayTime() : 0L;
+    /**
+     * 夜を飛ばす前の時刻。控えていなければ {@link Long#MIN_VALUE}。
+     *
+     * <p>静的で持てるのは、ここを通るのがサーバースレッドだけだから
+     * ({@code ServerLevel.tick})。局所変数にすると vanilla の {@code l} が
+     * 3 つ後ろの slot に入り、MixinExtras の {@code @Local} が当たらなくなる。
+     */
+    private static long nightTime = Long.MIN_VALUE;
+
+    /** 夜を飛ばしたあと、プレイヤーを起こしてよいか。取り消されたときだけ false。 */
+    private static boolean nightWake = true;
+
+    /** 夜を飛ばす前の時刻を控える。登録が無ければ読まない。 */
+    public static void nightBefore(final ServerLevel level) {
+        nightTime = timeListening() ? level.getDayTime() : Long.MIN_VALUE;
+        nightWake = true;
+    }
+
+    /**
+     * TimeSkipEvent(NIGHT_SKIP)。vanilla が朝へ動かしたあと。
+     * 取り消されたら時刻を戻して、起こさないことにする。
+     */
+    public static void nightSkipped(final ServerLevel level) {
+        if (nightTime == Long.MIN_VALUE) {
+            return;
+        }
+
+        final long before = nightTime;
+        nightTime = Long.MIN_VALUE;
+        final long after = level.getDayTime();
+        final TimeSkipEvent event = timeSkip(level.getWorld(), TimeSkipEvent.SkipReason.NIGHT_SKIP, after - before);
+
+        if (event.isCancelled()) {
+            level.setDayTime(before);
+            nightWake = false;
+
+            return;
+        }
+
+        if (before + event.getSkipAmount() != after) {
+            level.setDayTime(before + event.getSkipAmount());
+        }
+    }
+
+    /** 起こしてよいか。1 度読んだら true に戻る。 */
+    public static boolean shouldWake() {
+        final boolean wake = nightWake;
+        nightWake = true;
+
+        return wake;
     }
 
 

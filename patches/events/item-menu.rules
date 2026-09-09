@@ -15,8 +15,14 @@ file: net/minecraft/world/inventory/AbstractContainerMenu.java
 anchor:
     for (Slot slot2 : this.quickcraftSlots) {
 insert:
-    final java.util.Map<Slot, ItemStack[]> shifuDragBefore = dev.shifu.event.ItemEvents.dragBefore(this.quickcraftSlots);
-    final ItemStack shifuDragCarried = shifuDragBefore == null ? null : this.getCarried().copy();
+    dev.shifu.event.ItemEvents.dragBefore(this.quickcraftSlots, this);
+
+file: net/minecraft/world/inventory/AbstractContainerMenu.java
+anchor:
+    itemStack2.setCount(k);
+    this.setCarried(itemStack2);
+insert-after:
+    dev.shifu.event.ItemEvents.drag(this, this.quickcraftType == QUICKCRAFT_TYPE_GREEDY);
 
 file: net/minecraft/world/inventory/GrindstoneMenu.java
 anchor:

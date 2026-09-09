@@ -50,18 +50,27 @@ insert-after:
 # ============================================================ 世界
 
 # WorldSaveEvent。保存の頭
+# TimeSkipEvent(NIGHT_SKIP)。vanilla が朝へ動かしたあとに発火し、取り消されたら戻して起こさない。
+#
+# 控えは発火層の static に置く。局所変数にすると、すぐ下の long l が公式より
+# 3 つ後ろの slot に入る(boolean 1 + long 2)。
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
     if (this.sleepStatus.areEnoughSleeping(i) && this.sleepStatus.areEnoughDeepSleeping(i, this.players)) {
 insert-after:
-    boolean shifuWake = true;
-    final long shifuNight = dev.shifu.event.PlayerEvents.nightBefore(this);
+    dev.shifu.event.PlayerEvents.nightBefore(this);
+
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    this.setDayTime(l - l % 24000L);
+insert-after:
+    dev.shifu.event.PlayerEvents.nightSkipped(this);
 
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
     this.wakeUpAllPlayers();
 insert:
-    if (shifuWake) {
+    if (dev.shifu.event.PlayerEvents.shouldWake()) {
 insert-after:
     }
 

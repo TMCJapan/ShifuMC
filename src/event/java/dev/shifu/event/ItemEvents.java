@@ -89,9 +89,15 @@ public final class ItemEvents {
      *
      * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/AbstractContainerMenu.java.patch(InventoryDragEvent)
      */
-    public static Map<Slot, ItemStack[]> dragBefore(final Set<Slot> slots) {
+    private static Map<Slot, ItemStack[]> dragSlots;
+    private static ItemStack dragCarried;
+
+    public static void dragBefore(final Set<Slot> slots, final AbstractContainerMenu menu) {
         if (!ShifuEvents.listening(org.bukkit.event.inventory.InventoryDragEvent.getHandlerList())) {
-            return null;
+            dragSlots = null;
+            dragCarried = null;
+
+            return;
         }
 
         final Map<Slot, ItemStack[]> before = new LinkedHashMap<>();
@@ -100,7 +106,57 @@ public final class ItemEvents {
             before.put(slot, new ItemStack[] {slot.getItem(), slot.getItem().copy()});
         }
 
-        return before;
+        dragSlots = before;
+        dragCarried = menu.getCarried().copy();
+    }
+
+    /**
+     * InventoryDragEvent。vanilla がスロットと手持ちを置いたあと。取り消されたら控えに戻す。
+     * 通ったときはカーソルをイベントの値にする(Paper と同じ。プラグインが触っていなければ同じ中身)。
+     */
+    public static void drag(final AbstractContainerMenu menu, final boolean greedy) {
+        final Map<Slot, ItemStack[]> before = dragSlots;
+        final ItemStack oldCarried = dragCarried;
+        dragSlots = null;
+        dragCarried = null;
+
+        if (before == null) {
+            return;
+        }
+
+        final org.bukkit.inventory.InventoryView view = menu.getBukkitView();
+        final Map<Integer, org.bukkit.inventory.ItemStack> items = new HashMap<>();
+
+        for (final Map.Entry<Slot, ItemStack[]> entry : before.entrySet()) {
+            final Slot slot = entry.getKey();
+
+            if (slot.getItem() != entry.getValue()[0]) {
+                items.put(slot.index, org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(slot.getItem()));
+            }
+        }
+
+        final org.bukkit.event.inventory.InventoryDragEvent event = new org.bukkit.event.inventory.InventoryDragEvent(
+                view,
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(menu.getCarried()),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(oldCarried),
+                greedy, items);
+        event.callEvent();
+
+        if (event.getResult() != org.bukkit.event.Event.Result.DENY) {
+            menu.setCarried(org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getCursor()));
+
+            return;
+        }
+
+        for (final Map.Entry<Slot, ItemStack[]> entry : before.entrySet()) {
+            final Slot slot = entry.getKey();
+
+            if (slot.getItem() != entry.getValue()[0]) {
+                slot.set(entry.getValue()[1]);
+            }
+        }
+
+        menu.setCarried(oldCarried);
     }
 
 

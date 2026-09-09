@@ -1,18 +1,17 @@
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+# Paper のパッチから作った発火。tools/make_events.py が出したものを、
+# 局所変数が増えないように発火層へ寄せた。
 # 1.20.6 のトロッコは Old/NewMinecartBehavior に分かれておらず、AbstractMinecart が持つ。
+#
+# Paper の書き方(tick の中で Location と Vehicle を組み立てる)だと、
+# vanilla の変数の slot が 5 つ動く。ずれた変数が 11 個あった。
+# MixinExtras の @Local はこの番号で当てるので、動かすと MOD が当たらなくなる。
 
-# VehicleMoveEvent の前の位置
+# VehicleMoveEvent の前の位置。登録が無ければ何もしない
 file: net/minecraft/world/entity/vehicle/AbstractMinecart.java
 anchor:
     public void tick() {
 insert-after:
-        // CraftBukkit start
-        double shifuPrevX = this.getX();
-        double shifuPrevY = this.getY();
-        double shifuPrevZ = this.getZ();
-        float shifuPrevYaw = this.getYRot();
-        float shifuPrevPitch = this.getXRot();
-        // CraftBukkit end
+    dev.shifu.event.EntityEvents.vehicleMoveBefore(this);
 
 # VehicleUpdateEvent, VehicleMoveEvent
 file: net/minecraft/world/entity/vehicle/AbstractMinecart.java
@@ -20,59 +19,32 @@ anchor:
     this.setRot(this.getYRot(), this.getXRot());
     if (this.getMinecartType() == AbstractMinecart.Type.RIDEABLE && this.getDeltaMovement().horizontalDistanceSqr() > 0.01) {
 insert:
-            // CraftBukkit start
-            org.bukkit.World shifuWorld = this.level().getWorld();
-            org.bukkit.Location shifuFrom = new org.bukkit.Location(shifuWorld, shifuPrevX, shifuPrevY, shifuPrevZ, shifuPrevYaw, shifuPrevPitch);
-            org.bukkit.Location shifuTo = org.bukkit.craftbukkit.util.CraftLocation.toBukkit(this.position(), shifuWorld, this.getYRot(), this.getXRot());
-            org.bukkit.entity.Vehicle shifuVehicle = (org.bukkit.entity.Vehicle) this.getBukkitEntity();
-
-            this.level().getCraftServer().getPluginManager().callEvent(new org.bukkit.event.vehicle.VehicleUpdateEvent(shifuVehicle));
-
-            if (!shifuFrom.equals(shifuTo)) {
-                this.level().getCraftServer().getPluginManager().callEvent(new org.bukkit.event.vehicle.VehicleMoveEvent(shifuVehicle, shifuFrom, shifuTo));
-            }
-            // CraftBukkit end
+    dev.shifu.event.EntityEvents.vehicleMoveAfter(this);
 
 # VehicleEntityCollisionEvent(乗せる)
 file: net/minecraft/world/entity/vehicle/AbstractMinecart.java
 anchor:
     entity.startRiding(this);
 insert:
-                            // CraftBukkit start
-                            org.bukkit.event.vehicle.VehicleEntityCollisionEvent shifuCollision = new org.bukkit.event.vehicle.VehicleEntityCollisionEvent(shifuVehicle, entity.getBukkitEntity());
-                            this.level().getCraftServer().getPluginManager().callEvent(shifuCollision);
-
-                            if (shifuCollision.isCancelled()) {
-                                continue;
-                            }
-                            // CraftBukkit end
+    if (dev.shifu.event.EntityEvents.vehicleCollisionCancelled(this, entity)) {
+        continue;
+    }
 
 # VehicleEntityCollisionEvent(押す)
 file: net/minecraft/world/entity/vehicle/AbstractMinecart.java
 anchor:
     entity.push(this);
 insert:
-                            // CraftBukkit start
-                            if (!this.isPassengerOfSameVehicle(entity)) {
-                                org.bukkit.event.vehicle.VehicleEntityCollisionEvent shifuCollision = new org.bukkit.event.vehicle.VehicleEntityCollisionEvent(shifuVehicle, entity.getBukkitEntity());
-                                this.level().getCraftServer().getPluginManager().callEvent(shifuCollision);
-
-                                if (shifuCollision.isCancelled()) {
-                                    continue;
-                                }
-                            }
-                            // CraftBukkit end
+    if (!this.isPassengerOfSameVehicle(entity)
+            && dev.shifu.event.EntityEvents.vehicleCollisionCancelled(this, entity)) {
+        continue;
+    }
 
 # VehicleEntityCollisionEvent(トロッコどうし)
 file: net/minecraft/world/entity/vehicle/AbstractMinecart.java
 anchor:
     entity2.push(this);
 insert:
-                        // CraftBukkit start
-                        org.bukkit.event.vehicle.VehicleEntityCollisionEvent shifuCollision = new org.bukkit.event.vehicle.VehicleEntityCollisionEvent(shifuVehicle, entity2.getBukkitEntity());
-                        this.level().getCraftServer().getPluginManager().callEvent(shifuCollision);
-
-                        if (shifuCollision.isCancelled()) {
-                            continue;
-                        }
-                        // CraftBukkit end
+    if (dev.shifu.event.EntityEvents.vehicleCollisionCancelled(this, entity2)) {
+        continue;
+    }

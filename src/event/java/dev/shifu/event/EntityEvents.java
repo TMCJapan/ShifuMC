@@ -827,6 +827,65 @@ public final class EntityEvents {
         return listening(VehicleEntityCollisionEvent.getHandlerList());
     }
 
+    /**
+     * VehicleEntityCollisionEvent。取り消されたら true。
+     *
+     * <p>vanilla のメソッドの中で組み立てると局所変数が増え、公式の変数の slot が動く。
+     * トロッコの {@code tick} は Paper の差し込みだけで 5 つ増えていて、
+     * 公式とずれた変数が 11 個あった。ここへ寄せると 0 になる。
+     */
+    public static boolean vehicleCollisionCancelled(final Entity vehicle, final Entity other) {
+        if (!vehicleCollideListening()) {
+            return false;
+        }
+
+        return !new VehicleEntityCollisionEvent(
+                (org.bukkit.entity.Vehicle) vehicle.getBukkitEntity(), other.getBukkitEntity()).callEvent();
+    }
+
+    /** VehicleUpdateEvent か VehicleMoveEvent を聞いている登録があるか。 */
+    private static boolean vehicleMoveListening() {
+        return listening(org.bukkit.event.vehicle.VehicleUpdateEvent.getHandlerList())
+                || listening(org.bukkit.event.vehicle.VehicleMoveEvent.getHandlerList());
+    }
+
+    /**
+     * 動く前の位置を控える。{@code AbstractMinecart.tick} の頭から呼ぶ。
+     * 登録が無ければ控えない({@code Location} も作らない)。
+     */
+    public static void vehicleMoveBefore(final net.minecraft.world.entity.vehicle.AbstractMinecart cart) {
+        cart.shifuLastLocation = vehicleMoveListening()
+                ? org.bukkit.craftbukkit.util.CraftLocation.toBukkit(
+                        cart.position(), cart.level().getWorld(), cart.getYRot(), cart.getXRot())
+                : null;
+    }
+
+    /**
+     * VehicleUpdateEvent と VehicleMoveEvent。控えた位置が無ければ何もしない。
+     *
+     * <p>Paper は tick のたびに Location を 2 つ作って必ず発火するが、
+     * 登録が無ければ観測できる違いは無いので、控える側で止めている。
+     */
+    public static void vehicleMoveAfter(final net.minecraft.world.entity.vehicle.AbstractMinecart cart) {
+        final org.bukkit.Location from = cart.shifuLastLocation;
+
+        if (from == null) {
+            return;
+        }
+
+        cart.shifuLastLocation = null;
+
+        final org.bukkit.Location to = org.bukkit.craftbukkit.util.CraftLocation.toBukkit(
+                cart.position(), cart.level().getWorld(), cart.getYRot(), cart.getXRot());
+        final org.bukkit.entity.Vehicle vehicle = (org.bukkit.entity.Vehicle) cart.getBukkitEntity();
+
+        new org.bukkit.event.vehicle.VehicleUpdateEvent(vehicle).callEvent();
+
+        if (!from.equals(to)) {
+            new org.bukkit.event.vehicle.VehicleMoveEvent(vehicle, from, to).callEvent();
+        }
+    }
+
 
     // io.papermc.paper.event.entity.EntityIgniteEvent は 26.x で入った Paper のイベントで、
     // 1.21.11 の API には無い。
