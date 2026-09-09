@@ -1,0 +1,10 @@
+# main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
+
+# EntityCombustByEntityEvent(燃えている矢)
+file: net/minecraft/world/entity/projectile/AbstractArrow.java
+anchor:
+    entity.igniteForSeconds(5);
+insert:
+    if (dev.shifu.event.EntityEvents.combustByEntity(this, entity, 5)) {
+insert-after:
+    }

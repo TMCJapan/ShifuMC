@@ -48,6 +48,30 @@ public final class BlockEvents {
         return ShifuEvents.listening(handlers);
     }
 
+    /**
+     * EntityCombustByBlockEvent。火のブロックが燃やす直前。
+     *
+     * @return 燃やしてよいか。取り消されたら Paper と同じく残り火の時間を 1 戻す
+     */
+    public static boolean combustByBlock(final net.minecraft.world.entity.Entity entity, final BlockPos pos) {
+        if (!ShifuEvents.listening(org.bukkit.event.entity.EntityCombustByBlockEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.event.entity.EntityCombustByBlockEvent event =
+                new org.bukkit.event.entity.EntityCombustByBlockEvent(
+                        bukkit(entity.level(), pos), entity.getBukkitEntity(), 8);
+
+        if (event.callEvent()) {
+            // 効かないもの: 燃える長さ(vanilla の 8 秒のまま)
+            return true;
+        }
+
+        entity.setRemainingFireTicks(entity.getRemainingFireTicks() - 1);
+
+        return false;
+    }
+
     private static org.bukkit.block.Block bukkit(final LevelAccessor level, final BlockPos pos) {
         return CraftBlock.at(level, pos);
     }

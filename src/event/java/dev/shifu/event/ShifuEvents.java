@@ -494,6 +494,30 @@ public final class ShifuEvents {
         return false;
     }
 
+    /**
+     * PlayerToggleFlightEvent。飛行の切り替えの packet で、vanilla が書き換える直前。
+     * 飛べない・変わらないなら発火しない(Paper と同じ)。取り消されたらクライアントに能力を送り直す。
+     *
+     * @return vanilla の代入へ進んでよいか
+     */
+    public static boolean toggleFlight(final ServerPlayer player, final boolean flying) {
+        if (!listening(org.bukkit.event.player.PlayerToggleFlightEvent.getHandlerList())) {
+            return true;
+        }
+
+        if (!player.getAbilities().mayfly || player.getAbilities().flying == flying) {
+            return true;
+        }
+
+        if (new org.bukkit.event.player.PlayerToggleFlightEvent(player.getBukkitEntity(), flying).callEvent()) {
+            return true;
+        }
+
+        player.onUpdateAbilities();
+
+        return false;
+    }
+
     // ------------------------------------------------------------ 移動
 
 

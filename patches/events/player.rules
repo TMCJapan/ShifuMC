@@ -201,3 +201,14 @@ insert:
 # 食べ終える直前。取り消されたら消費せずに抜ける(手元を送り直す)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch(PlayerItemConsumeEvent)
+
+# PlayerToggleFlightEvent
+#
+# vanilla の代入を囲む。取り消されたら代入を飛ばし、クライアントに能力を送り直す。
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player.getAbilities().flying = packet.isFlying() && this.player.getAbilities().mayfly;
+insert:
+    if (dev.shifu.event.ShifuEvents.toggleFlight(this.player, packet.isFlying() && this.player.getAbilities().mayfly)) {
+insert-after:
+    }

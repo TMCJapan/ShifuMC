@@ -1,0 +1,10 @@
+# main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
+
+# EntityCombustByBlockEvent。火のブロックが燃やす直前
+file: net/minecraft/world/level/block/BaseFireBlock.java
+anchor:
+    entity.igniteForSeconds(8);
+insert:
+    if (dev.shifu.event.BlockEvents.combustByBlock(entity, pos)) {
+insert-after:
+    }

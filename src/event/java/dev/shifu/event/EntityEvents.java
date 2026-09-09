@@ -172,6 +172,28 @@ public final class EntityEvents {
      * <p>未対応: 個別の発火が無い経路(火のブロック、焚き火など)の EntityCombustEvent。
      */
     /** イベントの秒数が vanilla と違えば自分で点火して false。同じなら旗を立てて vanilla に任せる。 */
+    /**
+     * EntityCombustByEntityEvent(矢、小さな火の玉)。{@code igniteForSeconds(5)} を囲む。
+     *
+     * @return vanilla の行へ進んでよいか
+     */
+    public static boolean combustByEntity(final Entity combuster, final Entity entity, final int seconds) {
+        if (!listening(EntityCombustEvent.getHandlerList())) {
+            return true;
+        }
+
+        // 1.20.6 の構築子は秒数を int で取る(26.2 は float)
+        final org.bukkit.event.entity.EntityCombustByEntityEvent event =
+                new org.bukkit.event.entity.EntityCombustByEntityEvent(
+                        combuster.getBukkitEntity(), entity.getBukkitEntity(), seconds);
+
+        if (!event.callEvent()) {
+            return false;
+        }
+
+        return ignite(entity, event.getDuration(), seconds);
+    }
+
     private static boolean ignite(final Entity entity, final float duration, final float vanilla) {
         if (duration != vanilla) {
             entity.igniteForTicks(Mth.floor(duration * 20.0F));
