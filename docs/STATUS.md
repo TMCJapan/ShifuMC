@@ -13,7 +13,7 @@
 | 起動(MOD 無し) | プラグイン 24 個が有効化まで進む |
 | 起動(MOD 込み) | MOD 102(直接入れたのは 16)・プラグイン 24 で `Done (1.772s)`。`java -jar shifu.jar` だけで通る |
 | vanilla 一致(世界) | 起動して 20 秒・1200 tick のどちらも、vanilla が再現するチャンクで違い 0(詳細は [VANILLA-PARITY.md](VANILLA-PARITY.md)) |
-| プレイヤー | bot が参加 → 登録 → テレポート → コマンド → WorldEdit の `//set` `//undo` まで通る(`tools/mods-and-plugins.sh`) |
+| プレイヤー | bot が参加 → 登録 → テレポート → コマンド → WorldEdit の `//set` `//undo` → 落ちた物の拾い上げまで通る(`tools/mods-and-plugins.sh`) |
 
 ### Bukkit 層で空だったものを埋めた(2026-09-09)
 
@@ -26,6 +26,8 @@ bot を繋いで初めて分かった分。起動だけを見ていたときは�
 | 非同期のチャットと別スレッドからの kick が返ってこない | `MinecraftServer.processQueue` を誰も流していなかった。積んだ側は `Waitable` で待つ | CraftBukkit と同じく `popPush("levels")` の直後で流す |
 | プラグインが `PlayerJoinEvent` `PlayerQuitEvent` を受け取らない | 発火の規則も発火層の `playerJoin` / `playerQuit` も落ちていた | `PlayerList` と `ServerGamePacketListenerImpl` の告知の文を囲む(`main` と同じ形) |
 | WorldEdit の `//set` が `NoSuchMethodError` | `LevelChunk.setBlockState(BlockPos, BlockState, boolean, boolean)` は CraftBukkit の追加で、Shifu には 3 引数の vanilla の版しか無い | 4 引数の版を足す。`doPlace` が true のときは vanilla の版へ渡し、false のときだけ `onPlace` を抜いた写しを通る |
+| プラグインがエンティティを 1 つも出せない(`World.dropItem` / `spawn` / `spawnEntity` が NPE) | 生成した `ServerLevel.addEntity(Entity, SpawnReason)` が Paper のチャンク系(`entityLookup`)へ渡していた。Shifu はそこを繋いでいない | イベントを出すところまでは Paper と同じで、最後の 1 行だけ vanilla の `addEntity(Entity)` へ渡す。`tryAddFreshEntityWithPassengers` と `addWorldGenChunkEntities` も同じ形で `entityManager` へ向けた |
+| 拾い上げのイベントが 1 つも出ない | `ItemEntity` の規則ごと落ちていた | `main` の規則を 1.20.6 の行に当て直す(`orgCount` → `i`)。bot で `PlayerAttemptPickupItemEvent` と `EntityPickupItemEvent` の発火を確かめた |
 | kick したときに NPE | `ServerCommonPacketListenerImpl.cserver` が空 | 構築子で入れる |
 | 誰が繋いでも `Player.locale()` が en_US | `adventure$locale` が既定値のまま | `clientOptions.language()` を読んだ直後に入れる |
 | `setSleepingIgnored` が効かない / `PlayerNaturallySpawnCreaturesEvent` が出ない | 数え上げ側の規則と発火そのものが落ちていた | `SleepStatus.areEnoughDeepSleeping` と `ServerChunkCache.tickChunks` に足す |
@@ -56,9 +58,15 @@ CodeDiff はメソッドごとに**最初の 1 件**しか出さないので、
 
 | | 1.20.6 | main |
 |---|---|---|
-| 発火の規則 | 317 | 866 |
-| 規則と発火層に出てくるイベントの型 | 233 | 431 |
-| `patches/events/generated` の規則ファイル | 47 | 197(うち 118 は同じパスのファイルが 1.20.6 にもある) |
+| 発火の規則 | 339 | 866 |
+| 規則と発火層に出てくるイベントの型 | 253 | 431 |
+| `patches/events/generated` の規則ファイル | 62 | 197(うち 118 は同じパスのファイルが 1.20.6 にもある) |
+
+`main` の規則のうち、1.20.6 の行にそのまま当たるのは 31 件(近い行が無い 147、
+ファイルごと無い 52)。写した 31 件のうちコンパイルが通ったのは 17 件で、
+落ちた分は差し込む本体が 26.2 だけの API か、局所変数の名前違い。
+名前違いのうち 3 件(`Creeper` の `lightning`、`HoneyBlock` の `world`、
+`ItemFrame` の `CraftItemStack`)は手で直して戻した。
 
 落ちている例: 拾い上げ(`PlayerAttemptPickupItemEvent` / `PlayerPickupItemEvent` /
 `EntityPickupItemEvent`)、ディスペンサー、`ServerPlayerGameMode`、`Entity`、`Raid`、
@@ -100,9 +108,17 @@ MOD 側が悪いように見えて、全部 Shifu 側だった。公式の jar �
 
 ### 残っている食い違い(1.20.6)
 
-`tools/check_lambdas.py` が 4 クラス、`tools/compare_lvt.py` が 19 変数を挙げる。
+`tools/check_lambdas.py` が 4 クラス、`tools/compare_lvt.py` が 15 変数を挙げる
+(差し込みが原因の 4 件は 2026-09-09 に直した)。
 `ServerLevel` と `ItemStack` は Paper が足したメソッドの分だけラムダが増えるので、
 番号の付け直しでは合わせられない。
+
+残る 15 のうち 11 はラムダで、捕まえた引数の並びが公式と違う。`LambdaMatch` は
+「indy の直前に並んだ命令が xLOAD だけ」のときしか並べ替えない。
+`Block.popResource` のように式の途中に副作用があると並べ替えられないため。
+残り 4 は逆コンパイラの側(`HangingEntity.offs` と `ChunkMap.getDependencyStatus` は
+static と instance の食い違い、`Strider.tick` と `LootTable.shuffleAndSplitItems` は
+slot の使い回し)。
 
 Chunky と ChunkyBorder は、Chunky の Fabric MOD と Bukkit プラグインが
 同じパッケージ名(`org.popcraft.chunky`)を持つため衝突する。MOD 側が先に載る。

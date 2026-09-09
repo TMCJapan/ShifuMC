@@ -21,6 +21,19 @@ import net.kyori.adventure.text.Component;
  */
 public final class PluginDrive extends JavaPlugin implements Listener {
     private Location origin;
+    private int pickedUp;
+
+    @EventHandler
+    public void onAttemptPickup(final org.bukkit.event.player.PlayerAttemptPickupItemEvent event) {
+        this.pickedUp++;
+        this.note("PlayerAttemptPickupItemEvent " + event.getItem().getItemStack().getType());
+    }
+
+    @EventHandler
+    public void onPickup(final org.bukkit.event.entity.EntityPickupItemEvent event) {
+        this.pickedUp++;
+        this.note("EntityPickupItemEvent " + event.getItem().getItemStack().getType());
+    }
 
     @Override
     public void onEnable() {
@@ -134,6 +147,18 @@ public final class PluginDrive extends JavaPlugin implements Listener {
                 this.note("//undo -> " + air + " / 27 blocks are air again");
             });
         });
+
+        // 拾い上げの発火。足元に落として、イベントが来るかを見る
+        this.later(230, () -> {
+            this.pickedUp = 0;
+            bot.getInventory().clear();
+            // 足場が無いと落とした物が落下していく
+            bot.getLocation().clone().subtract(0, 1, 0).getBlock().setType(Material.STONE);
+            bot.getWorld().dropItem(bot.getLocation(), new org.bukkit.inventory.ItemStack(Material.DIAMOND, 3));
+            this.note("dropped 3 diamonds at " + brief(bot.getLocation()));
+        });
+        this.later(270, () -> this.note("pickup events = " + this.pickedUp
+                + ", diamonds in inventory = " + bot.getInventory().all(Material.DIAMOND).size()));
 
         this.later(300, () -> {
             this.note("---- done ----");
