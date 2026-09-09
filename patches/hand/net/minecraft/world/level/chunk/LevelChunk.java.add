@@ -4,3 +4,84 @@
     // vanilla の LevelChunk.level は Level 型。Paper はこれを ServerLevel 型に書き換えているが、
     // 型の変更は許可されていないので何も足さない。shim が入れると level が 2 つになり、
     // 併せて constructor の this.level = level(Level → ServerLevel)も通らなくなる。
+
+// LevelChunk.setBlockState
+    // Paper が足した 4 引数の版。4 つめ(doPlace)が false のときだけ onPlace を飛ばす。
+    // WorldEdit の PaperweightWorldNativeAccess が
+    // sideEffectSet.shouldApply(SideEffect.UPDATE) を渡して呼ぶ。無いと //set が
+    // NoSuchMethodError で落ちる。
+    //
+    // **doPlace が true のときは vanilla の 3 引数の版へそのまま渡す。**
+    // 普段の経路(サーバー自身とプラグインの大半)は vanilla の命令列のまま動く。
+    // false のときだけ、vanilla の本体から onPlace の 1 行を抜いたものを通る。
+    // 中身は vanilla の setBlockState(pos, state, moved) の写しなので、
+    // バージョンを移すときは向こうと突き合わせる。
+    //
+    // 読んだ位置: Paper-Server 17a604cf7 src/main/java/net/minecraft/world/level/chunk/LevelChunk.java:414
+    @Nullable
+    public BlockState setBlockState(final BlockPos pos, final BlockState state, final boolean moved, final boolean doPlace) {
+        if (doPlace) {
+            return this.setBlockState(pos, state, moved);
+        }
+
+        int i = pos.getY();
+        LevelChunkSection levelChunkSection = this.getSection(this.getSectionIndex(i));
+        boolean bl = levelChunkSection.hasOnlyAir();
+        if (bl && state.isAir()) {
+            return null;
+        } else {
+            int j = pos.getX() & 15;
+            int k = i & 15;
+            int l = pos.getZ() & 15;
+            BlockState blockState = levelChunkSection.setBlockState(j, k, l, state);
+            if (blockState == state) {
+                return null;
+            } else {
+                Block block = state.getBlock();
+                this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING).update(j, i, l, state);
+                this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES).update(j, i, l, state);
+                this.heightmaps.get(Heightmap.Types.OCEAN_FLOOR).update(j, i, l, state);
+                this.heightmaps.get(Heightmap.Types.WORLD_SURFACE).update(j, i, l, state);
+                boolean bl2 = levelChunkSection.hasOnlyAir();
+                if (bl != bl2) {
+                    this.level.getChunkSource().getLightEngine().updateSectionStatus(pos, bl2);
+                }
+
+                if (LightEngine.hasDifferentLightProperties(this, pos, blockState, state)) {
+                    ProfilerFiller profilerFiller = this.level.getProfiler();
+                    profilerFiller.push("updateSkyLightSources");
+                    this.skyLightSources.update(this, j, i, l);
+                    profilerFiller.popPush("queueCheckLight");
+                    this.level.getChunkSource().getLightEngine().checkBlock(pos);
+                    profilerFiller.pop();
+                }
+
+                boolean bl3 = blockState.hasBlockEntity();
+                if (!this.level.isClientSide) {
+                    blockState.onRemove(this.level, pos, state, moved);
+                } else if (!blockState.is(block) && bl3) {
+                    this.removeBlockEntity(pos);
+                }
+
+                if (!levelChunkSection.getBlockState(j, k, l).is(block)) {
+                    return null;
+                } else {
+                    if (state.hasBlockEntity()) {
+                        BlockEntity blockEntity = this.getBlockEntity(pos, LevelChunk.EntityCreationType.CHECK);
+                        if (blockEntity == null) {
+                            blockEntity = ((EntityBlock) block).newBlockEntity(pos, state);
+                            if (blockEntity != null) {
+                                this.addAndRegisterBlockEntity(blockEntity);
+                            }
+                        } else {
+                            blockEntity.setBlockState(state);
+                            this.updateBlockEntityTicker(blockEntity);
+                        }
+                    }
+
+                    this.unsaved = true;
+                    return blockState;
+                }
+            }
+        }
+    }
