@@ -3,6 +3,7 @@ package dev.shifu.launcher;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +38,11 @@ final class ServerLaunch {
 		command.add("-Dfabric.skipMcProvider=true");
 		command.add("-Dshifu.paperJar=" + paper.serverJar().toAbsolutePath());
 		command.add("-Dshifu.librariesDir=" + paper.librariesDir().toAbsolutePath());
+
+		// bundler が宣言している分だけを載せる。無ければ librariesDir を全部さらう
+		if (Files.isRegularFile(paper.librariesList())) {
+			command.add("-Dshifu.librariesList=" + paper.librariesList().toAbsolutePath());
+		}
 		command.add("-Dshifu.vanillaJar=" + paper.vanillaJar().toAbsolutePath());
 		command.add("-Dshifu.vanillaParity=" + config.vanillaParity());
 

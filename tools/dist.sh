@@ -42,7 +42,8 @@ if (cd "$PW" && "$GRADLEW" --no-daemon "tasks" --all 2>/dev/null) | grep -q crea
     LIBS=$PW/build/libs
 fi
 
-(cd "$PW" && "$GRADLEW" --no-daemon "$PAPERCLIP" -x ":paper-server:compileJava" \
+(cd "$PW" && "$GRADLEW" --no-daemon -I "$(cygpath -w "$SHIFU/tools/keepfields.gradle")" \
+    "$PAPERCLIP" -x ":paper-server:compileJava" \
     "-Dorg.gradle.jvmargs=-Xmx6G -Duser.language=en -Duser.country=US")
 cp "$(ls "$LIBS"/*paperclip*.jar | grep -v reobf | head -1)" "$DIST/shifu-server.jar"
 

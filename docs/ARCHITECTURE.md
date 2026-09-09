@@ -32,7 +32,7 @@ mojang マッピングなので、NMS もアダプタ層も mojmap で揃う。�
 intermediary から mojmap への変換は起動側が用意する(`dev.shifu.launcher.Namespace`)。
 要るのは 3 つ。intermediary と Mojang の `server.txt` を合成したマッピング、
 fabric-loader の名前空間のシステムプロパティ、そして入力側の名前空間にした
-リマップ用クラスパス。1.20.6 で MOD 70・プラグイン 24 を同時に起動できている。
+リマップ用クラスパス。1.20.6 で MOD 102・プラグイン 24 を同時に起動できている。
 1.20.5 より前は Paper 自身が spigot 名前空間で動くので、
 プラグイン側の変換も抱えることになる。
 

@@ -31,6 +31,7 @@ import io
 import os
 import re
 import sys
+import threading
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 spec = importlib.util.spec_from_file_location("ms", os.path.join(HERE, "make_shim.py"))
@@ -82,6 +83,40 @@ def tail(line):
             out.append(lead + piece)
 
     return out
+
+
+def deep(work, lines, rel):
+    """`members` を呼ぶ。正規表現の再帰で落ちたら、広いスタックで読み直す。"""
+    try:
+        return work(lines)
+    except RuntimeError as problem:
+        print(f"  読み直す: {rel} ({problem})", file=sys.stderr)
+
+    out = []
+
+    def again():
+        out.append(work(lines))
+
+    # 大きすぎる値は環境が受け取らない(Windows で 256 MiB は ValueError)。
+    # 通る大きさまで落とす。
+    before = threading.stack_size()
+
+    for size in (64 * 1024 * 1024, 16 * 1024 * 1024, 4 * 1024 * 1024):
+        try:
+            threading.stack_size(size)
+            break
+        except (ValueError, RuntimeError):
+            continue
+
+    worker = threading.Thread(target=again)
+    worker.start()
+    worker.join()
+    threading.stack_size(before)
+
+    if not out:
+        raise RuntimeError(f"{rel} を読めなかった")
+
+    return out[0]
 
 
 def members(lines):
@@ -410,14 +445,14 @@ def main():
             if old == new:
                 continue
 
-            try:
-                have, _, mine = members(old)
-                theirs, order, _ = members(new)
-            except RuntimeError as problem:
-                # 正規表現の再帰が深くなりすぎるファイルがある。
-                # そこだけ諦めて、どれかを言う
-                print(f"  読めなかった: {rel} ({problem})", file=sys.stderr)
-                continue
+            # 正規表現の再帰が深くなりすぎるファイルがある。走るたびに変わるので、
+            # スタックを広げた別スレッドで読み直す。
+            #
+            # **読めなかったファイルを飛ばしてはいけない。** 2026-09-09、MinecraftServer が
+            # 飛ばされたまま先へ進み、shim が 21 メンバー足りない木で 204 件の
+            # 「cannot find symbol」になった。原因が規則側に見えるので追いにくい。
+            have, _, mine = deep(members, old, rel)
+            theirs, order, _ = deep(members, new, rel)
 
             blocks = []
 

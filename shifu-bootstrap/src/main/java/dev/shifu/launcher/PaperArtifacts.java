@@ -15,7 +15,7 @@ import java.util.Map;
  * bsdiff を当て、{@code versions/<ver>/paper-<ver>.jar} と {@code libraries/} を生成する。
  * Paper のコードも Minecraft のコードも Shifu の配布物には入らない。
  */
-record PaperArtifacts(Path serverJar, Path librariesDir, Path vanillaJar) {
+record PaperArtifacts(Path serverJar, Path librariesDir, Path vanillaJar, Path librariesList) {
 	private static final String FILL_API = "https://fill.papermc.io/v3/projects/paper";
 
 	static PaperArtifacts obtain(Downloader downloader, Path serverDir, String minecraftVersion, String build)
@@ -34,6 +34,9 @@ record PaperArtifacts(Path serverJar, Path librariesDir, Path vanillaJar) {
 		Path librariesDir = serverDir.resolve("libraries");
 		Path vanillaJar = serverDir.resolve("cache").resolve("mojang_" + minecraftVersion + ".jar");
 		Path stamp = serverJar.resolveSibling(serverJar.getFileName() + ".from");
+		// bundler が宣言しているライブラリの一覧。プラグインが libraries/ へ落としたものと
+		// 区別が付かなくなるので、glob ではなくこれを使う(理由は ShifuGameProvider)。
+		Path list = serverDir.resolve(".shifu").resolve("libraries.list");
 		boolean assembled = Files.isRegularFile(serverJar) && Files.isDirectory(librariesDir)
 				&& Files.isRegularFile(vanillaJar);
 
@@ -43,9 +46,11 @@ record PaperArtifacts(Path serverJar, Path librariesDir, Path vanillaJar) {
 			// ファイル名は版が変わっても同じなので、中身のハッシュで見分ける。
 			String hash = Downloader.sha256(paperclip);
 
+			extractLibrariesList(paperclip, list);
+
 			if (assembled && hash.equals(readStamp(stamp))) {
 				Log.info("Shifu %s is already assembled", minecraftVersion);
-				return new PaperArtifacts(serverJar, librariesDir, vanillaJar);
+				return new PaperArtifacts(serverJar, librariesDir, vanillaJar, list);
 			}
 
 			Log.info("assembling Shifu from %s", paperclip.getFileName());
@@ -57,12 +62,12 @@ record PaperArtifacts(Path serverJar, Path librariesDir, Path vanillaJar) {
 
 			Files.writeString(stamp, hash);
 
-			return new PaperArtifacts(serverJar, librariesDir, vanillaJar);
+			return new PaperArtifacts(serverJar, librariesDir, vanillaJar, list);
 		}
 
-		if (assembled) {
+		if (assembled && Files.isRegularFile(list)) {
 			Log.info("Paper %s is already assembled", minecraftVersion);
-			return new PaperArtifacts(serverJar, librariesDir, vanillaJar);
+			return new PaperArtifacts(serverJar, librariesDir, vanillaJar, list);
 		}
 
 		String url = FILL_API + "/versions/" + minecraftVersion + "/builds/" + build;
@@ -78,6 +83,13 @@ record PaperArtifacts(Path serverJar, Path librariesDir, Path vanillaJar) {
 		Log.info("downloading %s", fileName);
 		downloader.download(Json.string(download.get("url")), paperclip, sha256);
 
+		extractLibrariesList(paperclip, list);
+
+		if (assembled) {
+			Log.info("Paper %s is already assembled", minecraftVersion);
+			return new PaperArtifacts(serverJar, librariesDir, vanillaJar, list);
+		}
+
 		Log.info("applying Paper patches (this downloads the official Mojang server jar)");
 		runPaperclip(serverDir, paperclip);
 
@@ -85,7 +97,24 @@ record PaperArtifacts(Path serverJar, Path librariesDir, Path vanillaJar) {
 			throw new IOException("paperclip did not produce " + serverJar);
 		}
 
-		return new PaperArtifacts(serverJar, librariesDir, vanillaJar);
+		return new PaperArtifacts(serverJar, librariesDir, vanillaJar, list);
+	}
+
+	/** paperclip が持っている {@code META-INF/libraries.list} を取り出す。 */
+	private static void extractLibrariesList(Path paperclip, Path out) throws IOException {
+		try (java.util.zip.ZipFile zip = new java.util.zip.ZipFile(paperclip.toFile())) {
+			java.util.zip.ZipEntry entry = zip.getEntry("META-INF/libraries.list");
+
+			if (entry == null) {
+				return;
+			}
+
+			Files.createDirectories(out.getParent());
+
+			try (var in = zip.getInputStream(entry)) {
+				Files.copy(in, out, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			}
+		}
 	}
 
 	/** 前回どの paperclip から組み立てたか。無ければ null。 */

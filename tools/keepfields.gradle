@@ -1,0 +1,37 @@
+// mojmap の jar を、公式のバイトコードと同じ field 参照のまま出す。
+//
+// paperweight の fixJarForReobf は field の所有クラスを「その field を宣言したクラス」へ
+// 書き換える(io.papermc.paperweight.tasks.FieldAccessNormalizer)。
+// Spigot のメンバー・マッピングが宣言クラスで引かれるので、reobf にはこれが要る。
+//
+//   公式 / コンパイル直後 : getfield net/minecraft/world/entity/animal/Cat.tickCount:I
+//   fixJarForReobf の後   : getfield net/minecraft/world/entity/Entity.tickCount:I
+//
+// ところが includeMappings がその出力を受け取るので、reobf を通らない mojmap の
+// bundler にも書き換えが入る。mixin は @At(value = "FIELD", target = "Lサブクラス;欄:型") を
+// 書かれたとおりに照合するため、公式では当たるものが当たらなくなる
+// (ServerCore の CatMixin が Cat.tickCount を狙って 0 件になる)。
+//
+// mojmap 側は書き換える前の jar を使う。reobf 側(reobfJar)は今までどおり
+// fixJarForReobf の出力を使う。
+//
+// paperweight の配線が終わったあとに差し替えたいので、実行の直前に入れ替える。
+// 1.21.4 以降(mache)には reobf の経路が無いので、そのときは何もしない。
+gradle.taskGraph.whenReady { graph ->
+    graph.allTasks.each { task ->
+        if (task.name != 'includeMappings') {
+            return
+        }
+
+        def fix = task.project.tasks.findByName('fixJarForReobf')
+
+        if (fix == null) {
+            return
+        }
+
+        def before = fix.inputJar.get().asFile
+
+        task.inputJar.set(fix.inputJar)
+        task.logger.lifecycle("[shifu] includeMappings <- ${before.name} (fixJarForReobf を通さない)")
+    }
+}

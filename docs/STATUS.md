@@ -11,7 +11,7 @@
 | コンパイル | エラー 0(`once.sh`) |
 | 落ちた規則 | 0 |
 | 起動(MOD 無し) | プラグイン 24 個が有効化まで進む |
-| 起動(MOD 込み) | MOD 70(直接入れたのは 12)・プラグイン 24。`java -jar shifu.jar` だけで通る |
+| 起動(MOD 込み) | MOD 102(直接入れたのは 16)・プラグイン 24 で `Done (1.772s)`。`java -jar shifu.jar` だけで通る |
 
 ### 名前空間の橋(1.20.6)
 
@@ -28,27 +28,28 @@
 
 ### 名前空間を繋いだあとに直したもの(1.20.6)
 
-| 何が起きたか | 直し方 |
-|---|---|
-| `LivingEntity.checkBedExists` のラムダを狙う mixin が当たらない | 差し込みが使っていたラムダを for 文に直した(`patches/events/entity-core.rules`) |
-| carpet の `@Shadow field_12858` が `LevelChunk` に見つからない | `LevelChunk.level` の型を狭めるのをやめ、Paper から写した本体の側で絞った |
-| fabric-api の `ServerPlayerGameMode.destroyBlock` の局所変数が合わない | ProGuard が使い回している slot を `LvtMatch` でも使い回すようにした(公式とずれる変数 42 → 19) |
+MOD 側が悪いように見えて、全部 Shifu 側だった。公式の jar と 1 命令ずつ突き合わせて直した。
 
-### 動かない MOD(1.20.6、プラグイン 24 個と同時に 1 つずつ入れて確認)
+| 何が起きたか | 何が原因だったか | 直し方 |
+|---|---|---|
+| fabric-entity-events が `LivingEntity.checkBedExists` のラムダに当たらない | 差し込みがラムダを 1 つ足して、後ろの番号が繰り下がっていた | for 文に書き換えた(`patches/events/entity-core.rules`) |
+| carpet の `@Shadow field_12858` が `LevelChunk` に見つからない | CraftBukkit に倣って `LevelChunk.level` を `ServerLevel` に狭めていた。`@Shadow` は署名で照合する | 狭めるのをやめ、Paper から写した本体の側で絞る |
+| fabric-api が `ServerPlayerGameMode.destroyBlock` の局所変数に当たらない | ProGuard は読み終わった変数の slot を次の変数に使い回すが、javac は scope の終わりまで空けない | `LvtMatch` でも使い回す(公式とずれる変数 42 → 19) |
+| C2ME が `ChunkMap.scheduleChunkGeneration` のラムダに当たらない | 逆コンパイルで式の順が変わり、ラムダが捕まえた引数の並びが公式と入れ替わっていた | `LambdaMatch` で引数と積む順を並べ替える |
+| ServerCore の `@Redirect` が `Cat.tickCount` を見つけられない | paperweight の `fixJarForReobf` が field の所有クラスを宣言クラスへ書き換える。reobf には要るが mojmap の出力にも入っていた | mojmap 側は書き換える前の jar を使う(`tools/keepfields.gradle`) |
+| Ledger の `@Local BlockEntity` が `CampfireBlock` で候補 0 件 | 逆コンパイラが `instanceof` の前の変数を畳んでいた | `patches/decompile/locals.rules` に 4 件足した |
+| Ledger が `CauldronInteraction.lambda$bootStrap$5` に当たらない | 逆コンパイラが `static` 初期化子を別の位置に置くので、ラムダの番号の割り当てが入れ替わる | `LambdaMatch` で番号を付け直す(5 クラス 30 個) |
+| Alternate Current が `WireHandler` の構築子で落ちる | Paper 1.20.6 が同名パッケージの Alternate Current を同梱していて、サーバー側のクラスが MOD を隠していた | Paper の同梱分を外す(vanilla の挙動を変えるものなので元から要らない) |
+| MOD を入れると NMS 側のログが 1 行も出ない | Paper の `SpigotLibraryLoader` が `libraries/` へ落としたプラグインの slf4j-api 1.7.36 が、Paper の 2.0.9 より先にクラスパスへ載って SLF4J が NOP になっていた | bundler の `META-INF/libraries.list` に載っている分だけを載せる |
 
-| | 誰の問題か |
-|---|---|
-| C2ME 0.2.0+alpha.11.100 | Shifu。`ChunkMap.scheduleChunkGeneration` のラムダが捕まえる引数の順が公式と違う |
-| ServerCore 1.5.3 | 未特定。`Cat.removeWhenFarAway` を狙う `@Redirect` が対象を見つけられない |
-| Ledger 1.3.3 | 未特定。世界の読み込みに入る前に静かに終わる |
-| Alternate Current 1.9.0 | 未特定。同上 |
+### 残っている食い違い(1.20.6)
 
-通ったのは Fabric API、Architectury API、Carpet、Chunky、FerriteCore、Krypton、
-VeryManyPlayers、Lithium、fabric-language-kotlin、styled-chat、No Chat Reports、spark。
-この 12 個を同時に入れても通る。
+`tools/check_lambdas.py` が 4 クラス、`tools/compare_lvt.py` が 19 変数を挙げる。
+`ServerLevel` と `ItemStack` は Paper が足したメソッドの分だけラムダが増えるので、
+番号の付け直しでは合わせられない。
 
-MOD を入れると NMS 側(`com.mojang.logging`)のログが出なくなる。
-Bukkit 側(プラグイン)のログは出るので、切り分けはそちらの行で行う。
+Chunky と ChunkyBorder は、Chunky の Fabric MOD と Bukkit プラグインが
+同じパッケージ名(`org.popcraft.chunky`)を持つため衝突する。MOD 側が先に載る。
 
 ## 1.21.11 で通っているところ
 

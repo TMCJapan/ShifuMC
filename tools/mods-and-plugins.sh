@@ -43,12 +43,6 @@ cp "$ADDONS"/plugins/*.jar "$RUN/plugins/"
 #   FastAsyncWorldEdit — Paper の moonrise / starlight の内部を直に呼ぶ
 rm -f "$RUN/plugins"/packetevents-*.jar "$RUN/plugins"/grimac-*.jar "$RUN/plugins"/fastasyncworldedit-*.jar
 
-# 1.20.6 で動かない MOD。理由は docs/STATUS.md
-if [ "$MC_VERSION" = 1.20.6 ]; then
-    rm -f "$RUN/mods"/c2me-fabric-*.jar "$RUN/mods"/servercore-*.jar
-    rm -f "$RUN/mods"/ledger-*.jar "$RUN/mods"/alternate-current-*.jar
-fi
-
 # 内容を足す MOD(ブロックやバイオームを登録するもの)を入れると、Fabric のレジストリ同期が
 # 素のクライアントを弾く。bot は素のクライアントなので、遊びの確認をするときは外す。
 # 起動だけを見るなら SHIFU_CONTENT_MODS=1 で残す

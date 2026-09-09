@@ -28,7 +28,8 @@ if [ "$1" != "--skip-build" ]; then
         LIBS=$PW/build/libs
     fi
 
-    "$GRADLEW" --no-daemon "$BUNDLE" -x ":paper-server:compileJava" \
+    "$GRADLEW" --no-daemon -I "$(cygpath -w "$SHIFU/tools/keepfields.gradle")" \
+        "$BUNDLE" -x ":paper-server:compileJava" \
         "-Dorg.gradle.jvmargs=-Xmx6G -Duser.language=en -Duser.country=US"
     JAR=$(ls "$LIBS"/*bundler*.jar 2>/dev/null | grep -v reobf | head -1)
 fi

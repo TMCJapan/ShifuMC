@@ -139,6 +139,11 @@ shifu_reset_paper() {
         # vanilla の挙動が変わるので、当たる前の中身に戻す。
         git -C "$PW/Paper-Server" checkout -q "$SHIFU_BASE_PAPER" -- \
             src/main/resources/data/minecraft/worldgen
+        # Paper が同梱している Alternate Current(別のレッドストーン実装)を外す。
+        # vanilla の挙動を変えるものなので Shifu は使わず、NMS からの参照も無い。
+        # 残すと、同じパッケージ名の Fabric MOD(alternate-current)がサーバー側の
+        # クラスに隠され、WireHandler の構築子が見つからずに世界の読み込みで落ちる。
+        rm -rf "$PW/Paper-Server/src/main/java/alternate"
     else
         git -C "$PW" checkout -- paper-server/src/main/java
         # 岩盤生成に加えて、戦利品表から set_damage を 1 件落としている。

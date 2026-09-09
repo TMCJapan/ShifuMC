@@ -208,6 +208,16 @@ public final class ShifuGameProvider implements GameProvider {
 	 * <p>paper-api とサーバー実装は同じクラスローダに載せる必要がある。
 	 * Paper 内部は {@code META-INF/services} 経由の ServiceLoader を 30 件以上使っており、
 	 * インタフェース(paper-api 側)と実装(paper-&lt;ver&gt;.jar 側)が分断されると全滅する。
+	 *
+	 * <p><b>{@code libraries/} を全部さらってはいけない。</b>Paper の
+	 * {@code SpigotLibraryLoader} が、プラグインの要求するライブラリを同じ木へ落とす。
+	 * AuthMe が持ってくる slf4j-api 1.7.36 が Paper の 2.0.9 より先に載ると、
+	 * SLF4J が {@code StaticLoggerBinder} を探して見つけられず NOP になり、
+	 * {@code com.mojang.logging.LogUtils} を使う NMS のログが 1 行も出なくなる。
+	 * サーバーが世界の読み込みで落ちても何も出ないので、原因が追えない。
+	 *
+	 * <p>{@code shifu.librariesList}(bundler の {@code META-INF/libraries.list})が
+	 * 渡っていればそれだけを載せる。無いときだけ木をさらう。
 	 */
 	private void collectLibraries() {
 		String dirProp = System.getProperty("shifu.librariesDir");
@@ -215,6 +225,8 @@ public final class ShifuGameProvider implements GameProvider {
 
 		Path root = Paths.get(dirProp).toAbsolutePath().normalize();
 		if (!Files.isDirectory(root)) return;
+
+		if (collectDeclaredLibraries(root)) return;
 
 		try (Stream<Path> stream = Files.walk(root)) {
 			stream.filter(Files::isRegularFile)
@@ -224,6 +236,41 @@ public final class ShifuGameProvider implements GameProvider {
 		} catch (IOException e) {
 			throw new RuntimeException("failed to scan " + root, e);
 		}
+	}
+
+	/**
+	 * bundler が宣言しているライブラリだけを載せる。
+	 *
+	 * <p>1 行が {@code <sha256>	<座標>	<libraries/ からの相対パス>}。
+	 *
+	 * @return 載せたか。一覧が無ければ false(呼び出し側が木をさらう)
+	 */
+	private boolean collectDeclaredLibraries(Path root) {
+		String listProp = System.getProperty("shifu.librariesList");
+		if (listProp == null) return false;
+
+		Path list = Paths.get(listProp);
+		if (!Files.isRegularFile(list)) return false;
+
+		int found = 0;
+
+		try {
+			for (String line : Files.readAllLines(list, StandardCharsets.UTF_8)) {
+				String[] parts = line.split("	");
+				if (parts.length < 3) continue;
+
+				Path jar = root.resolve(parts[2].trim()).normalize();
+
+				if (Files.isRegularFile(jar) && isNotSystemLibrary(jar)) {
+					gameLibraries.add(jar);
+					found++;
+				}
+			}
+		} catch (IOException e) {
+			throw new RuntimeException("failed to read " + list, e);
+		}
+
+		return found > 0;
 	}
 
 	private static boolean isNotSystemLibrary(Path jar) {

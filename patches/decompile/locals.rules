@@ -4,6 +4,40 @@
 # 逆コンパイラが 1 行にまとめると変数が消え、@Local で捕まえる MOD が当たらない。
 # 式は同じ回数だけ、同じ順で評価されるので、挙動は変わらない。
 
+file: net/minecraft/world/level/block/CampfireBlock.java
+replace:
+    if (world.getBlockEntity(pos) instanceof CampfireBlockEntity campfireBlockEntity) {
+with:
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = world.getBlockEntity(pos);
+    if (blockEntity instanceof CampfireBlockEntity campfireBlockEntity) {
+
+file: net/minecraft/world/level/block/CommandBlock.java
+replace:
+    if (!world.isClientSide) {
+    if (world.getBlockEntity(pos) instanceof CommandBlockEntity commandBlockEntity) {
+with:
+    if (!world.isClientSide) {
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = world.getBlockEntity(pos);
+    if (blockEntity instanceof CommandBlockEntity commandBlockEntity) {
+
+file: net/minecraft/world/level/block/CommandBlock.java
+replace:
+    protected void tick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
+    if (world.getBlockEntity(pos) instanceof CommandBlockEntity commandBlockEntity) {
+with:
+    protected void tick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = world.getBlockEntity(pos);
+    if (blockEntity instanceof CommandBlockEntity commandBlockEntity) {
+
+file: net/minecraft/world/level/block/CommandBlock.java
+replace:
+    public void setPlacedBy(Level world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
+    if (world.getBlockEntity(pos) instanceof CommandBlockEntity commandBlockEntity) {
+with:
+    public void setPlacedBy(Level world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack) {
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = world.getBlockEntity(pos);
+    if (blockEntity instanceof CommandBlockEntity commandBlockEntity) {
+
 file: net/minecraft/core/dispenser/ShearsDispenseItemBehavior.java
 replace:
     for (LivingEntity livingEntity : world.getEntitiesOfClass(LivingEntity.class, new AABB(pos), EntitySelector.NO_SPECTATORS)) {
