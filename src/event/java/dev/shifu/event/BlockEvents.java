@@ -498,6 +498,51 @@ public final class BlockEvents {
 
     private static boolean signFront = true;
 
+    /**
+     * SignChangeEvent。文を組み立てたあと、返す直前。
+     *
+     * @return 返す文。取り消されたら元の文
+     */
+    public static net.minecraft.world.level.block.entity.SignText signChange(
+            final net.minecraft.world.level.block.entity.SignBlockEntity sign,
+            final net.minecraft.world.entity.player.Player player,
+            final net.minecraft.world.level.block.entity.SignText original,
+            final net.minecraft.world.level.block.entity.SignText text,
+            final java.util.List<net.minecraft.server.network.FilteredText> lines) {
+        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)
+                || !ShifuEvents.listening(org.bukkit.event.block.SignChangeEvent.getHandlerList())) {
+            return text;
+        }
+
+        final java.util.List<net.kyori.adventure.text.Component> componentLines = new java.util.ArrayList<>();
+
+        for (int i = 0; i < lines.size(); i++) {
+            componentLines.add(io.papermc.paper.adventure.PaperAdventure.asAdventure(
+                    text.getMessage(i, player.isTextFilteringEnabled())));
+        }
+
+        final org.bukkit.event.block.SignChangeEvent event = new org.bukkit.event.block.SignChangeEvent(
+                bukkit(sign.getLevel(), sign.getBlockPos()), serverPlayer.getBukkitEntity(),
+                new java.util.ArrayList<>(componentLines),
+                signFront ? org.bukkit.block.sign.Side.FRONT : org.bukkit.block.sign.Side.BACK);
+
+        if (!event.callEvent()) {
+            return original;
+        }
+
+        net.minecraft.world.level.block.entity.SignText result = text;
+        final net.minecraft.network.chat.Component[] components =
+                org.bukkit.craftbukkit.block.CraftSign.sanitizeLines(event.lines());
+
+        for (int i = 0; i < components.length; i++) {
+            if (!java.util.Objects.equals(componentLines.get(i), event.line(i))) {
+                result = result.setMessage(i, components[i]);
+            }
+        }
+
+        return result;
+    }
+
     /** 看板の面。setMessages には渡らないので、書き換える側で置く。 */
     public static void signSide(final boolean front) {
         signFront = front;

@@ -891,11 +891,106 @@ public final class ShifuEvents {
         return org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
     }
 
+    /**
+     * 発火のあと。取り消されたら控えに戻す。プラグインが {@code getNewState()} を
+     * 書き換えていたら、その状態で置き直す(Paper はイベント後の snapshot を置く)。
+     */
+    private static void finishBlockChange(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
+                                          final org.bukkit.craftbukkit.block.CraftBlockState before,
+                                          final org.bukkit.craftbukkit.block.CraftBlockState placed,
+                                          final boolean allowed, final int flags) {
+        // 1.20.6 の CraftBlockState に place(int) は無い(26.2 の追加)。
+        // 直に置き直す。この 5 つのイベントが相手にするのはどれも
+        // ブロックエンティティを持たないブロックなので、状態だけで足りる。
+        if (!allowed) {
+            level.setBlock(pos, before.getHandle(), flags);
 
+            return;
+        }
 
+        if (placed.getHandle() != level.getBlockState(pos)) {
+            level.setBlock(pos, placed.getHandle(), flags);
+        }
+    }
 
+    /** BlockGrowEvent。vanilla が置いたあと。 */
+    public static void blockGrow(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
+                                 final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags) {
+        if (before == null) {
+            return;
+        }
 
+        final org.bukkit.craftbukkit.block.CraftBlockState placed =
+                org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
+        final org.bukkit.event.block.BlockGrowEvent event =
+                new org.bukkit.event.block.BlockGrowEvent(placed.getBlock(), placed);
+        finishBlockChange(level, pos, before, placed, event.callEvent(), flags);
+    }
 
+    /** BlockSpreadEvent。vanilla が置いたあと。 */
+    public static void blockSpread(final net.minecraft.world.level.LevelAccessor level, final BlockPos source,
+                                   final BlockPos pos,
+                                   final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags) {
+        if (before == null) {
+            return;
+        }
+
+        final BlockPos from = CraftEventFactory.sourceBlockOverride != null
+                ? CraftEventFactory.sourceBlockOverride : source;
+        final org.bukkit.craftbukkit.block.CraftBlockState placed =
+                org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
+        final org.bukkit.event.block.BlockSpreadEvent event = new org.bukkit.event.block.BlockSpreadEvent(
+                placed.getBlock(), CraftBlock.at(level, from), placed);
+        finishBlockChange(level, pos, before, placed, event.callEvent(), flags);
+    }
+
+    /** BlockFormEvent / EntityBlockFormEvent。vanilla が置いたあと。 */
+    public static void blockForm(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
+                                 final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags,
+                                 final net.minecraft.world.entity.Entity entity) {
+        if (before == null) {
+            return;
+        }
+
+        final org.bukkit.craftbukkit.block.CraftBlockState placed =
+                org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
+        final org.bukkit.event.block.BlockFormEvent event = entity == null
+                ? new org.bukkit.event.block.BlockFormEvent(placed.getBlock(), placed)
+                : new org.bukkit.event.block.EntityBlockFormEvent(entity.getBukkitEntity(), placed.getBlock(), placed);
+        finishBlockChange(level, pos, before, placed, event.callEvent(), flags);
+    }
+
+    /** MoistureChangeEvent。vanilla が置いたあと。 */
+    public static void moistureChange(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
+                                      final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags) {
+        if (before == null) {
+            return;
+        }
+
+        final org.bukkit.craftbukkit.block.CraftBlockState placed =
+                org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
+        final org.bukkit.event.block.MoistureChangeEvent event =
+                new org.bukkit.event.block.MoistureChangeEvent(placed.getBlock(), placed);
+        finishBlockChange(level, pos, before, placed, event.callEvent(), flags);
+    }
+
+    /** CauldronLevelChangeEvent。vanilla が置いたあと。 */
+    public static void cauldronLevelChange(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
+                                           final org.bukkit.craftbukkit.block.CraftBlockState before,
+                                           final net.minecraft.world.entity.Entity entity,
+                                           final org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason reason) {
+        if (before == null) {
+            return;
+        }
+
+        final org.bukkit.craftbukkit.block.CraftBlockState placed =
+                org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
+        final org.bukkit.event.block.CauldronLevelChangeEvent event =
+                new org.bukkit.event.block.CauldronLevelChangeEvent(
+                        CraftBlock.at(level, pos), entity == null ? null : entity.getBukkitEntity(), reason, placed);
+        finishBlockChange(level, pos, before, placed, event.callEvent(),
+                net.minecraft.world.level.block.Block.UPDATE_ALL);
+    }
 
     // ------------------------------------------------------------ クリック
 
