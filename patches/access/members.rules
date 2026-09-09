@@ -97,3 +97,8 @@ line:
 file: net/minecraft/world/level/chunk/storage/RegionFileStorage.java
 line:
     RegionFileStorage(RegionStorageInfo storageKey, Path directory, boolean dsync) {
+
+# DATA_TICKS_FROZEN。resendPossiblyDesyncedDataValues に渡す(EntityPortalEvent の発火)
+file: net/minecraft/world/entity/Entity.java
+line:
+    private static final EntityDataAccessor<Integer> DATA_TICKS_FROZEN = SynchedEntityData.defineId(Entity.class, EntityDataSerializers.INT);

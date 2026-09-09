@@ -1,0 +1,10 @@
+
+
+# EntityJumpEvent
+file: net/minecraft/world/entity/monster/Ravager.java
+anchor:
+    this.jumpFromGround();
+insert:
+    if (new com.destroystokyo.paper.event.entity.EntityJumpEvent(getBukkitLivingEntity()).callEvent()) { // Paper - Entity Jump API
+insert-after:
+    } else { this.setJumping(false); } // Paper - Entity Jump API; setJumping(false) stops a potential loop

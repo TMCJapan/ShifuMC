@@ -1,0 +1,8 @@
+
+
+# callPrepareResultEvent
+file: net/minecraft/world/inventory/AnvilMenu.java
+anchor:
+    return true;
+insert:
+    org.bukkit.craftbukkit.event.CraftEventFactory.callPrepareResultEvent(this, RESULT_SLOT); // Paper - Add PrepareResultEvent

@@ -1,0 +1,15 @@
+# main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
+# asBukkitCopy / fromBukkitCopy は 26.2 が NMS の ItemStack に足したもの。
+# 1.20.6 は CraftItemStack を通す。
+# PlayerItemFrameChangeEvent
+file: net/minecraft/world/entity/decoration/ItemFrame.java
+anchor:
+    this.playSound(this.getRotateItemSound(), 1.0F, 1.0F);
+insert:
+    // Paper start - Add PlayerItemFrameChangeEvent
+    io.papermc.paper.event.player.PlayerItemFrameChangeEvent event = new io.papermc.paper.event.player.PlayerItemFrameChangeEvent((org.bukkit.entity.Player) player.getBukkitEntity(), (org.bukkit.entity.ItemFrame) this.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(this.getItem()), io.papermc.paper.event.player.PlayerItemFrameChangeEvent.ItemFrameChangeAction.ROTATE);
+    if (!event.callEvent()) {
+        return InteractionResult.FAIL;
+    }
+    setItem(org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItemStack()), false, false);
+    // Paper end - Add PlayerItemFrameChangeEvent

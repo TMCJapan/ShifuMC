@@ -1,0 +1,27 @@
+
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# PlayerVelocityEvent
+file: net/minecraft/server/level/ServerEntity.java
+anchor:
+    this.entity.hurtMarked = false;
+insert:
+    // CraftBukkit start - Create PlayerVelocity event
+    boolean cancelled = false;
+
+    if (this.entity instanceof ServerPlayer) {
+        org.bukkit.entity.Player player = (org.bukkit.entity.Player) this.entity.getBukkitEntity();
+        org.bukkit.util.Vector velocity = player.getVelocity();
+
+        org.bukkit.event.player.PlayerVelocityEvent event = new org.bukkit.event.player.PlayerVelocityEvent(player, velocity.clone());
+        if (!event.callEvent()) {
+            cancelled = true;
+        } else if (!velocity.equals(event.getVelocity())) {
+            player.setVelocity(event.getVelocity());
+        }
+    }
+
+    if (cancelled) {
+        return;
+    }
+    // CraftBukkit end

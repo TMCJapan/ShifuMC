@@ -1,0 +1,17 @@
+
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# EntityPoseChangeEvent
+file: net/minecraft/world/entity/Entity.java
+anchor:
+    this.entityData.set(DATA_POSE, pose);
+insert:
+    if (this.fixedPose) return; // Paper - Expand Pose API
+    // CraftBukkit start
+    if (pose == this.getPose()) {
+        return;
+    }
+    if (!this.generation) {
+        this.level.getCraftServer().getPluginManager().callEvent(new org.bukkit.event.entity.EntityPoseChangeEvent(this.getBukkitEntity(), org.bukkit.entity.Pose.values()[pose.ordinal()]));
+    }
+    // CraftBukkit end

@@ -1,0 +1,81 @@
+# main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
+# 局所変数の名前が違う(orgCount -> i)ほかは同じ。
+
+# ItemMergeEvent
+file: net/minecraft/world/entity/item/ItemEntity.java
+anchor:
+    merge(targetEntity, targetStack, sourceStack);
+insert:
+    // CraftBukkit start
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callItemMergeEvent(sourceEntity, targetEntity)) {
+        return;
+    }
+    // CraftBukkit end
+
+# EntityPickupItemEvent, PlayerAttemptPickupItemEvent, PlayerPickupItemEvent
+file: net/minecraft/world/entity/item/ItemEntity.java
+anchor:
+    if (this.pickupDelay == 0 && (this.target == null || this.target.equals(player.getUUID())) && player.getInventory().add(itemStack)) {
+insert:
+    // CraftBukkit start - fire PlayerPickupItemEvent
+    // Shifu - 局所変数にしない。公式にも int があると @Local int の候補が増えて mixin が当たらない
+    this.shifuCanHold = player.getInventory().canHold(itemStack);
+    boolean flyAtPlayer = false; // Paper
+
+    // Paper start - PlayerAttemptPickupItemEvent
+    if (this.pickupDelay <= 0) {
+        org.bukkit.event.player.PlayerAttemptPickupItemEvent attemptEvent = new org.bukkit.event.player.PlayerAttemptPickupItemEvent((org.bukkit.entity.Player) player.getBukkitEntity(), (org.bukkit.entity.Item) this.getBukkitEntity(), i - this.shifuCanHold);
+        this.level().getCraftServer().getPluginManager().callEvent(attemptEvent);
+
+        flyAtPlayer = attemptEvent.getFlyAtPlayer();
+        if (attemptEvent.isCancelled()) {
+            if (flyAtPlayer) {
+                player.take(this, i);
+            }
+
+            return;
+        }
+    }
+
+    if (this.pickupDelay <= 0 && this.shifuCanHold > 0) {
+        itemStack.setCount(this.shifuCanHold);
+        // Call legacy event
+        org.bukkit.event.player.PlayerPickupItemEvent playerEvent = new org.bukkit.event.player.PlayerPickupItemEvent((org.bukkit.entity.Player) player.getBukkitEntity(), (org.bukkit.entity.Item) this.getBukkitEntity(), i - this.shifuCanHold);
+        playerEvent.setCancelled(!playerEvent.getPlayer().getCanPickupItems());
+        this.level().getCraftServer().getPluginManager().callEvent(playerEvent);
+        flyAtPlayer = playerEvent.getFlyAtPlayer(); // Paper
+        if (playerEvent.isCancelled()) {
+            itemStack.setCount(i); // SPIGOT-5294 - restore count
+            // Paper start
+            if (flyAtPlayer) {
+                player.take(this, i);
+            }
+            // Paper end
+            return;
+        }
+
+        // Call newer event afterwards
+        org.bukkit.event.entity.EntityPickupItemEvent entityEvent = new org.bukkit.event.entity.EntityPickupItemEvent(player.getBukkitEntity(), (org.bukkit.entity.Item) this.getBukkitEntity(), i - this.shifuCanHold);
+        entityEvent.setCancelled(!entityEvent.getEntity().getCanPickupItems());
+        this.level().getCraftServer().getPluginManager().callEvent(entityEvent);
+        if (entityEvent.isCancelled()) {
+            itemStack.setCount(i); // SPIGOT-5294 - restore count
+            return;
+        }
+
+        // Update the ItemStack if it was changed in the event
+        ItemStack current = this.getItem();
+        if (!itemStack.equals(current)) {
+            itemStack = current;
+        } else {
+            itemStack.setCount(i); // = canHold + remaining
+        }
+
+        // Possibly < 0; fix here so we do not have to modify code below
+        this.pickupDelay = 0;
+    } else if (this.pickupDelay == 0) {
+        // ensure that the code below isn't triggered if shifuCanHold says we can't pick the items up
+        this.pickupDelay = -1;
+    }
+    // CraftBukkit end
+    // Paper end - PlayerAttemptPickupItemEvent
