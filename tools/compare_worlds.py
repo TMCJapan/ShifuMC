@@ -26,6 +26,27 @@ import zlib
 SECTOR = 4096
 
 
+# 保存した時点のワールド tick。生成した中身ではないので比べない。
+# 起動から stop までの tick 数は走らせるたびに数 tick ずれる。ここを見ると
+# **全チャンクが「違う」になり**、差し引きに使う vanilla 同士のばらつきが 100% になって、
+# 比べられるチャンクが 0 件になる(1.20.6 で踏んだ。26.2 ではたまたま揃っていた)。
+#
+# 中身は TAG_Long(0x04)+ 名前の長さ(0x000A)+ "LastUpdate" + 8 バイト。
+LAST_UPDATE = b"\x04\x00\x0aLastUpdate"
+
+
+def settle(body):
+    """走らせるたびに変わる欄を潰す。生成した中身の比較だけを残す。"""
+    at = body.find(LAST_UPDATE)
+
+    while at >= 0:
+        value = at + len(LAST_UPDATE)
+        body = body[:value] + bytes(8) + body[value + 8:]
+        at = body.find(LAST_UPDATE, value + 8)
+
+    return body
+
+
 def chunks(path):
     """region ファイルの チャンク座標 -> 展開した NBT のバイト列。
 
@@ -65,7 +86,7 @@ def chunks(path):
             except zlib.error as problem:
                 body = b"<decompress failed: " + str(problem).encode() + b">"
 
-            out[(index % 32, index // 32)] = body
+            out[(index % 32, index // 32)] = settle(body)
 
     return out
 

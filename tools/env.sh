@@ -12,13 +12,19 @@
 #
 # 読める変数: SHIFU PW TREE RESOURCES JAVA GRADLEW MC_VERSION BUNDLER_JAR SERVER_JAR
 
-SHIFU=$(cd "$(dirname "$0")/.." && pwd)
+# 呼び出し元の位置からリポジトリのルートを探す。tools/ の直下でも
+# tools/<道具>/ の下でも同じように効くように、目印が見つかるまで上へ辿る。
+SHIFU=$(cd "$(dirname "$0")" && pwd)
+
+while [ "$SHIFU" != "/" ] && { [ ! -f "$SHIFU/settings.gradle.kts" ] || [ ! -d "$SHIFU/patches" ]; }; do
+    SHIFU=$(dirname "$SHIFU")
+done
 
 # $0 は呼び出し側のスクリプトなので、tools/*.sh 以外から読むと別の場所を指す。
 # 黙って進むと Paper のクローンを別の場所に作りにいくので、ここで止める。
 if [ ! -f "$SHIFU/settings.gradle.kts" ] || [ ! -d "$SHIFU/patches" ]; then
-    echo "リポジトリのルートを決められなかった: $SHIFU" >&2
-    echo "  tools/*.sh は 'sh tools/<名前>.sh' の形で呼ぶ。" >&2
+    echo "リポジトリのルートを決められなかった: $(dirname "$0")" >&2
+    echo "  tools の中のスクリプトとして呼ぶ(sh tools/<名前>.sh、sh tools/<道具>/build.sh)。" >&2
     exit 1
 fi
 
@@ -209,8 +215,88 @@ if [ -z "${MC_VERSION:-}" ] && [ -f "$PW/gradle.properties" ]; then
 fi
 
 # 組んだ bundler の jar。名前に版が入り、1.21.x は mojmap と reobf に分かれる。
+# classic はタスクが根のプロジェクトにあるので出力先も根の build/libs。
 # まだ組んでいなければ空。set -e で止まらないように受ける。
-BUNDLER_JAR=$(ls "$PW"/paper-server/build/libs/*bundler*.jar 2>/dev/null | grep -v reobf | head -1 || true)
+if [ "$LAYOUT" = classic ]; then
+    BUNDLER_JAR=$(ls "$PW"/build/libs/*bundler*.jar 2>/dev/null | grep -v reobf | head -1 || true)
+else
+    BUNDLER_JAR=$(ls "$PW"/paper-server/build/libs/*bundler*.jar 2>/dev/null | grep -v reobf | head -1 || true)
+fi
+
+# vanilla 一致の比較で基準に置く、Mojang の公式サーバー jar。
+# mache は bundler の展開先、classic は paperweight がダウンロードしたもの。
+if [ "$LAYOUT" = classic ]; then
+    VANILLA_JAR=$PW/.gradle/caches/paperweight/taskCache/downloadServerJar.jar
+else
+    VANILLA_JAR=$PW/paper-server/.gradle/caches/paperweight/data/bundler/server.jar
+fi
+
+export VANILLA_JAR
+
+# vanilla 一致の比較に使う 2 つの置き場を用意する。
+# **同じ設定でなければ比べる意味が無い**ので、走らせるたびに両方へ同じものを書く。
+shifu_parity_dirs() {
+    _port=25595
+
+    for _dir in "$PW/run-vanilla" "$PW/run-parity"; do
+        mkdir -p "$_dir"
+        printf 'eula=true\n' > "$_dir/eula.txt"
+        printf 'online-mode=false\nserver-port=%s\nlevel-seed=1234567890\nsync-chunk-writes=true\n' \
+            "$_port" > "$_dir/server.properties"
+        _port=$((_port + 1))
+    done
+
+    unset _dir _port
+
+    # Shifu 側だけ、起動側(dev.shifu.launcher.VanillaParity)が書くのと同じ設定を置く。
+    # **これが無いと Paper の既定値で走る。**entity-activation-range と
+    # per-player-mob-spawns は動物の tick と湧きを変えるので、羊が草を食べるかどうかが
+    # 変わり、ブロックの差として出る(1.20.6 で 2 チャンクが実差に見えた原因)。
+    # 中身を変えるときは VanillaParity.java と docs/VANILLA-PARITY.md も合わせる。
+    mkdir -p "$PW/run-parity/config"
+
+    cat > "$PW/run-parity/spigot.yml" <<'SPIGOT'
+# vanilla 一致の比較用。起動側が書くものと同じ内容。
+world-settings:
+  default:
+    entity-activation-range:
+      animals: 512
+      monsters: 512
+      raiders: 512
+      misc: 512
+      water: 512
+      villagers: 512
+      flying-monsters: 512
+    max-tnt-per-tick: 0
+SPIGOT
+
+    cat > "$PW/run-parity/config/paper-world-defaults.yml" <<'PAPER'
+# vanilla 一致の比較用。起動側が書くものと同じ内容。
+entities:
+  spawning:
+    per-player-mob-spawns: false
+PAPER
+
+    # 難読化されている版では、公式の jar をそのまま走らせると
+    # tools/tickstop の agent が MinecraftServer.tickServer を見つけられない。
+    # paperweight が mojmap へ写した公式 jar(バイトコードは公式のまま)を
+    # vanilla の libraries と組んで走らせる。cp.txt があればそちらが使われる。
+    _moj=$PW/.gradle/caches/paperweight/taskCache/minecraft.jar
+
+    if [ "$LAYOUT" = classic ] && [ -f "$_moj" ] && [ -d "$PW/run-vanilla/libraries" ] \
+            && [ ! -f "$PW/run-vanilla/cp.txt" ]; then
+        {
+            printf -- '-cp "%s' "$(cygpath -m "$_moj")"
+            find "$PW/run-vanilla/libraries" -name "*.jar" | sort | while read -r _jar; do
+                printf ';%s' "$(cygpath -m "$_jar")"
+            done
+            printf '"\n'
+        } > "$PW/run-vanilla/cp.txt"
+        echo "[shifu] run-vanilla/cp.txt を作った(mojmap の公式 jar で vanilla を走らせる)"
+    fi
+
+    unset _moj
+}
 
 # bundler が起動時に展開するサーバー本体。プラグインを組むときのクラスパス。
 SERVER_JAR=$PW/run-shifu/versions/$MC_VERSION/paper-$MC_VERSION.jar

@@ -12,6 +12,7 @@
 | 落ちた規則 | 0 |
 | 起動(MOD 無し) | プラグイン 24 個が有効化まで進む |
 | 起動(MOD 込み) | MOD 102(直接入れたのは 16)・プラグイン 24 で `Done (1.772s)`。`java -jar shifu.jar` だけで通る |
+| vanilla 一致(世界) | 起動して 20 秒・1200 tick のどちらも、vanilla が再現するチャンクで違い 0(詳細は [VANILLA-PARITY.md](VANILLA-PARITY.md)) |
 
 ### 名前空間の橋(1.20.6)
 

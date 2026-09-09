@@ -16,7 +16,8 @@ done
 rm -rf "$OUT"
 mkdir -p "$OUT"
 
-"$JAVA_HOME/bin/javac" -encoding UTF-8 -nowarn -proc:none \
+# 後処理は gradle と同じ JDK で走る。版が変わっても載るように合わせる
+"$JAVA_HOME/bin/javac" -encoding UTF-8 -nowarn -proc:none --release "$JDK_MIN" \
     -cp "$CP" -d "$(cygpath -w "$OUT")" \
     "$SHIFU"/tools/lvtmatch/src/dev/shifu/lvtmatch/*.java
 

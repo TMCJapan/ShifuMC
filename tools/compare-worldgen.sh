@@ -18,7 +18,25 @@ VANILLA=$PW/run-vanilla
 PARITY=$PW/run-parity
 JAR=$BUNDLER_JAR
 
+if [ -z "$JAR" ]; then
+    echo "bundler の jar が無い。先に sh tools/run-server.sh で組む" >&2
+    exit 1
+fi
+
+shifu_parity_dirs
+
+# vanilla の走らせ方。cp.txt を置いてあればそれを使い、無ければ公式の jar をそのまま。
+# Mojang の server.jar は 1.18 以降それ自身が bundler なので -jar で動く。
+if [ -f "$VANILLA/cp.txt" ]; then
+    VANILLA_RUN="@cp.txt net.minecraft.server.Main"
+else
+    VANILLA_RUN="-jar $(cygpath -w "$VANILLA_JAR")"
+fi
+
 # Done を待って、しばらく tick させてから stop を流す
+# 背景の実行器を 1 本にする。チャンク生成と光の計算がどこまで進むかは
+# スレッドの巡り合わせで変わり、走らせるたびに保存される中身がずれる。
+# **vanilla と Shifu の両方に同じだけ効かせる**ので、比較の偏りにはならない。
 run() {
     dir=$1
     log=$2
@@ -35,15 +53,15 @@ run() {
         done
         sleep 20
         echo stop
-    ) | "$JAVA" -Xmx4G -Duser.language=en -Duser.country=US "$@" --nogui > "$log" 2>&1 || true
+    ) | "$JAVA" -Xmx4G -Duser.language=en -Duser.country=US -Dmax.bg.threads=1 "$@" --nogui > "$log" 2>&1 || true
     grep -q "Done (" "$log" || { echo "$dir: 起動しなかった($log)"; exit 1; }
 }
 
-run "$VANILLA" worldgen-a.log @cp.txt net.minecraft.server.Main
+run "$VANILLA" worldgen-a.log $VANILLA_RUN
 rm -rf "$VANILLA/world-a"
 mv "$VANILLA/world" "$VANILLA/world-a"
 
-run "$VANILLA" worldgen-b.log @cp.txt net.minecraft.server.Main
+run "$VANILLA" worldgen-b.log $VANILLA_RUN
 rm -rf "$VANILLA/world-b"
 mv "$VANILLA/world" "$VANILLA/world-b"
 
