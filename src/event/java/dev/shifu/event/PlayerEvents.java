@@ -674,4 +674,30 @@ public final class PlayerEvents {
         new org.bukkit.event.server.MapInitializeEvent(data.mapView).callEvent();
     }
 
+
+    /**
+     * BlockDamageEvent。壊し始めの判定が済んだあと。
+     *
+     * @return 壊し始めてよいか。即時破壊にされたら vanilla の insta mine へ回す
+     */
+    public static boolean blockDamage(final ServerPlayer player, final net.minecraft.core.BlockPos pos,
+                                      final net.minecraft.core.Direction face, final boolean insta) {
+        if (!listening(org.bukkit.event.block.BlockDamageEvent.getHandlerList())) {
+            return true;
+        }
+
+        return !org.bukkit.craftbukkit.event.CraftEventFactory.callBlockDamageEvent(
+                player, pos, face, player.getInventory().getSelected(), insta).isCancelled();
+    }
+
+    /** BlockDamageAbortEvent。壊すのをやめたとき。 */
+    public static void blockDamageAbort(final ServerPlayer player, final net.minecraft.core.BlockPos pos) {
+        if (!listening(org.bukkit.event.block.BlockDamageAbortEvent.getHandlerList())) {
+            return;
+        }
+
+        org.bukkit.craftbukkit.event.CraftEventFactory.callBlockDamageAbortEvent(
+                player, pos, player.getInventory().getSelected());
+    }
+
 }

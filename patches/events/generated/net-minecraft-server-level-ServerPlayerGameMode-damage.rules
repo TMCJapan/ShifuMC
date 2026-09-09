@@ -1,0 +1,19 @@
+# main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
+
+# BlockDamageEvent。壊し始めの判定が済んだあと
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+anchor:
+                this.destroyProgressStart = this.gameTicks;
+insert:
+    if (!dev.shifu.event.PlayerEvents.blockDamage(this.player, pos, direction,
+            this.level.getBlockState(pos).getDestroyProgress(this.player, this.player.level(), pos) >= 1.0F)) {
+        this.player.connection.send(new ClientboundBlockUpdatePacket(pos, this.level.getBlockState(pos)));
+        return;
+    }
+
+# BlockDamageAbortEvent。壊すのをやめたとき
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+anchor:
+                this.isDestroyingBlock = false;
+insert:
+    dev.shifu.event.PlayerEvents.blockDamageAbort(this.player, pos);
