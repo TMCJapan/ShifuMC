@@ -1,6 +1,27 @@
 # Paper が vanilla のメソッドの中で行う代入。既存の行は変えていない。
 
-# Paper は ServerLevel の構築子の最後で this.getCraftServer().addWorld(this.getWorld()) を呼ぶ(ServerLev
+# Paper が ServerLevel の構築子で入れる欄(patches/server/Paper-config-files.patch:5011)と、
+# 構築子の最後で呼ぶ addWorld。入れないと次のものが全部空になる。
+#   convertable  — Configurations.getWorldConfigFile が読む(InvSee++ が踏んで NPE)
+#   uuid         — CraftWorld.getUID()。Paper は世界ごとのフォルダの uid.dat から作る。
+#                  Shifu は 1 つのフォルダに 3 次元を置くので、次元ごとのフォルダ
+#                  (overworld は世界の直下、他は DIM-1 / DIM1)から作る。addWorld は
+#                  UUID が同じ世界を「重複」として弾くため、次元ごとに違う必要がある
+#   worlds       — Bukkit.getWorlds() と Bukkit.getWorld(名前)。addWorld で入る
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+        this.randomSequences = Objects.requireNonNullElseGet(
+            randomSequencesState, () -> this.getDataStorage().computeIfAbsent(RandomSequences.factory(l), "random_sequences")
+        );
+insert-after:
+    this.convertable = session;
+    // 次元のフォルダはチャンクを保存するときに作られるので、この時点ではまだ無い。
+    // 先に作らないと WorldUUID が uid.dat を書けず、起動のたびに別の UUID になる。
+    // 局所変数を足すと vanilla の LVT がずれるので、同じ式を 2 回書く。
+    session.getDimensionPath(worldKey).toFile().mkdirs();
+    this.uuid = org.bukkit.craftbukkit.util.WorldUUID.getUUID(session.getDimensionPath(worldKey).toFile());
+    this.getCraftServer().addWorld(this.getWorld());
+
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
     entity.updateDynamicGameEventListener(DynamicGameEventListener::add);

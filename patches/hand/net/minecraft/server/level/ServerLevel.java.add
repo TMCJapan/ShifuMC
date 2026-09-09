@@ -11,6 +11,20 @@
         return this.findLightningTargetAround(pos);
     }
 
+// ServerLevel.getTypeKey
+    // Paper は世界ごとの LevelStorageAccess に次元を持たせ、getTypeKey はそれを返す。
+    // 入れるのは CraftServer.createWorld の validateAndCreateAccess(名前, 次元)だけで、
+    // vanilla の Main は次元を渡さない版を呼ぶ。主世界と地獄と果ての 3 つはそちらから
+    // 作られるので null になる。vanilla の MinecraftServer.createLevels は LevelStem の
+    // 鍵と同じ location から ResourceKey<Level> を作るので、そこから戻せる。
+    // Entity(果てへ移るか)と CraftDimensionUtil が読む。
+    @Override
+    public ResourceKey<LevelStem> getTypeKey() {
+        return this.convertable.dimensionType != null
+                ? this.convertable.dimensionType
+                : ResourceKey.create(net.minecraft.core.registries.Registries.LEVEL_STEM, this.dimension().location());
+    }
+
 // ServerLevel.typeKey
     // 16 引数の構築子は this(...) で vanilla の版へ渡してから入れるので、final にできない。
     // vanilla の 10 引数の版から作られた世界では null のまま。

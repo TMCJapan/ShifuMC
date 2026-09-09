@@ -21,5 +21,10 @@ insert-after:
                     shifuServer.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT),
                     shifuBukkitName, registryRef.location(), this.spigotConfig,
                     registryManager, properties.getGameRules()));
+    // CraftWorld.getName() が読む。Paper は世界ごとにフォルダを分けるので
+    // LevelStorageAccess から取れるが、Shifu は 1 つのフォルダに 3 次元を置くため
+    // ここで分けた名前を欄に入れる。ServerLevel の欄の宣言に初期値は無いので、
+    // super から戻ったあとも消えない。
+    ((net.minecraft.server.level.ServerLevel) this).bukkitName = shifuBukkitName;
     this.world = new org.bukkit.craftbukkit.CraftWorld((net.minecraft.server.level.ServerLevel) this, null, null, registryRef == Level.OVERWORLD ? org.bukkit.World.Environment.NORMAL : registryRef == Level.NETHER ? org.bukkit.World.Environment.NETHER : registryRef == Level.END ? org.bukkit.World.Environment.THE_END : org.bukkit.World.Environment.CUSTOM);
 
