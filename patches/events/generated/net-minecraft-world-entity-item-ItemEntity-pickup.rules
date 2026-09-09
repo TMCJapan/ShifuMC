@@ -1,0 +1,10 @@
+# プレイヤーが拾うとき。PlayerAttemptPickupItemEvent、PlayerPickupItemEvent、
+# EntityPickupItemEvent。Paper: net/minecraft/world/entity/item/ItemEntity.java の playerTouch
+
+file: net/minecraft/world/entity/item/ItemEntity.java
+anchor:
+            if (this.pickupDelay == 0 && (this.target == null || this.target.equals(player.getUUID())) && player.getInventory().add(itemStack)) {
+insert:
+    if (!dev.shifu.event.ItemEvents.playerPickup(player, this, itemStack, this.pickupDelay)) {
+        return;
+    }

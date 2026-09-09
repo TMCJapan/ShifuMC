@@ -495,4 +495,209 @@ public final class AnimalEvents {
                 org.bukkit.craftbukkit.block.CraftBlock.at(hive.getLevel(), hive.getBlockPos())).callEvent();
     }
 
+
+    /** EntityDyeEvent。首輪の色を変える直前。 */
+    public static boolean dye(final net.minecraft.world.entity.Entity entity,
+                              final net.minecraft.world.item.DyeColor color,
+                              final net.minecraft.world.entity.player.Player player) {
+        if (!listening(io.papermc.paper.event.entity.EntityDyeEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new io.papermc.paper.event.entity.EntityDyeEvent(entity.getBukkitEntity(),
+                org.bukkit.DyeColor.getByWoolData((byte) color.getId()),
+                player instanceof net.minecraft.server.level.ServerPlayer serverPlayer
+                        ? serverPlayer.getBukkitEntity() : null).callEvent();
+    }
+
+    /** SheepRegrowWoolEvent。草を食べて羊毛が戻る直前。 */
+    public static boolean sheepRegrowWool(final net.minecraft.world.entity.animal.Sheep sheep) {
+        if (!listening(org.bukkit.event.entity.SheepRegrowWoolEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.entity.SheepRegrowWoolEvent(
+                (org.bukkit.entity.Sheep) sheep.getBukkitEntity()).callEvent();
+    }
+
+    /** EndermanEscapeEvent。エンダーマンが逃げる(テレポートする)直前。 */
+    public static boolean endermanEscape(final net.minecraft.world.entity.monster.EnderMan enderman,
+                                         final com.destroystokyo.paper.event.entity.EndermanEscapeEvent.Reason reason) {
+        if (!listening(com.destroystokyo.paper.event.entity.EndermanEscapeEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.entity.EndermanEscapeEvent(
+                (org.bukkit.craftbukkit.entity.CraftEnderman) enderman.getBukkitEntity(), reason).callEvent();
+    }
+
+    /**
+     * PufferFishStateChangeEvent。膨らむ・しぼむ直前。
+     *
+     * <p>Paper は取り消されたときに数え上げ({@code inflateCounter} /
+     * {@code deflateTimer})も止める。vanilla の行を変えずには入らないので、
+     * <b>止めているのは状態の変化だけ。</b>
+     */
+    public static boolean pufferState(final net.minecraft.world.entity.animal.Pufferfish fish, final int state) {
+        if (!listening(io.papermc.paper.event.entity.PufferFishStateChangeEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new io.papermc.paper.event.entity.PufferFishStateChangeEvent(
+                (org.bukkit.entity.PufferFish) fish.getBukkitEntity(), state).callEvent();
+    }
+
+    /**
+     * SlimeChangeDirectionEvent。向きを決め直した直後。
+     *
+     * @return 使う向き。取り消されたら null
+     */
+    public static Float slimeChangeDirection(final net.minecraft.world.entity.monster.Slime slime,
+                                             final float yaw) {
+        if (!listening(com.destroystokyo.paper.event.entity.SlimeChangeDirectionEvent.getHandlerList())) {
+            return yaw;
+        }
+
+        final com.destroystokyo.paper.event.entity.SlimeChangeDirectionEvent event =
+                new com.destroystokyo.paper.event.entity.SlimeChangeDirectionEvent(
+                        (org.bukkit.entity.Slime) slime.getBukkitEntity(), yaw);
+
+        return event.callEvent() ? event.getNewYaw() : null;
+    }
+
+    /** ShulkerDuplicateEvent。弾を受けて増えるとき、世界に置く直前。 */
+    public static boolean shulkerDuplicate(final net.minecraft.world.entity.monster.Shulker child,
+                                           final net.minecraft.world.entity.monster.Shulker parent) {
+        if (!listening(io.papermc.paper.event.entity.ShulkerDuplicateEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new io.papermc.paper.event.entity.ShulkerDuplicateEvent(
+                (org.bukkit.entity.Shulker) child.getBukkitEntity(),
+                (org.bukkit.entity.Shulker) parent.getBukkitEntity()).callEvent();
+    }
+
+
+    /** TurtleGoHomeEvent。canUse() の式の末尾から。 */
+    public static boolean turtleGoHome(final net.minecraft.world.entity.animal.Turtle turtle) {
+        if (!listening(com.destroystokyo.paper.event.entity.TurtleGoHomeEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.entity.TurtleGoHomeEvent(
+                (org.bukkit.entity.Turtle) turtle.getBukkitEntity()).callEvent();
+    }
+
+    /** WitchThrowPotionEvent に登録があるか。投げる薬を作る前に見る。 */
+    public static boolean witchThrowListening() {
+        return listening(com.destroystokyo.paper.event.entity.WitchThrowPotionEvent.getHandlerList());
+    }
+
+    /**
+     * WitchThrowPotionEvent。投げる薬が決まった直後。
+     *
+     * @return 投げる薬。取り消されたら null
+     */
+    public static net.minecraft.world.item.ItemStack witchThrowPotion(
+            final net.minecraft.world.entity.monster.Witch witch,
+            final net.minecraft.world.entity.LivingEntity target,
+            final net.minecraft.world.item.ItemStack potion) {
+        final com.destroystokyo.paper.event.entity.WitchThrowPotionEvent event =
+                new com.destroystokyo.paper.event.entity.WitchThrowPotionEvent(
+                        (org.bukkit.entity.Witch) witch.getBukkitEntity(),
+                        (org.bukkit.entity.LivingEntity) target.getBukkitEntity(),
+                        org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(potion));
+
+        if (!event.callEvent()) {
+            return null;
+        }
+
+        return org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getPotion());
+    }
+
+    /** PigZombieAngerEvent に登録があるか。怒りの長さを引く前に見る。 */
+    public static boolean pigZombieAngerListening() {
+        return listening(org.bukkit.event.entity.PigZombieAngerEvent.getHandlerList());
+    }
+
+    /**
+     * PigZombieAngerEvent。怒りの長さが決まった直後。
+     *
+     * @return 怒りの長さ。取り消されたら null
+     */
+    public static Integer pigZombieAnger(final net.minecraft.world.entity.monster.ZombifiedPiglin piglin,
+                                         final int anger) {
+        final net.minecraft.world.entity.Entity target =
+                ((net.minecraft.server.level.ServerLevel) piglin.level()).getEntity(piglin.getPersistentAngerTarget());
+        final org.bukkit.event.entity.PigZombieAngerEvent event = new org.bukkit.event.entity.PigZombieAngerEvent(
+                (org.bukkit.entity.PigZombie) piglin.getBukkitEntity(),
+                target == null ? null : target.getBukkitEntity(), anger);
+
+        return event.callEvent() ? event.getNewAnger() : null;
+    }
+
+    /** SkeletonHorseTrapEvent。罠の馬が雷を呼ぶ直前。 */
+    public static boolean skeletonHorseTrap(final net.minecraft.world.entity.animal.horse.SkeletonHorse horse) {
+        if (!listening(com.destroystokyo.paper.event.entity.SkeletonHorseTrapEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.entity.SkeletonHorseTrapEvent(
+                (org.bukkit.entity.SkeletonHorse) horse.getBukkitEntity()).callEvent();
+    }
+
+
+    /** TurtleStartDiggingEvent。穴を掘り始めた直後。取り消されたら掘るのをやめる。 */
+    public static boolean turtleStartDigging(final net.minecraft.world.entity.animal.Turtle turtle,
+                                             final net.minecraft.core.BlockPos pos) {
+        if (!listening(com.destroystokyo.paper.event.entity.TurtleStartDiggingEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.entity.TurtleStartDiggingEvent(
+                (org.bukkit.entity.Turtle) turtle.getBukkitEntity(),
+                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, turtle.level())).callEvent();
+    }
+
+    /**
+     * TurtleLayEggEvent。卵を置く直前。
+     *
+     * <p>個数は vanilla が置く行の中で乱数から決めるので、
+     * <b>{@code getEggCount} は使っていない。</b>渡すのも取り消しだけ。
+     */
+    public static boolean turtleLayEgg(final net.minecraft.world.entity.animal.Turtle turtle,
+                                       final net.minecraft.core.BlockPos pos) {
+        if (!listening(com.destroystokyo.paper.event.entity.TurtleLayEggEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.entity.TurtleLayEggEvent(
+                (org.bukkit.entity.Turtle) turtle.getBukkitEntity(),
+                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, turtle.level()), 1).callEvent();
+    }
+
+    /**
+     * VillagerAcquireTradeEvent。取引を 1 つ覚える直前。
+     *
+     * <p>Paper はプラグインが差し替えた取引を使う。vanilla の add の引数は
+     * 変えられないので、<b>渡しているのは取り消しだけ。</b>
+     */
+    public static boolean villagerAcquireTrade(final net.minecraft.world.entity.npc.AbstractVillager villager,
+                                               final net.minecraft.world.item.trading.MerchantOffer offer) {
+        if (!listening(org.bukkit.event.entity.VillagerAcquireTradeEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.event.entity.VillagerAcquireTradeEvent event =
+                new org.bukkit.event.entity.VillagerAcquireTradeEvent(
+                        (org.bukkit.entity.AbstractVillager) villager.getBukkitEntity(), offer.asBukkit());
+
+        // 世界生成の途中では出さない(Paper と同じ)
+        if (!villager.valid) {
+            return true;
+        }
+
+        return event.callEvent();
+    }
+
 }

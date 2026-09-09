@@ -1,0 +1,9 @@
+# VillagerAcquireTradeEvent。取引を 1 つ覚える直前。vanilla の add を囲む。
+
+file: net/minecraft/world/entity/npc/AbstractVillager.java
+anchor:
+                recipeList.add(merchantOffer);
+insert:
+    if (dev.shifu.event.AnimalEvents.villagerAcquireTrade(this, merchantOffer)) {
+insert-after:
+    }

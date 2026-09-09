@@ -983,4 +983,74 @@ public final class EntityEvents {
                 org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level)).callEvent();
     }
 
+
+    /**
+     * EntityResurrectEvent。トーテムを見つけて、まだ減らす前。
+     *
+     * <p>Paper はトーテムが無いときも(取り消し済みの形で)出して、プラグインが
+     * 取り消しを外せば蘇生する。vanilla は「トーテムが無ければ何もしない」ので、
+     * <b>その向きは通していない。</b>出すのはトーテムがあるときだけ。
+     *
+     * @return 蘇生してよいか。取り消されたら false(トーテムは減らない)
+     */
+    public static boolean resurrect(final LivingEntity entity, final net.minecraft.world.InteractionHand hand) {
+        if (!listening(org.bukkit.event.entity.EntityResurrectEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.entity.EntityResurrectEvent(
+                (org.bukkit.entity.LivingEntity) entity.getBukkitEntity(),
+                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand)).callEvent();
+    }
+
+
+    /** EntityZapEvent。雷に打たれた村人が魔女に変わる直前。 */
+    public static boolean entityZap(final Entity entity, final Entity lightning, final Entity changed) {
+        if (!listening(com.destroystokyo.paper.event.entity.EntityZapEvent.getHandlerList())) {
+            return true;
+        }
+
+        return !org.bukkit.craftbukkit.event.CraftEventFactory.callEntityZapEvent(
+                entity, lightning, changed).isCancelled();
+    }
+
+    /**
+     * PlayerEggThrowEvent と ThrownEggHatchEvent。卵が割れて雛が出ると決まった直後。
+     *
+     * <p>vanilla は 8 分の 1 の判定を通ったときだけこの中に来る。Paper は
+     * 通らなかったときも出して、プラグインが孵化させられる。<b>その向きは通していない。</b>
+     * 出す種類({@code getHatchingType})も vanilla の分岐がニワトリ固定なので使っていない。
+     *
+     * @return 出す数。取り消されたら 0
+     */
+    public static int eggHatch(final net.minecraft.world.entity.projectile.ThrownEgg egg, final int hatches) {
+        final Entity shooter = egg.getOwner();
+        final boolean player = shooter instanceof net.minecraft.server.level.ServerPlayer;
+
+        if (!listening(com.destroystokyo.paper.event.entity.ThrownEggHatchEvent.getHandlerList())
+                && !(player && listening(org.bukkit.event.player.PlayerEggThrowEvent.getHandlerList()))) {
+            return hatches;
+        }
+
+        final org.bukkit.entity.Egg bukkitEgg = (org.bukkit.entity.Egg) egg.getBukkitEntity();
+        boolean hatching = true;
+        byte count = (byte) hatches;
+
+        if (player) {
+            final org.bukkit.event.player.PlayerEggThrowEvent event = new org.bukkit.event.player.PlayerEggThrowEvent(
+                    (org.bukkit.entity.Player) shooter.getBukkitEntity(), bukkitEgg, hatching, count,
+                    org.bukkit.entity.EntityType.CHICKEN);
+            event.callEvent();
+            hatching = event.isHatching();
+            count = hatching ? event.getNumHatches() : 0;
+        }
+
+        final com.destroystokyo.paper.event.entity.ThrownEggHatchEvent hatch =
+                new com.destroystokyo.paper.event.entity.ThrownEggHatchEvent(bukkitEgg, hatching, count,
+                        org.bukkit.entity.EntityType.CHICKEN);
+        hatch.callEvent();
+
+        return hatch.isHatching() ? hatch.getNumHatches() : 0;
+    }
+
 }

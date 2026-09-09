@@ -1,0 +1,9 @@
+# EntityDyeEvent(ネコの首輪)。色を変える直前。
+
+file: net/minecraft/world/entity/animal/Cat.java
+anchor:
+                            this.setCollarColor(dyeColor);
+insert:
+    if (!dev.shifu.event.AnimalEvents.dye(this, dyeColor, player)) {
+        return InteractionResult.FAIL;
+    }

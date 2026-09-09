@@ -1,0 +1,17 @@
+# PigZombieAngerEvent。怒りの長さを決めるとき。
+# 登録があるときだけ引き直す(乱数を 2 度引かないため)。
+
+file: net/minecraft/world/entity/monster/ZombifiedPiglin.java
+anchor:
+    public void startPersistentAngerTimer() {
+insert-after:
+    if (dev.shifu.event.AnimalEvents.pigZombieAngerListening()) {
+        Integer shifuAnger = dev.shifu.event.AnimalEvents.pigZombieAnger(this,
+                ZombifiedPiglin.PERSISTENT_ANGER_TIME.sample(this.random));
+        if (shifuAnger == null) {
+            this.setPersistentAngerTarget(null);
+            return;
+        }
+        this.setRemainingPersistentAngerTime(shifuAnger);
+        return;
+    }

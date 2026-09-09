@@ -970,4 +970,52 @@ public final class BlockEvents {
         return event.callEvent() ? event.getSignalStrength() : -1;
     }
 
+
+    /**
+     * MoistureChangeEvent。畑の湿り気を書き換える直前。
+     *
+     * @return 書き換えてよいか
+     */
+    public static boolean moistureChange(final net.minecraft.world.level.Level level,
+                                         final net.minecraft.core.BlockPos pos,
+                                         final net.minecraft.world.level.block.state.BlockState state,
+                                         final int moisture) {
+        if (!ShifuEvents.listening(org.bukkit.event.block.MoistureChangeEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.block.BlockState snapshot =
+                org.bukkit.craftbukkit.block.CraftBlock.at(level, pos).getState();
+        snapshot.setBlockData(org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(
+                state.setValue(net.minecraft.world.level.block.FarmBlock.MOISTURE, Integer.valueOf(moisture))));
+
+        return new org.bukkit.event.block.MoistureChangeEvent(snapshot.getBlock(), snapshot).callEvent();
+    }
+
+    /** BlockCanBuildEvent に登録があるか。vanilla の判定を組み直す前に見る。 */
+    public static boolean canBuildListening() {
+        return ShifuEvents.listening(org.bukkit.event.block.BlockCanBuildEvent.getHandlerList());
+    }
+
+    /**
+     * BlockCanBuildEvent。置けるかどうかの判定を返したあと、プラグインに委ねる。
+     *
+     * @param allowed vanilla の判定
+     * @return 実際に置けるか
+     */
+    public static boolean canBuild(final net.minecraft.world.item.context.BlockPlaceContext context,
+                                   final net.minecraft.world.level.block.state.BlockState state,
+                                   final boolean allowed) {
+        final org.bukkit.entity.Player player =
+                context.getPlayer() instanceof net.minecraft.server.level.ServerPlayer serverPlayer
+                        ? serverPlayer.getBukkitEntity() : null;
+        final org.bukkit.event.block.BlockCanBuildEvent event = new org.bukkit.event.block.BlockCanBuildEvent(
+                org.bukkit.craftbukkit.block.CraftBlock.at(context.getLevel(), context.getClickedPos()), player,
+                org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(state), allowed,
+                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(context.getHand()));
+        event.callEvent();
+
+        return event.isBuildable();
+    }
+
 }

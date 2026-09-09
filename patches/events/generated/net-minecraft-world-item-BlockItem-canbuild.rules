@@ -1,0 +1,12 @@
+# BlockCanBuildEvent。置けるかどうかの判定。登録があるときだけ組み直す。
+
+file: net/minecraft/world/item/BlockItem.java
+anchor:
+        return (!this.mustSurvive() || state.canSurvive(context.getLevel(), context.getClickedPos()))
+            && context.getLevel().isUnobstructed(state, context.getClickedPos(), collisionContext);
+insert:
+    if (dev.shifu.event.BlockEvents.canBuildListening()) {
+        return dev.shifu.event.BlockEvents.canBuild(context, state,
+                (!this.mustSurvive() || state.canSurvive(context.getLevel(), context.getClickedPos()))
+                        && context.getLevel().isUnobstructed(state, context.getClickedPos(), collisionContext));
+    }

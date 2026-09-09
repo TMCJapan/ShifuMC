@@ -1,0 +1,37 @@
+# PufferFishStateChangeEvent。膨らむ・しぼむ直前。vanilla の文を囲む。
+
+file: net/minecraft/world/entity/animal/Pufferfish.java
+anchor:
+                    this.makeSound(SoundEvents.PUFFER_FISH_BLOW_UP);
+                    this.setPuffState(1);
+insert:
+    if (dev.shifu.event.AnimalEvents.pufferState(this, 1)) {
+insert-after:
+    }
+
+file: net/minecraft/world/entity/animal/Pufferfish.java
+anchor:
+                    this.makeSound(SoundEvents.PUFFER_FISH_BLOW_UP);
+                    this.setPuffState(2);
+insert:
+    if (dev.shifu.event.AnimalEvents.pufferState(this, 2)) {
+insert-after:
+    }
+
+file: net/minecraft/world/entity/animal/Pufferfish.java
+anchor:
+                    this.makeSound(SoundEvents.PUFFER_FISH_BLOW_OUT);
+                    this.setPuffState(1);
+insert:
+    if (dev.shifu.event.AnimalEvents.pufferState(this, 1)) {
+insert-after:
+    }
+
+file: net/minecraft/world/entity/animal/Pufferfish.java
+anchor:
+                    this.makeSound(SoundEvents.PUFFER_FISH_BLOW_OUT);
+                    this.setPuffState(0);
+insert:
+    if (dev.shifu.event.AnimalEvents.pufferState(this, 0)) {
+insert-after:
+    }

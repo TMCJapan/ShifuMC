@@ -1,0 +1,22 @@
+# WitchThrowPotionEvent。投げる薬が決まった直後。
+
+file: net/minecraft/world/entity/monster/Witch.java
+anchor:
+            ThrownPotion thrownPotion = new ThrownPotion(this.level(), this);
+insert:
+    net.minecraft.world.item.ItemStack shifuPotion = null;
+    if (dev.shifu.event.AnimalEvents.witchThrowListening()) {
+        shifuPotion = dev.shifu.event.AnimalEvents.witchThrowPotion(this, target,
+            PotionContents.createItemStack(Items.SPLASH_POTION, holder));
+        if (shifuPotion == null) {
+            return;
+        }
+    }
+
+file: net/minecraft/world/entity/monster/Witch.java
+anchor:
+            thrownPotion.setItem(PotionContents.createItemStack(Items.SPLASH_POTION, holder));
+insert-after:
+    if (shifuPotion != null) {
+        thrownPotion.setItem(shifuPotion);
+    }

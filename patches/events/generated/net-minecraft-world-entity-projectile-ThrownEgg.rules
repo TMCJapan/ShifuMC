@@ -1,0 +1,7 @@
+# PlayerEggThrowEvent と ThrownEggHatchEvent。雛を出す直前。
+
+file: net/minecraft/world/entity/projectile/ThrownEgg.java
+anchor:
+                for (int j = 0; j < i; j++) {
+insert:
+    i = dev.shifu.event.EntityEvents.eggHatch(this, i);

@@ -1,0 +1,29 @@
+# ベッドから出る、設定を受け取る、視点を移す。
+
+# PlayerBedLeaveEvent
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    public void stopSleepInBed(boolean skipSleepTimer, boolean updateSleepingPlayers) {
+insert-after:
+    if (this.isSleeping() && !dev.shifu.event.PlayerEvents.bedLeave(this)) {
+        return;
+    }
+
+# PlayerChangedMainHandEvent と PlayerLocaleChangeEvent
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    public void updateOptions(ClientInformation clientOptions) {
+insert-after:
+    dev.shifu.event.PlayerEvents.clientOptions(this, this.language, clientOptions);
+
+# PlayerStartSpectatingEntityEvent と PlayerStopSpectatingEntityEvent
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+        Entity entity2 = this.getCamera();
+        this.camera = (Entity)(entity == null ? this : entity);
+        if (entity2 != this.camera) {
+insert-after:
+    if (!dev.shifu.event.PlayerEvents.spectateChange(this, entity2, entity)) {
+        this.camera = entity2;
+        return;
+    }

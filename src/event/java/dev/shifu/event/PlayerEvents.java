@@ -701,4 +701,82 @@ public final class PlayerEvents {
                 player, pos, player.getInventory().getSelected());
     }
 
+
+    /**
+     * PlayerBedLeaveEvent。ベッドから出る直前。
+     *
+     * @return 出てよいか
+     */
+    public static boolean bedLeave(final ServerPlayer player) {
+        if (!ShifuEvents.listening(org.bukkit.event.player.PlayerBedLeaveEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.block.Block bed = player.getSleepingPos()
+                .<org.bukkit.block.Block>map(pos -> org.bukkit.craftbukkit.block.CraftBlock.at(player.level(), pos))
+                .orElseGet(() -> player.getBukkitEntity().getLocation().getBlock());
+
+        return new org.bukkit.event.player.PlayerBedLeaveEvent(
+                player.getBukkitEntity(), bed, true).callEvent();
+    }
+
+    /**
+     * PlayerChangedMainHandEvent と PlayerLocaleChangeEvent(Bukkit と Paper の両方)。
+     * {@code updateOptions} が値を書き換える前。
+     *
+     * <p><b>未対応:</b> {@code PlayerClientOptionsChangeEvent}。構築子が取る
+     * ClientOption の Map を作る Paper のメソッドが 1.20.6 の木に無い。
+     */
+    public static void clientOptions(final ServerPlayer player, final String oldLanguage,
+                                     final net.minecraft.server.level.ClientInformation options) {
+        if (player.getMainArm() != options.mainHand()
+                && ShifuEvents.listening(org.bukkit.event.player.PlayerChangedMainHandEvent.getHandlerList())) {
+            new org.bukkit.event.player.PlayerChangedMainHandEvent(player.getBukkitEntity(),
+                    player.getMainArm() == net.minecraft.world.entity.HumanoidArm.LEFT
+                            ? org.bukkit.inventory.MainHand.LEFT : org.bukkit.inventory.MainHand.RIGHT).callEvent();
+        }
+
+        if (oldLanguage != null && oldLanguage.equals(options.language())) {
+            return;
+        }
+
+        if (ShifuEvents.listening(org.bukkit.event.player.PlayerLocaleChangeEvent.getHandlerList())) {
+            new org.bukkit.event.player.PlayerLocaleChangeEvent(
+                    player.getBukkitEntity(), options.language()).callEvent();
+        }
+
+        if (ShifuEvents.listening(com.destroystokyo.paper.event.player.PlayerLocaleChangeEvent.getHandlerList())) {
+            new com.destroystokyo.paper.event.player.PlayerLocaleChangeEvent(
+                    player.getBukkitEntity(), oldLanguage, options.language()).callEvent();
+        }
+    }
+
+    /**
+     * PlayerStartSpectatingEntityEvent と PlayerStopSpectatingEntityEvent。
+     * 視点を移した直後。取り消されたら呼び出し元が元に戻す。
+     *
+     * @param from 前の視点
+     * @param to   新しい視点。null は自分に戻す
+     */
+    public static boolean spectateChange(final ServerPlayer player, final net.minecraft.world.entity.Entity from,
+                                         final net.minecraft.world.entity.Entity to) {
+        if (to == null) {
+            if (!ShifuEvents.listening(
+                    com.destroystokyo.paper.event.player.PlayerStopSpectatingEntityEvent.getHandlerList())) {
+                return true;
+            }
+
+            return new com.destroystokyo.paper.event.player.PlayerStopSpectatingEntityEvent(
+                    player.getBukkitEntity(), from.getBukkitEntity()).callEvent();
+        }
+
+        if (!ShifuEvents.listening(
+                com.destroystokyo.paper.event.player.PlayerStartSpectatingEntityEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.player.PlayerStartSpectatingEntityEvent(
+                player.getBukkitEntity(), from.getBukkitEntity(), to.getBukkitEntity()).callEvent();
+    }
+
 }

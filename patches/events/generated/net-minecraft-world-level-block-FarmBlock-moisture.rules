@@ -1,0 +1,17 @@
+# MoistureChangeEvent。畑の湿り気が変わる直前。vanilla の setBlock を囲む。
+
+file: net/minecraft/world/level/block/FarmBlock.java
+anchor:
+                world.setBlock(pos, state.setValue(MOISTURE, Integer.valueOf(i - 1)), 2);
+insert:
+    if (dev.shifu.event.BlockEvents.moistureChange(world, pos, state, i - 1)) {
+insert-after:
+    }
+
+file: net/minecraft/world/level/block/FarmBlock.java
+anchor:
+            world.setBlock(pos, state.setValue(MOISTURE, Integer.valueOf(7)), 2);
+insert:
+    if (dev.shifu.event.BlockEvents.moistureChange(world, pos, state, 7)) {
+insert-after:
+    }

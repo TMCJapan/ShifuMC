@@ -1,0 +1,9 @@
+# ShulkerDuplicateEvent。弾を受けて増えたシュルカーを世界に置く直前。
+
+file: net/minecraft/world/entity/monster/Shulker.java
+anchor:
+                    this.level().addFreshEntity(shulker);
+insert:
+    if (!dev.shifu.event.AnimalEvents.shulkerDuplicate(shulker, this)) {
+        return;
+    }

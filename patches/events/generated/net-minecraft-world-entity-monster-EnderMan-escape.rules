@@ -1,0 +1,36 @@
+# EndermanEscapeEvent。逃げる(テレポートする)直前。vanilla の文を囲む。
+
+# 昼の光で逃げる
+file: net/minecraft/world/entity/monster/EnderMan.java
+anchor:
+                this.setTarget(null);
+                this.teleport();
+insert:
+    if (dev.shifu.event.AnimalEvents.endermanEscape(this,
+            com.destroystokyo.paper.event.entity.EndermanEscapeEvent.Reason.RUNAWAY)) {
+insert-after:
+    }
+
+# 水の投げポーションを当てられて逃げる
+file: net/minecraft/world/entity/monster/EnderMan.java
+anchor:
+                for (int i = 0; i < 64; i++) {
+                    if (this.teleport()) {
+                        return true;
+                    }
+                }
+insert:
+    if (dev.shifu.event.AnimalEvents.endermanEscape(this,
+            com.destroystokyo.paper.event.entity.EndermanEscapeEvent.Reason.INDIRECT)) {
+insert-after:
+    }
+
+# 見つめられて逃げる
+file: net/minecraft/world/entity/monster/EnderMan.java
+anchor:
+                            this.enderman.teleport();
+insert:
+    if (dev.shifu.event.AnimalEvents.endermanEscape(this.enderman,
+            com.destroystokyo.paper.event.entity.EndermanEscapeEvent.Reason.STARE)) {
+insert-after:
+    }

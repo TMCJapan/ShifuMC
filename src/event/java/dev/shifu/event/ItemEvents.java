@@ -472,4 +472,87 @@ public final class ItemEvents {
                 org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack)).callEvent();
     }
 
+
+    /**
+     * PlayerItemMendEvent。修繕で直す量が決まった直後。
+     *
+     * @return 直す量。取り消されたら -1
+     */
+    public static int itemMend(final Player player, final ExperienceOrb orb, final ItemStack item,
+                               final net.minecraft.world.entity.EquipmentSlot slot, final int repair) {
+        if (!ShifuEvents.listening(org.bukkit.event.player.PlayerItemMendEvent.getHandlerList())) {
+            return repair;
+        }
+
+        final org.bukkit.event.player.PlayerItemMendEvent event =
+                org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerItemMendEvent(
+                        player, orb, item, slot, repair, orb::durabilityToXp);
+
+        return event.isCancelled() ? -1 : event.getRepairAmount();
+    }
+
+    /**
+     * 落ちている物をプレイヤーが拾うとき。PlayerAttemptPickupItemEvent と、
+     * 拾える分があれば PlayerPickupItemEvent と EntityPickupItemEvent。
+     *
+     * <p>Paper は拾える分だけに数を書き換えてから拾わせる。vanilla の行を
+     * 変えずには入らないので、<b>数の分割はしていない。</b>出すのと取り消しだけ。
+     *
+     * @return 拾ってよいか
+     */
+    public static boolean playerPickup(final Player player, final ItemEntity item, final ItemStack stack,
+                                       final int pickupDelay) {
+        if (pickupDelay > 0) {
+            return true;
+        }
+
+        final int count = stack.getCount();
+        final int remaining = count - player.getInventory().canHold(stack);
+        final org.bukkit.entity.Player bukkitPlayer = (org.bukkit.entity.Player) player.getBukkitEntity();
+        final org.bukkit.entity.Item bukkitItem = (org.bukkit.entity.Item) item.getBukkitEntity();
+
+        if (ShifuEvents.listening(org.bukkit.event.player.PlayerAttemptPickupItemEvent.getHandlerList())) {
+            final org.bukkit.event.player.PlayerAttemptPickupItemEvent attempt =
+                    new org.bukkit.event.player.PlayerAttemptPickupItemEvent(bukkitPlayer, bukkitItem, remaining);
+
+            if (!attempt.callEvent()) {
+                if (attempt.getFlyAtPlayer()) {
+                    player.take(item, count);
+                }
+
+                return false;
+            }
+        }
+
+        if (remaining >= count) {
+            return true;
+        }
+
+        if (ShifuEvents.listening(org.bukkit.event.player.PlayerPickupItemEvent.getHandlerList())) {
+            final org.bukkit.event.player.PlayerPickupItemEvent legacy =
+                    new org.bukkit.event.player.PlayerPickupItemEvent(bukkitPlayer, bukkitItem, remaining);
+            legacy.setCancelled(!bukkitPlayer.getCanPickupItems());
+
+            if (!legacy.callEvent()) {
+                if (legacy.getFlyAtPlayer()) {
+                    player.take(item, count);
+                }
+
+                return false;
+            }
+        }
+
+        if (ShifuEvents.listening(org.bukkit.event.entity.EntityPickupItemEvent.getHandlerList())) {
+            final org.bukkit.event.entity.EntityPickupItemEvent modern =
+                    new org.bukkit.event.entity.EntityPickupItemEvent(bukkitPlayer, bukkitItem, remaining);
+            modern.setCancelled(!bukkitPlayer.getCanPickupItems());
+
+            if (!modern.callEvent()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 }

@@ -1,0 +1,9 @@
+# SkeletonHorseTrapEvent。罠の馬が雷を呼ぶ直前。
+
+file: net/minecraft/world/entity/animal/horse/SkeletonTrapGoal.java
+anchor:
+        ServerLevel serverLevel = (ServerLevel)this.horse.level();
+insert-after:
+    if (!dev.shifu.event.AnimalEvents.skeletonHorseTrap(this.horse)) {
+        return;
+    }

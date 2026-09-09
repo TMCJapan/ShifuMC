@@ -1,0 +1,11 @@
+# EntityResurrectEvent。トーテムを見つけて、まだ減らす前に出す。
+# Paper: net/minecraft/world/entity/LivingEntity.java の checkTotemDeathProtection
+
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+                    itemStack = itemStack2.copy();
+insert-after:
+    if (!dev.shifu.event.EntityEvents.resurrect(this, interactionHand)) {
+        itemStack = null;
+        break;
+    }

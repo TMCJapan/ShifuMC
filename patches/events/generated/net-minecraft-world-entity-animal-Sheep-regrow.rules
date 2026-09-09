@@ -1,0 +1,9 @@
+# SheepRegrowWoolEvent。草を食べて羊毛が戻る直前。
+
+file: net/minecraft/world/entity/animal/Sheep.java
+anchor:
+    public void ate() {
+insert-after:
+    if (!dev.shifu.event.AnimalEvents.sheepRegrowWool(this)) {
+        return;
+    }

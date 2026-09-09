@@ -1,0 +1,10 @@
+# EntityZapEvent。雷に打たれた村人が魔女に変わる直前。
+
+file: net/minecraft/world/entity/npc/Villager.java
+anchor:
+            Witch witch = EntityType.WITCH.create(world);
+            if (witch != null) {
+insert-after:
+    if (!dev.shifu.event.EntityEvents.entityZap(this, lightning, witch)) {
+        return;
+    }

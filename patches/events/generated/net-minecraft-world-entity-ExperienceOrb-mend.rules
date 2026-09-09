@@ -1,0 +1,12 @@
+# PlayerItemMendEvent。修繕で直す量が決まった直後。
+# Paper: net/minecraft/world/entity/ExperienceOrb.java の repairPlayerItems
+
+file: net/minecraft/world/entity/ExperienceOrb.java
+anchor:
+            int i = Math.min(this.xpToDurability(amount), itemStack.getDamageValue());
+insert-after:
+    int shifuRepair = dev.shifu.event.ItemEvents.itemMend(player, this, itemStack, entry.getKey(), i);
+    if (shifuRepair < 0) {
+        return amount;
+    }
+    i = shifuRepair;

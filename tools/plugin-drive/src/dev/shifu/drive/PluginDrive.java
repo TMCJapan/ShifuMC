@@ -26,10 +26,18 @@ public final class PluginDrive extends JavaPlugin implements Listener {
     private int explodes;
     private int moves;
 
-    @EventHandler
-    public void onEntityExplode(final org.bukkit.event.entity.EntityExplodeEvent event) {
+    @EventHandler(priority = org.bukkit.event.EventPriority.LOWEST)
+    public void onEntityExplodeFirst(final org.bukkit.event.entity.EntityExplodeEvent event) {
         this.explodes++;
-        this.note("EntityExplodeEvent " + event.getEntityType() + " blocks=" + event.blockList().size());
+        this.note("EntityExplodeEvent " + event.getEntityType() + " blocks=" + event.blockList().size()
+                + "(他のプラグインより前)");
+    }
+
+    // 他のプラグイン(GriefPrevention など)が消したあとの数。
+    @EventHandler(priority = org.bukkit.event.EventPriority.MONITOR)
+    public void onEntityExplodeLast(final org.bukkit.event.entity.EntityExplodeEvent event) {
+        this.note("EntityExplodeEvent " + event.getEntityType() + " blocks=" + event.blockList().size()
+                + " cancelled=" + event.isCancelled() + "(全部のあと)");
     }
 
     @EventHandler
