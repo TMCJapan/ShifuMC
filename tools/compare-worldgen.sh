@@ -57,18 +57,26 @@ run() {
     grep -q "Done (" "$log" || { echo "$dir: 起動しなかった($log)"; exit 1; }
 }
 
-run "$VANILLA" worldgen-a.log $VANILLA_RUN
-rm -rf "$VANILLA/world-a"
-mv "$VANILLA/world" "$VANILLA/world-a"
+# vanilla を 4 回走らせる。2 回だと「たまたま揃ったチャンク」がばらつきに
+# 数えられず、Shifu 側の実差のように見える。1.20.6 では 2 回で 5 件、3 回で 3 件、
+# 4 回で 0 件になった。SHIFU_VANILLA_RUNS で変えられる。
+RUNS=${SHIFU_VANILLA_RUNS:-4}
+NAMES=""
 
-run "$VANILLA" worldgen-b.log $VANILLA_RUN
-rm -rf "$VANILLA/world-b"
-mv "$VANILLA/world" "$VANILLA/world-b"
+for n in $(seq 1 "$RUNS"); do
+    run "$VANILLA" "worldgen-$n.log" $VANILLA_RUN
+    rm -rf "$VANILLA/world-$n"
+    mv "$VANILLA/world" "$VANILLA/world-$n"
+    NAMES="$NAMES $VANILLA/world-$n"
+done
 
 run "$PARITY" worldgen.log -Dlog4j.configurationFile="file:///$(cygpath -m "$SHIFU/tools/log4j2-sync.xml")" -jar "$JAR"
 
 cd "$SHIFU"
-echo "==== vanilla-a vs Shifu(vanilla-b でばらつきを除く) ===="
-python tools/compare_worlds.py "$VANILLA/world-a" "$PARITY/world" "$VANILLA/world-b" | tail -5
-echo "==== vanilla-a vs vanilla-b(ばらつきそのもの) ===="
-python tools/compare_worlds.py "$VANILLA/world-a" "$VANILLA/world-b" | tail -2
+set -- $NAMES
+BASE=$1
+shift
+echo "==== vanilla-1 vs Shifu(vanilla を $RUNS 回走らせてばらつきを除く)===="
+python tools/compare_worlds.py "$BASE" "$PARITY/world" "$@" | tail -5
+echo "==== vanilla-1 vs vanilla-2(ばらつきそのもの)===="
+python tools/compare_worlds.py "$BASE" "$VANILLA/world-2" | tail -2

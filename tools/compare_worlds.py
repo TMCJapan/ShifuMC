@@ -7,15 +7,18 @@ region ファイルは書き込み時刻と詰め方が実行のたびに変わ�
 
 それでも原点まわりの数十チャンクは実行のたびに変わる。起動から停止までに
 tick される範囲で、mob の湧きも乱数の消費も走った時間で決まるため。
-**vanilla を 2 回走らせて、そのばらつきを差し引く。**
+**vanilla を何回か走らせて、そのばらつきを差し引く。**
 
     # ばらつきを差し引かない(全部出る)
     python tools/compare_worlds.py <vanilla の world> <Shifu の world>
 
-    # vanilla をもう 1 回走らせた世界を渡すと、実行のたびに変わる分を除く
-    python tools/compare_worlds.py <vanilla の world> <Shifu の world> <vanilla の world 2>
+    # vanilla をもう何回か走らせた世界を渡すと、実行のたびに変わる分を除く
+    python tools/compare_worlds.py <vanilla の world> <Shifu の world> <vanilla の world 2> ...
 
-3 つめを渡した形で差が 0 なら、tick されない範囲では vanilla と一致している。
+3 つめ以降を渡した形で差が 0 なら、tick されない範囲では vanilla と一致している。
+
+**2 回では足りない。**「たまたま揃ったチャンク」がばらつきに数えられず、
+Shifu 側の実差のように見える。1.20.6 では 2 回で 5 件、3 回で 3 件、4 回で 0 件になった。
 """
 
 import os
@@ -124,13 +127,16 @@ def unstable_between(left, right):
 
 def main():
     left, right = sys.argv[1:3]
-    control = sys.argv[3] if len(sys.argv) > 3 else None
+    controls = sys.argv[3:]
 
     skip = set()
 
-    if control:
-        skip = unstable_between(left, control)
-        print("vanilla を 2 回走らせて変わるチャンク: %d(この分は除く)" % len(skip))
+    for control in controls:
+        skip |= unstable_between(left, control)
+
+    if controls:
+        print("vanilla を %d 回走らせて変わるチャンク: %d(この分は除く)"
+              % (len(controls) + 1, len(skip)))
 
     a, b = world_chunks(left), world_chunks(right)
     shared = (set(a) & set(b)) - skip

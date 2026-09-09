@@ -51,18 +51,25 @@ run() {
     grep -q "tickstop\] tick" "$log" || { echo "$dir: N tick に届かなかった($log)"; exit 1; }
 }
 
-run "$VANILLA" ticks-a.log $VANILLA_RUN
-rm -rf "$VANILLA/ticks-a"
-mv "$VANILLA/world" "$VANILLA/ticks-a"
+# vanilla を 4 回走らせる。2 回だと「たまたま揃ったチャンク」がばらつきに
+# 数えられず、Shifu 側の実差のように見える。SHIFU_VANILLA_RUNS で変えられる。
+RUNS=${SHIFU_VANILLA_RUNS:-4}
+NAMES=""
 
-run "$VANILLA" ticks-b.log $VANILLA_RUN
-rm -rf "$VANILLA/ticks-b"
-mv "$VANILLA/world" "$VANILLA/ticks-b"
+for n in $(seq 1 "$RUNS"); do
+    run "$VANILLA" "ticks-$n.log" $VANILLA_RUN
+    rm -rf "$VANILLA/ticks-$n"
+    mv "$VANILLA/world" "$VANILLA/ticks-$n"
+    NAMES="$NAMES $VANILLA/ticks-$n"
+done
 
 run "$PARITY" ticks.log -Dlog4j.configurationFile="file:///$(cygpath -m "$SHIFU/tools/log4j2-sync.xml")" -jar "$JAR"
 
 cd "$SHIFU"
-echo "==== vanilla-a vs vanilla-b(ばらつきそのもの、$N tick) ===="
-python tools/compare_worlds.py "$VANILLA/ticks-a" "$VANILLA/ticks-b" | tail -3
-echo "==== vanilla-a vs Shifu($N tick) ===="
-python tools/compare_worlds.py "$VANILLA/ticks-a" "$PARITY/world" | tail -5
+set -- $NAMES
+BASE=$1
+shift
+echo "==== vanilla-1 vs vanilla-2(ばらつきそのもの、$N tick)===="
+python tools/compare_worlds.py "$BASE" "$VANILLA/ticks-2" | tail -3
+echo "==== vanilla-1 vs Shifu($N tick、vanilla を $RUNS 回でばらつきを除く)===="
+python tools/compare_worlds.py "$BASE" "$PARITY/world" "$@" | tail -5
