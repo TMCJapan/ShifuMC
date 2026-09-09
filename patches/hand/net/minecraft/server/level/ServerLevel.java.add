@@ -98,3 +98,59 @@
     // EntityMoveEvent に登録があるか。毎 tick 世界を回す前に入れる(patches/wire)
     public boolean hasEntityMoveEvent;
 
+// ServerLevel.addEntity
+    // Paper のチャンク系(entityLookup)へ渡す版を写すと、繋いでいないので NPE になる。
+    // **プラグインからのエンティティ生成が全部これで落ちていた**
+    // (CraftWorld.dropItem / spawn / spawnEntity)。
+    // イベントを出すところまでは Paper と同じで、最後の 1 行だけ vanilla の
+    // addEntity(Entity) へ渡す(そちらが entityManager に入れる)。
+    private boolean addEntity(final Entity entity, final org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason spawnReason) {
+        org.spigotmc.AsyncCatcher.catchOp("entity add");
+        entity.generation = false;
+
+        if (entity.valid) {
+            MinecraftServer.LOGGER.error("Attempted Double World add on {}", entity, new Throwable());
+
+            return true;
+        }
+
+        if (entity.spawnReason == null) {
+            entity.spawnReason = spawnReason;
+        }
+
+        if (entity.isRemoved()) {
+            return false;
+        }
+
+        if (entity instanceof net.minecraft.world.entity.item.ItemEntity itemEntity && itemEntity.getItem().isEmpty()) {
+            return false;
+        }
+
+        // SPIGOT-6415: 理由が無いときは発火しない(別の世界へ移るときなど)
+        if (spawnReason != null && !CraftEventFactory.doEntityAddEventCalling(this, entity, spawnReason)) {
+            return false;
+        }
+
+        return this.addEntity(entity);
+    }
+
+// ServerLevel.tryAddFreshEntityWithPassengers
+    // 同じく entityLookup を使う版の代わり。載っているかは vanilla の entityManager で見る。
+    public boolean tryAddFreshEntityWithPassengers(final Entity entity,
+                                                   final org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason reason) {
+        if (entity.getSelfAndPassengers().map(Entity::getUUID).anyMatch(this.entityManager::isLoaded)) {
+            return false;
+        }
+
+        this.addFreshEntityWithPassengers(entity, reason);
+
+        return true;
+    }
+
+// ServerLevel.addWorldGenChunkEntities
+    // Paper は forChunk を使ってチャンクごとに入れるが、vanilla の entityManager は
+    // まとめて受ける版しか持たない。呼び手は Paper のチャンク系だけなので、
+    // 繋いでいない今は vanilla の addLegacyChunkEntities に渡すだけでよい。
+    public void addWorldGenChunkEntities(final Stream<Entity> entities, final ChunkPos forChunk) {
+        this.addLegacyChunkEntities(entities);
+    }
