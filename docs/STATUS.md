@@ -28,6 +28,8 @@ bot を繋いで初めて分かった分。起動だけを見ていたときは�
 | WorldEdit の `//set` が `NoSuchMethodError` | `LevelChunk.setBlockState(BlockPos, BlockState, boolean, boolean)` は CraftBukkit の追加で、Shifu には 3 引数の vanilla の版しか無い | 4 引数の版を足す。`doPlace` が true のときは vanilla の版へ渡し、false のときだけ `onPlace` を抜いた写しを通る |
 | プラグインがエンティティを 1 つも出せない(`World.dropItem` / `spawn` / `spawnEntity` が NPE) | 生成した `ServerLevel.addEntity(Entity, SpawnReason)` が Paper のチャンク系(`entityLookup`)へ渡していた。Shifu はそこを繋いでいない | イベントを出すところまでは Paper と同じで、最後の 1 行だけ vanilla の `addEntity(Entity)` へ渡す。`tryAddFreshEntityWithPassengers` と `addWorldGenChunkEntities` も同じ形で `entityManager` へ向けた |
 | 拾い上げのイベントが 1 つも出ない | `ItemEntity` の規則ごと落ちていた | `main` の規則を 1.20.6 の行に当て直す(`orgCount` → `i`)。bot で `PlayerAttemptPickupItemEvent` と `EntityPickupItemEvent` の発火を確かめた |
+| 湧きのイベントが 1 つも出ない | `patches/events/entity-spawn.rules` が空だった。`CreatureSpawnEvent` / `ItemSpawnEvent` / `ProjectileLaunchEvent` / `VehicleCreateEvent` / `LightningStrikeEvent` / `EntitySpawnEvent` は全部ここから出る | vanilla の `addEntity(Entity)` が `entityManager` へ入れる直前で `doEntityAddEventCalling` を呼ぶ。**登録が無ければ呼ばない**(組み立てが分類に関わらず走るため)。bot で 65 件 / 102 件 |
+| kick した瞬間に NPE | 1.20.6 の `ServerGamePacketListenerImpl` は `player` を自分でも宣言していて、親(`ServerCommonPacketListenerImpl`)の同名の欄を隠す。親の方を読む 4 箇所が全部 null | 構築子とリスポーンの 2 箇所で `super.player` にも入れる |
 | kick したときに NPE | `ServerCommonPacketListenerImpl.cserver` が空 | 構築子で入れる |
 | 誰が繋いでも `Player.locale()` が en_US | `adventure$locale` が既定値のまま | `clientOptions.language()` を読んだ直後に入れる |
 | `setSleepingIgnored` が効かない / `PlayerNaturallySpawnCreaturesEvent` が出ない | 数え上げ側の規則と発火そのものが落ちていた | `SleepStatus.areEnoughDeepSleeping` と `ServerChunkCache.tickChunks` に足す |
@@ -58,15 +60,26 @@ CodeDiff はメソッドごとに**最初の 1 件**しか出さないので、
 
 | | 1.20.6 | main |
 |---|---|---|
-| 発火の規則 | 339 | 866 |
-| 規則と発火層に出てくるイベントの型 | 253 | 431 |
-| `patches/events/generated` の規則ファイル | 62 | 197(うち 118 は同じパスのファイルが 1.20.6 にもある) |
+| 発火の規則 | 357 | 866 |
+| 規則と発火層に出てくるイベントの型 | 258 | 431 |
+| `patches/events/generated` の規則ファイル | 79 | 197(うち 118 は同じパスのファイルが 1.20.6 にもある) |
 
-`main` の規則のうち、1.20.6 の行にそのまま当たるのは 31 件(近い行が無い 147、
-ファイルごと無い 52)。写した 31 件のうちコンパイルが通ったのは 17 件で、
-落ちた分は差し込む本体が 26.2 だけの API か、局所変数の名前違い。
-名前違いのうち 3 件(`Creeper` の `lightning`、`HoneyBlock` の `world`、
-`ItemFrame` の `CraftItemStack`)は手で直して戻した。
+1.20.6 の Paper は classic の並べ方で、**CraftBukkit が触った 543 ファイルの差分が
+spigot 側の逆コンパイラの方言**になっている。文脈行が vanilla の木と一致しないので
+`make_events.py` が読めず、機械で出せるのは 21 件しかない。Bukkit のイベントは
+ほぼ全部その 543 件の側にある。そこで `main`(26.2)の規則を移した。
+
+| | 件数 |
+|---|---|
+| アンカーがそのまま当たる | 31 |
+| `reanchor.py` が局所変数の名前だけ当て直して通る | 66 |
+| 近い行が無い | 81 |
+| ファイルごと無い | 52 |
+
+写した 97 件のうち `settle_events.sh` を通ったのは 34 件。落ちた分は差し込む本体が
+26.2 だけの API を呼ぶか、本体の局所変数の名前が違うもの。名前違いのうち 3 件
+(`Creeper` の `lightning`、`HoneyBlock` の `world`、`ItemFrame` の `CraftItemStack`)は
+手で直して戻した。
 
 落ちている例: 拾い上げ(`PlayerAttemptPickupItemEvent` / `PlayerPickupItemEvent` /
 `EntityPickupItemEvent`)、ディスペンサー、`ServerPlayerGameMode`、`Entity`、`Raid`、
