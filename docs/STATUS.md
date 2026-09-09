@@ -30,6 +30,26 @@ bot を繋いで初めて分かった分。起動だけを見ていたときは�
 | 誰が繋いでも `Player.locale()` が en_US | `adventure$locale` が既定値のまま | `clientOptions.language()` を読んだ直後に入れる |
 | `setSleepingIgnored` が効かない / `PlayerNaturallySpawnCreaturesEvent` が出ない | 数え上げ側の規則と発火そのものが落ちていた | `SleepStatus.areEnoughDeepSleeping` と `ServerChunkCache.tickChunks` に足す |
 
+### 命令列の差 1705 件の内訳(2026-09-09)
+
+`tools/build/code-differs.txt`(`tools/postcompile.sh` の 4 段目)を、
+差が出た最初の命令の形と、そのファイルに Shifu の規則が当たるかで分けた。
+
+| | 規則の当たるファイル | 当たらないファイル |
+|---|---|---|
+| 分岐の向きが逆(`IFEQ`↔`IFNE` など) | 462 | 171 |
+| `goto` で 1 つの `return` にまとめるか、その場で返すか | 276 | 119 |
+| `dev.shifu` / `org.bukkit` / `io.papermc` の記号が出る | 136 | 19 |
+| その他 | 272 | 251 |
+| 計 | 1146 | 560 |
+
+**6 割(1028 件)は逆コンパイラの制御構造の形。** 同じ形が、Shifu が 1 行も触っていない
+ファイルにも 290 件出ている。差し込みが原因と分かるのは 155 件(9%)。
+残る 523 件は 1 件ずつ読まないと分からない。
+
+CodeDiff はメソッドごとに**最初の 1 件**しか出さないので、
+「差し込みの記号」の 155 件は下限になる。
+
 ### 1.20.6 に足りていないもの(2026-09-09 に測った)
 
 `main`(26.2)と比べた数。1.20.6 への移植で落ちたまま。
