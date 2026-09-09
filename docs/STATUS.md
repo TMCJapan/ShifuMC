@@ -13,6 +13,41 @@
 | 起動(MOD 無し) | プラグイン 24 個が有効化まで進む |
 | 起動(MOD 込み) | MOD 102(直接入れたのは 16)・プラグイン 24 で `Done (1.772s)`。`java -jar shifu.jar` だけで通る |
 | vanilla 一致(世界) | 起動して 20 秒・1200 tick のどちらも、vanilla が再現するチャンクで違い 0(詳細は [VANILLA-PARITY.md](VANILLA-PARITY.md)) |
+| プレイヤー | bot が参加 → 登録 → テレポート → コマンド → WorldEdit の `//set` `//undo` まで通る(`tools/mods-and-plugins.sh`) |
+
+### Bukkit 層で空だったものを埋めた(2026-09-09)
+
+bot を繋いで初めて分かった分。起動だけを見ていたときは出なかった。
+
+| 何が起きたか | 何が原因だったか | 直し方 |
+|---|---|---|
+| ログに例外が 17675 行(その 4307 行が `CraftWorld.getUID() is null`) | Paper が `ServerLevel` の構築子で入れる `convertable` `uuid` と、`bukkitName`、`CraftServer.addWorld` が丸ごと落ちていた。`Bukkit.getWorlds()` が空で、世界の名前も UUID も null | 構築子の末尾で配線する。UUID は次元ごとのフォルダ(overworld は世界の直下、他は `DIM-1` / `DIM1`)の `uid.dat` から作る。addWorld が UUID の同じ世界を重複として弾くので、次元ごとに違う必要がある。例外は **14 行**になった |
+| `ServerLevel.getTypeKey()` が null を返す | Paper は `LevelStorageAccess.dimensionType` を返すが、そこに次元を入れるのは `CraftServer.createWorld` だけ。vanilla の `Main` は次元を渡さない版を呼ぶ | 入っていなければ `dimension().location()` から `ResourceKey<LevelStem>` を作る(`patches/hand`) |
+| 非同期のチャットと別スレッドからの kick が返ってこない | `MinecraftServer.processQueue` を誰も流していなかった。積んだ側は `Waitable` で待つ | CraftBukkit と同じく `popPush("levels")` の直後で流す |
+| プラグインが `PlayerJoinEvent` `PlayerQuitEvent` を受け取らない | 発火の規則も発火層の `playerJoin` / `playerQuit` も落ちていた | `PlayerList` と `ServerGamePacketListenerImpl` の告知の文を囲む(`main` と同じ形) |
+| WorldEdit の `//set` が `NoSuchMethodError` | `LevelChunk.setBlockState(BlockPos, BlockState, boolean, boolean)` は CraftBukkit の追加で、Shifu には 3 引数の vanilla の版しか無い | 4 引数の版を足す。`doPlace` が true のときは vanilla の版へ渡し、false のときだけ `onPlace` を抜いた写しを通る |
+| kick したときに NPE | `ServerCommonPacketListenerImpl.cserver` が空 | 構築子で入れる |
+| 誰が繋いでも `Player.locale()` が en_US | `adventure$locale` が既定値のまま | `clientOptions.language()` を読んだ直後に入れる |
+| `setSleepingIgnored` が効かない / `PlayerNaturallySpawnCreaturesEvent` が出ない | 数え上げ側の規則と発火そのものが落ちていた | `SleepStatus.areEnoughDeepSleeping` と `ServerChunkCache.tickChunks` に足す |
+
+### 1.20.6 に足りていないもの(2026-09-09 に測った)
+
+`main`(26.2)と比べた数。1.20.6 への移植で落ちたまま。
+
+| | 1.20.6 | main |
+|---|---|---|
+| 発火の規則 | 317 | 866 |
+| 規則と発火層に出てくるイベントの型 | 233 | 431 |
+| `patches/events/generated` の規則ファイル | 47 | 197(うち 118 は同じパスのファイルが 1.20.6 にもある) |
+
+落ちている例: 拾い上げ(`PlayerAttemptPickupItemEvent` / `PlayerPickupItemEvent` /
+`EntityPickupItemEvent`)、ディスペンサー、`ServerPlayerGameMode`、`Entity`、`Raid`、
+`AnvilMenu`。`tools/check_wires.py main` は配線 31 件を挙げるが、読むと全部
+26.2 だけのものか名前の違いだった。
+
+足したが誰も代入しない欄が 36 件ある。大半は Paper のチャンク系(`chunkTaskScheduler`、
+`newChunkHolder`、`entityLookup`)で、Shifu は繋いでいないので読むと NPE になる。
+残る例外 14〜24 行はほぼこれと NBTAPI の自己診断。
 
 ### 名前空間の橋(1.20.6)
 
