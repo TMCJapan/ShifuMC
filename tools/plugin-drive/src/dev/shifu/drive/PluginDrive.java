@@ -23,7 +23,20 @@ public final class PluginDrive extends JavaPlugin implements Listener {
     private Location origin;
     private int pickedUp;
 
+    private int explodes;
     private int moves;
+
+    @EventHandler
+    public void onEntityExplode(final org.bukkit.event.entity.EntityExplodeEvent event) {
+        this.explodes++;
+        this.note("EntityExplodeEvent " + event.getEntityType() + " blocks=" + event.blockList().size());
+    }
+
+    @EventHandler
+    public void onBlockExplode(final org.bukkit.event.block.BlockExplodeEvent event) {
+        this.explodes++;
+        this.note("BlockExplodeEvent blocks=" + event.blockList().size());
+    }
     private int blockBreaks;
 
     @EventHandler
@@ -205,6 +218,37 @@ public final class PluginDrive extends JavaPlugin implements Listener {
             this.later(20, () -> this.note("break -> " + at.getBlock().getType()
                     + " (BlockBreakEvent " + this.blockBreaks + " 件)"));
         });
+
+        // 爆発。足場を作って TNT を点火する
+        this.later(250, () -> {
+            final Location at = bot.getLocation().clone().add(3, -1, 0);
+
+            for (int x = -2; x <= 2; x++) {
+                for (int z = -2; z <= 2; z++) {
+                    at.clone().add(x, 0, z).getBlock().setType(Material.STONE);
+                }
+            }
+
+            final org.bukkit.entity.TNTPrimed tnt = (org.bukkit.entity.TNTPrimed)
+                    bot.getWorld().spawnEntity(at.clone().add(0, 1, 0), org.bukkit.entity.EntityType.TNT);
+            tnt.setFuseTicks(20);
+            this.note("primed TNT at " + brief(at));
+
+            this.later(40, () -> {
+                int stone = 0;
+
+                for (int x = -2; x <= 2; x++) {
+                    for (int z = -2; z <= 2; z++) {
+                        if (at.clone().add(x, 0, z).getBlock().getType() == Material.STONE) {
+                            stone++;
+                        }
+                    }
+                }
+
+                this.note("爆発のあとに残った石 = " + stone + " / 25");
+            });
+        });
+        this.later(285, () -> this.note("explode events = " + this.explodes));
 
         this.later(288, () -> this.note("PlayerMoveEvent = " + this.moves));
         this.later(290, () -> this.note("CreatureSpawnEvent = " + this.creatureSpawns

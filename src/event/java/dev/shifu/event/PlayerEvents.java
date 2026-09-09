@@ -680,14 +680,15 @@ public final class PlayerEvents {
      *
      * @return 壊し始めてよいか。即時破壊にされたら vanilla の insta mine へ回す
      */
-    public static boolean blockDamage(final ServerPlayer player, final net.minecraft.core.BlockPos pos,
-                                      final net.minecraft.core.Direction face, final boolean insta) {
+    public static org.bukkit.event.block.BlockDamageEvent blockDamage(
+            final ServerPlayer player, final net.minecraft.core.BlockPos pos,
+            final net.minecraft.core.Direction face, final boolean insta) {
         if (!listening(org.bukkit.event.block.BlockDamageEvent.getHandlerList())) {
-            return true;
+            return null;
         }
 
-        return !org.bukkit.craftbukkit.event.CraftEventFactory.callBlockDamageEvent(
-                player, pos, face, player.getInventory().getSelected(), insta).isCancelled();
+        return org.bukkit.craftbukkit.event.CraftEventFactory.callBlockDamageEvent(
+                player, pos, face, player.getInventory().getSelected(), insta);
     }
 
     /** BlockDamageAbortEvent。壊すのをやめたとき。 */

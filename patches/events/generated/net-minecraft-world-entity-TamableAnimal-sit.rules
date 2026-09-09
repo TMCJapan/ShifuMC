@@ -3,8 +3,8 @@
 # EntityToggleSitEvent(飼いならした動物)
 file: net/minecraft/world/entity/TamableAnimal.java
 anchor:
-    byte b = this.entityData.get(DATA_FLAGS_ID);
-insert:
+    public void setInSittingPose(boolean inSittingPose) {
+insert-after:
     if (!dev.shifu.event.AnimalEvents.toggleSit(this, inSittingPose)) {
         return;
     }

@@ -1208,6 +1208,76 @@ public final class ShifuEvents {
     }
 
 
+    // ------------------------------------------------------------ 爆発
+
+    /**
+     * 爆発。{@code Explosion.finalizeExplosion} で、壊す位置の並びが
+     * 並べ替えられた直後。Paper と同じ位置。
+     *
+     * <p>{@code source} があれば {@code EntityExplodeEvent}、無ければ
+     * {@code BlockExplodeEvent}。プラグインが直した位置の並びを
+     * {@code targetBlocks} に書き戻す。
+     *
+     * <p><b>未対応:</b> {@code setYield}。落ちる確率は vanilla の戦利品表
+     * ({@code explosion_decay})が爆発の半径から読むので、渡す先が無い。
+     * Paper は {@code BlockBehaviour.onExplosionHit} を書き換えて通している。
+     *
+     * @return 壊してよいか。取り消されたら false
+     */
+    public static boolean explode(final net.minecraft.world.level.Explosion explosion,
+                                  final net.minecraft.world.level.Level level, final Vec3 center,
+                                  final List<BlockPos> targetBlocks) {
+        final Entity source = explosion.getDirectSourceEntity();
+        final HandlerList handlers = source != null
+                ? org.bukkit.event.entity.EntityExplodeEvent.getHandlerList()
+                : org.bukkit.event.block.BlockExplodeEvent.getHandlerList();
+
+        if (!listening(handlers)) {
+            return true;
+        }
+
+        final List<org.bukkit.block.Block> blockList = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>();
+
+        for (int i = targetBlocks.size() - 1; i >= 0; i--) {
+            final org.bukkit.block.Block block = CraftBlock.at(level, targetBlocks.get(i));
+
+            if (!block.getType().isAir()) {
+                blockList.add(block);
+            }
+        }
+
+        // Paper が Explosion の構築子で決めている既定の yield と同じ式
+        float yield = explosion.getBlockInteraction() == net.minecraft.world.level.Explosion.BlockInteraction.DESTROY_WITH_DECAY
+                ? 1.0F / explosion.radius()
+                : 1.0F;
+        yield = Float.isFinite(yield) ? yield : 0.0F;
+
+        final org.bukkit.Location location = CraftLocation.toBukkit(center, level.getWorld());
+        final boolean allowed;
+        final List<org.bukkit.block.Block> result;
+
+        if (source != null) {
+            final org.bukkit.event.entity.EntityExplodeEvent event = new org.bukkit.event.entity.EntityExplodeEvent(
+                    source.getBukkitEntity(), location, blockList, yield);
+            allowed = event.callEvent();
+            result = event.blockList();
+        } else {
+            final org.bukkit.block.Block block = location.getBlock();
+            final org.bukkit.event.block.BlockExplodeEvent event = new org.bukkit.event.block.BlockExplodeEvent(
+                    block, block.getState(), blockList, yield);
+            allowed = event.callEvent();
+            result = event.blockList();
+        }
+
+        targetBlocks.clear();
+
+        for (final org.bukkit.block.Block block : result) {
+            targetBlocks.add(((CraftBlock) block).getPosition());
+        }
+
+        return allowed;
+    }
+
     // ------------------------------------------------------------ コンソール
 
 }

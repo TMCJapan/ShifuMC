@@ -1,0 +1,12 @@
+# 爆発で壊す位置が決まったあと。EntityExplodeEvent と BlockExplodeEvent。
+# Paper は Explosion.finalizeExplosion の Util.shuffle の直後で出している。
+
+file: net/minecraft/world/level/Explosion.java
+anchor:
+            Util.shuffle(this.toBlow, this.level.random);
+insert-after:
+    if (!dev.shifu.event.ShifuEvents.explode(this, this.level,
+            new net.minecraft.world.phys.Vec3(this.x, this.y, this.z), this.toBlow)) {
+        this.wasCanceled = true;
+        return;
+    }
