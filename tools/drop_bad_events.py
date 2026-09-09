@@ -139,9 +139,16 @@ def main():
         files[path] = [head, blocks]
 
         for at, block in enumerate(blocks):
+            target = ""
+
+            for row in block.splitlines():
+                if row.startswith("file:"):
+                    target = os.path.basename(row[len("file:"):].strip())
+                    break
+
             for line in inserted(block):
                 if not NOISE.match(line):
-                    index[line].append((path, at))
+                    index[line].append((path, at, target))
 
     doomed = {}
     unmatched = []
@@ -149,20 +156,24 @@ def main():
     for java, number, why, body in bad:
         hits = index.get(body, [])
 
-        if len(hits) != 1:
-            hits = [h for h in hits
-                    if os.path.basename(h[0]).endswith(
-                        java[:-len(".java")] + ".rules")] or hits
+        # エラーの出た .java を狙う規則だけに絞る。**絞れないものは外さない。**
+        # 別のファイルの規則まで巻き込んで外すと、通っていた発火が黙って消える。
+        same = [h for h in hits if h[2] == java]
+
+        if same:
+            hits = same
+        elif len(hits) != 1:
+            hits = []
 
         if not hits and tree:
-            hits = near_mark(tree, java, number, index)
+            hits = [h for h in near_mark(tree, java, number, index) if h[2] == java]
 
         if not hits:
             unmatched.append((java, number, why, body))
             continue
 
         for hit in hits:
-            doomed.setdefault(hit, []).append("%s:%d %s" % (java, number, why))
+            doomed.setdefault(hit[:2], []).append("%s:%d %s" % (java, number, why))
 
     kept = 0
     removed = 0
