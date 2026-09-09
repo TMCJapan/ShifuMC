@@ -7,7 +7,16 @@
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/players/SleepStatus.java.patch
 
-# 何割が寝たかの判定
+# 何割が深く寝たかの判定
+file: net/minecraft/server/players/SleepStatus.java
+anchor:
+    return i >= this.sleepersNeeded(percentage);
+insert:
+    if (dev.shifu.event.PlayerEvents.anySleepIgnored(players)) {
+        return dev.shifu.event.PlayerEvents.enoughDeepSleeping(players, i, this.sleepersNeeded(percentage));
+    }
+
+# 寝ている人数の数え上げ
 file: net/minecraft/server/players/SleepStatus.java
 anchor:
     if (serverPlayer.isSleeping()) {

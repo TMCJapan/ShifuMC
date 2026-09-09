@@ -294,7 +294,41 @@ public final class ShifuEvents {
 
     // ------------------------------------------------------------ プレイヤー
 
+    /**
+     * 参加。
+     *
+     * <p>取り消せないが、メッセージは差し替えられる。
+     * 差し替えられていなければ true を返し、vanilla の告知をそのまま通す。
+     * 差し替えられたときはここで送って false を返す。
+     */
+    public static boolean playerJoin(final ServerPlayer player, final Component message) {
+        if (!listening(PlayerJoinEvent.getHandlerList())) {
+            return true;
+        }
 
+        net.kyori.adventure.text.Component original = PaperAdventure.asAdventure(message);
+        PlayerJoinEvent event = new PlayerJoinEvent(player.getBukkitEntity(), original);
+        event.callEvent();
+
+        return announce(player, original, event.joinMessage());
+    }
+
+    /**
+     * 退出。
+     *
+     * <p>参加と同じで、取り消せないがメッセージは差し替えられる。
+     */
+    public static boolean playerQuit(final ServerPlayer player, final Component message) {
+        if (!listening(PlayerQuitEvent.getHandlerList())) {
+            return true;
+        }
+
+        net.kyori.adventure.text.Component original = PaperAdventure.asAdventure(message);
+        PlayerQuitEvent event = new PlayerQuitEvent(player.getBukkitEntity(), original);
+        event.callEvent();
+
+        return announce(player, original, event.quitMessage());
+    }
 
     /**
      * 差し替えられたメッセージを送る。

@@ -11,6 +11,14 @@ insert-after:
     this.adventure$displayName = net.kyori.adventure.text.Component.text(this.getScoreboardName());
     this.bukkitPickUpLoot = true;
 
+# クライアントの言語。Player.locale() がここを読む。
+# 入れないと、誰がどの言語で繋いでも常に既定の en_US になる。
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+        this.language = clientOptions.language();
+insert-after:
+    this.adventure$locale = java.util.Objects.requireNonNullElse(net.kyori.adventure.translation.Translator.parseLocale(this.language), java.util.Locale.US);
+
 # タブ一覧の表示名(Player.setPlayerListName)
 #
 # vanilla は常に null を返す。Paper は listName をそのまま返すように書き換えている。

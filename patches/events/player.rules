@@ -9,6 +9,28 @@
 # vanilla と同じ命令列にする。
 
 # PlayerJoinEvent
+file: net/minecraft/server/players/PlayerList.java
+anchor:
+    this.broadcastSystemMessage(mutableComponent.withStyle(ChatFormatting.YELLOW), false);
+insert:
+    if (dev.shifu.event.ShifuEvents.silentJoin()
+            || dev.shifu.event.ShifuEvents.playerJoin(player, mutableComponent.withStyle(ChatFormatting.YELLOW))) {
+insert-after:
+    }
+
+# PlayerQuitEvent。3 行にまたがる文を囲む
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.server
+        .getPlayerList()
+        .broadcastSystemMessage(Component.translatable("multiplayer.player.left", this.player.getDisplayName()).withStyle(ChatFormatting.YELLOW), false);
+insert:
+    if (dev.shifu.event.ShifuEvents.silentQuit()
+            || dev.shifu.event.ShifuEvents.playerQuit(this.player, Component.translatable("multiplayer.player.left", this.player.getDisplayName()).withStyle(ChatFormatting.YELLOW))) {
+insert-after:
+    }
+
+# 参加のときの位置合わせは PlayerTeleportEvent を出さない
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     this.teleport(i, j, k, g, h);

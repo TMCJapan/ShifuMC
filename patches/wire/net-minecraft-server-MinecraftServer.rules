@@ -7,6 +7,16 @@ anchor:
 insert-after:
     this.server.getScheduler().mainThreadHeartbeat(this.tickCount);
 
+# メインスレッド待ちのタスク列(processQueue)を毎 tick 流す。CraftBukkit は
+# popPush("levels") の直後に置く(patches/server/Timings-v2.patch:837)。
+# 流さないと、別スレッドから積んだ Waitable が終わらない。非同期のチャットと
+# 別スレッドからの kick はこれを待つので、そこで固まる。
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+        this.profiler.popPush("levels");
+insert-after:
+    while (!this.processQueue.isEmpty()) { this.processQueue.remove().run(); }
+
 # 起動中に積まれた 1 tick 遅延のタスクを、最初の tick の前に 1 回流す
 file: net/minecraft/server/MinecraftServer.java
 anchor:

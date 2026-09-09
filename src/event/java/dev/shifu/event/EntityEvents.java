@@ -98,6 +98,32 @@ public final class EntityEvents {
     // ------------------------------------------------------------ 自然湧き
 
 
+    /**
+     * PlayerNaturallySpawnCreaturesEvent。1 tick に 1 度、湧きを始める前に
+     * プレイヤーごとに出す。イベントは各 ServerPlayer に控えて、chunk を選ぶときに読む。
+     *
+     * <p>半径の既定は Paper と同じ min(spigot の mob-spawn-range, 視距離, 8) チャンク。
+     * 8 チャンクは vanilla の判定(16384 = 128 の 2 乗)と同じなので、
+     * プラグインが縮めない限り vanilla と同じ範囲になる。
+     *
+     * 読んだ位置: patches/server/Optimize-Spigot-s-mob-spawning.patch と
+     *            Paper-Server src/main/java/net/minecraft/server/level/ServerChunkCache.java
+     */
+    public static void naturallySpawnCreatures(final ServerLevel level) {
+        if (!listening(com.destroystokyo.paper.event.entity.PlayerNaturallySpawnCreaturesEvent.getHandlerList())) {
+            return;
+        }
+
+        for (final ServerPlayer player : level.players()) {
+            int chunkRange = Math.min(level.spigotConfig.mobSpawnRange, player.getBukkitEntity().getViewDistance());
+            chunkRange = Math.min(chunkRange, 8);
+            player.shifuNaturallySpawnedEvent =
+                    new com.destroystokyo.paper.event.entity.PlayerNaturallySpawnCreaturesEvent(
+                            player.getBukkitEntity(), (byte) chunkRange);
+            player.shifuNaturallySpawnedEvent.callEvent();
+        }
+    }
+
     /** 発火に登録があるか。ChunkMap が vanilla の判定と切り替えるのに使う。 */
     public static boolean naturallySpawnCreaturesListening() {
         return listening(com.destroystokyo.paper.event.entity.PlayerNaturallySpawnCreaturesEvent.getHandlerList());

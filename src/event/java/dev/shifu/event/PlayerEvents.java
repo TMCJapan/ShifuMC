@@ -128,7 +128,46 @@ public final class PlayerEvents {
     private static io.papermc.paper.command.brigadier.CommandSourceStack difficultySource;
 
 
+    // ------------------------------------------------------------ 眠り
 
+    /**
+     * Player.setSleepingIgnored を入れた人が 1 人でも居るか。
+     * 誰も呼んでいなければ全員 false なので、vanilla の判定へ進んでよい。
+     */
+    public static boolean anySleepIgnored(final java.util.List<ServerPlayer> players) {
+        for (final ServerPlayer player : players) {
+            if (player.fauxSleeping) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 「寝ている割合が足りているか」を、setSleepingIgnored の分も数えて出す。
+     *
+     * <p>Paper と同じで、**実際に深く寝ている人が 1 人も居なければ false**。
+     * 無人の夜が飛ばないようにするため。
+     *
+     * 読んだ位置: patches/server/Add-PlayerSetSpawnEvent.patch と
+     *            Paper-Server src/main/java/net/minecraft/server/players/SleepStatus.java
+     */
+    public static boolean enoughDeepSleeping(final java.util.List<ServerPlayer> players,
+                                             final int deepSleepers, final int needed) {
+        int counted = deepSleepers;
+        boolean anyDeepSleep = false;
+
+        for (final ServerPlayer player : players) {
+            if (player.isSleepingLongEnough()) {
+                anyDeepSleep = true;
+            } else if (player.fauxSleeping) {
+                counted++;
+            }
+        }
+
+        return anyDeepSleep && counted >= needed;
+    }
 
 
     // ------------------------------------------------------------ 時間

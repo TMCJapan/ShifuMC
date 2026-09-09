@@ -1,5 +1,14 @@
 # Bukkit 層の配線。vanilla の行は変えていない。
 
+# Paper は構築子で cserver に CraftServer を入れる。1.20.6 の
+# ServerCommonPacketListenerImpl は disconnect と PlayerKickEvent の発火で
+# this.cserver を読むので、入れないと kick した瞬間に NPE になる。
+file: net/minecraft/server/network/ServerCommonPacketListenerImpl.java
+anchor:
+        this.connection = connection;
+insert-after:
+    this.cserver = server.server;
+
 # プラグインメッセージ(Bukkit の Messenger)。vanilla の handleCustomPayload は空で、
 # DiscardedPayload の codec は本文を捨てる。捨てる直前に控えた本文を
 # (patches/wire/net-minecraft-network-protocol-common-custom-DiscardedPayload.rules)
