@@ -1,0 +1,10 @@
+# main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
+
+# EntityToggleSitEvent(飼いならした動物)
+file: net/minecraft/world/entity/TamableAnimal.java
+anchor:
+    byte b = this.entityData.get(DATA_FLAGS_ID);
+insert:
+    if (!dev.shifu.event.AnimalEvents.toggleSit(this, inSittingPose)) {
+        return;
+    }

@@ -397,4 +397,66 @@ public final class AnimalEvents {
         return listening(com.destroystokyo.paper.event.entity.SlimeWanderEvent.getHandlerList());
     }
 
+
+    /**
+     * SlimeSplitEvent。{@code Slime.remove} で分裂する直前。
+     *
+     * @return 分裂する数。取り消されたら 0(分裂しない)
+     */
+    public static int slimeSplit(final net.minecraft.world.entity.monster.Slime slime, final int count) {
+        if (!listening(org.bukkit.event.entity.SlimeSplitEvent.getHandlerList())) {
+            return count;
+        }
+
+        final org.bukkit.event.entity.SlimeSplitEvent event = new org.bukkit.event.entity.SlimeSplitEvent(
+                (org.bukkit.entity.Slime) slime.getBukkitEntity(), count);
+
+        return event.callEvent() && event.getCount() > 0 ? event.getCount() : 0;
+    }
+
+    /**
+     * VillagerReplenishTradeEvent。取引の使用回数を戻す直前(取引ごと)。
+     *
+     * @return 戻してよいか
+     */
+    public static boolean replenishTrade(final net.minecraft.world.entity.npc.Villager villager,
+                                         final net.minecraft.world.item.trading.MerchantOffer offer) {
+        if (!listening(org.bukkit.event.entity.VillagerReplenishTradeEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.entity.VillagerReplenishTradeEvent(
+                (org.bukkit.entity.Villager) villager.getBukkitEntity(), offer.asBukkit()).callEvent();
+    }
+
+    /**
+     * EntityToggleSitEvent。座り(立ち)を書き換える先頭。Paper と同じ位置。
+     *
+     * @return 書き換えてよいか
+     */
+    public static boolean toggleSit(final net.minecraft.world.entity.Entity entity, final boolean sitting) {
+        if (!listening(io.papermc.paper.event.entity.EntityToggleSitEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new io.papermc.paper.event.entity.EntityToggleSitEvent(entity.getBukkitEntity(), sitting).callEvent();
+    }
+
+    /**
+     * PigZapEvent。{@code Pig.thunderHit} で変換に入る直前。
+     *
+     * <p>イベントに載せる ZombifiedPiglin は vanilla が作ったものをそのまま渡す。
+     *
+     * @return 変換してよいか
+     */
+    public static boolean pigZap(final net.minecraft.world.entity.animal.Pig pig,
+                                 final net.minecraft.world.entity.LightningBolt bolt,
+                                 final net.minecraft.world.entity.monster.ZombifiedPiglin piglin) {
+        if (!listening(org.bukkit.event.entity.PigZapEvent.getHandlerList())) {
+            return true;
+        }
+
+        return !CraftEventFactory.callPigZapEvent(pig, bolt, piglin).isCancelled();
+    }
+
 }

@@ -518,6 +518,46 @@ public final class ShifuEvents {
         return false;
     }
 
+    /**
+     * 手放し。{@code ServerPlayer.drop} で {@code ItemEntity} を作ったあと、
+     * 世界に入れる直前。死んで落とす分では発火しない。
+     *
+     * <p>取り消されたら Paper と同じ手順で手元に戻す。
+     *
+     * @return 世界に入れてよいか
+     */
+    public static boolean playerDropItem(final ServerPlayer player,
+                                         final net.minecraft.world.entity.item.ItemEntity entity,
+                                         final boolean thrownFromHand) {
+        if (player.isDeadOrDying()
+                || !listening(org.bukkit.event.player.PlayerDropItemEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.entity.Player bukkit = player.getBukkitEntity();
+        final org.bukkit.entity.Item drop = (org.bukkit.entity.Item) entity.getBukkitEntity();
+
+        if (new org.bukkit.event.player.PlayerDropItemEvent(bukkit, drop).callEvent()) {
+            return true;
+        }
+
+        final org.bukkit.inventory.ItemStack inHand = bukkit.getInventory().getItemInMainHand();
+
+        if (thrownFromHand && inHand.getAmount() == 0) {
+            // 手に持っていた分を丸ごと落とした
+            bukkit.getInventory().setItemInMainHand(drop.getItemStack());
+        } else if (thrownFromHand && inHand.isSimilar(drop.getItemStack())
+                && inHand.getAmount() < inHand.getMaxStackSize() && drop.getItemStack().getAmount() == 1) {
+            // 1 個だけ落とした
+            inHand.setAmount(inHand.getAmount() + 1);
+            bukkit.getInventory().setItemInMainHand(inHand);
+        } else {
+            bukkit.getInventory().addItem(drop.getItemStack());
+        }
+
+        return false;
+    }
+
     // ------------------------------------------------------------ 移動
 
 

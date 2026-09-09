@@ -1,0 +1,19 @@
+# main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
+# 1.20.6 は getSelectedSlot() ではなく inventory.selected、
+# packet も ClientboundSetHeldSlotPacket ではなく ClientboundSetCarriedItemPacket。
+
+# PlayerItemHeldEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    if (this.player.getInventory().selected != packet.getSlot() && this.player.getUsedItemHand() == InteractionHand.MAIN_HAND) {
+insert:
+    if (packet.getSlot() == this.player.getInventory().selected) {
+        return; // Paper - スロットが変わっていないときは出さない
+    }
+    org.bukkit.event.player.PlayerItemHeldEvent shifuHeld = new org.bukkit.event.player.PlayerItemHeldEvent(
+            this.getCraftPlayer(), this.player.getInventory().selected, packet.getSlot());
+    if (!shifuHeld.callEvent()) {
+        this.send(new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(this.player.getInventory().selected));
+        this.player.resetLastActionTime();
+        return;
+    }

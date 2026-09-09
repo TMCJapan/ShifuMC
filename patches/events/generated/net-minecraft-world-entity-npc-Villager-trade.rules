@@ -1,0 +1,11 @@
+# main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
+
+# VillagerReplenishTradeEvent。使用回数を戻す直前。1.20.6 は 2 箇所にある
+file: net/minecraft/world/entity/npc/Villager.java
+anchor:
+    merchantOffer.resetUses();
+count: 2
+insert:
+    if (dev.shifu.event.AnimalEvents.replenishTrade(this, merchantOffer)) {
+insert-after:
+    }
