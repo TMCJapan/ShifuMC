@@ -495,11 +495,16 @@ anchor:
 insert-after:
     final SignText shifuOriginalText = text;
 
-# SignChangeEvent。文を組み立て終えて返す直前
+# SignChangeEvent。文を組み立て終えて返す直前。
+# `return text;` は同じファイルに 2 つあるので、組み立ての for を出たところを指す。
 file: net/minecraft/world/level/block/entity/SignBlockEntity.java
 anchor:
-    return text;
-insert:
+                text = text.setMessage(
+                    i, Component.literal(filteredText.raw()).setStyle(style), Component.literal(filteredText.filteredOrEmpty()).setStyle(style)
+                );
+            }
+        }
+insert-after:
     text = dev.shifu.event.BlockEvents.signChange(this, player, shifuOriginalText, text, messages);
 
 file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
