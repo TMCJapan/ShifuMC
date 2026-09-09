@@ -957,4 +957,30 @@ public final class EntityEvents {
                 (org.bukkit.entity.AbstractHorse) horse.getBukkitEntity(), power).callEvent();
     }
 
+
+    /** FireworkExplodeEvent。{@code explode()} を囲む。取り消されたら爆発しない。 */
+    public static boolean fireworkExplode(final net.minecraft.world.entity.projectile.FireworkRocketEntity firework) {
+        if (!listening(org.bukkit.event.entity.FireworkExplodeEvent.getHandlerList())) {
+            return true;
+        }
+
+        return !CraftEventFactory.callFireworkExplodeEvent(firework).isCancelled();
+    }
+
+    /**
+     * EntityPortalEnterEvent。ネザーポータルの中に入った。
+     *
+     * @return 続けてよいか
+     */
+    public static boolean portalEnter(final Entity entity, final net.minecraft.world.level.Level level,
+                                      final net.minecraft.core.BlockPos pos) {
+        if (!listening(org.bukkit.event.entity.EntityPortalEnterEvent.getHandlerList())) {
+            return true;
+        }
+
+        // 1.20.6 の構築子は PortalType を取らない(26.2 の追加)
+        return new org.bukkit.event.entity.EntityPortalEnterEvent(entity.getBukkitEntity(),
+                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level)).callEvent();
+    }
+
 }

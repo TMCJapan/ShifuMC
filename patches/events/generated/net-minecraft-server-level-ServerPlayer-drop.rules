@@ -1,6 +1,7 @@
 # main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
 
 # PlayerDropItemEvent。作った ItemEntity を世界に入れる直前。
+
 # retainOwnership が false なら「手から投げた」= Paper の thrownFromHand
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:

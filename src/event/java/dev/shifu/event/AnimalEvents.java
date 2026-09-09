@@ -459,4 +459,40 @@ public final class AnimalEvents {
         return !CraftEventFactory.callPigZapEvent(pig, bolt, piglin).isCancelled();
     }
 
+
+    /**
+     * CreeperIgniteEvent。{@code Creeper.ignite} の先頭。すでに点火していれば発火しない。
+     *
+     * @return 点火状態を true にしてよいか
+     */
+    public static boolean creeperIgnite(final net.minecraft.world.entity.monster.Creeper creeper) {
+        if (!listening(com.destroystokyo.paper.event.entity.CreeperIgniteEvent.getHandlerList())
+                || creeper.isIgnited()) {
+            return true;
+        }
+
+        final com.destroystokyo.paper.event.entity.CreeperIgniteEvent event =
+                new com.destroystokyo.paper.event.entity.CreeperIgniteEvent(
+                        (org.bukkit.entity.Creeper) creeper.getBukkitEntity(), true);
+
+        return event.callEvent() && event.isIgnited();
+    }
+
+    /**
+     * EntityEnterBlockEvent。ハチが巣に入る直前。
+     *
+     * @return 入ってよいか
+     */
+    public static boolean enterHive(final net.minecraft.world.level.block.entity.BlockEntity hive,
+                                    final net.minecraft.world.entity.Entity bee) {
+        if (hive.getLevel() == null
+                || !listening(org.bukkit.event.entity.EntityEnterBlockEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.entity.EntityEnterBlockEvent(
+                bee.getBukkitEntity(),
+                org.bukkit.craftbukkit.block.CraftBlock.at(hive.getLevel(), hive.getBlockPos())).callEvent();
+    }
+
 }

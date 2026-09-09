@@ -1,0 +1,11 @@
+# main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
+
+# TargetHitEvent。強さが決まったあと、出力に書く前
+file: net/minecraft/world/level/block/TargetBlock.java
+anchor:
+        int j = entity instanceof AbstractArrow ? 20 : 8;
+insert:
+    i = dev.shifu.event.BlockEvents.targetHit(world, hitResult, entity, i);
+    if (i < 0) {
+        return 0;
+    }

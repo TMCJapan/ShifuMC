@@ -948,4 +948,26 @@ public final class BlockEvents {
 
         return CraftEventFactory.callEntityChangeBlockEvent(lightning, pos, newState);
     }
+
+    /**
+     * TargetHitEvent。的に投射物が当たった。
+     *
+     * @return プラグインが決めた強さ。取り消されたら -1
+     */
+    public static int targetHit(final LevelAccessor level,
+                                final net.minecraft.world.phys.BlockHitResult hitResult,
+                                final net.minecraft.world.entity.Entity entity, final int strength) {
+        if (!(entity instanceof net.minecraft.world.entity.projectile.Projectile)
+                || !ShifuEvents.listening(io.papermc.paper.event.block.TargetHitEvent.getHandlerList())) {
+            return strength;
+        }
+
+        final io.papermc.paper.event.block.TargetHitEvent event = new io.papermc.paper.event.block.TargetHitEvent(
+                (org.bukkit.entity.Projectile) entity.getBukkitEntity(),
+                org.bukkit.craftbukkit.block.CraftBlock.at(level, hitResult.getBlockPos()),
+                org.bukkit.craftbukkit.block.CraftBlock.notchToBlockFace(hitResult.getDirection()), strength);
+
+        return event.callEvent() ? event.getSignalStrength() : -1;
+    }
+
 }

@@ -1,0 +1,8 @@
+# main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
+
+# EntityEnterBlockEvent。ハチが巣に入る直前
+file: net/minecraft/world/entity/animal/Bee.java
+anchor:
+                beehiveBlockEntity.addOccupant(Bee.this);
+insert:
+    if (dev.shifu.event.AnimalEvents.enterHive(beehiveBlockEntity, Bee.this))

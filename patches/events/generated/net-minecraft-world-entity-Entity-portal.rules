@@ -1,0 +1,10 @@
+# main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
+
+# EntityPortalEnterEvent
+file: net/minecraft/world/entity/Entity.java
+anchor:
+    public void handleInsidePortal(BlockPos pos) {
+insert-after:
+    if (!dev.shifu.event.EntityEvents.portalEnter(this, this.level(), pos)) {
+        return;
+    }
