@@ -433,4 +433,43 @@ public final class ItemEvents {
 
     // ------------------------------------------------------------ 道具の耐久
 
+
+    /**
+     * SheepDyeWoolEvent。色を書き込む前。
+     *
+     * @return 使う色。取り消されたら null。登録が無ければ color
+     */
+    public static net.minecraft.world.item.DyeColor dyeWool(final net.minecraft.world.entity.animal.Sheep sheep,
+                                                            final net.minecraft.world.entity.player.Player player,
+                                                            final net.minecraft.world.item.DyeColor color) {
+        if (!ShifuEvents.listening(org.bukkit.event.entity.SheepDyeWoolEvent.getHandlerList())) {
+            return color;
+        }
+
+        final org.bukkit.event.entity.SheepDyeWoolEvent event = new org.bukkit.event.entity.SheepDyeWoolEvent(
+                (org.bukkit.entity.Sheep) sheep.getBukkitEntity(),
+                org.bukkit.DyeColor.getByWoolData((byte) color.getId()),
+                (org.bukkit.entity.Player) player.getBukkitEntity());
+
+        if (!event.callEvent()) {
+            return null;
+        }
+
+        return net.minecraft.world.item.DyeColor.byId(event.getColor().getWoolData());
+    }
+
+    /**
+     * PlayerItemBreakEvent。壊れた合図を送る直前。持ち主がプレイヤーのときだけ。
+     */
+    public static void itemBreak(final net.minecraft.world.entity.LivingEntity entity, final ItemStack stack) {
+        if (!(entity instanceof net.minecraft.server.level.ServerPlayer player)
+                || !ShifuEvents.listening(org.bukkit.event.player.PlayerItemBreakEvent.getHandlerList())) {
+            return;
+        }
+
+        new org.bukkit.event.player.PlayerItemBreakEvent(
+                player.getBukkitEntity(),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack)).callEvent();
+    }
+
 }

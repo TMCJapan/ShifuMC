@@ -1,0 +1,17 @@
+# main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
+
+# SheepDyeWoolEvent。色を書き込む前。取り消されたら書き込みも消費もしない
+file: net/minecraft/world/item/DyeItem.java
+anchor:
+                sheep.setColor(this.dyeColor);
+                stack.shrink(1);
+insert:
+    final net.minecraft.world.item.DyeColor shifuDye = dev.shifu.event.ItemEvents.dyeWool(sheep, user, this.dyeColor);
+    if (shifuDye == null) {
+        return InteractionResult.PASS;
+    }
+    if (shifuDye != this.dyeColor) {
+        sheep.setColor(shifuDye);
+        stack.shrink(1);
+        return InteractionResult.sidedSuccess(user.level().isClientSide);
+    }

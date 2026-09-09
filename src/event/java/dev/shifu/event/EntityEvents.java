@@ -920,4 +920,41 @@ public final class EntityEvents {
 
     // io.papermc.paper.event.entity.EntityIgniteEvent は 26.x で入った Paper のイベントで、
     // 1.21.11 の API には無い。
+
+    /**
+     * EntityAirChangeEvent。空気の残りを書き込む直前。
+     *
+     * @return 書き込む値。取り消されたら今のまま
+     */
+    /** 空気の変化を聞いている登録があるか。 */
+    public static boolean airChangeListening() {
+        return listening(org.bukkit.event.entity.EntityAirChangeEvent.getHandlerList());
+    }
+
+    public static int airChange(final Entity entity, final int amount) {
+        if (!listening(org.bukkit.event.entity.EntityAirChangeEvent.getHandlerList())) {
+            return amount;
+        }
+
+        final org.bukkit.event.entity.EntityAirChangeEvent event =
+                new org.bukkit.event.entity.EntityAirChangeEvent(entity.getBukkitEntity(), amount);
+
+        return event.callEvent() ? event.getAmount() : entity.getAirSupply();
+    }
+
+    /**
+     * HorseJumpEvent。乗り手の跳躍を実行する直前。
+     *
+     * @return 跳んでよいか
+     */
+    public static boolean horseJump(final net.minecraft.world.entity.animal.horse.AbstractHorse horse,
+                                    final float power) {
+        if (!listening(org.bukkit.event.entity.HorseJumpEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.entity.HorseJumpEvent(
+                (org.bukkit.entity.AbstractHorse) horse.getBukkitEntity(), power).callEvent();
+    }
+
 }
