@@ -47,11 +47,23 @@ public final class PluginDrive extends JavaPlugin implements Listener {
         bot.setOp(true);
         bot.setGameMode(org.bukkit.GameMode.CREATIVE);
 
+        // AuthMe を入れていると、登録するまで動けない(空中に置くと浮遊で蹴られる)。
+        // 本物のプレイヤーと同じように登録させる。
+        // 2 度目からは登録済みなので、どちらも送る。効かない方は
+        // 「登録済み」「ログイン済み」で断られるだけで害が無い。
+        if (Bukkit.getPluginManager().isPluginEnabled("AuthMe")) {
+            this.later(10, () -> this.tell(bot, "!bot cmd register shifu1234 shifu1234"));
+            this.later(14, () -> this.tell(bot, "!bot cmd login shifu1234"));
+        }
+
         // 空中に足場を作って、その上で WorldEdit を使わせる
         this.origin = new Location(bot.getWorld(), bot.getLocation().getBlockX(), 150.0, bot.getLocation().getBlockZ());
         this.later(20, () -> {
+            // AuthMe はログインが済んだところで保存していた状態(サバイバル)へ戻す。
+            // 空中へ運ぶ前に入れ直さないと、浮遊の判定で蹴られる。
+            bot.setGameMode(org.bukkit.GameMode.CREATIVE);
             bot.teleport(this.origin);
-            this.note("teleported to " + brief(this.origin));
+            this.note("teleported to " + brief(this.origin) + " (" + bot.getGameMode() + ")");
         });
 
         // EssentialsX。結果が読めるように、家を置いて離れてから戻る

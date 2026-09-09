@@ -21,8 +21,6 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.Connection;
 import net.minecraft.network.ConnectionProtocol;
-import net.minecraft.network.DisconnectionDetails;
-import net.minecraft.network.HashedStack;
 import net.minecraft.network.PacketListener;
 import net.minecraft.network.ProtocolInfo;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -57,7 +55,6 @@ import net.minecraft.network.protocol.game.ServerboundClientCommandPacket;
 import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
-import net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket;
 import net.minecraft.network.protocol.login.ClientLoginPacketListener;
 import net.minecraft.network.protocol.login.ClientboundCustomQueryPacket;
 import net.minecraft.network.protocol.login.ClientboundLoginCompressionPacket;
@@ -67,10 +64,9 @@ import net.minecraft.network.protocol.login.ServerboundHelloPacket;
 import net.minecraft.network.protocol.login.ServerboundLoginAcknowledgedPacket;
 import net.minecraft.server.Bootstrap;
 import net.minecraft.server.level.ClientInformation;
-import net.minecraft.server.network.EventLoopGroupHolder;
-import net.minecraft.world.entity.PositionMoveRotation;
-import net.minecraft.world.entity.Relative;
-import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.entity.RelativeMovement;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -142,17 +138,19 @@ public final class Bot {
         System.exit(0);
     }
 
+    /** Bootstrap.bootStrap() が System.out を logger 送りに差し替えるので、その前のものを控えておく。 */
+    private static final java.io.PrintStream OUT = System.out;
+
     static void log(final String text) {
-        System.out.println("[bot] " + text);
-        System.out.flush();
+        OUT.println("[bot] " + text);
+        OUT.flush();
     }
 
     // ------------------------------------------------------------ 接続
 
     private void connect(final String host, final int port) {
         this.connection = new Connection(PacketFlow.CLIENTBOUND);
-        final ChannelFuture future = Connection.connect(
-                new InetSocketAddress(host, port), EventLoopGroupHolder.remote(false), this.connection);
+        final ChannelFuture future = Connection.connect(new InetSocketAddress(host, port), false, this.connection);
         future.syncUninterruptibly();
         log("connected to " + host + ":" + port);
 
@@ -165,7 +163,7 @@ public final class Bot {
     private void onLogin(final String method, final Object packet) {
         switch (method) {
             case "handleCompression" -> this.connection.setupCompression(((ClientboundLoginCompressionPacket) packet).getCompressionThreshold(), false);
-            case "handleLoginFinished" -> {
+            case "handleGameProfile" -> {
                 log("login finished");
                 final ClientConfigurationPacketListener config = this.listener(
                         ClientConfigurationPacketListener.class, ConnectionProtocol.CONFIGURATION, this::onConfiguration);
@@ -177,7 +175,7 @@ public final class Bot {
             case "handleCustomQuery" -> this.connection.send(
                     new ServerboundCustomQueryAnswerPacket(((ClientboundCustomQueryPacket) packet).transactionId(), null));
             case "handleDisconnect" -> {
-                log("disconnected while logging in: " + ((ClientboundLoginDisconnectPacket) packet).reason().getString());
+                log("disconnected while logging in: " + ((ClientboundLoginDisconnectPacket) packet).getReason().getString());
                 this.done.countDown();
             }
             case "handleHello" -> log("server asked for encryption; the server must be in offline mode");
@@ -196,10 +194,10 @@ public final class Bot {
                 final RegistryAccess access = RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
                 this.game = this.listener(ClientGamePacketListener.class, ConnectionProtocol.PLAY, this::onGame);
                 this.connection.setupInboundProtocol(
-                        forgiving(GameProtocols.CLIENTBOUND_TEMPLATE.bind(RegistryFriendlyByteBuf.decorator(access))), this.game);
+                        forgiving(GameProtocols.CLIENTBOUND.bind(RegistryFriendlyByteBuf.decorator(access))), this.game);
                 this.connection.send(ServerboundFinishConfigurationPacket.INSTANCE);
                 this.connection.setupOutboundProtocol(
-                        GameProtocols.SERVERBOUND_TEMPLATE.bind(RegistryFriendlyByteBuf.decorator(access), () -> false));
+                        GameProtocols.SERVERBOUND.bind(RegistryFriendlyByteBuf.decorator(access)));
             }
             case "handleDisconnect" -> {
                 log("disconnected while configuring: " + ((ClientboundDisconnectPacket) packet).reason().getString());
@@ -240,22 +238,22 @@ public final class Bot {
 
     /** サーバーから届いた位置を受け入れ、vanilla のクライアントと同じく位置の packet を返す。 */
     private void accept(final ClientboundPlayerPositionPacket packet) {
-        final PositionMoveRotation change = packet.change();
-        final Set<Relative> relatives = packet.relatives();
-        this.x = relatives.contains(Relative.X) ? this.x + change.position().x : change.position().x;
-        this.y = relatives.contains(Relative.Y) ? this.y + change.position().y : change.position().y;
-        this.z = relatives.contains(Relative.Z) ? this.z + change.position().z : change.position().z;
-        this.yaw = relatives.contains(Relative.Y_ROT) ? this.yaw + change.yRot() : change.yRot();
-        this.pitch = relatives.contains(Relative.X_ROT) ? this.pitch + change.xRot() : change.xRot();
+        final Set<RelativeMovement> relatives = packet.getRelativeArguments();
+        this.x = relatives.contains(RelativeMovement.X) ? this.x + packet.getX() : packet.getX();
+        this.y = relatives.contains(RelativeMovement.Y) ? this.y + packet.getY() : packet.getY();
+        this.z = relatives.contains(RelativeMovement.Z) ? this.z + packet.getZ() : packet.getZ();
+        this.yaw = relatives.contains(RelativeMovement.Y_ROT) ? this.yaw + packet.getYRot() : packet.getYRot();
+        this.pitch = relatives.contains(RelativeMovement.X_ROT) ? this.pitch + packet.getXRot() : packet.getXRot();
         this.teleports++;
         log(String.format("teleport #%d to %.2f %.2f %.2f", this.teleports, this.x, this.y, this.z));
-        this.connection.send(new ServerboundAcceptTeleportationPacket(packet.id()));
-        this.connection.send(new ServerboundMovePlayerPacket.PosRot(new Vec3(this.x, this.y, this.z), this.yaw, this.pitch, false, false));
+        this.connection.send(new ServerboundAcceptTeleportationPacket(packet.getId()));
+        this.move();
+    }
 
-        if (!this.loaded) {
-            this.loaded = true;
-            this.connection.send(new ServerboundPlayerLoadedPacket());
-        }
+    /** いまの位置を送る。1.20.6 の PosRot は座標を 3 つで受ける。 */
+    private void move() {
+        this.connection.send(new ServerboundMovePlayerPacket.PosRot(
+                this.x, this.y, this.z, this.yaw, this.pitch, false));
     }
 
     // ------------------------------------------------------------ 指示
@@ -275,18 +273,18 @@ public final class Bot {
             case "move" -> {
                 for (int i = 0; i < 8; i++) {
                     this.x += 0.25;
-                    this.connection.send(new ServerboundMovePlayerPacket.PosRot(new Vec3(this.x, this.y, this.z), this.yaw, this.pitch, false, false));
+                    this.move();
                     Thread.sleep(50);
                 }
                 log(String.format("moved to %.2f %.2f %.2f", this.x, this.y, this.z));
             }
             case "chat" -> this.connection.send(new ServerboundChatPacket(rest, Instant.now(), 0L, null,
-                    new LastSeenMessages.Update(0, new BitSet(20), LastSeenMessages.Update.IGNORE_CHECKSUM)));
+                    new LastSeenMessages.Update(0, new BitSet(20))));
             // コマンド。チャットとは別の packet
             case "cmd" -> this.connection.send(
                     new net.minecraft.network.protocol.game.ServerboundChatCommandPacket(rest));
-            case "click" -> this.connection.send(new ServerboundContainerClickPacket(0, 0, (short) Integer.parseInt(rest), (byte) 0,
-                    ContainerInput.PICKUP, new Int2ObjectOpenHashMap<>(), HashedStack.EMPTY));
+            case "click" -> this.connection.send(new ServerboundContainerClickPacket(0, 0, Integer.parseInt(rest), 0,
+                    ClickType.PICKUP, ItemStack.EMPTY, new Int2ObjectOpenHashMap<>()));
             case "drop" -> this.connection.send(new ServerboundPlayerActionPacket(
                     ServerboundPlayerActionPacket.Action.DROP_ITEM, BlockPos.ZERO, Direction.DOWN, 0));
             case "respawn" -> this.connection.send(new ServerboundClientCommandPacket(ServerboundClientCommandPacket.Action.PERFORM_RESPAWN));
@@ -297,7 +295,7 @@ public final class Bot {
                 this.connection.send(new net.minecraft.network.protocol.game.ServerboundPlayerAbilitiesPacket(abilities));
             }
             case "eat" -> this.connection.send(new net.minecraft.network.protocol.game.ServerboundUseItemPacket(
-                    net.minecraft.world.InteractionHand.MAIN_HAND, 1, 0.0F, 0.0F));
+                    net.minecraft.world.InteractionHand.MAIN_HAND, 1));
             case "use" -> {
                 // ブロックの上面を右クリック
                 final BlockPos pos = blockPos(rest);
@@ -350,10 +348,8 @@ public final class Bot {
                     return true;
                 case "shouldPropagateHandlingExceptions":
                     return false;
-                case "createDisconnectionInfo":
-                    return new DisconnectionDetails((Component) args[0]);
                 case "onDisconnect":
-                    log("connection closed: " + ((DisconnectionDetails) args[0]).reason().getString());
+                    log("connection closed: " + ((Component) args[0]).getString());
                     this.done.countDown();
                     return null;
                 case "onPacketError":

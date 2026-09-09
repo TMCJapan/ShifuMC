@@ -35,7 +35,26 @@ if [ -z "${SHIFU_NO_MODS:-}" ]; then
 fi
 
 cp "$ADDONS"/plugins/*.jar "$RUN/plugins/"
-[ -f "$SHIFU/tools/build/ShifuPluginDrive.jar" ] && cp "$SHIFU/tools/build/ShifuPluginDrive.jar" "$RUN/plugins/"
+
+# bot に指示を出すプラグイン。前に別のバージョンで組んだものが残っていると
+# api-version で弾かれて bot が何もしないまま終わるので、毎回組み直す。
+# 組む相手は run-shifu(tools/run-server.sh が展開したもの)。$RUN のものは
+# この下で消して、サーバーが起動しながら展開し直すため、この時点では無い。
+if [ -d "$PW/run-shifu/libraries" ]; then
+    DRIVE_CP="$(cygpath -w "$SERVER_JAR")"
+    for jar in $(find "$PW/run-shifu/libraries" -name "*.jar"); do
+        DRIVE_CP="$DRIVE_CP;$(cygpath -w "$jar")"
+    done
+
+    rm -rf "$SHIFU/tools/build/drive"
+    "$JAVA_HOME/bin/javac" -encoding UTF-8 --release 21 -cp "$DRIVE_CP" -d "$SHIFU/tools/build/drive" "$SHIFU"/tools/plugin-drive/src/dev/shifu/drive/*.java
+    cp "$SHIFU/tools/plugin-drive/plugin.yml" "$SHIFU/tools/build/drive/"
+    (cd "$SHIFU/tools/build/drive" && "$JAVA_HOME/bin/jar" cf ../ShifuPluginDrive.jar .)
+    cp "$SHIFU/tools/build/ShifuPluginDrive.jar" "$RUN/plugins/"
+else
+    echo "run-shifu が無いので bot に指示を出すプラグインは入れない" >&2
+    rm -f "$RUN/plugins/ShifuPluginDrive.jar"
+fi
 [ -f "$PW/run-fabric/mods/ProbeMod.jar" ] && cp "$PW/run-fabric/mods/ProbeMod.jar" "$RUN/mods/"
 
 # 26.2 で動かないもの。一覧は docs/STATUS.md
@@ -88,10 +107,12 @@ if ! grep -aq "Done (" launch.out; then
     exit 1
 fi
 
-CP="$(cygpath -w "$SERVER_JAR")"
-for jar in $(find "$PW/run-shifu/libraries" -name "*.jar"); do
+CP="$(cygpath -w "$RUN/versions/$MC_VERSION/paper-$MC_VERSION.jar")"
+for jar in $(find "$RUN/libraries" -name "*.jar"); do
     CP="$CP;$(cygpath -w "$jar")"
 done
+
+"$JAVA_HOME/bin/javac" -encoding UTF-8 --release "$JDK_MIN" -cp "$CP" -d "$SHIFU/tools/build/bot" "$SHIFU"/tools/bot/src/dev/shifu/bot/*.java
 
 "$JAVA" -cp "$(cygpath -w "$SHIFU/tools/build/bot");$CP" dev.shifu.bot.Bot 127.0.0.1 25593 ShifuBot 50 > bot.out 2>&1 || true
 sleep 8
@@ -102,7 +123,7 @@ grep -a "Loading .* mods" -A 8 launch.out | head -12
 echo "==== プラグイン ===="
 grep -a "^ - \|Enabling" launch.out | head -4
 echo "==== bot ===="
-grep -a "\[drive\]" launch.err | sed 's/.*\[drive\]/[drive]/'
+grep -ah "\[drive\]" launch.out launch.err | sed 's/.*\[drive\]/[drive]/' || true
 grep -a "joined the game" launch.out
 echo "==== 例外 ===="
 grep -ac "Exception\|SEVERE" launch.out || true
