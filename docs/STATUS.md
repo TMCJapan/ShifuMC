@@ -39,7 +39,7 @@ MOD 側が悪いように見えて、全部 Shifu 側だった。公式の jar �
 | ServerCore の `@Redirect` が `Cat.tickCount` を見つけられない | paperweight の `fixJarForReobf` が field の所有クラスを宣言クラスへ書き換える。reobf には要るが mojmap の出力にも入っていた | mojmap 側は書き換える前の jar を使う(`tools/keepfields.gradle`) |
 | Ledger の `@Local BlockEntity` が `CampfireBlock` で候補 0 件 | 逆コンパイラが `instanceof` の前の変数を畳んでいた | `patches/decompile/locals.rules` に 4 件足した |
 | Ledger が `CauldronInteraction.lambda$bootStrap$5` に当たらない | 逆コンパイラが `static` 初期化子を別の位置に置くので、ラムダの番号の割り当てが入れ替わる | `LambdaMatch` で番号を付け直す(5 クラス 30 個) |
-| Alternate Current が `WireHandler` の構築子で落ちる | Paper 1.20.6 が同名パッケージの Alternate Current を同梱していて、サーバー側のクラスが MOD を隠していた | Paper の同梱分を外す(vanilla の挙動を変えるものなので元から要らない) |
+| Alternate Current が `WireHandler` の構築子で落ちる | Paper 1.20.6 が同名パッケージの Alternate Current を同梱していて、サーバー側のクラスが MOD を隠していた | Paper の同梱分を外す。`RedStoneWireBlock` は `redstoneImplementation == VANILLA` で分岐するだけで `alternate.current` を呼ばず、`WireHandler` を作る Paper の `ServerLevel` の配線も Shifu は取っていない。`ALTERNATE_CURRENT` の設定値は外す前から何もしていない |
 | MOD を入れると NMS 側のログが 1 行も出ない | Paper の `SpigotLibraryLoader` が `libraries/` へ落としたプラグインの slf4j-api 1.7.36 が、Paper の 2.0.9 より先にクラスパスへ載って SLF4J が NOP になっていた | bundler の `META-INF/libraries.list` に載っている分だけを載せる |
 
 ### 残っている食い違い(1.20.6)

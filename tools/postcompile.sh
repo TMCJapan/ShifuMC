@@ -11,6 +11,7 @@
 #    行き先が食い違うものは、slot ごとでは直せない)。
 # 2. 合成メソッド(lambda)の形を公式に合わせる(tools/lvtmatch の LambdaMatch)
 # 3. 触っていないクラスは公式のバイトコードに戻す(tools/keep_vanilla_classes.py)
+# 4. 公式と命令列が違うメソッドを数える(tools/lvtmatch の CodeDiff)
 #
 # gradle は出力の変化を見て作り直すので、このあと jar を作るときは
 # -x ":paper-server:compileJava" で再コンパイルを飛ばす。
@@ -53,3 +54,11 @@ python tools/check_lambdas.py "$CLASSES_M" "$MOJANG" --list || true
     "$(cygpath -m "$SHIFU/tools/build/lambda-differs.txt")"
 
 python tools/keep_vanilla_classes.py "$CLASSES_M" "$MOJANG"
+
+# 公式と命令列が違うメソッドを数える(tools/lvtmatch の CodeDiff)。
+# 差し込みで意図して増える分だけのはずなので、増えたら何かが余計に触っている。
+# **同じ道具に組み上がった jar を渡して、同じ数になることも確かめること。**
+# paperweight の fixJarForReobf は field の所有クラスを書き換えるので、
+# class の側だけ見ていると 1844 件の食い違いを見落とす(tools/keepfields.gradle)。
+"$JAVA_HOME/bin/java" -cp "$CP" dev.shifu.lvtmatch.CodeDiff "$CLASSES_M" "$MOJANG" \
+    "$(cygpath -m "$SHIFU/tools/build/code-differs.txt")"

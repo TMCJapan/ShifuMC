@@ -75,13 +75,37 @@ NMS に Paper のパッチを当てていないので、Paper と CraftBukkit �
 | | 件数 | 命令列への影響 |
 |---|---|---|
 | `patches/access` — 宣言の可視性を広げる | 21 件 / 16 ファイル | 無し(修飾子 1 語) |
-| `patches/decompile` — 逆コンパイラが消した局所変数を戻す | 60 件 / 43 ファイル | 無し(評価の回数も順序も同じ) |
+| `patches/decompile` — 逆コンパイラが消した局所変数を戻す | 66 件 / 43 ファイル | 無し(javac は `instanceof` の受け側を同じ命令で store する。変わるのは局所変数表だけ) |
 | `patches/expr` — 式の末尾に発火を足す | 1 件 | 登録が無ければ true を返す static 呼び出しが 1 つ増える |
 
 `python tools/verify_additive.py` が、変更がこの 3 つの形に収まっているかを確かめる。
 
 イベント発火の差し込みは 866 箇所あるが、`HandlerList` に登録が無ければ発火しない。
 発火しないとき、実行される命令列は vanilla と同一になる。
+
+## 命令列で確かめる(1.20.6、2026-09-09)
+
+ソースの行を見る `verify_additive.py` は、ビルドの後段で入る書き換えを見つけられない。
+組み上がったバイトコードを公式と直接突き合わせる。
+
+    java -cp tools/build/lvtmatch<;asm> dev.shifu.lvtmatch.CodeDiff <class の置き場か jar> <公式の jar>
+
+公式にもこちらにもあるメソッドについて、命令の並びを比べる(ラベル・行番号・frame と
+局所変数の番号は落とす。field と method は所有クラスまで見る)。
+
+| | 命令列が同じ | 命令列が違う |
+|---|---|---|
+| コンパイル後の class | 20370 | 1703 |
+| 組み上がった jar | 54227 | 1703 |
+
+**この 2 つの「違う」が同じ数であることが、ビルドの後段がバイトコードを触っていない証拠。**
+`tools/keepfields.gradle` を入れる前は jar 側が 3547 で、paperweight の
+`fixJarForReobf` が field の所有クラスを宣言クラスへ書き換えていた分 1844 件が
+上乗せされていた。
+
+残る 1703 は差し込みと、逆コンパイラが分岐の形を変えた分
+(`if (x instanceof T) { ... }` と `if (!(x instanceof T)) return;` など)。
+意味は同じで、どちらも Shifu が新しく作ったものではない。
 
 ## 測って確かめた範囲
 
