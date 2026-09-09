@@ -1,5 +1,7 @@
 
 
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
 # callPrepareResultEvent
 file: net/minecraft/world/inventory/AnvilMenu.java
 anchor:

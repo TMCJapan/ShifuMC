@@ -1,0 +1,16 @@
+# main(26.2)の規則を reanchor.py で局所変数の名前だけ当て直したもの。
+
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# EntityDropItemEvent
+file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
+anchor:
+    world.addFreshEntity(itemEntity);
+insert:
+    // CraftBukkit start - handle EntityDropItemEvent
+    org.bukkit.event.entity.EntityDropItemEvent event = new org.bukkit.event.entity.EntityDropItemEvent(this.getBukkitEntity(), (org.bukkit.entity.Item) itemEntity.getBukkitEntity());
+    org.bukkit.Bukkit.getPluginManager().callEvent(event);
+    if (event.isCancelled()) {
+        return;
+    }
+    // CraftBukkit end

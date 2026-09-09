@@ -1,0 +1,23 @@
+# main(26.2)の規則を reanchor.py で局所変数の名前だけ当て直したもの。
+
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# PlayerAdvancementDoneEvent
+file: net/minecraft/server/PlayerAdvancements.java
+anchor:
+    advancement.value().rewards().grant(this.player);
+insert:
+    // Paper start - Add Adventure message to PlayerAdvancementDoneEvent
+    // Paper は flatMap のラムダで書いているが、ここに足すと vanilla の
+    // ifPresent(display -> ...) が lambda$award$1 に繰り下がる。番号で狙う mixin
+    // (styled-chat の PlayerAdvancementsMixin)が当たらなくなるので、ラムダを使わずに書く。
+    net.kyori.adventure.text.Component message = null;
+    if (advancement.value().display().isPresent()) {
+        final net.minecraft.advancements.DisplayInfo shifuInfo = advancement.value().display().get();
+        if (shifuInfo.shouldAnnounceChat()) {
+            message = io.papermc.paper.adventure.PaperAdventure.asAdventure(shifuInfo.getType().createAnnouncement(advancement, this.player));
+        }
+    }
+    final org.bukkit.event.player.PlayerAdvancementDoneEvent event = new org.bukkit.event.player.PlayerAdvancementDoneEvent(this.player.getBukkitEntity(), advancement.toBukkit(), message);
+    this.player.level().getCraftServer().getPluginManager().callEvent(event); // CraftBukkit
+    // Paper end

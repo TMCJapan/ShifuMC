@@ -1,0 +1,17 @@
+# main(26.2)の規則を reanchor.py で局所変数の名前だけ当て直したもの。
+
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# LeavesDecayEvent
+file: net/minecraft/world/level/block/LeavesBlock.java
+anchor:
+    dropResources(state, world, pos);
+insert:
+    // CraftBukkit start
+    org.bukkit.event.block.LeavesDecayEvent event = new org.bukkit.event.block.LeavesDecayEvent(org.bukkit.craftbukkit.block.CraftBlock.at(world, pos));
+    world.getCraftServer().getPluginManager().callEvent(event);
+
+    if (event.isCancelled() || !world.getBlockState(pos).is(this)) {
+        return;
+    }
+    // CraftBukkit end

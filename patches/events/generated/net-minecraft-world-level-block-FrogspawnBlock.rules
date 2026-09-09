@@ -1,0 +1,13 @@
+# main(26.2)の規則を reanchor.py で局所変数の名前だけ当て直したもの。
+
+# callBlockFadeEvent
+file: net/minecraft/world/level/block/FrogspawnBlock.java
+anchor:
+    this.destroyBlock(world, pos);
+    world.playSound(null, pos, SoundEvents.FROGSPAWN_HATCH, SoundSource.BLOCKS, 1.0F, 1.0F);
+insert:
+    // Paper start - Call BlockFadeEvent
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(world, pos, Blocks.AIR.defaultBlockState()).isCancelled()) {
+        return;
+    }
+    // Paper end - Call BlockFadeEven

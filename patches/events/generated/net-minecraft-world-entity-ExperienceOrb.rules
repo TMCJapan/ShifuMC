@@ -1,0 +1,14 @@
+# main(26.2)の規則を reanchor.py で局所変数の名前だけ当て直したもの。
+
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# ExperienceOrbMergeEvent
+file: net/minecraft/world/entity/ExperienceOrb.java
+anchor:
+    this.count = this.count + other.count;
+insert:
+    // Paper start - call other merge event
+    if (!new com.destroystokyo.paper.event.entity.ExperienceOrbMergeEvent((org.bukkit.entity.ExperienceOrb) this.getBukkitEntity(), (org.bukkit.entity.ExperienceOrb) other.getBukkitEntity()).callEvent()) {
+        return;
+    }
+    // Paper end - call other merge event

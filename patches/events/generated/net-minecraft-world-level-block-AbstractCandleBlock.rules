@@ -1,0 +1,14 @@
+# main(26.2)の規則を reanchor.py で局所変数の名前だけ当て直したもの。
+
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callBlockIgniteEvent
+file: net/minecraft/world/level/block/AbstractCandleBlock.java
+anchor:
+    setLit(world, state, hit.getBlockPos(), true);
+insert:
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(world, hit.getBlockPos(), projectile).isCancelled()) {
+        return;
+    }
+    // CraftBukkit end

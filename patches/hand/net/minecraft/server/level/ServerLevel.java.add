@@ -126,11 +126,8 @@
             return false;
         }
 
-        // SPIGOT-6415: 理由が無いときは発火しない(別の世界へ移るときなど)
-        if (spawnReason != null && !CraftEventFactory.doEntityAddEventCalling(this, entity, spawnReason)) {
-            return false;
-        }
-
+        // 発火は vanilla の addEntity(Entity) の中(patches/events/entity-spawn.rules)。
+        // ここで出すと、vanilla が湧かせた分と二重になる
         return this.addEntity(entity);
     }
 

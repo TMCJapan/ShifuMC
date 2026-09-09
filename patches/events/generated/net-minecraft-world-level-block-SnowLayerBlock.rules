@@ -1,0 +1,14 @@
+# main(26.2)の規則を reanchor.py で局所変数の名前だけ当て直したもの。
+
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callBlockFadeEvent
+file: net/minecraft/world/level/block/SnowLayerBlock.java
+anchor:
+    dropResources(state, world, pos);
+insert:
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(world, pos, Blocks.AIR.defaultBlockState()).isCancelled()) {
+        return;
+    }
+    // CraftBukkit end

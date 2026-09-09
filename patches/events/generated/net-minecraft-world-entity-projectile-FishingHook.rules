@@ -1,6 +1,8 @@
 
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
 # PlayerFishEvent
 file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:

@@ -1,1 +1,25 @@
 
+
+# 共通の listener が持つ player。1.20.6 の ServerGamePacketListenerImpl は
+# 同じ名前の欄を自分でも宣言していて、そちらが親の宣言を隠す。親の方は誰も入れないので、
+# ServerCommonPacketListenerImpl が読む 4 箇所(isDisconnected、退出の文、
+# PlayerKickEvent、quitReason)が全部 NPE になる。kick した瞬間に落ちる。
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+        this.player = player;
+        player.connection = this;
+insert-after:
+    super.player = player;
+
+# リスポーンで別の ServerPlayer に差し替わるので、親の方も入れ直す
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player = this.server.getPlayerList().respawn(this.player, true);
+insert-after:
+    super.player = this.player;
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player = this.server.getPlayerList().respawn(this.player, false);
+insert-after:
+    super.player = this.player;

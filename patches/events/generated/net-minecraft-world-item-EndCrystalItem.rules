@@ -1,0 +1,15 @@
+# main(26.2)の規則を reanchor.py で局所変数の名前だけ当て直したもの。
+
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+
+# callEntityPlaceEvent
+file: net/minecraft/world/item/EndCrystalItem.java
+anchor:
+    level.addFreshEntity(endCrystal);
+insert:
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPlaceEvent(context, endCrystal).isCancelled()) {
+        if (context.getPlayer() != null) context.getPlayer().containerMenu.sendAllDataToRemote(); // Paper - Fix inventory desync
+        return InteractionResult.FAIL;
+    }
+    // CraftBukkit end

@@ -109,6 +109,27 @@ public final class ShifuEvents {
         return !listening(PlayerQuitEvent.getHandlerList());
     }
 
+    /**
+     * エンティティが世界に入るときのイベントを聞いている登録があるか。
+     *
+     * <p>{@code CraftEventFactory.doEntityAddEventCalling} は分類に関わらず
+     * イベントを組み立てるので、登録が無くてもエンティティが 1 つ増えるたびに
+     * 仕事が増える。ここで先に見て、無ければ vanilla の命令列のまま通す。
+     *
+     * <p>見るのは 3 つ。{@code CreatureSpawnEvent} と {@code ItemSpawnEvent} と
+     * {@code ProjectileLaunchEvent} は自分の HandlerList を持たず、
+     * {@code EntitySpawnEvent} のものを使う。
+     *
+     * <p>飛ばすと CraftBukkit が足した「spawn-animals / spawn-monsters が false なら
+     * 捨てる」も飛ぶ。vanilla はそこを {@code ServerChunkCache.tickChunks} で見ているので、
+     * 飛ばした方が vanilla に近い。
+     */
+    public static boolean entityAddListening() {
+        return listening(org.bukkit.event.entity.EntitySpawnEvent.getHandlerList())
+                || listening(org.bukkit.event.vehicle.VehicleCreateEvent.getHandlerList())
+                || listening(org.bukkit.event.weather.LightningStrikeEvent.getHandlerList());
+    }
+
     // ------------------------------------------------------------ ブロック
 
 

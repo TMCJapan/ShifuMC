@@ -23,6 +23,19 @@ public final class PluginDrive extends JavaPlugin implements Listener {
     private Location origin;
     private int pickedUp;
 
+    private int creatureSpawns;
+    private int itemSpawns;
+
+    @EventHandler
+    public void onCreatureSpawn(final org.bukkit.event.entity.CreatureSpawnEvent event) {
+        this.creatureSpawns++;
+    }
+
+    @EventHandler
+    public void onItemSpawn(final org.bukkit.event.entity.ItemSpawnEvent event) {
+        this.itemSpawns++;
+    }
+
     @EventHandler
     public void onAttemptPickup(final org.bukkit.event.player.PlayerAttemptPickupItemEvent event) {
         this.pickedUp++;
@@ -159,6 +172,9 @@ public final class PluginDrive extends JavaPlugin implements Listener {
         });
         this.later(270, () -> this.note("pickup events = " + this.pickedUp
                 + ", diamonds in inventory = " + bot.getInventory().all(Material.DIAMOND).size()));
+
+        this.later(290, () -> this.note("CreatureSpawnEvent = " + this.creatureSpawns
+                + ", ItemSpawnEvent = " + this.itemSpawns));
 
         this.later(300, () -> {
             this.note("---- done ----");
