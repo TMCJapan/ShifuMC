@@ -5,3 +5,17 @@
     public void onChanged(@Nullable ServerLevel level) {
         this.onChanged(level == null ? null : level.getServer());
     }
+
+// GameRules.shifuKeyOf
+    // WorldGameRuleChangeEvent は規則の名前を要る。Value は自分の鍵を持たないので、
+    // 持ち主の表から引く。聞き手がいるときだけ通る道なので、走査もそのときだけ。
+    @Nullable
+    public GameRules.Key<?> shifuKeyOf(GameRules.Value<?> value) {
+        for (Map.Entry<GameRules.Key<?>, GameRules.Value<?>> entry : this.rules.entrySet()) {
+            if (entry.getValue() == value) {
+                return entry.getKey();
+            }
+        }
+
+        return null;
+    }

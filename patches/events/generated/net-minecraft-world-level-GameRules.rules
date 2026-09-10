@@ -1,0 +1,20 @@
+# WorldGameRuleChangeEvent。/gamerule で値を入れる直前。
+#
+# Paper は GameRuleCommand.setRule から鍵を渡して発火する。Shifu は
+# GameRuleCommand.java に触れない(触ると同じファイルの無名クラス
+# GameRuleCommand$1 が Shifu の逆コンパイル結果から組まれ、捕まえた局所変数の
+# 合成欄が val$base から val$literalArgumentBuilder に変わって、
+# そこへ当たる Fabric の mixin が外れる)。
+#
+# 代わりに GameRules.Value.setFromArgument で出す。鍵は持ち主の表から引く。
+#
+# 読んだ位置(Paper 1.20.6):
+#   Paper-Server src/main/java/net/minecraft/world/level/GameRules.java:316
+
+file: net/minecraft/world/level/GameRules.java
+anchor:
+        public void setFromArgument(CommandContext<CommandSourceStack> context, String name) {
+insert-after:
+    if (!dev.shifu.event.ShifuEvents.gameRuleChange(this, context)) {
+        return;
+    }

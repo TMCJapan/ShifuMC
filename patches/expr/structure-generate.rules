@@ -1,0 +1,15 @@
+# AsyncStructureGenerateEvent。構造物の部品を書き込む直前。
+#
+# プラグインが置かれるブロックと湧く entity を差し替えるための催しなので、
+# 書き込み先の世界を包むほかない。式の一部を差し替える形なので、
+# vanilla の式(world)をそのまま第 1 引数に渡して包む。
+# 聞き手がいなければ world をそのまま返す。
+#
+# 読んだ位置(Paper 1.20.6):
+#   Paper-Server src/main/java/net/minecraft/world/level/levelgen/structure/StructureStart.java:113
+
+file: net/minecraft/world/level/levelgen/structure/StructureStart.java
+replace:
+                    structurePiece.postProcess(world, structureAccessor, chunkGenerator, random, chunkBox, chunkPos, blockPos2);
+with:
+                    structurePiece.postProcess(dev.shifu.event.BlockEvents.structureAccess(world, structureAccessor, this, chunkBox, chunkPos), structureAccessor, chunkGenerator, random, chunkBox, chunkPos, blockPos2);

@@ -1465,4 +1465,26 @@ public final class EntityEvents {
                 offer.asBukkit(), true, true).callEvent();
     }
 
+
+    /**
+     * 持ち主のいないウィザースカルの EntityDamageByEntityEvent。
+     *
+     * <p>vanilla は {@code magic()} をそのまま渡すので、催しの「殴った者」が
+     * 空になる。Paper は {@code customEventDamager} でスカル自身を入れる。
+     * 聞き手がいなければ渡された damage source をそのまま返すので、
+     * 増えるのは static 呼び出しが 1 つ。
+     *
+     * <p>読んだ位置(Paper 1.20.6):
+     *   Paper-Server src/main/java/net/minecraft/world/entity/projectile/WitherSkull.java:75
+     */
+    public static net.minecraft.world.damagesource.DamageSource unownedSkull(
+            final net.minecraft.world.damagesource.DamageSource source,
+            final net.minecraft.world.entity.Entity skull) {
+        if (!listening(org.bukkit.event.entity.EntityDamageByEntityEvent.getHandlerList())) {
+            return source;
+        }
+
+        return source.customEventDamager(skull);
+    }
+
 }

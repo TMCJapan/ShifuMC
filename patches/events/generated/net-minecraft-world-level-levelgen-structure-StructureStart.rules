@@ -1,0 +1,15 @@
+# 包みの片付け。1 チャンク分の部品を書き終えたところ。
+
+file: net/minecraft/world/level/levelgen/structure/StructureStart.java
+anchor:
+            this.structure.afterPlace(world, structureAccessor, chunkGenerator, random, chunkBox, chunkPos, this.pieceContainer);
+insert:
+    dev.shifu.event.BlockEvents.structureAccessDone();
+
+# /place で置いたときの理由
+file: net/minecraft/server/commands/PlaceCommand.java
+anchor:
+            BoundingBox boundingBox = structureStart.getBoundingBox();
+            ChunkPos chunkPos = new ChunkPos(SectionPos.blockToSectionCoord(boundingBox.minX()), SectionPos.blockToSectionCoord(boundingBox.minZ()));
+insert:
+    structureStart.generationEventCause = org.bukkit.event.world.AsyncStructureGenerateEvent.Cause.COMMAND;

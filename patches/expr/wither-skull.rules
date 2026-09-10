@@ -1,0 +1,14 @@
+# 持ち主のいないウィザースカルの EntityDamageByEntityEvent。
+#
+# vanilla は magic() をそのまま渡すので、催しの「殴った者」が空になる。
+# Paper は customEventDamager でスカル自身を入れる。式の一部を差し替える形なので
+# 囲む書き方では入らない。vanilla の式をそのまま第 1 引数に渡して包む。
+#
+# 読んだ位置(Paper 1.20.6):
+#   Paper-Server src/main/java/net/minecraft/world/entity/projectile/WitherSkull.java:75
+
+file: net/minecraft/world/entity/projectile/WitherSkull.java
+replace:
+                bl = entity.hurt(this.damageSources().magic(), 5.0F);
+with:
+                bl = entity.hurt(dev.shifu.event.EntityEvents.unownedSkull(this.damageSources().magic(), this), 5.0F);

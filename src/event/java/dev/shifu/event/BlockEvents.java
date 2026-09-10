@@ -1522,6 +1522,65 @@ public final class BlockEvents {
     }
 
 
+    /** 構造物を書き込むあいだだけ差し替える世界。担い手ごとに 1 つ。 */
+    private static final ThreadLocal<org.bukkit.craftbukkit.util.TransformerGeneratorAccess> structureAccess =
+            new ThreadLocal<>();
+
+    /**
+     * AsyncStructureGenerateEvent。構造物の部品を書き込む直前。
+     *
+     * <p>この催しはプラグインが「置かれるブロックと湧く entity を差し替える」ための
+     * ものなので、書き込み先の世界を包むほかない。包むのは聞き手がいるときだけで、
+     * いないときは渡された世界をそのまま返す。増えるのは static 呼び出し 1 つ。
+     *
+     * <p>包みは 1 チャンク分の部品で使い回す。作るのは最初の部品のときだけで、
+     * そこで催しが 1 度出る。
+     *
+     * <p>Paper との違い: Paper は StructureTemplate.placeInWorld の中で包みを外し、
+     * ブロックの差し替えをその場で 1 度だけ行う。Shifu は包んだまま渡すので、
+     * 差し替えは {@code TransformerGeneratorAccess.setBlock} が行う。プラグインが
+     * ブロックの差し替えを登録したときだけ、Paper より広い範囲(placeInWorld の
+     * 後始末の書き込みも)が差し替えの対象になる。
+     *
+     * <p>読んだ位置(Paper 1.20.6):
+     *   Paper-Server src/main/java/net/minecraft/world/level/levelgen/structure/StructureStart.java:113
+     */
+    public static net.minecraft.world.level.WorldGenLevel structureAccess(
+            final net.minecraft.world.level.WorldGenLevel world,
+            final net.minecraft.world.level.StructureManager accessor,
+            final net.minecraft.world.level.levelgen.structure.StructureStart start,
+            final net.minecraft.world.level.levelgen.structure.BoundingBox box,
+            final net.minecraft.world.level.ChunkPos pos) {
+        if (!listening(org.bukkit.event.world.AsyncStructureGenerateEvent.getHandlerList())) {
+            return world;
+        }
+
+        org.bukkit.craftbukkit.util.TransformerGeneratorAccess access = structureAccess.get();
+
+        if (access == null) {
+            access = new org.bukkit.craftbukkit.util.TransformerGeneratorAccess();
+            access.setHandle(world);
+            access.setStructureTransformer(new org.bukkit.craftbukkit.util.CraftStructureTransformer(
+                    start.generationEventCause, world, accessor, start.getStructure(), box, pos));
+            structureAccess.set(access);
+        }
+
+        return access;
+    }
+
+    /** 1 チャンク分の部品を書き終えたところ。包みを片付ける。 */
+    public static void structureAccessDone() {
+        final org.bukkit.craftbukkit.util.TransformerGeneratorAccess access = structureAccess.get();
+
+        if (access == null) {
+            return;
+        }
+
+        structureAccess.remove();
+        access.getStructureTransformer().discard();
+    }
+
+
     // ------------------------------------------------------------ 木の育ち
 
     /**

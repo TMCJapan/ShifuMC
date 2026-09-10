@@ -1,0 +1,6 @@
+// 自前で書いた追加。Paper の宣言だけを写す。
+
+// StructureStart.generationEventCause
+    // AsyncStructureGenerateEvent の理由。/place のときだけ COMMAND に変える(patches/events)。
+    public org.bukkit.event.world.AsyncStructureGenerateEvent.Cause generationEventCause =
+            org.bukkit.event.world.AsyncStructureGenerateEvent.Cause.WORLD_GENERATION;

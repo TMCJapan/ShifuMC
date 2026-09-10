@@ -1521,11 +1521,19 @@ public final class ShifuEvents {
      *
      * @return 変えてよいか
      */
-    public static boolean gameRuleChange(final net.minecraft.commands.CommandSourceStack source,
-                                         final net.minecraft.world.level.GameRules.Key<?> key,
+    public static boolean gameRuleChange(final net.minecraft.world.level.GameRules.Value<?> value,
                                          final com.mojang.brigadier.context.CommandContext<
                                                  net.minecraft.commands.CommandSourceStack> context) {
         if (!listening(io.papermc.paper.event.world.WorldGameRuleChangeEvent.getHandlerList())) {
+            return true;
+        }
+
+        final net.minecraft.commands.CommandSourceStack source = context.getSource();
+        // Value は自分の鍵を知らないので、持ち主の表から引く。聞き手がいるときだけ通る
+        final net.minecraft.world.level.GameRules.Key<?> key =
+                source.getServer().getGameRules().shifuKeyOf(value);
+
+        if (key == null) {
             return true;
         }
 
@@ -1535,16 +1543,16 @@ public final class ShifuEvents {
             return true;
         }
 
-        final String value;
+        final String text;
 
         try {
-            value = String.valueOf(context.getArgument("value", Object.class));
+            text = String.valueOf(context.getArgument("value", Object.class));
         } catch (final IllegalArgumentException unknown) {
             return true;
         }
 
         return new io.papermc.paper.event.world.WorldGameRuleChangeEvent(source.getLevel().getWorld(),
-                source.getBukkitSender(), rule, value).callEvent();
+                source.getBukkitSender(), rule, text).callEvent();
     }
 
 
