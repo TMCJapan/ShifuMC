@@ -1,0 +1,9 @@
+# PlayerOpenSignEvent と PlayerSignOpenEvent。看板を開く直前。
+
+file: net/minecraft/world/level/block/SignBlock.java
+anchor:
+    public void openTextEdit(Player player, SignBlockEntity blockEntity, boolean front) {
+insert-after:
+    if (!dev.shifu.event.PlayerEvents.signOpen(player, blockEntity, front)) {
+        return;
+    }

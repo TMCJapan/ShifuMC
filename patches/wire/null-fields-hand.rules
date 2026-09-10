@@ -58,3 +58,33 @@ anchor:
     this.addSlot(new ResultSlot(playerInventory.player, this.craftSlots, this.resultSlots, 0, 124, 35));
 insert:
     ((TransientCraftingContainer) this.craftSlots).resultInventory = this.resultSlots;
+
+# InventoryMenu.player。shim の getBukkitView が読む。繋がないと
+# CraftHumanEntity.getOpenInventory() が NPE になる。
+file: net/minecraft/world/inventory/InventoryMenu.java
+anchor:
+        this.owner = owner;
+insert-after:
+    this.player = inventory;
+
+# ChestMenu.player。同じく getBukkitView が読む。
+file: net/minecraft/world/inventory/ChestMenu.java
+anchor:
+        this.containerRows = rows;
+insert-after:
+    this.player = playerInventory;
+
+# ShulkerBoxMenu.player。同じく getBukkitView が読む。
+file: net/minecraft/world/inventory/ShulkerBoxMenu.java
+anchor:
+        checkContainerSize(inventory, 27);
+        this.container = inventory;
+insert-after:
+    this.player = playerInventory;
+
+# HorseInventoryMenu.player。同じく getBukkitView が読む。
+file: net/minecraft/world/inventory/HorseInventoryMenu.java
+anchor:
+        this.horseContainer = inventory;
+insert-after:
+    this.player = playerInventory;

@@ -1,0 +1,9 @@
+# PlayerPickupExperienceEvent。経験値を拾う直前。
+
+file: net/minecraft/world/entity/ExperienceOrb.java
+anchor:
+            if (player.takeXpDelay == 0) {
+insert-after:
+    if (!dev.shifu.event.PlayerEvents.pickupExperience(player, this)) {
+        return;
+    }

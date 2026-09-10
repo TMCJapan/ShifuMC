@@ -1,0 +1,18 @@
+# PrePlayerAttackEntityEvent と PlayerAttackEntityCooldownResetEvent。
+
+file: net/minecraft/world/entity/player/Player.java
+anchor:
+            if (!target.skipAttackInteraction(this)) {
+insert-after:
+    if (!dev.shifu.event.PlayerEvents.prePlayerAttack(this, target)) {
+        return;
+    }
+
+file: net/minecraft/world/entity/player/Player.java
+anchor:
+                g *= h;
+                this.resetAttackStrengthTicker();
+insert:
+    if (dev.shifu.event.PlayerEvents.attackCooldownReset(this, target)) {
+insert-after:
+    }

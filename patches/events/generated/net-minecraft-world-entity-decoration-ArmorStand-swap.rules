@@ -1,0 +1,9 @@
+# PlayerArmorStandManipulateEvent。防具立ての持ち物を入れ替える直前。
+
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+anchor:
+    private boolean swapItem(Player player, EquipmentSlot slot, ItemStack stack, InteractionHand hand) {
+insert-after:
+    if (!dev.shifu.event.PlayerEvents.armorStandManipulate(this, player, slot, stack, hand)) {
+        return false;
+    }

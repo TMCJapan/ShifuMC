@@ -1,0 +1,9 @@
+# EntityTeleportEvent。/teleport でプレイヤー以外を飛ばす直前。
+
+file: net/minecraft/server/commands/TeleportCommand.java
+anchor:
+            if (target.teleportTo(world, x, y, z, movementFlags, f, g)) {
+insert:
+    if (!dev.shifu.event.EntityEvents.entityTeleportCommand(target, world, x, y, z)) {
+        return;
+    }

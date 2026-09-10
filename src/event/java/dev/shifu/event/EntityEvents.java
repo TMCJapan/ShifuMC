@@ -1201,4 +1201,97 @@ public final class EntityEvents {
                 (org.bukkit.entity.Hanging) hanging.getBukkitEntity(), cause).callEvent();
     }
 
+
+    /** RaidFinishEvent。襲撃が終わったとき。 */
+    public static void raidFinish(final net.minecraft.world.entity.raid.Raid raid,
+                                  final java.util.Collection<java.util.UUID> heroes) {
+        if (!listening(org.bukkit.event.raid.RaidFinishEvent.getHandlerList())) {
+            return;
+        }
+
+        final java.util.List<org.bukkit.entity.Player> winners = new java.util.ArrayList<>();
+
+        for (final java.util.UUID id : heroes) {
+            final org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(id);
+
+            if (player != null) {
+                winners.add(player);
+            }
+        }
+
+        org.bukkit.craftbukkit.event.CraftEventFactory.callRaidFinishEvent(raid, winners);
+    }
+
+    /** RaidSpawnWaveEvent。1 波が出たあと。 */
+    public static void raidSpawnWave(final net.minecraft.world.entity.raid.Raid raid,
+                                     final net.minecraft.world.entity.raid.Raider leader,
+                                     final java.util.List<net.minecraft.world.entity.raid.Raider> raiders) {
+        if (!listening(org.bukkit.event.raid.RaidSpawnWaveEvent.getHandlerList())) {
+            return;
+        }
+
+        org.bukkit.craftbukkit.event.CraftEventFactory.callRaidSpawnWaveEvent(raid, leader, raiders);
+    }
+
+    /**
+     * EntityTeleportEvent。{@code /teleport} で プレイヤー以外を飛ばす直前。
+     *
+     * <p>プレイヤーは {@code PlayerTeleportEvent} の側(teleportCause)で出している。
+     *
+     * @return 飛ばしてよいか
+     */
+    public static boolean entityTeleportCommand(final Entity target, final ServerLevel level,
+                                                final double x, final double y, final double z) {
+        if (target instanceof net.minecraft.server.level.ServerPlayer
+                || !listening(org.bukkit.event.entity.EntityTeleportEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.entity.EntityTeleportEvent(target.getBukkitEntity(),
+                target.getBukkitEntity().getLocation(),
+                new org.bukkit.Location(level.getWorld(), x, y, z)).callEvent();
+    }
+
+    /**
+     * PlayerTeleportEndGatewayEvent と EntityTeleportEndGatewayEvent。
+     * エンドゲートウェイで飛ばす直前。
+     */
+    public static boolean endGatewayTeleport(final Entity entity,
+                                             final net.minecraft.server.level.ServerLevel level,
+                                             final net.minecraft.core.BlockPos to,
+                                             final net.minecraft.world.level.block.entity.TheEndGatewayBlockEntity gateway) {
+        final org.bukkit.entity.Entity bukkit = entity.getBukkitEntity();
+        final org.bukkit.Location from = bukkit.getLocation();
+        final org.bukkit.Location target = new org.bukkit.Location(level.getWorld(),
+                to.getX() + 0.5, to.getY(), to.getZ() + 0.5, from.getYaw(), from.getPitch());
+
+        if (bukkit instanceof org.bukkit.entity.Player player) {
+            if (!listening(com.destroystokyo.paper.event.player.PlayerTeleportEndGatewayEvent.getHandlerList())) {
+                return true;
+            }
+
+            return new com.destroystokyo.paper.event.player.PlayerTeleportEndGatewayEvent(player, from, target,
+                    new org.bukkit.craftbukkit.block.CraftEndGateway(level.getWorld(), gateway)).callEvent();
+        }
+
+        if (!listening(com.destroystokyo.paper.event.entity.EntityTeleportEndGatewayEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.entity.EntityTeleportEndGatewayEvent(bukkit, from, target,
+                new org.bukkit.craftbukkit.block.CraftEndGateway(level.getWorld(), gateway)).callEvent();
+    }
+
+
+
+    /** EntityPortalReadyEvent。ポータルで飛ぶ用意ができた直後。 */
+    public static boolean portalReady(final Entity entity, final ServerLevel destination) {
+        if (!listening(io.papermc.paper.event.entity.EntityPortalReadyEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new io.papermc.paper.event.entity.EntityPortalReadyEvent(entity.getBukkitEntity(),
+                destination == null ? null : destination.getWorld(), org.bukkit.PortalType.NETHER).callEvent();
+    }
+
 }

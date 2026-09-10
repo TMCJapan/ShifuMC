@@ -1,0 +1,7 @@
+# PlayerArmorChangeEvent。防具の 1 枠が変わった直後。
+
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+                map.put(equipmentSlot, itemStack2);
+insert-after:
+    dev.shifu.event.PlayerEvents.armorChange(this, equipmentSlot, itemStack, itemStack2);

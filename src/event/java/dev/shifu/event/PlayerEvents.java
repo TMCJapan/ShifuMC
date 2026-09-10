@@ -1027,4 +1027,166 @@ public final class PlayerEvents {
         return event.shouldTriggerAdvancements();
     }
 
+
+    /**
+     * PrePlayerAttackEntityEvent。殴る直前。
+     *
+     * <p>Paper は「殴れない相手」でも出す。vanilla は
+     * {@code isAttackable} と {@code skipAttackInteraction} を先に通すので、
+     * <b>出しているのは殴れるときだけ。</b>
+     */
+    public static boolean prePlayerAttack(final net.minecraft.world.entity.player.Player player,
+                                          final net.minecraft.world.entity.Entity target) {
+        if (!(player instanceof ServerPlayer serverPlayer)
+                || !ShifuEvents.listening(
+                        io.papermc.paper.event.player.PrePlayerAttackEntityEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new io.papermc.paper.event.player.PrePlayerAttackEntityEvent(serverPlayer.getBukkitEntity(),
+                target.getBukkitEntity(), true).callEvent();
+    }
+
+    /** PlayerAttackEntityCooldownResetEvent。殴ったあと攻撃力の溜めを戻す直前。 */
+    public static boolean attackCooldownReset(final net.minecraft.world.entity.player.Player player,
+                                              final net.minecraft.world.entity.Entity target) {
+        if (!(player instanceof ServerPlayer serverPlayer)
+                || !ShifuEvents.listening(
+                        com.destroystokyo.paper.event.player.PlayerAttackEntityCooldownResetEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.player.PlayerAttackEntityCooldownResetEvent(
+                serverPlayer.getBukkitEntity(), target.getBukkitEntity(),
+                serverPlayer.getAttackStrengthScale(0.0F)).callEvent();
+    }
+
+    /** PlayerArmorChangeEvent。防具の 1 枠が変わった直後。 */
+    public static void armorChange(final net.minecraft.world.entity.LivingEntity entity,
+                                   final net.minecraft.world.entity.EquipmentSlot slot,
+                                   final net.minecraft.world.item.ItemStack from,
+                                   final net.minecraft.world.item.ItemStack to) {
+        if (!(entity instanceof ServerPlayer player)
+                || slot.getType() != net.minecraft.world.entity.EquipmentSlot.Type.ARMOR
+                || !ShifuEvents.listening(
+                        com.destroystokyo.paper.event.player.PlayerArmorChangeEvent.getHandlerList())) {
+            return;
+        }
+
+        new com.destroystokyo.paper.event.player.PlayerArmorChangeEvent(player.getBukkitEntity(),
+                com.destroystokyo.paper.event.player.PlayerArmorChangeEvent.SlotType.valueOf(slot.name()),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(from),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(to)).callEvent();
+    }
+
+    /** PlayerPickupExperienceEvent。経験値を拾う直前。 */
+    public static boolean pickupExperience(final net.minecraft.world.entity.player.Player player,
+                                           final net.minecraft.world.entity.ExperienceOrb orb) {
+        if (!(player instanceof ServerPlayer serverPlayer)
+                || !ShifuEvents.listening(
+                        com.destroystokyo.paper.event.player.PlayerPickupExperienceEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.player.PlayerPickupExperienceEvent(serverPlayer.getBukkitEntity(),
+                (org.bukkit.entity.ExperienceOrb) orb.getBukkitEntity()).callEvent();
+    }
+
+    /**
+     * PlayerArmorStandManipulateEvent。防具立ての持ち物を入れ替える直前。
+     *
+     * <p>Paper は「入れ替えを止めている枠」の判定のあとに出す。vanilla の
+     * 判定は if の連鎖なので途中に入れられず、<b>出しているのはメソッドの頭。</b>
+     */
+    public static boolean armorStandManipulate(final net.minecraft.world.entity.decoration.ArmorStand stand,
+                                               final net.minecraft.world.entity.player.Player player,
+                                               final net.minecraft.world.entity.EquipmentSlot slot,
+                                               final net.minecraft.world.item.ItemStack held,
+                                               final net.minecraft.world.InteractionHand hand) {
+        if (!(player instanceof ServerPlayer serverPlayer)
+                || !ShifuEvents.listening(
+                        org.bukkit.event.player.PlayerArmorStandManipulateEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.player.PlayerArmorStandManipulateEvent(serverPlayer.getBukkitEntity(),
+                (org.bukkit.entity.ArmorStand) stand.getBukkitEntity(),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(held),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stand.getItemBySlot(slot)),
+                org.bukkit.craftbukkit.CraftEquipmentSlot.getSlot(slot),
+                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand)).callEvent();
+    }
+
+
+    /**
+     * AsyncPlayerSendCommandsEvent と PlayerCommandSendEvent。
+     * コマンドの一覧を送る直前。
+     *
+     * <p>Paper は消された名前を根から抜く。抜く口({@code removeCommand})が
+     * 1.20.6 の木に無いので、<b>出しているだけで反映はしていない。</b>
+     */
+    public static void commandSend(final ServerPlayer player,
+                                   final com.mojang.brigadier.tree.RootCommandNode<
+                                           net.minecraft.commands.SharedSuggestionProvider> root) {
+        if (ShifuEvents.listening(
+                com.destroystokyo.paper.event.brigadier.AsyncPlayerSendCommandsEvent.getHandlerList())) {
+            new com.destroystokyo.paper.event.brigadier.AsyncPlayerSendCommandsEvent<>(
+                    player.getBukkitEntity(), (com.mojang.brigadier.tree.RootCommandNode) root, false).callEvent();
+        }
+
+        if (!ShifuEvents.listening(org.bukkit.event.player.PlayerCommandSendEvent.getHandlerList())) {
+            return;
+        }
+
+        final java.util.Set<String> names = new java.util.LinkedHashSet<>();
+
+        for (final com.mojang.brigadier.tree.CommandNode<net.minecraft.commands.SharedSuggestionProvider> node
+                : root.getChildren()) {
+            names.add(node.getName());
+        }
+
+        new org.bukkit.event.player.PlayerCommandSendEvent(player.getBukkitEntity(), names).callEvent();
+    }
+
+    /** ProfileWhitelistVerifyEvent に登録があるか。 */
+    public static boolean whitelistVerifyListening() {
+        return ShifuEvents.listening(
+                com.destroystokyo.paper.event.profile.ProfileWhitelistVerifyEvent.getHandlerList());
+    }
+
+    /** ProfileWhitelistVerifyEvent。ホワイトリストを見るとき。 */
+    public static boolean whitelistVerify(final com.mojang.authlib.GameProfile profile, final boolean enforcing,
+                                          final boolean whitelisted, final boolean op) {
+        if (!ShifuEvents.listening(
+                com.destroystokyo.paper.event.profile.ProfileWhitelistVerifyEvent.getHandlerList())) {
+            return whitelisted;
+        }
+
+        final com.destroystokyo.paper.event.profile.ProfileWhitelistVerifyEvent event =
+                new com.destroystokyo.paper.event.profile.ProfileWhitelistVerifyEvent(
+                        io.papermc.paper.util.MCUtil.toBukkit(profile), enforcing, whitelisted, op,
+                        org.spigotmc.SpigotConfig.whitelistMessage);
+        event.callEvent();
+
+        return event.isWhitelisted();
+    }
+
+    /**
+     * PlayerOpenSignEvent と PlayerSignOpenEvent。看板を開く直前。
+     *
+     * @return 開いてよいか
+     */
+    public static boolean signOpen(final net.minecraft.world.entity.player.Player player,
+                                   final net.minecraft.world.level.block.entity.SignBlockEntity sign,
+                                   final boolean front) {
+        if (!(player instanceof ServerPlayer)
+                || (!ShifuEvents.listening(io.papermc.paper.event.player.PlayerOpenSignEvent.getHandlerList())
+                        && !ShifuEvents.listening(org.bukkit.event.player.PlayerSignOpenEvent.getHandlerList()))) {
+            return true;
+        }
+
+        return org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerSignOpenEvent(player, sign, front,
+                org.bukkit.event.player.PlayerSignOpenEvent.Cause.INTERACT);
+    }
+
 }

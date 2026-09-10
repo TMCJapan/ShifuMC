@@ -1,0 +1,27 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// UserWhiteList.add
+    // Paper は WhitelistStateUpdateEvent を出すために add と remove を覆う。
+    // vanilla の側は StoredUserList のものをそのまま呼ぶ。
+    @Override
+    public void add(UserWhiteListEntry entry) {
+        if (!new io.papermc.paper.event.server.WhitelistStateUpdateEvent(
+                com.destroystokyo.paper.profile.CraftPlayerProfile.asBukkitCopy(entry.getUser()),
+                io.papermc.paper.event.server.WhitelistStateUpdateEvent.WhitelistStatus.ADDED).callEvent()) {
+            return;
+        }
+
+        super.add(entry);
+    }
+
+// UserWhiteList.remove
+    @Override
+    public void remove(GameProfile profile) {
+        if (!new io.papermc.paper.event.server.WhitelistStateUpdateEvent(
+                com.destroystokyo.paper.profile.CraftPlayerProfile.asBukkitCopy(profile),
+                io.papermc.paper.event.server.WhitelistStateUpdateEvent.WhitelistStatus.REMOVED).callEvent()) {
+            return;
+        }
+
+        super.remove(profile);
+    }

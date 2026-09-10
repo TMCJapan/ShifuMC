@@ -1,0 +1,22 @@
+# RaidFinishEvent と RaidSpawnWaveEvent。
+
+file: net/minecraft/world/entity/raid/Raid.java
+anchor:
+                        this.status = Raid.RaidStatus.LOSS;
+insert-after:
+    dev.shifu.event.EntityEvents.raidFinish(this, java.util.Collections.emptyList());
+
+file: net/minecraft/world/entity/raid/Raid.java
+anchor:
+                        this.status = Raid.RaidStatus.VICTORY;
+insert-after:
+    dev.shifu.event.EntityEvents.raidFinish(this, this.heroesOfTheVillage);
+
+file: net/minecraft/world/entity/raid/Raid.java
+anchor:
+        this.groupsSpawned++;
+        this.updateBossbar();
+        this.setDirty();
+insert-after:
+    dev.shifu.event.EntityEvents.raidSpawnWave(this, this.getLeader(this.groupsSpawned - 1),
+            java.util.Collections.emptyList());

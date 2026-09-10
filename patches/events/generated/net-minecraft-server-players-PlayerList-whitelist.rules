@@ -1,0 +1,12 @@
+# ProfileWhitelistVerifyEvent。ホワイトリストを見るとき。
+# 登録があるときだけ vanilla の判定を組み直す。
+
+file: net/minecraft/server/players/PlayerList.java
+anchor:
+    public boolean isWhiteListed(GameProfile profile) {
+insert-after:
+    if (dev.shifu.event.PlayerEvents.whitelistVerifyListening()) {
+        return dev.shifu.event.PlayerEvents.whitelistVerify(profile, this.doWhiteList,
+                !this.doWhiteList || this.ops.contains(profile) || this.whitelist.contains(profile),
+                this.ops.contains(profile));
+    }

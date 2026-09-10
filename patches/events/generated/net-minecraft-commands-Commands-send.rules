@@ -1,0 +1,7 @@
+# AsyncPlayerSendCommandsEvent と PlayerCommandSendEvent。
+
+file: net/minecraft/commands/Commands.java
+anchor:
+        player.connection.send(new ClientboundCommandsPacket(rootCommandNode));
+insert:
+    dev.shifu.event.PlayerEvents.commandSend(player, rootCommandNode);
