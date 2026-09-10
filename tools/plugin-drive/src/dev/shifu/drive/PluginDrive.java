@@ -48,6 +48,30 @@ public final class PluginDrive extends JavaPlugin implements Listener {
     }
 
     private int clicks;
+    private int multiPlaces;
+    private int blockDrops;
+
+    @EventHandler
+    public void onMultiPlace(final org.bukkit.event.block.BlockMultiPlaceEvent event) {
+        this.multiPlaces++;
+        this.note("BlockMultiPlaceEvent " + event.getBlockPlaced().getType()
+                + " 変わる枠=" + event.getReplacedBlockStates().size());
+    }
+
+    // 置く側が届いているか、誰かが取り消したかを見る
+    @EventHandler(priority = org.bukkit.event.EventPriority.MONITOR, ignoreCancelled = false)
+    public void onAnyPlace(final org.bukkit.event.block.BlockPlaceEvent event) {
+        this.note("BlockPlaceEvent " + event.getBlockPlaced().getType()
+                + " cancelled=" + event.isCancelled() + " canBuild=" + event.canBuild()
+                + " multi=" + (event instanceof org.bukkit.event.block.BlockMultiPlaceEvent));
+    }
+
+    @EventHandler
+    public void onBlockDropItem(final org.bukkit.event.block.BlockDropItemEvent event) {
+        this.blockDrops++;
+        this.note("BlockDropItemEvent " + event.getBlockState().getType()
+                + " items=" + event.getItems().size());
+    }
 
     @EventHandler
     public void onInventoryClick(final org.bukkit.event.inventory.InventoryClickEvent event) {
@@ -234,6 +258,45 @@ public final class PluginDrive extends JavaPlugin implements Listener {
         this.later(270, () -> this.note("pickup events = " + this.pickedUp
                 + ", diamonds in inventory = " + bot.getInventory().all(Material.DIAMOND).size()));
 
+        // BlockMultiPlaceEvent。扉を持たせて、足場の上に置かせる
+        this.later(292, () -> {
+            final Location at = bot.getLocation().clone().add(0, -1, 2);
+            at.getBlock().setType(Material.STONE);
+            at.clone().add(0, 1, 0).getBlock().setType(Material.AIR);
+            at.clone().add(0, 2, 0).getBlock().setType(Material.AIR);
+            bot.getInventory().setItem(1, new org.bukkit.inventory.ItemStack(Material.OAK_DOOR, 1));
+            this.tell(bot, "!bot slot 1");
+            this.later(10, () -> {
+                this.note("扉を置く前: mode=" + bot.getGameMode()
+                        + " 枠=" + bot.getInventory().getHeldItemSlot()
+                        + " 手=" + bot.getInventory().getItemInMainHand().getType()
+                        + " 足場=" + at.getBlock().getType()
+                        + " 上=" + at.clone().add(0, 1, 0).getBlock().getType()
+                        + " 上2=" + at.clone().add(0, 2, 0).getBlock().getType()
+                        + " bot=" + brief(bot.getLocation()));
+                this.tell(bot, "!bot use "
+                        + at.getBlockX() + "," + at.getBlockY() + "," + at.getBlockZ());
+            });
+            this.later(30, () -> this.note("扉 -> " + at.clone().add(0, 1, 0).getBlock().getType()
+                    + " (BlockMultiPlaceEvent " + this.multiPlaces + " 件)"));
+        });
+
+        // BlockDropItemEvent。サバイバルにして、素手で一瞬で壊せるものを置いて壊させる
+        this.later(320, () -> {
+            this.tell(bot, "!bot cmd gamemode survival");
+            final Location at = bot.getLocation().clone().add(2, 0, 0);
+            at.clone().subtract(0, 1, 0).getBlock().setType(Material.DIRT);
+            // 素手で一瞬で壊せて、必ず落とし物が出るもの
+            at.getBlock().setType(Material.TORCH);
+            this.later(10, () -> this.tell(bot, "!bot break "
+                    + at.getBlockX() + "," + at.getBlockY() + "," + at.getBlockZ()));
+            this.later(30, () -> {
+                this.note("松明 -> " + at.getBlock().getType()
+                        + " (BlockDropItemEvent " + this.blockDrops + " 件)");
+                this.tell(bot, "!bot cmd gamemode creative");
+            });
+        });
+
         // InventoryClickEvent。持ち物に物を入れて、bot にその枠を押させる
         this.later(276, () -> {
             bot.getInventory().setItem(0, new org.bukkit.inventory.ItemStack(Material.DIAMOND, 5));
@@ -287,11 +350,11 @@ public final class PluginDrive extends JavaPlugin implements Listener {
         this.later(290, () -> this.note("CreatureSpawnEvent = " + this.creatureSpawns
                 + ", ItemSpawnEvent = " + this.itemSpawns));
 
-        this.later(300, () -> {
+        this.later(370, () -> {
             this.note("---- done ----");
             this.tell(bot, "!bot quit");
         });
-        this.later(340, () -> Bukkit.shutdown());
+        this.later(410, () -> Bukkit.shutdown());
     }
 
     private static String brief(final Location at) {

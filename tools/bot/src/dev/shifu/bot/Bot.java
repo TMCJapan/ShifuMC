@@ -297,6 +297,10 @@ public final class Bot {
             }
             case "drop" -> this.connection.send(new ServerboundPlayerActionPacket(
                     ServerboundPlayerActionPacket.Action.DROP_ITEM, BlockPos.ZERO, Direction.DOWN, 0));
+            // 持ち替え。数字は 0..8
+            case "slot" -> this.connection.send(
+                    new net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket(
+                            Integer.parseInt(rest)));
             case "respawn" -> this.connection.send(new ServerboundClientCommandPacket(ServerboundClientCommandPacket.Action.PERFORM_RESPAWN));
             case "fly" -> {
                 // 飛行の切り替え。サーバーは flying だけを読む
@@ -334,7 +338,7 @@ public final class Bot {
     }
 
     private static BlockPos blockPos(final String text) {
-        final String[] parts = text.trim().split("\\s+");
+        final String[] parts = text.trim().split("[,\\s]+");
 
         return new BlockPos(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
     }
