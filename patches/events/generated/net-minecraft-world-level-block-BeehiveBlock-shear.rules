@@ -1,0 +1,10 @@
+# PlayerShearBlockEvent。ハサミで蜂の巣を切る直前。
+
+file: net/minecraft/world/level/block/BeehiveBlock.java
+anchor:
+                dropHoneycomb(world, pos);
+insert:
+    if (!dev.shifu.event.PlayerEvents.shearBlock(world, pos, player, hand, stack,
+            new ItemStack(Items.HONEYCOMB, 3))) {
+        return ItemInteractionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
+    }

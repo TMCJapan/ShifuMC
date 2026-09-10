@@ -1,0 +1,10 @@
+# EntityLoadCrossbowEvent。矢を込める直前。登録があるときだけ判定を組み直す。
+
+file: net/minecraft/world/item/CrossbowItem.java
+anchor:
+        if (f >= 1.0F && !isCharged(stack) && tryLoadProjectiles(user, stack)) {
+insert:
+    if (dev.shifu.event.ItemEvents.loadCrossbowListening() && f >= 1.0F && !isCharged(stack)
+            && !dev.shifu.event.ItemEvents.loadCrossbow(user, stack)) {
+        return;
+    }

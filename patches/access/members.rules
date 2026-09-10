@@ -102,3 +102,8 @@ line:
 file: net/minecraft/world/entity/Entity.java
 line:
     private static final EntityDataAccessor<Integer> DATA_TICKS_FROZEN = SynchedEntityData.defineId(Entity.class, EntityDataSerializers.INT);
+
+# player — PlayerItemCooldownEvent を出すのに要る(ItemCooldowns.addCooldown から)
+file: net/minecraft/world/item/ServerItemCooldowns.java
+line:
+    private final ServerPlayer player;

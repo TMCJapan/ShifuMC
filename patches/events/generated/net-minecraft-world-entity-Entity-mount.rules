@@ -1,0 +1,10 @@
+# VehicleEnterEvent と EntityMountEvent。乗る直前。
+
+file: net/minecraft/world/entity/Entity.java
+anchor:
+                this.setPose(Pose.STANDING);
+                this.vehicle = entity;
+insert:
+    if (!dev.shifu.event.EntityEvents.mount(this, entity)) {
+        return false;
+    }

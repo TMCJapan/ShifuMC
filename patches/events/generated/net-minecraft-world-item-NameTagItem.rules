@@ -1,0 +1,9 @@
+# PlayerNameEntityEvent。名札で名前を付ける直前。
+
+file: net/minecraft/world/item/NameTagItem.java
+anchor:
+                entity.setCustomName(component);
+insert:
+    if (!dev.shifu.event.PlayerEvents.nameEntity(user, entity, component)) {
+        return InteractionResult.PASS;
+    }

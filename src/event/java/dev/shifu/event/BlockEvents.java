@@ -1018,4 +1018,87 @@ public final class BlockEvents {
         return event.isBuildable();
     }
 
+
+    /** BellRingEvent。鐘が鳴る直前。 */
+    public static boolean bellRing(final net.minecraft.world.level.Level level,
+                                   final net.minecraft.core.BlockPos pos,
+                                   final net.minecraft.core.Direction direction,
+                                   final net.minecraft.world.entity.Entity entity) {
+        if (!ShifuEvents.listening(io.papermc.paper.event.block.BellRingEvent.getHandlerList())) {
+            return true;
+        }
+
+        return org.bukkit.craftbukkit.event.CraftEventFactory.handleBellRingEvent(level, pos, direction, entity);
+    }
+
+    /** BellResonateEvent か BellRevealRaiderEvent に登録があるか。 */
+    public static boolean bellResonateListening() {
+        return ShifuEvents.listening(org.bukkit.event.block.BellResonateEvent.getHandlerList())
+                || ShifuEvents.listening(io.papermc.paper.event.block.BellRevealRaiderEvent.getHandlerList());
+    }
+
+    /**
+     * BellResonateEvent と BellRevealRaiderEvent。鐘の共鳴で襲撃者が光る直前。
+     *
+     * <p>登録があるときだけ vanilla の絞り込みを組み直して呼ぶ。
+     * 光らせる中身({@code addEffect})は vanilla の {@code glow} と同じ。
+     */
+    public static void bellResonate(final net.minecraft.world.level.Level level,
+                                    final net.minecraft.core.BlockPos pos,
+                                    final java.util.List<net.minecraft.world.entity.LivingEntity> heard) {
+        final java.util.List<org.bukkit.entity.LivingEntity> raiders = new java.util.ArrayList<>();
+
+        for (final net.minecraft.world.entity.LivingEntity entity : heard) {
+            if (entity.isAlive() && !entity.isRemoved() && pos.closerToCenterThan(entity.position(), 48.0)
+                    && entity.getType().is(net.minecraft.tags.EntityTypeTags.RAIDERS)) {
+                raiders.add((org.bukkit.entity.LivingEntity) entity.getBukkitEntity());
+            }
+        }
+
+        org.bukkit.craftbukkit.event.CraftEventFactory.handleBellResonateEvent(level, pos, raiders)
+                .forEach(entity -> {
+                    if (ShifuEvents.listening(io.papermc.paper.event.block.BellRevealRaiderEvent.getHandlerList())
+                            && !new io.papermc.paper.event.block.BellRevealRaiderEvent(
+                                    org.bukkit.craftbukkit.block.CraftBlock.at(entity.level(), pos),
+                                    (org.bukkit.entity.Raider) entity.getBukkitEntity()).callEvent()) {
+                        return;
+                    }
+
+                    entity.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                            net.minecraft.world.effect.MobEffects.GLOWING, 60));
+                });
+    }
+
+    /**
+     * CompostItemEvent と EntityCompostItemEvent。コンポスターの中身が 1 段上がる直前。
+     *
+     * <p>Paper は上がらないときも出す。vanilla はその判定を乱数ごと 1 つの式で
+     * 済ませていて、外から作り直すと乱数を 2 度引く。<b>出しているのは上がるときだけ。</b>
+     *
+     * @return 上げてよいか
+     */
+    public static boolean compostItem(final net.minecraft.world.entity.Entity user,
+                                      final net.minecraft.world.level.LevelAccessor level,
+                                      final net.minecraft.core.BlockPos pos,
+                                      final net.minecraft.world.item.ItemStack stack) {
+        final boolean plain = ShifuEvents.listening(io.papermc.paper.event.block.CompostItemEvent.getHandlerList());
+        final boolean byEntity = user != null
+                && ShifuEvents.listening(io.papermc.paper.event.entity.EntityCompostItemEvent.getHandlerList());
+
+        if (!plain && !byEntity) {
+            return true;
+        }
+
+        final org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+        final org.bukkit.inventory.ItemStack item =
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack);
+        final io.papermc.paper.event.block.CompostItemEvent event = user == null
+                ? new io.papermc.paper.event.block.CompostItemEvent(block, item, true)
+                : new io.papermc.paper.event.entity.EntityCompostItemEvent(user.getBukkitEntity(), block, item, true);
+
+        return event.callEvent() && event.willRaiseLevel();
+    }
+
+
+
 }

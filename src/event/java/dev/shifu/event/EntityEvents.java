@@ -1053,4 +1053,105 @@ public final class EntityEvents {
         return hatch.isHatching() ? hatch.getNumHatches() : 0;
     }
 
+
+    /**
+     * VehicleDamageEvent。乗り物が傷つく直前。
+     *
+     * <p>Paper はプラグインが直した傷の量を使う。vanilla の
+     * {@code setDamage} の引数は変えられないので、<b>渡しているのは取り消しだけ。</b>
+     */
+    public static boolean vehicleDamage(final net.minecraft.world.entity.vehicle.VehicleEntity vehicle,
+                                        final net.minecraft.world.damagesource.DamageSource source,
+                                        final float amount) {
+        if (!listening(org.bukkit.event.vehicle.VehicleDamageEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.vehicle.VehicleDamageEvent(
+                (org.bukkit.entity.Vehicle) vehicle.getBukkitEntity(),
+                source.getEntity() == null ? null : source.getEntity().getBukkitEntity(),
+                (double) amount).callEvent();
+    }
+
+    /** VehicleDestroyEvent。乗り物が壊れる直前。 */
+    public static boolean vehicleDestroy(final net.minecraft.world.entity.vehicle.VehicleEntity vehicle,
+                                         final net.minecraft.world.damagesource.DamageSource source) {
+        if (!listening(org.bukkit.event.vehicle.VehicleDestroyEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.vehicle.VehicleDestroyEvent(
+                (org.bukkit.entity.Vehicle) vehicle.getBukkitEntity(),
+                source.getEntity() == null ? null : source.getEntity().getBukkitEntity()).callEvent();
+    }
+
+    /**
+     * VehicleEnterEvent と EntityMountEvent。乗る直前。
+     *
+     * <p>世界生成の途中では出さない(Paper と同じ)。
+     */
+    public static boolean mount(final Entity passenger, final Entity vehicle) {
+        if (!passenger.valid) {
+            return true;
+        }
+
+        if (vehicle.getBukkitEntity() instanceof org.bukkit.entity.Vehicle bukkitVehicle
+                && listening(org.bukkit.event.vehicle.VehicleEnterEvent.getHandlerList())
+                && !new org.bukkit.event.vehicle.VehicleEnterEvent(
+                        bukkitVehicle, passenger.getBukkitEntity()).callEvent()) {
+            return false;
+        }
+
+        if (!listening(org.bukkit.event.entity.EntityMountEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.entity.EntityMountEvent(
+                passenger.getBukkitEntity(), vehicle.getBukkitEntity()).callEvent();
+    }
+
+
+    /** EntityToggleSwimEvent。泳ぐ・やめるの切り替え直前。 */
+    public static boolean toggleSwim(final LivingEntity entity, final boolean swimming) {
+        if (!listening(org.bukkit.event.entity.EntityToggleSwimEvent.getHandlerList())) {
+            return true;
+        }
+
+        return !org.bukkit.craftbukkit.event.CraftEventFactory.callToggleSwimEvent(entity, swimming).isCancelled();
+    }
+
+
+    /** EnderDragonChangePhaseEvent。次の段階に移る直前。 */
+    public static boolean dragonChangePhase(final net.minecraft.world.entity.boss.enderdragon.EnderDragon dragon,
+                                            final net.minecraft.world.entity.boss.enderdragon.phases.EnderDragonPhase<?> from,
+                                            final net.minecraft.world.entity.boss.enderdragon.phases.EnderDragonPhase<?> to) {
+        if (!listening(org.bukkit.event.entity.EnderDragonChangePhaseEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.entity.EnderDragonChangePhaseEvent(
+                (org.bukkit.craftbukkit.entity.CraftEnderDragon) dragon.getBukkitEntity(),
+                from == null ? null : org.bukkit.craftbukkit.entity.CraftEnderDragon.getBukkitPhase(from),
+                org.bukkit.craftbukkit.entity.CraftEnderDragon.getBukkitPhase(to)).callEvent();
+    }
+
+    /** EnderDragonFireballHitEvent。ドラゴンの火の玉が雲を置く直前。 */
+    public static boolean dragonFireballHit(final net.minecraft.world.entity.projectile.DragonFireball fireball,
+                                            final java.util.List<LivingEntity> hit,
+                                            final net.minecraft.world.entity.AreaEffectCloud cloud) {
+        if (!listening(com.destroystokyo.paper.event.entity.EnderDragonFireballHitEvent.getHandlerList())) {
+            return true;
+        }
+
+        final java.util.List<org.bukkit.entity.LivingEntity> targets = new java.util.ArrayList<>();
+
+        for (final LivingEntity one : hit) {
+            targets.add(one.getBukkitLivingEntity());
+        }
+
+        return new com.destroystokyo.paper.event.entity.EnderDragonFireballHitEvent(
+                (org.bukkit.entity.DragonFireball) fireball.getBukkitEntity(), targets,
+                (org.bukkit.entity.AreaEffectCloud) cloud.getBukkitEntity()).callEvent();
+    }
+
 }

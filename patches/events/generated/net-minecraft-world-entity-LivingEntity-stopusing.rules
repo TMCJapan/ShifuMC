@@ -1,0 +1,8 @@
+# PlayerStopUsingItemEvent。使うのをやめた直後。
+
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    public void releaseUsingItem() {
+        if (!this.useItem.isEmpty()) {
+insert-after:
+    dev.shifu.event.PlayerEvents.stopUsingItem(this);

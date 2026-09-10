@@ -1,0 +1,11 @@
+# EntityToggleSwimEvent。泳ぐ・やめるの切り替え直前。
+
+file: net/minecraft/world/entity/Entity.java
+anchor:
+    public void setSwimming(boolean swimming) {
+insert-after:
+    if (this.valid && this.isSwimming() != swimming
+            && this instanceof net.minecraft.world.entity.LivingEntity shifuSwimmer
+            && !dev.shifu.event.EntityEvents.toggleSwim(shifuSwimmer, swimming)) {
+        return;
+    }

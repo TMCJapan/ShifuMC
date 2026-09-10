@@ -1,0 +1,9 @@
+# BellRingEvent。鐘が鳴る直前。
+
+file: net/minecraft/world/level/block/BellBlock.java
+anchor:
+            ((BellBlockEntity)blockEntity).onHit(direction);
+insert:
+    if (!dev.shifu.event.BlockEvents.bellRing(world, pos, direction, entity)) {
+        return false;
+    }

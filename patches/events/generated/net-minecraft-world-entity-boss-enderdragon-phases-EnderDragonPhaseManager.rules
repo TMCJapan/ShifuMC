@@ -1,0 +1,10 @@
+# EnderDragonChangePhaseEvent。次の段階に移る直前。
+
+file: net/minecraft/world/entity/boss/enderdragon/phases/EnderDragonPhaseManager.java
+anchor:
+            this.currentPhase = this.getPhase((EnderDragonPhase<DragonPhaseInstance>)type);
+insert:
+    if (!dev.shifu.event.EntityEvents.dragonChangePhase(this.dragon,
+            this.currentPhase == null ? null : this.currentPhase.getPhase(), type)) {
+        return;
+    }

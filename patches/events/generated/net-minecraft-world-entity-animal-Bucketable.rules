@@ -1,0 +1,9 @@
+# PlayerBucketEntityEvent(魚なら PlayerBucketFishEvent)。バケツに入れる直前。
+
+file: net/minecraft/world/entity/animal/Bucketable.java
+anchor:
+            ItemStack itemStack3 = ItemUtils.createFilledResult(itemStack, player, itemStack2, false);
+insert:
+    if (!dev.shifu.event.PlayerEvents.bucketEntity(entity, player, itemStack, itemStack2, hand)) {
+        return Optional.of(InteractionResult.sidedSuccess(entity.level().isClientSide));
+    }

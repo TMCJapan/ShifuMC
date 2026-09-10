@@ -1236,7 +1236,7 @@ public final class ShifuEvents {
             return true;
         }
 
-        final List<org.bukkit.block.Block> blockList = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>();
+        final List<org.bukkit.block.Block> blockList = new ArrayList<>();
 
         for (int i = targetBlocks.size() - 1; i >= 0; i--) {
             final org.bukkit.block.Block block = CraftBlock.at(level, targetBlocks.get(i));

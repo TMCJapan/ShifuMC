@@ -1,0 +1,10 @@
+# BellResonateEvent と BellRevealRaiderEvent。登録があるときだけ組み直す。
+
+file: net/minecraft/world/level/block/entity/BellBlockEntity.java
+anchor:
+        hearingEntities.stream().filter(entity -> isRaiderWithinRange(pos, entity)).forEach(BellBlockEntity::glow);
+insert:
+    if (dev.shifu.event.BlockEvents.bellResonateListening()) {
+        dev.shifu.event.BlockEvents.bellResonate(world, pos, hearingEntities);
+        return;
+    }

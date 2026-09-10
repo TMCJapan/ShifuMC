@@ -555,4 +555,40 @@ public final class ItemEvents {
         return true;
     }
 
+
+    /**
+     * EntityShootBowEvent。矢を世界に置く直前。
+     *
+     * <p>Paper は耐久の減りをイベントのあとに移している。vanilla は先に減らすので、
+     * <b>取り消しても耐久は戻らない。</b>差し替えた矢({@code setProjectile})も使っていない。
+     */
+    public static boolean shootBow(final net.minecraft.world.entity.LivingEntity shooter, final ItemStack bow,
+                                   final ItemStack arrow, final Projectile projectile,
+                                   final InteractionHand hand, final float speed) {
+        if (!ShifuEvents.listening(org.bukkit.event.entity.EntityShootBowEvent.getHandlerList())) {
+            return true;
+        }
+
+        return !org.bukkit.craftbukkit.event.CraftEventFactory.callEntityShootBowEvent(
+                shooter, bow, arrow, projectile, hand, speed, true).isCancelled();
+    }
+
+
+    /** EntityLoadCrossbowEvent に登録があるか。 */
+    public static boolean loadCrossbowListening() {
+        return ShifuEvents.listening(io.papermc.paper.event.entity.EntityLoadCrossbowEvent.getHandlerList());
+    }
+
+    /**
+     * EntityLoadCrossbowEvent。クロスボウに矢を込める直前。
+     *
+     * <p>{@code shouldConsumeItem} は vanilla の {@code tryLoadProjectiles} が
+     * 常に矢を消すので使っていない。
+     */
+    public static boolean loadCrossbow(final net.minecraft.world.entity.LivingEntity user, final ItemStack crossbow) {
+        return new io.papermc.paper.event.entity.EntityLoadCrossbowEvent(user.getBukkitLivingEntity(),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(crossbow),
+                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(user.getUsedItemHand())).callEvent();
+    }
+
 }

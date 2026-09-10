@@ -1,0 +1,9 @@
+# CompostItemEvent と EntityCompostItemEvent。中身が 1 段上がる直前。
+
+file: net/minecraft/world/level/block/ComposterBlock.java
+anchor:
+            int j = i + 1;
+insert:
+    if (!dev.shifu.event.BlockEvents.compostItem(user, world, pos, stack)) {
+        return state;
+    }

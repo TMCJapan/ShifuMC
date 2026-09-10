@@ -1,0 +1,24 @@
+# PlayerArmSwingEvent(PlayerAnimationEvent)と PlayerSwapHandItemsEvent。
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+        this.player.swing(packet.getHand());
+insert:
+    if (!dev.shifu.event.PlayerEvents.armSwing(this.player, packet.getHand())) {
+        return;
+    }
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+                    ItemStack itemStack = this.player.getItemInHand(InteractionHand.OFF_HAND);
+                    this.player.setItemInHand(InteractionHand.OFF_HAND, this.player.getItemInHand(InteractionHand.MAIN_HAND));
+                    this.player.setItemInHand(InteractionHand.MAIN_HAND, itemStack);
+                    this.player.stopUsingItem();
+insert:
+    org.bukkit.event.player.PlayerSwapHandItemsEvent shifuSwap =
+            dev.shifu.event.PlayerEvents.swapHandItems(this.player);
+    if (shifuSwap != null && shifuSwap.isCancelled()) {
+        return;
+    }
+insert-after:
+    dev.shifu.event.PlayerEvents.swapHandItemsApply(this.player, shifuSwap);

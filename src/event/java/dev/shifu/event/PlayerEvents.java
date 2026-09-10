@@ -779,4 +779,184 @@ public final class PlayerEvents {
                 player.getBukkitEntity(), from.getBukkitEntity(), to.getBukkitEntity()).callEvent();
     }
 
+
+    /**
+     * PlayerArmSwingEvent(親は PlayerAnimationEvent)。腕を振る直前。
+     *
+     * <p>CraftBukkit はここで視線の先を引いて「空振り」を落としているが、
+     * それは vanilla に無い判定なので入れていない。
+     */
+    public static boolean armSwing(final ServerPlayer player, final net.minecraft.world.InteractionHand hand) {
+        if (!ShifuEvents.listening(org.bukkit.event.player.PlayerAnimationEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new io.papermc.paper.event.player.PlayerArmSwingEvent(player.getBukkitEntity(),
+                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand)).callEvent();
+    }
+
+    /**
+     * PlayerSwapHandItemsEvent。持ち替える直前。
+     *
+     * @return 出したイベント。登録が無ければ null
+     */
+    public static org.bukkit.event.player.PlayerSwapHandItemsEvent swapHandItems(final ServerPlayer player) {
+        if (!ShifuEvents.listening(org.bukkit.event.player.PlayerSwapHandItemsEvent.getHandlerList())) {
+            return null;
+        }
+
+        final org.bukkit.event.player.PlayerSwapHandItemsEvent event =
+                new org.bukkit.event.player.PlayerSwapHandItemsEvent(player.getBukkitEntity(),
+                        org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(
+                                player.getItemInHand(net.minecraft.world.InteractionHand.OFF_HAND)).clone(),
+                        org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(
+                                player.getItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND)).clone());
+        event.callEvent();
+
+        return event;
+    }
+
+    /** 持ち替えたあと、プラグインが差し替えた物があれば入れ直す。 */
+    public static void swapHandItemsApply(final ServerPlayer player,
+                                          final org.bukkit.event.player.PlayerSwapHandItemsEvent event) {
+        if (event == null) {
+            return;
+        }
+
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getMainHandItem()));
+        player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND,
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getOffHandItem()));
+    }
+
+
+    /**
+     * PlayerHarvestBlockEvent。実を摘む直前。
+     *
+     * <p>落とす物は vanilla の行が決めるので、<b>{@code getItemsHarvested} の
+     * 書き換えは使っていない。</b>
+     */
+    public static boolean harvestBlock(final net.minecraft.world.level.Level level,
+                                       final BlockPos pos,
+                                       final net.minecraft.world.entity.player.Player player,
+                                       final net.minecraft.world.InteractionHand hand,
+                                       final java.util.List<net.minecraft.world.item.ItemStack> drops) {
+        if (!ShifuEvents.listening(org.bukkit.event.player.PlayerHarvestBlockEvent.getHandlerList())) {
+            return true;
+        }
+
+        return !org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerHarvestBlockEvent(
+                level, pos, player, hand, drops).isCancelled();
+    }
+
+    /**
+     * PlayerShearBlockEvent。ハサミで蜂の巣を切る直前。
+     *
+     * <p>落とす物は vanilla の行が決めるので、<b>{@code getDrops} の
+     * 書き換えは使っていない。</b>
+     */
+    public static boolean shearBlock(final net.minecraft.world.level.Level level, final BlockPos pos,
+                                     final net.minecraft.world.entity.player.Player player,
+                                     final net.minecraft.world.InteractionHand hand,
+                                     final net.minecraft.world.item.ItemStack tool,
+                                     final net.minecraft.world.item.ItemStack drop) {
+        if (!ShifuEvents.listening(io.papermc.paper.event.block.PlayerShearBlockEvent.getHandlerList())) {
+            return true;
+        }
+
+        final java.util.List<org.bukkit.inventory.ItemStack> drops = new java.util.ArrayList<>();
+        drops.add(org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(drop));
+
+        return new io.papermc.paper.event.block.PlayerShearBlockEvent(
+                (org.bukkit.entity.Player) player.getBukkitEntity(),
+                org.bukkit.craftbukkit.block.CraftBlock.at(level, pos),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(tool),
+                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand), drops).callEvent();
+    }
+
+    /**
+     * PlayerBucketEntityEvent(魚なら PlayerBucketFishEvent)。バケツに入れる直前。
+     *
+     * <p>差し替えたバケツ({@code setEntityBucket})は vanilla の行が持つので使っていない。
+     */
+    public static boolean bucketEntity(final net.minecraft.world.entity.LivingEntity entity,
+                                       final net.minecraft.world.entity.player.Player player,
+                                       final net.minecraft.world.item.ItemStack bucket,
+                                       final net.minecraft.world.item.ItemStack filled,
+                                       final net.minecraft.world.InteractionHand hand) {
+        if (!ShifuEvents.listening(org.bukkit.event.player.PlayerBucketEntityEvent.getHandlerList())) {
+            return true;
+        }
+
+        return !org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerFishBucketEvent(
+                entity, player, bucket, filled, hand).isCancelled();
+    }
+
+
+    /**
+     * PlayerItemCooldownEvent。クールダウンを入れる直前。
+     *
+     * @return 入れる長さ。取り消されたら null
+     */
+    public static Integer itemCooldown(final net.minecraft.world.item.ItemCooldowns cooldowns,
+                                       final net.minecraft.world.item.Item item, final int duration) {
+        if (!(cooldowns instanceof net.minecraft.world.item.ServerItemCooldowns server)
+                || !ShifuEvents.listening(io.papermc.paper.event.player.PlayerItemCooldownEvent.getHandlerList())) {
+            return duration;
+        }
+
+        final io.papermc.paper.event.player.PlayerItemCooldownEvent event =
+                new io.papermc.paper.event.player.PlayerItemCooldownEvent(server.player.getBukkitEntity(),
+                        org.bukkit.craftbukkit.inventory.CraftItemType.minecraftToBukkit(item), duration);
+
+        return event.callEvent() ? event.getCooldown() : null;
+    }
+
+    /**
+     * PlayerNameEntityEvent。名札で名前を付ける直前。
+     *
+     * <p>差し替えた相手({@code setEntity})と名前({@code setName})は
+     * vanilla の行が持つので使っていない。
+     */
+    public static boolean nameEntity(final net.minecraft.world.entity.player.Player user,
+                                     final net.minecraft.world.entity.LivingEntity entity,
+                                     final Component name) {
+        if (!(user instanceof ServerPlayer player)
+                || !ShifuEvents.listening(io.papermc.paper.event.player.PlayerNameEntityEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new io.papermc.paper.event.player.PlayerNameEntityEvent(player.getBukkitEntity(),
+                entity.getBukkitLivingEntity(), PaperAdventure.asAdventure(name), true).callEvent();
+    }
+
+    /** PlayerElytraBoostEvent。エリトラ中に花火を使う直前。 */
+    public static boolean elytraBoost(final net.minecraft.world.entity.player.Player user,
+                                      final net.minecraft.world.item.ItemStack stack,
+                                      final net.minecraft.world.entity.projectile.FireworkRocketEntity firework,
+                                      final net.minecraft.world.InteractionHand hand) {
+        if (!ShifuEvents.listening(
+                com.destroystokyo.paper.event.player.PlayerElytraBoostEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.player.PlayerElytraBoostEvent(
+                (org.bukkit.entity.Player) user.getBukkitEntity(),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack),
+                (org.bukkit.entity.Firework) firework.getBukkitEntity(),
+                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand)).callEvent();
+    }
+
+    /** PlayerStopUsingItemEvent。使うのをやめた直後。 */
+    public static void stopUsingItem(final net.minecraft.world.entity.LivingEntity entity) {
+        if (!(entity instanceof ServerPlayer player)
+                || !ShifuEvents.listening(io.papermc.paper.event.player.PlayerStopUsingItemEvent.getHandlerList())) {
+            return;
+        }
+
+        new io.papermc.paper.event.player.PlayerStopUsingItemEvent(player.getBukkitEntity(),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(player.getUseItem()),
+                player.getTicksUsingItem()).callEvent();
+    }
+
 }

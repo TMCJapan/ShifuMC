@@ -1,0 +1,9 @@
+# EntityShootBowEvent。矢を世界に置く直前。
+
+file: net/minecraft/world/item/ProjectileWeaponItem.java
+anchor:
+                world.addFreshEntity(projectile);
+insert:
+    if (!dev.shifu.event.ItemEvents.shootBow(shooter, stack, itemStack, projectile, hand, speed)) {
+        return;
+    }

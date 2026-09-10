@@ -31,6 +31,13 @@ public final class PluginDrive extends JavaPlugin implements Listener {
         this.explodes++;
         this.note("EntityExplodeEvent " + event.getEntityType() + " blocks=" + event.blockList().size()
                 + "(他のプラグインより前)");
+
+        final StringBuilder who = new StringBuilder();
+        for (final org.bukkit.plugin.RegisteredListener one
+                : org.bukkit.event.entity.EntityExplodeEvent.getHandlerList().getRegisteredListeners()) {
+            who.append(one.getPlugin().getName()).append('/').append(one.getPriority()).append(' ');
+        }
+        this.note("EntityExplodeEvent を聞いているもの: " + who);
     }
 
     // 他のプラグイン(GriefPrevention など)が消したあとの数。
@@ -253,7 +260,8 @@ public final class PluginDrive extends JavaPlugin implements Listener {
                     }
                 }
 
-                this.note("爆発のあとに残った石 = " + stone + " / 25");
+                this.note("爆発のあとに残った石 = " + stone + " / 25"
+                        + "(GriefPrevention が LOWEST で壊す候補を消すので、この面では石は残る)");
             });
         });
         this.later(285, () -> this.note("explode events = " + this.explodes));

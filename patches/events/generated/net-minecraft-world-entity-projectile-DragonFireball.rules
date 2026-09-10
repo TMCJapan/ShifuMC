@@ -1,0 +1,12 @@
+# EnderDragonFireballHitEvent。ドラゴンの火の玉が雲を置く直前。
+
+file: net/minecraft/world/entity/projectile/DragonFireball.java
+anchor:
+                this.level().levelEvent(2006, this.blockPosition(), this.isSilent() ? -1 : 1);
+                this.level().addFreshEntity(areaEffectCloud);
+insert:
+    if (dev.shifu.event.EntityEvents.dragonFireballHit(this, list, areaEffectCloud)) {
+insert-after:
+    } else {
+        areaEffectCloud.discard();
+    }

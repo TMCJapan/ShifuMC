@@ -1,0 +1,12 @@
+# PlayerHarvestBlockEvent。光るベリーを摘む直前。
+
+file: net/minecraft/world/level/block/CaveVines.java
+anchor:
+            Block.popResource(world, pos, new ItemStack(Items.GLOW_BERRIES, 1));
+insert:
+    if (picker instanceof net.minecraft.world.entity.player.Player shifuPicker
+            && !dev.shifu.event.PlayerEvents.harvestBlock(world, pos, shifuPicker,
+                    net.minecraft.world.InteractionHand.MAIN_HAND,
+                    java.util.Collections.singletonList(new ItemStack(Items.GLOW_BERRIES, 1)))) {
+        return InteractionResult.sidedSuccess(world.isClientSide);
+    }

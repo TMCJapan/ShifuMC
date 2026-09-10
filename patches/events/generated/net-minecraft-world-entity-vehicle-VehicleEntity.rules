@@ -1,0 +1,17 @@
+# VehicleDamageEvent と VehicleDestroyEvent。
+
+file: net/minecraft/world/entity/vehicle/VehicleEntity.java
+anchor:
+            this.setHurtDir(-this.getHurtDir());
+insert:
+    if (!dev.shifu.event.EntityEvents.vehicleDamage(this, source, amount)) {
+        return false;
+    }
+
+file: net/minecraft/world/entity/vehicle/VehicleEntity.java
+anchor:
+                this.destroy(source);
+insert:
+    if (!dev.shifu.event.EntityEvents.vehicleDestroy(this, source)) {
+        return true;
+    }
