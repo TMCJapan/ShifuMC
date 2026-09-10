@@ -1,0 +1,10 @@
+# PlayerLoomPatternSelectEvent。機織り機の模様を選んだ直前。
+
+file: net/minecraft/world/inventory/LoomMenu.java
+anchor:
+            this.selectedBannerPatternIndex.set(id);
+            this.setupResultSlot(this.selectablePatterns.get(id));
+insert:
+    if (!dev.shifu.event.ItemEvents.loomSelect(player, this, this.selectablePatterns.get(id))) {
+        return false;
+    }

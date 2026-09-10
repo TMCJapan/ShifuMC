@@ -1,0 +1,10 @@
+# PlayerStonecutterRecipeSelectEvent。石切台のレシピを選んだ直前。
+
+file: net/minecraft/world/inventory/StonecutterMenu.java
+anchor:
+            this.selectedRecipeIndex.set(id);
+            this.setupResultSlot();
+insert:
+    if (!dev.shifu.event.ItemEvents.stonecutterSelect(player, this, this.recipes.get(id))) {
+        return true;
+    }

@@ -47,6 +47,15 @@ public final class PluginDrive extends JavaPlugin implements Listener {
                 + " cancelled=" + event.isCancelled() + "(全部のあと)");
     }
 
+    private int clicks;
+
+    @EventHandler
+    public void onInventoryClick(final org.bukkit.event.inventory.InventoryClickEvent event) {
+        this.clicks++;
+        this.note("InventoryClickEvent " + event.getClick() + " " + event.getAction()
+                + " slot=" + event.getRawSlot() + " " + event.getSlotType());
+    }
+
     @EventHandler
     public void onBlockExplode(final org.bukkit.event.block.BlockExplodeEvent event) {
         this.explodes++;
@@ -224,6 +233,14 @@ public final class PluginDrive extends JavaPlugin implements Listener {
         });
         this.later(270, () -> this.note("pickup events = " + this.pickedUp
                 + ", diamonds in inventory = " + bot.getInventory().all(Material.DIAMOND).size()));
+
+        // InventoryClickEvent。持ち物に物を入れて、bot にその枠を押させる
+        this.later(276, () -> {
+            bot.getInventory().setItem(0, new org.bukkit.inventory.ItemStack(Material.DIAMOND, 5));
+            // 生の枠番号 36 が持ち物の 1 番目(プレイヤー画面)
+            this.tell(bot, "!bot click 36");
+            this.later(20, () -> this.note("InventoryClickEvent = " + this.clicks + " 件"));
+        });
 
         // BlockBreakEvent。足場を置いて、bot に壊させる
         this.later(240, () -> {

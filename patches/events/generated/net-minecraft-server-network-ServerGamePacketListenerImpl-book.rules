@@ -1,0 +1,20 @@
+# PlayerEditBookEvent。本を書き換えた直後。
+
+# 書きかけの本
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+            List<Filterable<String>> list = pages.stream().map(this::filterableFromOutgoing).toList();
+            itemStack.set(DataComponents.WRITABLE_BOOK_CONTENT, new WritableBookContent(list));
+insert:
+    org.bukkit.inventory.meta.BookMeta shifuOldBook = dev.shifu.event.PlayerEvents.bookMeta(itemStack);
+insert-after:
+    dev.shifu.event.PlayerEvents.editBook(this.player, slotId, shifuOldBook, itemStack, false);
+
+# 署名した本
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+            this.player.getInventory().setItem(slotId, itemStack2);
+insert:
+    org.bukkit.inventory.meta.BookMeta shifuSignedBook = dev.shifu.event.PlayerEvents.bookMeta(itemStack);
+insert-after:
+    dev.shifu.event.PlayerEvents.editBook(this.player, slotId, shifuSignedBook, itemStack2, true);

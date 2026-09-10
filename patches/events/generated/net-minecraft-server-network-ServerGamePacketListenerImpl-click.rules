@@ -1,0 +1,18 @@
+# InventoryClickEvent(作業台・鍛冶台・製図台では CraftItemEvent /
+# SmithItemEvent / CartographyItemEvent)。vanilla の clicked の直前。
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+                    this.player.containerMenu.clicked(i, packet.getButtonNum(), packet.getClickType(), this.player);
+insert:
+    org.bukkit.event.inventory.InventoryClickEvent shifuClick =
+            dev.shifu.event.ShifuEvents.inventoryClick(this.player, packet, i);
+    if (shifuClick != null && shifuClick.isCancelled()) {
+        dev.shifu.event.ShifuEvents.cancelledInventoryClick(this.player, shifuClick);
+        return;
+    }
+insert-after:
+    if (dev.shifu.event.ShifuEvents.containerChanged(this.player, shifuClick)) {
+        return;
+    }
+    dev.shifu.event.ShifuEvents.afterInventoryClick(this.player, shifuClick);

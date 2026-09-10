@@ -591,4 +591,61 @@ public final class ItemEvents {
                 org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(user.getUsedItemHand())).callEvent();
     }
 
+
+    /** TradeSelectEvent。取引を選んだ直前。 */
+    public static boolean tradeSelect(final net.minecraft.server.level.ServerPlayer player, final int index,
+                                      final net.minecraft.world.inventory.MerchantMenu menu) {
+        if (!ShifuEvents.listening(org.bukkit.event.inventory.TradeSelectEvent.getHandlerList())) {
+            return true;
+        }
+
+        return !org.bukkit.craftbukkit.event.CraftEventFactory.callTradeSelectEvent(player, index, menu)
+                .isCancelled();
+    }
+
+    /** PlayerStonecutterRecipeSelectEvent。石切台のレシピを選んだ直前。 */
+    public static boolean stonecutterSelect(final net.minecraft.world.entity.player.Player player,
+                                            final net.minecraft.world.inventory.StonecutterMenu menu,
+                                            final net.minecraft.world.item.crafting.RecipeHolder<
+                                                    net.minecraft.world.item.crafting.StonecutterRecipe> recipe) {
+        if (!ShifuEvents.listening(
+                io.papermc.paper.event.player.PlayerStonecutterRecipeSelectEvent.getHandlerList())) {
+            return true;
+        }
+
+        final boolean allowed = new io.papermc.paper.event.player.PlayerStonecutterRecipeSelectEvent(
+                (org.bukkit.entity.Player) player.getBukkitEntity(),
+                (org.bukkit.inventory.StonecutterInventory) menu.getBukkitView().getTopInventory(),
+                (org.bukkit.inventory.StonecuttingRecipe) recipe.toBukkitRecipe()).callEvent();
+
+        if (!allowed) {
+            player.containerMenu.sendAllDataToRemote();
+        }
+
+        return allowed;
+    }
+
+    /** PlayerLoomPatternSelectEvent。機織り機の模様を選んだ直前。 */
+    public static boolean loomSelect(final net.minecraft.world.entity.player.Player player,
+                                     final net.minecraft.world.inventory.LoomMenu menu,
+                                     final net.minecraft.core.Holder<
+                                             net.minecraft.world.level.block.entity.BannerPattern> pattern) {
+        if (!ShifuEvents.listening(io.papermc.paper.event.player.PlayerLoomPatternSelectEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.block.banner.PatternType type =
+                org.bukkit.craftbukkit.block.banner.CraftPatternType.minecraftHolderToBukkit(pattern);
+        final boolean allowed = new io.papermc.paper.event.player.PlayerLoomPatternSelectEvent(
+                (org.bukkit.entity.Player) player.getBukkitEntity(),
+                (org.bukkit.craftbukkit.inventory.CraftInventoryLoom) menu.getBukkitView().getTopInventory(),
+                type).callEvent();
+
+        if (!allowed) {
+            player.containerMenu.sendAllDataToRemote();
+        }
+
+        return allowed;
+    }
+
 }

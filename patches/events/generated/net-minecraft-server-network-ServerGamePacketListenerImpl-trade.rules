@@ -1,0 +1,9 @@
+# TradeSelectEvent。取引を選んだ直前。
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+            merchantMenu.setSelectionHint(i);
+insert:
+    if (!dev.shifu.event.ItemEvents.tradeSelect(this.player, i, merchantMenu)) {
+        return;
+    }

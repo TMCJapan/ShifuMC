@@ -1,0 +1,18 @@
+# PlayerRecipeBookSettingsChangeEvent と PlayerPickItemEvent。
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+        this.player.getRecipeBook().setBookSetting(packet.getBookType(), packet.isOpen(), packet.isFiltering());
+insert:
+    if (!dev.shifu.event.PlayerEvents.recipeBookSettings(this.player, packet.getBookType(),
+            packet.isOpen(), packet.isFiltering())) {
+        return;
+    }
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+        this.player.getInventory().pickSlot(packet.getSlot());
+insert:
+    if (!dev.shifu.event.PlayerEvents.pickItem(this.player, packet.getSlot())) {
+        return;
+    }

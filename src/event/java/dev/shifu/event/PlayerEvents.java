@@ -1189,4 +1189,96 @@ public final class PlayerEvents {
                 org.bukkit.event.player.PlayerSignOpenEvent.Cause.INTERACT);
     }
 
+
+    /** PlayerRecipeBookSettingsChangeEvent。レシピ本の設定を変える直前。 */
+    public static boolean recipeBookSettings(final ServerPlayer player,
+                                             final net.minecraft.world.inventory.RecipeBookType type,
+                                             final boolean open, final boolean filtering) {
+        if (!ShifuEvents.listening(
+                org.bukkit.event.player.PlayerRecipeBookSettingsChangeEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.player.PlayerRecipeBookSettingsChangeEvent(player.getBukkitEntity(),
+                org.bukkit.event.player.PlayerRecipeBookSettingsChangeEvent.RecipeBookType.values()[type.ordinal()],
+                open, filtering).callEvent();
+    }
+
+    /** PlayerPickItemEvent。持ち替え(ピック)の直前。 */
+    public static boolean pickItem(final ServerPlayer player, final int sourceSlot) {
+        if (!ShifuEvents.listening(io.papermc.paper.event.player.PlayerPickItemEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new io.papermc.paper.event.player.PlayerPickItemEvent(player.getBukkitEntity(),
+                player.getInventory().selected, sourceSlot).callEvent();
+    }
+
+    /** PlayerEditBookEvent に登録があるか。書き換える前の本を控えるかの判断に使う。 */
+    public static org.bukkit.inventory.meta.BookMeta bookMeta(final net.minecraft.world.item.ItemStack stack) {
+        if (!ShifuEvents.listening(org.bukkit.event.player.PlayerEditBookEvent.getHandlerList())) {
+            return null;
+        }
+
+        return (org.bukkit.inventory.meta.BookMeta)
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack).getItemMeta();
+    }
+
+    /**
+     * PlayerEditBookEvent。本を書き換えた直後。
+     *
+     * <p>取り消されたら控えておいた中身に戻し、プラグインが直していれば
+     * その中身を入れる。
+     */
+    public static void editBook(final ServerPlayer player, final int slot,
+                                final org.bukkit.inventory.meta.BookMeta before,
+                                final net.minecraft.world.item.ItemStack after, final boolean signing) {
+        if (before == null) {
+            return;
+        }
+
+        final org.bukkit.inventory.ItemStack mirror =
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(after);
+        final org.bukkit.inventory.meta.BookMeta now = (org.bukkit.inventory.meta.BookMeta) mirror.getItemMeta();
+        final org.bukkit.event.player.PlayerEditBookEvent event = new org.bukkit.event.player.PlayerEditBookEvent(
+                player.getBukkitEntity(), slot, before, now, signing);
+
+        if (!event.callEvent()) {
+            mirror.setItemMeta(before);
+            return;
+        }
+
+        if (event.getNewBookMeta() != now) {
+            mirror.setItemMeta(event.getNewBookMeta());
+        }
+    }
+
+
+    /**
+     * PlayerInteractEntityEvent(位置つきなら PlayerInteractAtEntityEvent)。
+     * 相手に触る直前。
+     */
+    public static boolean interactEntity(final ServerPlayer player, final net.minecraft.world.entity.Entity target,
+                                         final net.minecraft.world.InteractionHand hand, final Vec3 at) {
+        final org.bukkit.event.HandlerList handlers = at == null
+                ? org.bukkit.event.player.PlayerInteractEntityEvent.getHandlerList()
+                : org.bukkit.event.player.PlayerInteractAtEntityEvent.getHandlerList();
+
+        if (!ShifuEvents.listening(handlers)) {
+            return true;
+        }
+
+        final org.bukkit.inventory.EquipmentSlot slot =
+                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand);
+
+        if (at == null) {
+            return new org.bukkit.event.player.PlayerInteractEntityEvent(player.getBukkitEntity(),
+                    target.getBukkitEntity(), slot).callEvent();
+        }
+
+        return new org.bukkit.event.player.PlayerInteractAtEntityEvent(player.getBukkitEntity(),
+                target.getBukkitEntity(),
+                new org.bukkit.util.Vector(at.x, at.y, at.z), slot).callEvent();
+    }
+
 }

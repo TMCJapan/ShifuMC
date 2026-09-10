@@ -1294,4 +1294,17 @@ public final class EntityEvents {
                 destination == null ? null : destination.getWorld(), org.bukkit.PortalType.NETHER).callEvent();
     }
 
+
+    /** EnderDragonFlameEvent。ドラゴンが炎の雲を置く直前。 */
+    public static boolean dragonFlame(final net.minecraft.world.entity.boss.enderdragon.EnderDragon dragon,
+                                      final net.minecraft.world.entity.AreaEffectCloud flame) {
+        if (!listening(com.destroystokyo.paper.event.entity.EnderDragonFlameEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.entity.EnderDragonFlameEvent(
+                (org.bukkit.entity.EnderDragon) dragon.getBukkitEntity(),
+                (org.bukkit.entity.AreaEffectCloud) flame.getBukkitEntity()).callEvent();
+    }
+
 }

@@ -1,0 +1,9 @@
+# GenericGameEvent。ゲームイベントを配る直前。
+
+file: net/minecraft/world/level/gameevent/GameEventDispatcher.java
+anchor:
+        int j = SectionPos.blockToSectionCoord(blockPos.getX() - i);
+insert:
+    if (!dev.shifu.event.BlockEvents.genericGameEvent(this.level, event, blockPos, emitter.sourceEntity(), i)) {
+        return;
+    }

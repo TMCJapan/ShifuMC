@@ -1339,4 +1339,50 @@ public final class ShifuEvents {
                 entity.getBukkitEntity(), level.getWorld()).callEvent();
     }
 
+
+    // ------------------------------------------------------------ インベントリ
+
+
+    /**
+     * インベントリのクリック。vanilla の {@code containerMenu.clicked(...)} の直前。
+     *
+     * <p>Paper と同じ手順で {@code ClickType} と {@code InventoryAction} を導き、
+     * {@code InventoryClickEvent}(作業台・鍛冶台・製図台では
+     * {@code CraftItemEvent} / {@code SmithItemEvent} / {@code CartographyItemEvent})を
+     * 発火する。ドラッグ({@code QUICK_CRAFT})では発火しない。
+     *
+     * <p>観戦者のクリックは vanilla が {@code clicked} へ届く前に弾くので、
+     * 発火しない。Paper は取り消し済みのイベントを発火している。
+     *
+     * @return 発火したイベント。登録が無ければ null で、vanilla のまま
+     */
+    public static org.bukkit.event.inventory.InventoryClickEvent inventoryClick(
+            final ServerPlayer player,
+            final net.minecraft.network.protocol.game.ServerboundContainerClickPacket packet,
+            final int slotIndex) {
+        if (!listening(org.bukkit.event.inventory.InventoryClickEvent.getHandlerList())) {
+            return null;
+        }
+
+        final org.bukkit.event.inventory.InventoryClickEvent event =
+                InventoryClicks.build(player, packet, slotIndex);
+
+        if (event == null) {
+            return null;
+        }
+
+        clickedMenu = player.containerMenu;
+        event.callEvent();
+
+        return event;
+    }
+
+
+    /** 取り消されたクリックのあと。画面の中身を送り直して食い違いを消す。 */
+    public static void cancelledInventoryClick(final ServerPlayer player,
+                                               final org.bukkit.event.inventory.InventoryClickEvent event) {
+        player.containerMenu.sendAllDataToRemote();
+    }
+
+
 }

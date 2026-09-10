@@ -1190,4 +1190,28 @@ public final class BlockEvents {
         return event.getTotalCookTime();
     }
 
+
+    /**
+     * GenericGameEvent。ゲームイベントを配る直前。
+     *
+     * <p>Paper はプラグインが直した通知の半径を使う。vanilla は半径を
+     * 局所変数に入れたあとの分岐で使い回すので、<b>渡しているのは取り消しだけ。</b>
+     */
+    public static boolean genericGameEvent(final net.minecraft.server.level.ServerLevel level,
+                                           final net.minecraft.core.Holder<
+                                                   net.minecraft.world.level.gameevent.GameEvent> event,
+                                           final net.minecraft.core.BlockPos pos,
+                                           final net.minecraft.world.entity.Entity source,
+                                           final int radius) {
+        if (!ShifuEvents.listening(org.bukkit.event.world.GenericGameEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.world.GenericGameEvent(
+                org.bukkit.craftbukkit.CraftGameEvent.minecraftToBukkit(event.value()),
+                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level.getWorld()),
+                source == null ? null : source.getBukkitEntity(), radius,
+                !org.bukkit.Bukkit.isPrimaryThread()).callEvent();
+    }
+
 }

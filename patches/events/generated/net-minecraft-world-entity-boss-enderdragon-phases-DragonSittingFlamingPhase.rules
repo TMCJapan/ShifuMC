@@ -1,0 +1,10 @@
+# EnderDragonFlameEvent。ドラゴンが炎の雲を置く直前。
+
+file: net/minecraft/world/entity/boss/enderdragon/phases/DragonSittingFlamingPhase.java
+anchor:
+            this.dragon.level().addFreshEntity(this.flame);
+insert:
+    if (!dev.shifu.event.EntityEvents.dragonFlame(this.dragon, this.flame)) {
+        this.end();
+        return;
+    }
