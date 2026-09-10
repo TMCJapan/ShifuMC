@@ -5,6 +5,6 @@ file: net/minecraft/server/network/ServerLoginPacketListenerImpl.java
 anchor:
     void startClientVerification(GameProfile profile) {
 insert-after:
-    if (!dev.shifu.event.PlayerEvents.preLogin(this.connection, profile)) {
+    if (!dev.shifu.event.PlayerEvents.preLogin(this.server, this.connection, profile)) {
         return;
     }

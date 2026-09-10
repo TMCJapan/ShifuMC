@@ -1421,14 +1421,13 @@ public final class PlayerEvents {
      * {@code PlayerLoginEvent} で参加を断る。呼ばれるのはネットワークの
      * スレッド(オンライン認証なら認証のスレッド)で、どちらも主スレッドではない。
      *
-     * <p><b>未対応:</b> 同期の {@code PlayerPreLoginEvent}(旧 API)。
-     * 主スレッドへ渡して待つ仕組みが 1.20.6 の木に無い。
-     *
      * @return 続けてよいか
      */
-    public static boolean preLogin(final net.minecraft.network.Connection connection,
+    public static boolean preLogin(final net.minecraft.server.MinecraftServer server,
+                                   final net.minecraft.network.Connection connection,
                                    final com.mojang.authlib.GameProfile profile) {
-        if (!ShifuEvents.listening(org.bukkit.event.player.AsyncPlayerPreLoginEvent.getHandlerList())) {
+        if (!ShifuEvents.listening(org.bukkit.event.player.AsyncPlayerPreLoginEvent.getHandlerList())
+                && !ShifuEvents.listening(org.bukkit.event.player.PlayerPreLoginEvent.getHandlerList())) {
             return true;
         }
 
@@ -1440,7 +1439,45 @@ public final class PlayerEvents {
                 new org.bukkit.event.player.AsyncPlayerPreLoginEvent(profile.getName(), address, profile.getId());
         event.callEvent();
 
-        if (event.getLoginResult() == org.bukkit.event.player.AsyncPlayerPreLoginEvent.Result.ALLOWED) {
+        org.bukkit.event.player.AsyncPlayerPreLoginEvent.Result result = event.getLoginResult();
+
+        // 旧 API の同期版。主スレッドへ渡して待つ(Paper と同じ)
+        if (ShifuEvents.listening(org.bukkit.event.player.PlayerPreLoginEvent.getHandlerList())) {
+            final org.bukkit.event.player.PlayerPreLoginEvent sync =
+                    new org.bukkit.event.player.PlayerPreLoginEvent(profile.getName(), address, profile.getId());
+
+            if (result != org.bukkit.event.player.AsyncPlayerPreLoginEvent.Result.ALLOWED) {
+                sync.disallow(org.bukkit.event.player.PlayerPreLoginEvent.Result.valueOf(result.name()),
+                        event.getKickMessage());
+            }
+
+            final org.bukkit.craftbukkit.util.Waitable<org.bukkit.event.player.PlayerPreLoginEvent.Result> waitable =
+                    new org.bukkit.craftbukkit.util.Waitable<>() {
+                        @Override
+                        protected org.bukkit.event.player.PlayerPreLoginEvent.Result evaluate() {
+                            sync.callEvent();
+
+                            return sync.getResult();
+                        }
+                    };
+            server.processQueue.add(waitable);
+
+            try {
+                if (waitable.get() != org.bukkit.event.player.PlayerPreLoginEvent.Result.ALLOWED) {
+                    connection.disconnect(PaperAdventure.asVanilla(sync.kickMessage()));
+
+                    return false;
+                }
+            } catch (final InterruptedException | java.util.concurrent.ExecutionException failed) {
+                Thread.currentThread().interrupt();
+
+                return false;
+            }
+
+            return true;
+        }
+
+        if (result == org.bukkit.event.player.AsyncPlayerPreLoginEvent.Result.ALLOWED) {
             return true;
         }
 
