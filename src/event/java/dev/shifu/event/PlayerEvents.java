@@ -1485,4 +1485,75 @@ public final class PlayerEvents {
         player.setRot(to.getYaw(), to.getPitch());
     }
 
+
+    /** PlayerRecipeBookClickEvent。レシピ本から並べる直前。 */
+    public static boolean recipeBookClick(final ServerPlayer player,
+                                          final net.minecraft.resources.ResourceLocation recipe,
+                                          final boolean makeAll) {
+        if (!ShifuEvents.listening(
+                com.destroystokyo.paper.event.player.PlayerRecipeBookClickEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.player.PlayerRecipeBookClickEvent(player.getBukkitEntity(),
+                org.bukkit.craftbukkit.util.CraftNamespacedKey.fromMinecraft(recipe), makeAll).callEvent();
+    }
+
+
+    /**
+     * PlayerHandshakeEvent。最初の挨拶を受けたとき。
+     *
+     * <p>既定では取り消し済みで出る(プロキシの処理を Shifu は持たないため)。
+     * プラグインが取り消しを外して受け持ったときだけ、失敗の扱いと
+     * 名前の書き換えを反映する。<b>UUID とプロパティの書き換えは通していない。</b>
+     *
+     * @return 続けてよいか
+     */
+    public static boolean handshake(final net.minecraft.network.Connection connection, final String hostName) {
+        if (!ShifuEvents.listening(
+                com.destroystokyo.paper.event.player.PlayerHandshakeEvent.getHandlerList())) {
+            return true;
+        }
+
+        final java.net.SocketAddress socket = connection.getRemoteAddress();
+        final String remote = socket instanceof java.net.InetSocketAddress inet
+                ? inet.getHostString() : java.net.InetAddress.getLoopbackAddress().getHostAddress();
+        final com.destroystokyo.paper.event.player.PlayerHandshakeEvent event =
+                new com.destroystokyo.paper.event.player.PlayerHandshakeEvent(hostName, remote, true);
+
+        if (!event.callEvent()) {
+            return true;
+        }
+
+        if (event.isFailed()) {
+            connection.send(new net.minecraft.network.protocol.login.ClientboundLoginDisconnectPacket(
+                    PaperAdventure.asVanilla(event.failMessage())));
+            connection.disconnect(PaperAdventure.asVanilla(event.failMessage()));
+
+            return false;
+        }
+
+        if (event.getServerHostname() != null) {
+            connection.hostname = event.getServerHostname();
+        }
+
+        return true;
+    }
+
+
+    /** PlayerReadyArrowEvent。使う矢を選ぶ判定の末尾から。 */
+    public static boolean readyArrow(final net.minecraft.world.entity.player.Player player,
+                                     final net.minecraft.world.item.ItemStack bow,
+                                     final net.minecraft.world.item.ItemStack arrow) {
+        if (!(player instanceof ServerPlayer serverPlayer)
+                || !ShifuEvents.listening(
+                        com.destroystokyo.paper.event.player.PlayerReadyArrowEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.player.PlayerReadyArrowEvent(serverPlayer.getBukkitEntity(),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(bow),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(arrow)).callEvent();
+    }
+
 }

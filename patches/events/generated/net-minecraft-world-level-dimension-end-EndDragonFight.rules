@@ -1,0 +1,15 @@
+# DragonEggFormEvent。ドラゴンを倒して卵を置く直前。
+
+file: net/minecraft/world/level/dimension/end/EndDragonFight.java
+anchor:
+                this.level
+                    .setBlockAndUpdate(
+                        this.level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, EndPodiumFeature.getLocation(this.origin)),
+                        Blocks.DRAGON_EGG.defaultBlockState()
+                    );
+insert:
+    if (dev.shifu.event.BlockEvents.dragonEggForm(this.level,
+            this.level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, EndPodiumFeature.getLocation(this.origin)),
+            this)) {
+insert-after:
+    }

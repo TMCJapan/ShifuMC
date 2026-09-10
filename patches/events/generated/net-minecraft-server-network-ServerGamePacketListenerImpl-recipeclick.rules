@@ -1,0 +1,11 @@
+# PlayerRecipeBookClickEvent。レシピ本から並べる直前。
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+                this.server
+                    .getRecipeManager()
+                    .byKey(packet.getRecipe())
+insert:
+    if (!dev.shifu.event.PlayerEvents.recipeBookClick(this.player, packet.getRecipe(), packet.isShiftDown())) {
+        return;
+    }

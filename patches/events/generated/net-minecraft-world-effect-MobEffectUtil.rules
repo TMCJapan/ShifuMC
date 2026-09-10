@@ -1,0 +1,8 @@
+# ElderGuardianAppearanceEvent。エルダーガーディアンの幻を見せる直前。
+# 相手がエルダーガーディアンでなければ何もしない。
+
+file: net/minecraft/world/effect/MobEffectUtil.java
+anchor:
+        list.forEach(player -> player.addEffect(new MobEffectInstance(statusEffectInstance), entity));
+insert:
+    list.removeIf(player -> !dev.shifu.event.EntityEvents.elderGuardianAppearance(entity, player));

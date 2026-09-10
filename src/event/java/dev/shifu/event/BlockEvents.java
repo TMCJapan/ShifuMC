@@ -1275,4 +1275,22 @@ public final class BlockEvents {
                 (org.bukkit.inventory.BrewerInventory) state.getInventory(), results, fuel).callEvent();
     }
 
+
+    /** DragonEggFormEvent。ドラゴンを倒して卵を置く直前。 */
+    public static boolean dragonEggForm(final net.minecraft.server.level.ServerLevel level,
+                                        final net.minecraft.core.BlockPos pos,
+                                        final net.minecraft.world.level.dimension.end.EndDragonFight fight) {
+        if (!ShifuEvents.listening(io.papermc.paper.event.block.DragonEggFormEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.craftbukkit.block.CraftBlockState state =
+                org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
+        state.setData(net.minecraft.world.level.block.Blocks.DRAGON_EGG.defaultBlockState());
+
+        return new io.papermc.paper.event.block.DragonEggFormEvent(
+                org.bukkit.craftbukkit.block.CraftBlock.at(level, pos), state,
+                new org.bukkit.craftbukkit.boss.CraftDragonBattle(fight)).callEvent();
+    }
+
 }

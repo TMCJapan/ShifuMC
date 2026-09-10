@@ -1,0 +1,7 @@
+# PrepareResultEvent 系(金床・砥石・鍛冶台・製図台)。結果の枠が決まった直後。
+
+file: net/minecraft/world/inventory/ItemCombinerMenu.java
+anchor:
+            this.createResult();
+insert-after:
+    dev.shifu.event.ItemEvents.prepareResult(this, this.resultSlotIndex);

@@ -1,0 +1,10 @@
+# PreSpawnerSpawnEvent。スポナーが中身を作る直前。
+
+file: net/minecraft/world/level/BaseSpawner.java
+anchor:
+                        Entity entity = EntityType.loadEntityRecursive(compoundTag, world, entityx -> {
+insert:
+    if (optional.isPresent()
+            && !dev.shifu.event.EntityEvents.preSpawnerSpawn(world, optional.get(), d, e, f, pos)) {
+        continue;
+    }

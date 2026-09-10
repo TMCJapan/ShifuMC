@@ -1,0 +1,9 @@
+# PlayerHandshakeEvent。最初の挨拶を受けたとき。
+
+file: net/minecraft/server/network/ServerHandshakePacketListenerImpl.java
+anchor:
+    public void handleIntention(ClientIntentionPacket packet) {
+insert-after:
+    if (!dev.shifu.event.PlayerEvents.handshake(this.connection, packet.hostName())) {
+        return;
+    }

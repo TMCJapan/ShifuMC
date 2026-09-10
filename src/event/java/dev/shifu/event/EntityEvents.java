@@ -1359,4 +1359,45 @@ public final class EntityEvents {
                 org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL).callEvent();
     }
 
+
+    /** PreSpawnerSpawnEvent。スポナーが中身を作る直前。 */
+    public static boolean preSpawnerSpawn(final net.minecraft.world.level.Level level,
+                                          final net.minecraft.world.entity.EntityType<?> type,
+                                          final double x, final double y, final double z,
+                                          final net.minecraft.core.BlockPos spawner) {
+        if (!listening(com.destroystokyo.paper.event.entity.PreSpawnerSpawnEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.entity.PreSpawnerSpawnEvent(
+                new org.bukkit.Location(level.getWorld(), x, y, z),
+                org.bukkit.craftbukkit.entity.CraftEntityType.minecraftToBukkit(type),
+                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(spawner, level)).callEvent();
+    }
+
+
+    /** HangingBreakByEntityEvent。雷が額縁や絵に当たったとき。 */
+    public static boolean hangingBreakByLightning(final Entity entity,
+                                                  final net.minecraft.world.entity.LightningBolt lightning) {
+        if (!(entity.getBukkitEntity() instanceof org.bukkit.entity.Hanging hanging)
+                || !listening(org.bukkit.event.hanging.HangingBreakByEntityEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.hanging.HangingBreakByEntityEvent(hanging,
+                lightning.getBukkitEntity()).callEvent();
+    }
+
+    /** ElderGuardianAppearanceEvent。エルダーガーディアンの幻を見せる直前。 */
+    public static boolean elderGuardianAppearance(final Entity source,
+                                                  final net.minecraft.server.level.ServerPlayer player) {
+        if (!(source != null && source.getBukkitEntity() instanceof org.bukkit.entity.ElderGuardian guardian)
+                || !listening(io.papermc.paper.event.entity.ElderGuardianAppearanceEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new io.papermc.paper.event.entity.ElderGuardianAppearanceEvent(
+                guardian, player.getBukkitEntity()).callEvent();
+    }
+
 }

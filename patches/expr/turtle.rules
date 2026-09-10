@@ -24,3 +24,15 @@ replace:
 with:
                             && !this.turtle.getHomePos().closerToCenterThan(this.turtle.position(), 64.0)
                 ) && dev.shifu.event.AnimalEvents.turtleGoHome(this.turtle);
+
+# PlayerReadyArrowEvent
+#
+# Paper は getProjectile の中の「この矢でよいか」の判定の末尾に発火を足している。
+# 前に出すと、持ち物の枠を 1 つ見るたびに出てしまう。
+#
+# 読んだ位置: Paper-Server 1.20.6 src/main/java/net/minecraft/world/entity/player/Player.java(tryReadyArrow)
+file: net/minecraft/world/entity/player/Player.java
+replace:
+                    if (predicate.test(itemStack2)) {
+with:
+                    if (predicate.test(itemStack2) && dev.shifu.event.PlayerEvents.readyArrow(this, stack, itemStack2)) {

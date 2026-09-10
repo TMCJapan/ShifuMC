@@ -1,0 +1,9 @@
+# HangingBreakByEntityEvent。雷が額縁や絵に当たったとき。
+
+file: net/minecraft/world/entity/Entity.java
+anchor:
+        this.hurt(this.damageSources().lightningBolt(), 5.0F);
+insert:
+    if (!dev.shifu.event.EntityEvents.hangingBreakByLightning(this, lightning)) {
+        return;
+    }

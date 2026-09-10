@@ -826,4 +826,17 @@ public final class ItemEvents {
                 .orElse(null);
     }
 
+
+    /**
+     * PrepareResultEvent 系(金床は PrepareAnvilEvent、砥石は PrepareGrindstoneEvent、
+     * 鍛冶台は PrepareSmithingEvent)。結果の枠が決まった直後。
+     */
+    public static void prepareResult(final AbstractContainerMenu menu, final int resultSlot) {
+        if (!ShifuEvents.listening(com.destroystokyo.paper.event.inventory.PrepareResultEvent.getHandlerList())) {
+            return;
+        }
+
+        org.bukkit.craftbukkit.event.CraftEventFactory.callPrepareResultEvent(menu, resultSlot);
+    }
+
 }
