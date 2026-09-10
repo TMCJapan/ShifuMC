@@ -85,9 +85,10 @@ def test_yield_to():
 def test_widened():
     root = os.path.join(HERE, "..", "patches", "access")
     found = asa.widened(root)
-    check("可視性: CopperGolem.nextWeatheringTick を拾う",
-          ("net/minecraft/world/entity/animal/golem/CopperGolem.java",
-           "nextWeatheringTick") in found, True)
+    # 欄も拾えること。挙げる名前は patches/access の中身なので枝ごとに違う
+    check("可視性: 欄を拾う",
+          ("net/minecraft/server/network/ServerCommonPacketListenerImpl.java",
+           "connection") in found, True)
     check("可視性: メソッドも拾う",
           ("net/minecraft/world/entity/player/Player.java", "isImmobile") in found, True)
     check("可視性: 無い場所では空", asa.widened(None), set())
