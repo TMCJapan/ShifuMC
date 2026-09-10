@@ -1,0 +1,9 @@
+# PlayerBucketEmptyEvent。バケツの中身を置く直前。
+
+file: net/minecraft/world/item/BucketItem.java
+anchor:
+                if (this.emptyContents(user, world, blockPos3, blockHitResult)) {
+insert:
+    if (!dev.shifu.event.PlayerEvents.bucketEmpty(user, world, blockPos3, blockHitResult, itemStack, hand)) {
+        return InteractionResultHolder.fail(itemStack);
+    }

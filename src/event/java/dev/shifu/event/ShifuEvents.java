@@ -1385,4 +1385,16 @@ public final class ShifuEvents {
     }
 
 
+
+    /** WorldLoadEvent。世界を読み終えた直後。 */
+    public static void worldLoad(final net.minecraft.server.MinecraftServer server) {
+        if (!listening(org.bukkit.event.world.WorldLoadEvent.getHandlerList())) {
+            return;
+        }
+
+        for (final ServerLevel level : server.getAllLevels()) {
+            new org.bukkit.event.world.WorldLoadEvent(level.getWorld()).callEvent();
+        }
+    }
+
 }

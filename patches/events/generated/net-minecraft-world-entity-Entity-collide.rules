@@ -1,0 +1,9 @@
+# VehicleBlockCollisionEvent。乗り物がブロックにぶつかった直後。
+
+file: net/minecraft/world/entity/Entity.java
+anchor:
+            this.setOnGroundWithKnownMovement(this.verticalCollisionBelow, vec3);
+insert:
+    if (this.horizontalCollision) {
+        dev.shifu.event.EntityEvents.vehicleBlockCollision(this, movement, vec3);
+    }

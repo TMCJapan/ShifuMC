@@ -1,0 +1,10 @@
+# PlayerLoginEvent。プレイヤーを世界に置く直前。
+
+file: net/minecraft/server/players/PlayerList.java
+anchor:
+        GameProfile gameProfile = player.getGameProfile();
+        GameProfileCache gameProfileCache = this.server.getProfileCache();
+insert:
+    if (!dev.shifu.event.PlayerEvents.playerLogin(player, connection)) {
+        return;
+    }

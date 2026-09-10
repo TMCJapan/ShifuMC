@@ -1307,4 +1307,37 @@ public final class EntityEvents {
                 (org.bukkit.entity.AreaEffectCloud) flame.getBukkitEntity()).callEvent();
     }
 
+
+    /** VehicleBlockCollisionEvent。乗り物がブロックにぶつかった直後。 */
+    public static void vehicleBlockCollision(final Entity entity,
+                                            final net.minecraft.world.phys.Vec3 wanted,
+                                            final net.minecraft.world.phys.Vec3 moved) {
+        if (!(entity.getBukkitEntity() instanceof org.bukkit.entity.Vehicle vehicle)
+                || !listening(org.bukkit.event.vehicle.VehicleBlockCollisionEvent.getHandlerList())) {
+            return;
+        }
+
+        org.bukkit.block.Block block = entity.level().getWorld().getBlockAt(
+                net.minecraft.util.Mth.floor(entity.getX()),
+                net.minecraft.util.Mth.floor(entity.getY()),
+                net.minecraft.util.Mth.floor(entity.getZ()));
+
+        if (wanted.x > moved.x) {
+            block = block.getRelative(org.bukkit.block.BlockFace.EAST);
+        } else if (wanted.x < moved.x) {
+            block = block.getRelative(org.bukkit.block.BlockFace.WEST);
+        } else if (wanted.z > moved.z) {
+            block = block.getRelative(org.bukkit.block.BlockFace.SOUTH);
+        } else if (wanted.z < moved.z) {
+            block = block.getRelative(org.bukkit.block.BlockFace.NORTH);
+        }
+
+        if (block.getType().isAir()) {
+            return;
+        }
+
+        new org.bukkit.event.vehicle.VehicleBlockCollisionEvent(vehicle, block,
+                org.bukkit.craftbukkit.util.CraftVector.toBukkit(wanted)).callEvent();
+    }
+
 }

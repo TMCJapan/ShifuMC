@@ -1,0 +1,7 @@
+# WorldLoadEvent。世界を読み終えた直後。
+
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+        this.prepareLevels(chunkProgressListener);
+insert-after:
+    dev.shifu.event.ShifuEvents.worldLoad(this);

@@ -1,0 +1,10 @@
+# AsyncPlayerPreLoginEvent。名前が決まったところで出す。
+# 主スレッドではないので、この位置で出すのが Paper と同じ意味になる。
+
+file: net/minecraft/server/network/ServerLoginPacketListenerImpl.java
+anchor:
+    void startClientVerification(GameProfile profile) {
+insert-after:
+    if (!dev.shifu.event.PlayerEvents.preLogin(this.connection, profile)) {
+        return;
+    }

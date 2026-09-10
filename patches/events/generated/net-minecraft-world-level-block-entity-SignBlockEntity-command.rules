@@ -1,0 +1,9 @@
+# PlayerSignCommandPreprocessEvent。看板のコマンドを走らせる直前。
+
+file: net/minecraft/world/level/block/entity/SignBlockEntity.java
+anchor:
+                player.getServer().getCommands().performPrefixedCommand(createCommandSourceStack(player, world, pos), clickEvent.getValue());
+insert:
+    if (!dev.shifu.event.PlayerEvents.signCommand(player, this, clickEvent.getValue(), front)) {
+        return false;
+    }

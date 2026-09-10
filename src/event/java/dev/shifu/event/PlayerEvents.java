@@ -1281,4 +1281,163 @@ public final class PlayerEvents {
                 new org.bukkit.util.Vector(at.x, at.y, at.z), slot).callEvent();
     }
 
+
+    /**
+     * PlayerLoginEvent。プレイヤーを世界に置く直前。
+     *
+     * <p>Paper は {@code PlayerList.canPlayerLogin} の中で出しているが、
+     * そこは vanilla では {@code ServerPlayer} がまだ無い。Shifu は
+     * <b>{@code placeNewPlayer} の頭</b>で出し、断られたら接続を切る。
+     *
+     * @return 続けてよいか
+     */
+    public static boolean playerLogin(final ServerPlayer player, final net.minecraft.network.Connection connection) {
+        if (!ShifuEvents.listening(org.bukkit.event.player.PlayerLoginEvent.getHandlerList())) {
+            return true;
+        }
+
+        final java.net.InetAddress address =
+                connection.getRemoteAddress() instanceof java.net.InetSocketAddress socket
+                        && socket.getAddress() != null
+                        ? socket.getAddress() : java.net.InetAddress.getLoopbackAddress();
+        final org.bukkit.event.player.PlayerLoginEvent event = new org.bukkit.event.player.PlayerLoginEvent(
+                player.getBukkitEntity(), connection.hostname, address, address);
+        event.callEvent();
+
+        if (event.getResult() == org.bukkit.event.player.PlayerLoginEvent.Result.ALLOWED) {
+            return true;
+        }
+
+        connection.disconnect(PaperAdventure.asVanilla(event.kickMessage()));
+
+        return false;
+    }
+
+    /** PlayerConnectionCloseEvent。繋がりが切れた直後。 */
+    public static void connectionClose(final net.minecraft.network.Connection connection) {
+        if (!ShifuEvents.listening(
+                com.destroystokyo.paper.event.player.PlayerConnectionCloseEvent.getHandlerList())) {
+            return;
+        }
+
+        if (!(connection.getPacketListener()
+                instanceof net.minecraft.server.network.ServerGamePacketListenerImpl listener)) {
+            return;
+        }
+
+        final com.mojang.authlib.GameProfile profile = listener.player.getGameProfile();
+        final java.net.InetAddress address =
+                connection.getRemoteAddress() instanceof java.net.InetSocketAddress socket
+                        && socket.getAddress() != null
+                        ? socket.getAddress() : java.net.InetAddress.getLoopbackAddress();
+
+        new com.destroystokyo.paper.event.player.PlayerConnectionCloseEvent(profile.getId(), profile.getName(),
+                address, false).callEvent();
+    }
+
+
+    /**
+     * PlayerBucketFillEvent。バケツに入れる直前。
+     *
+     * <p>差し替えた持ち物({@code setItemStack})は vanilla の行が持つので使っていない。
+     */
+    public static boolean bucketFill(final net.minecraft.world.entity.player.Player player,
+                                     final net.minecraft.world.entity.LivingEntity target,
+                                     final net.minecraft.world.item.ItemStack bucket,
+                                     final net.minecraft.world.item.Item filled,
+                                     final net.minecraft.world.InteractionHand hand) {
+        if (!(player instanceof ServerPlayer)
+                || !ShifuEvents.listening(org.bukkit.event.player.PlayerBucketFillEvent.getHandlerList())) {
+            return true;
+        }
+
+        return !org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerBucketFillEvent(
+                (net.minecraft.server.level.ServerLevel) player.level(), player, target.blockPosition(),
+                target.blockPosition(), null, bucket, filled, hand).isCancelled();
+    }
+
+    /**
+     * PlayerBucketEmptyEvent。バケツの中身を置く直前。
+     *
+     * <p>置いたあとの持ち物の差し替えは vanilla の行が持つので使っていない。
+     */
+    public static boolean bucketEmpty(final net.minecraft.world.entity.player.Player player,
+                                      final net.minecraft.world.level.Level level,
+                                      final net.minecraft.core.BlockPos pos,
+                                      final net.minecraft.world.phys.BlockHitResult hit,
+                                      final net.minecraft.world.item.ItemStack bucket,
+                                      final net.minecraft.world.InteractionHand hand) {
+        if (!(player instanceof ServerPlayer)
+                || !ShifuEvents.listening(org.bukkit.event.player.PlayerBucketEmptyEvent.getHandlerList())) {
+            return true;
+        }
+
+        final net.minecraft.core.Direction face = hit == null
+                ? net.minecraft.core.Direction.UP : hit.getDirection();
+
+        return !org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerBucketEmptyEvent(
+                (net.minecraft.server.level.ServerLevel) level, player, pos, pos, face, bucket, hand).isCancelled();
+    }
+
+
+    /**
+     * PlayerSignCommandPreprocessEvent。看板のコマンドを走らせる直前。
+     *
+     * <p>差し替えた文({@code setMessage})と差し替えた本人({@code setPlayer})は
+     * vanilla の行が持つので使っていない。
+     */
+    public static boolean signCommand(final net.minecraft.world.entity.player.Player player,
+                                      final net.minecraft.world.level.block.entity.SignBlockEntity sign,
+                                      final String command, final boolean front) {
+        if (!(player instanceof ServerPlayer serverPlayer)
+                || !ShifuEvents.listening(
+                        io.papermc.paper.event.player.PlayerSignCommandPreprocessEvent.getHandlerList())) {
+            return true;
+        }
+
+        final String text = command.startsWith("/") ? command : "/" + command;
+
+        return new io.papermc.paper.event.player.PlayerSignCommandPreprocessEvent(serverPlayer.getBukkitEntity(),
+                text, new org.bukkit.craftbukkit.util.LazyPlayerSet(serverPlayer.getServer()),
+                (org.bukkit.block.Sign) org.bukkit.craftbukkit.block.CraftBlock.at(
+                        sign.getLevel(), sign.getBlockPos()).getState(),
+                front ? org.bukkit.block.sign.Side.FRONT : org.bukkit.block.sign.Side.BACK).callEvent();
+    }
+
+
+    /**
+     * AsyncPlayerPreLoginEvent。名前が決まって、世界に置く前。
+     *
+     * <p>ここを出さないと LuckPerms が権限を読み込めず、あとの
+     * {@code PlayerLoginEvent} で参加を断る。呼ばれるのはネットワークの
+     * スレッド(オンライン認証なら認証のスレッド)で、どちらも主スレッドではない。
+     *
+     * <p><b>未対応:</b> 同期の {@code PlayerPreLoginEvent}(旧 API)。
+     * 主スレッドへ渡して待つ仕組みが 1.20.6 の木に無い。
+     *
+     * @return 続けてよいか
+     */
+    public static boolean preLogin(final net.minecraft.network.Connection connection,
+                                   final com.mojang.authlib.GameProfile profile) {
+        if (!ShifuEvents.listening(org.bukkit.event.player.AsyncPlayerPreLoginEvent.getHandlerList())) {
+            return true;
+        }
+
+        final java.net.InetAddress address =
+                connection.getRemoteAddress() instanceof java.net.InetSocketAddress socket
+                        && socket.getAddress() != null
+                        ? socket.getAddress() : java.net.InetAddress.getLoopbackAddress();
+        final org.bukkit.event.player.AsyncPlayerPreLoginEvent event =
+                new org.bukkit.event.player.AsyncPlayerPreLoginEvent(profile.getName(), address, profile.getId());
+        event.callEvent();
+
+        if (event.getLoginResult() == org.bukkit.event.player.AsyncPlayerPreLoginEvent.Result.ALLOWED) {
+            return true;
+        }
+
+        connection.disconnect(PaperAdventure.asVanilla(event.kickMessage()));
+
+        return false;
+    }
+
 }

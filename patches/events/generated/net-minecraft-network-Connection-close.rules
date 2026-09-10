@@ -1,0 +1,7 @@
+# PlayerConnectionCloseEvent。繋がりが切れた直後。
+
+file: net/minecraft/network/Connection.java
+anchor:
+                this.disconnectionHandled = true;
+insert-after:
+    dev.shifu.event.PlayerEvents.connectionClose(this);

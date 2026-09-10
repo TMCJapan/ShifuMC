@@ -1,0 +1,16 @@
+# EntityPortalReadyEvent。ポータルで飛ぶ用意ができた直後。
+# 取り消されたら Paper と同じく待ち時間を戻す。
+
+file: net/minecraft/world/entity/Entity.java
+anchor:
+                    this.level().getProfiler().push("portal");
+                    this.portalTime = i;
+                    this.setPortalCooldown();
+                    this.changeDimension(serverLevel2);
+                    this.level().getProfiler().pop();
+insert:
+    if (!dev.shifu.event.EntityEvents.portalReady(this, serverLevel2)) {
+        this.portalTime = 0;
+    } else {
+insert-after:
+    }
