@@ -12,3 +12,16 @@ insert:
     if (amount <= 0) {
         return;
     }
+
+# EntityDamageItemEvent。持ち主がプレイヤーでないときの道具の減り。
+# vanilla の hurtAndBreak は 3 つめが ServerPlayer なので mob は届かない。
+# 呼ぶ手前で控えて、同じ ItemStack のときだけ使う。
+#
+# 読んだ位置(Paper 1.20.6):
+#   Paper-Server src/main/java/net/minecraft/world/item/ItemStack.java:683
+
+file: net/minecraft/world/item/ItemStack.java
+anchor:
+            this.hurtAndBreak(amount, entity.getRandom(), entity instanceof ServerPlayer serverPlayer ? serverPlayer : null, () -> {
+insert:
+    dev.shifu.event.ItemEvents.armItemDamage(this, entity);

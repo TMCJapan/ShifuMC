@@ -1,0 +1,33 @@
+# EntitiesLoadEvent と EntitiesUnloadEvent。
+#
+# storeChunkSections は自動保存からも呼ばれる。Paper は引数を 1 つ足して
+# 分けているが、Shifu は processChunkUnload の前後に印を置いて分ける。
+#
+# 読んだ位置(Paper 1.20.6):
+#   Paper-Server src/main/java/net/minecraft/world/level/entity/PersistentEntitySectionManager.java:251,260,318
+
+file: net/minecraft/world/level/entity/PersistentEntitySectionManager.java
+anchor:
+            this.chunkLoadStatuses.put(chunkEntities.getPos().toLong(), PersistentEntitySectionManager.ChunkLoadStatus.LOADED);
+insert-after:
+    dev.shifu.event.ShifuEvents.entitiesLoad(this.permanentStorage, this.sectionStorage, chunkEntities.getPos());
+
+file: net/minecraft/world/level/entity/PersistentEntitySectionManager.java
+anchor:
+        boolean bl = this.storeChunkSections(chunkPos, entity -> entity.getPassengersAndSelf().forEach(this::unloadEntity));
+insert:
+    dev.shifu.event.ShifuEvents.armEntitiesUnload(true);
+insert-after:
+    dev.shifu.event.ShifuEvents.armEntitiesUnload(false);
+
+file: net/minecraft/world/level/entity/PersistentEntitySectionManager.java
+anchor:
+                    this.permanentStorage.storeEntities(new ChunkEntities<>(new ChunkPos(chunkPos), ImmutableList.of()));
+insert:
+    dev.shifu.event.ShifuEvents.entitiesUnload(this.permanentStorage, chunkPos, java.util.List.of());
+
+file: net/minecraft/world/level/entity/PersistentEntitySectionManager.java
+anchor:
+                this.permanentStorage.storeEntities(new ChunkEntities<>(new ChunkPos(chunkPos), list));
+insert:
+    dev.shifu.event.ShifuEvents.entitiesUnload(this.permanentStorage, chunkPos, list);

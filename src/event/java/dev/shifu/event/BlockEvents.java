@@ -1265,7 +1265,9 @@ public final class BlockEvents {
             return true;
         }
 
-        return new org.bukkit.event.inventory.InventoryMoveItemEvent(
+        // Paper と同じく派生の方を作る。InventoryMoveItemEvent を聞いている
+        // プラグインにも届き、PaperInventoryMoveItemEvent だけを聞いているものにも届く
+        return new io.papermc.paper.event.inventory.PaperInventoryMoveItemEvent(
                 new org.bukkit.craftbukkit.inventory.CraftInventory(from),
                 org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack),
                 new org.bukkit.craftbukkit.inventory.CraftInventory(to),

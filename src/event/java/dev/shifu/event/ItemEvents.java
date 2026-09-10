@@ -87,13 +87,62 @@ public final class ItemEvents {
      */
     public static int itemDamage(final ItemStack stack, final net.minecraft.server.level.ServerPlayer player,
                                  final int damage) {
-        if (player == null || !ShifuEvents.listening(org.bukkit.event.player.PlayerItemDamageEvent.getHandlerList())) {
+        if (player == null) {
+            return itemDamageByEntity(stack, damage);
+        }
+
+        if (!ShifuEvents.listening(org.bukkit.event.player.PlayerItemDamageEvent.getHandlerList())) {
             return damage;
         }
 
         final org.bukkit.event.player.PlayerItemDamageEvent event = new org.bukkit.event.player.PlayerItemDamageEvent(
                 player.getBukkitEntity(),
                 org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack), damage);
+
+        return event.callEvent() ? event.getDamage() : 0;
+    }
+
+    /**
+     * EntityDamageItemEvent。持ち主がプレイヤーでないときの
+     * {@link #itemDamage}。
+     *
+     * <p>vanilla の {@code hurtAndBreak} は 3 つめが {@code ServerPlayer} なので、
+     * mob はそこまで届かない。Paper は署名を {@code LivingEntity} に広げている。
+     * Shifu は呼ぶ手前で控えて、同じ {@code ItemStack} のときだけ使う。
+     *
+     * <p>読んだ位置(Paper 1.20.6):
+     *   Paper-Server src/main/java/net/minecraft/world/item/ItemStack.java:683
+     */
+    private static ItemStack damagedStack;
+    private static net.minecraft.world.entity.LivingEntity damagedBy;
+
+    /** 誰の道具かを控える。{@code hurtAndBreak(int, LivingEntity, EquipmentSlot)} の直前。 */
+    public static void armItemDamage(final ItemStack stack, final net.minecraft.world.entity.LivingEntity entity) {
+        if (entity instanceof net.minecraft.world.entity.player.Player
+                || !ShifuEvents.listening(io.papermc.paper.event.entity.EntityDamageItemEvent.getHandlerList())) {
+            damagedStack = null;
+            damagedBy = null;
+
+            return;
+        }
+
+        damagedStack = stack;
+        damagedBy = entity;
+    }
+
+    private static int itemDamageByEntity(final ItemStack stack, final int damage) {
+        final ItemStack armed = damagedStack;
+        final net.minecraft.world.entity.LivingEntity entity = damagedBy;
+        damagedStack = null;
+        damagedBy = null;
+
+        if (armed != stack || entity == null) {
+            return damage;
+        }
+
+        final io.papermc.paper.event.entity.EntityDamageItemEvent event =
+                new io.papermc.paper.event.entity.EntityDamageItemEvent(entity.getBukkitLivingEntity(),
+                        org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack), damage);
 
         return event.callEvent() ? event.getDamage() : 0;
     }

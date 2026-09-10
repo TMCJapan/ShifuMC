@@ -162,16 +162,33 @@ def shifu_side():
     return collect(texts, helpers, factory, [read(path) for path in walk(root)])
 
 
+# 数え方の当たり。名前は出てくるが、Shifu 側は別の道で出しているか、
+# そもそも Bukkit の催しではないもの。
+KNOWN = {
+    "CraftPortalEvent":
+        "org.bukkit.craftbukkit.event.CraftPortalEvent。Bukkit の催しではなく、"
+        "PortalInfo が持つ入れ物",
+    "ServerExceptionEvent":
+        "VillageSiege から ServerInternalException.reportInternalException 経由で出している",
+}
+
+
 def main():
     paper = paper_side()
     shifu = shifu_side()
     missing = sorted(paper - shifu)
+    known = [name for name in missing if name in KNOWN]
+    rest = [name for name in missing if name not in KNOWN]
 
-    print("Paper %d / Shifu %d、差 %d" % (len(paper), len(paper & shifu), len(missing)))
+    print("Paper %d / Shifu %d、差 %d(うち数え方の当たり %d、残り %d)"
+          % (len(paper), len(paper & shifu), len(missing), len(known), len(rest)))
 
     if "--list" in sys.argv:
-        for name in missing:
+        for name in rest:
             print("   ", name)
+
+        for name in known:
+            print("    (当たり)", name, "-", KNOWN[name])
 
     return 0
 

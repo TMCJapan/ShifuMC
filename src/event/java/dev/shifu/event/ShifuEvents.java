@@ -1673,4 +1673,96 @@ public final class ShifuEvents {
         }
     }
 
+
+    // ------------------------------------------------------------ チャンクの entity
+
+    /** EntitiesUnloadEvent を出してよい場面か。チャンクを外すときだけ立つ。 */
+    private static boolean unloadingChunk;
+
+    /**
+     * チャンクを外す手続きの印。{@code processChunkUnload} の前後。
+     *
+     * <p>{@code storeChunkSections} は自動保存からも呼ばれる。Paper は引数を
+     * 1 つ足して分けているが、Shifu は前後に印を置いて分ける。
+     */
+    public static void armEntitiesUnload(final boolean on) {
+        unloadingChunk = on;
+    }
+
+    /**
+     * EntitiesUnloadEvent。チャンクの entity を書き出す直前。
+     *
+     * <p>読んだ位置(Paper 1.20.6):
+     *   Paper-Server src/main/java/net/minecraft/world/level/entity/PersistentEntitySectionManager.java:251
+     */
+    public static void entitiesUnload(final net.minecraft.world.level.entity.EntityPersistentStorage<?> storage,
+                                      final long chunkPos,
+                                      final List<? extends net.minecraft.world.level.entity.EntityAccess> entities) {
+        if (!unloadingChunk
+                || !listening(org.bukkit.event.world.EntitiesUnloadEvent.getHandlerList())
+                || !(storage instanceof net.minecraft.world.level.chunk.storage.EntityStorage full)) {
+            return;
+        }
+
+        final List<net.minecraft.world.entity.Entity> list = new ArrayList<>();
+
+        for (final net.minecraft.world.level.entity.EntityAccess one : entities) {
+            if (one instanceof net.minecraft.world.entity.Entity entity) {
+                list.add(entity);
+            }
+        }
+
+        CraftEventFactory.callEntitiesUnloadEvent(full.level,
+                new net.minecraft.world.level.ChunkPos(chunkPos), list);
+    }
+
+    /**
+     * EntitiesLoadEvent。チャンクの entity を読み込み終えた直後。
+     *
+     * <p>読んだ位置(Paper 1.20.6):
+     *   Paper-Server src/main/java/net/minecraft/world/level/entity/PersistentEntitySectionManager.java:318
+     */
+    public static void entitiesLoad(final net.minecraft.world.level.entity.EntityPersistentStorage<?> storage,
+                                    final net.minecraft.world.level.entity.EntitySectionStorage<?> sections,
+                                    final net.minecraft.world.level.ChunkPos pos) {
+        if (!listening(org.bukkit.event.world.EntitiesLoadEvent.getHandlerList())
+                || !(storage instanceof net.minecraft.world.level.chunk.storage.EntityStorage full)) {
+            return;
+        }
+
+        final List<net.minecraft.world.entity.Entity> list = new ArrayList<>();
+
+        sections.getExistingSectionsInChunk(pos.toLong()).forEach(section ->
+                section.getEntities().forEach(one -> {
+                    if (one instanceof net.minecraft.world.entity.Entity entity) {
+                        list.add(entity);
+                    }
+                }));
+
+        CraftEventFactory.callEntitiesLoadEvent(full.level, pos, list);
+    }
+
+    /**
+     * ServerResourcesReloadedEvent。データパックの読み直しが終わったところ。
+     *
+     * <p>読み直しは別の担い手で走るので、終わってから main へ積み直して出す。
+     *
+     * <p>読んだ位置(Paper 1.20.6):
+     *   Paper-Server src/main/java/net/minecraft/server/MinecraftServer.java:2281
+     */
+    public static java.util.concurrent.CompletableFuture<Void> reloaded(
+            final java.util.concurrent.CompletableFuture<Void> future,
+            final io.papermc.paper.event.server.ServerResourcesReloadedEvent.Cause cause,
+            final net.minecraft.server.MinecraftServer server) {
+        if (!listening(io.papermc.paper.event.server.ServerResourcesReloadedEvent.getHandlerList())) {
+            return future;
+        }
+
+        future.thenRunAsync(
+                () -> new io.papermc.paper.event.server.ServerResourcesReloadedEvent(cause).callEvent(),
+                server);
+
+        return future;
+    }
+
 }

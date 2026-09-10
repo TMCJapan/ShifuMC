@@ -1,0 +1,14 @@
+# PlayerPurchaseEvent。Bukkit の API で作った商人から買うとき、取引の直前。
+#
+# 村人の分は AbstractVillager.notifyTrade で PlayerTradeEvent を出している。
+# ここは村人でない商人(CraftMerchantCustom)の分。
+# 式の一部を差し替える形なので、vanilla の式を第 1 引数に渡して包む。
+#
+# 読んだ位置(Paper 1.20.6):
+#   Paper-Server src/main/java/net/minecraft/world/inventory/MerchantResultSlot.java:52
+
+file: net/minecraft/world/inventory/MerchantResultSlot.java
+replace:
+        MerchantOffer merchantOffer = this.slots.getActiveOffer();
+with:
+        MerchantOffer merchantOffer = dev.shifu.event.PlayerEvents.merchantPurchase(this.slots.getActiveOffer(), this.merchant, player, stack);

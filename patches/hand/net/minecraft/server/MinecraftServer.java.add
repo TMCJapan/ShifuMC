@@ -8,10 +8,10 @@
     }
 
 // MinecraftServer.reloadResources
-    // cause は ServerResourcesReloadedEvent 用。発火しないので渡さない。
+    // cause は ServerResourcesReloadedEvent 用。読み直しが終わったところで出す。
     public CompletableFuture<Void> reloadResources(final Collection<String> packsToEnable,
                                                    final io.papermc.paper.event.server.ServerResourcesReloadedEvent.Cause cause) {
-        return this.reloadResources(packsToEnable);
+        return dev.shifu.event.ShifuEvents.reloaded(this.reloadResources(packsToEnable), cause, this);
     }
 
 // MinecraftServer.setDifficulty

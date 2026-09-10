@@ -1719,4 +1719,43 @@ public final class PlayerEvents {
         return true;
     }
 
+
+    /**
+     * PlayerPurchaseEvent。Bukkit の API で作った商人から買うとき、取引の直前。
+     *
+     * <p>村人は {@code AbstractVillager.notifyTrade} で PlayerTradeEvent を出している。
+     * ここで出すのは、村人でない商人(CraftMerchantCustom)の分だけ。
+     *
+     * <p>取り消されたら null を返す。呼び出し側の {@code if (merchantOffer != null)} が
+     * まるごと飛ぶので、取引も経験値も起きない。
+     *
+     * <p>読んだ位置(Paper 1.20.6):
+     *   Paper-Server src/main/java/net/minecraft/world/inventory/MerchantResultSlot.java:52
+     */
+    public static net.minecraft.world.item.trading.MerchantOffer merchantPurchase(
+            final net.minecraft.world.item.trading.MerchantOffer offer,
+            final net.minecraft.world.item.trading.Merchant merchant,
+            final net.minecraft.world.entity.player.Player player,
+            final net.minecraft.world.item.ItemStack taken) {
+        if (offer == null
+                || !(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)
+                || !(merchant instanceof org.bukkit.craftbukkit.inventory.CraftMerchantCustom.MinecraftMerchant)
+                || !listening(io.papermc.paper.event.player.PlayerPurchaseEvent.getHandlerList())) {
+            return offer;
+        }
+
+        final io.papermc.paper.event.player.PlayerPurchaseEvent event =
+                new io.papermc.paper.event.player.PlayerPurchaseEvent(serverPlayer.getBukkitEntity(),
+                        offer.asBukkit(), false, true);
+
+        if (!event.callEvent()) {
+            taken.setCount(0);
+            event.getPlayer().updateInventory();
+
+            return null;
+        }
+
+        return org.bukkit.craftbukkit.inventory.CraftMerchantRecipe.fromBukkit(event.getTrade()).toMinecraft();
+    }
+
 }

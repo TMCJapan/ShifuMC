@@ -1,0 +1,13 @@
+# ServerResourcesReloadedEvent(/reload)。
+#
+# vanilla は cause の無い方を呼ぶ。読み直しの CompletableFuture を包んで、
+# 終わったところで出す。聞き手がいなければ渡された future をそのまま返す。
+#
+# 読んだ位置(Paper 1.20.6):
+#   Paper-Server src/main/java/net/minecraft/server/commands/ReloadCommand.java:23
+
+file: net/minecraft/server/commands/ReloadCommand.java
+replace:
+        source.getServer().reloadResources(dataPacks).exceptionally(throwable -> {
+with:
+        dev.shifu.event.ShifuEvents.reloaded(source.getServer().reloadResources(dataPacks), io.papermc.paper.event.server.ServerResourcesReloadedEvent.Cause.COMMAND, source.getServer()).exceptionally(throwable -> {

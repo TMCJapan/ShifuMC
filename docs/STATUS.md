@@ -58,26 +58,26 @@ CodeDiff はメソッドごとに**最初の 1 件**しか出さないので、
 
 ### 1.20.6 に足りていないもの(2026-09-10 に測った)
 
+    python tools/event_coverage.py --list
+
 数え方は「当てた木の `net/minecraft` から、発火層 `dev.shifu.event.*` と
-`CraftEventFactory` を 1 段たどって届くイベント型」。Paper 側は Paper-Server の
+`CraftEventFactory` をたどって届くイベント型」。Paper 側は Paper-Server の
 HEAD の同じファイルから同じ手順で数える。`patches/events` の数は使わない
 (shim が Paper のコードを木へ持ち込むので、置いてあるだけで届かないものが混ざる)。
 
 | | 1.20.6 | Paper 1.20.6 |
 |---|---|---|
-| 発火の規則 | 560 | - |
-| **NMS から届くイベントの型** | **362** | 376 |
+| 発火の規則 | 577 | - |
+| **NMS から届くイベントの型** | **353** | 355 |
 
-残り 20 の一覧と、入らない理由の分けは
+差の 2 件はどちらも数え方の当たりで、Paper が出していて Shifu が出していない
+イベントは残っていない。分けと理由は
 [backlog/events-missing.txt](backlog/events-missing.txt)。
-うち 12 は数え方の当たり(コメントや AWT、別の経路で出しているもの)で、
-実際の残りは 8。どの位置が変わったかを外から知れないもの 3 件、非同期の
-作り直しが要るもの 3 件、Paper が足した DamageSource の口が要るもの 1 件、
-差し込むと MOD の mixin が当たらなくなるもの 1 件。
 
-数えるのは「規則や発火層に名前が出てくる型」ではなく、
+木の側で数えるのは「名前が出てくる型」ではなく、
 **`new XxxEvent(` か `callXxxEvent(` で実際に組み立てている型**。
 名前だけなら import やコメントでも当たるので、出していないものまで数えてしまう。
+発火層(`src/event`)は木から呼ばれるものしか置かないので、そちらは名前で数える。
 
 1.20.6 の Paper は classic の並べ方で、**CraftBukkit が触った 543 ファイルの差分が
 spigot 側の逆コンパイラの方言**になっている。文脈行が vanilla の木と一致しないので
