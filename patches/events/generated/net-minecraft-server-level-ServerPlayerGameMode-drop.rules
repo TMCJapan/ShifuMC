@@ -1,0 +1,15 @@
+# BlockDropItemEvent。落とし物が出そろった直後。
+# vanilla のとおり先に世界へ入れて、あとで発火し、外された分だけ消す。
+
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+anchor:
+                    if (bl && bl2) {
+                        block.playerDestroy(this.level, this.player, pos, blockState2, blockEntity, itemStack2);
+                    }
+insert:
+    org.bukkit.block.BlockState shifuBrokenState =
+            org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(
+                    this.level.getWorld(), pos, blockState2, blockEntity);
+    dev.shifu.event.ShifuEvents.blockDropArm();
+insert-after:
+    dev.shifu.event.ShifuEvents.blockDropFire(this.level, pos, shifuBrokenState, this.player);

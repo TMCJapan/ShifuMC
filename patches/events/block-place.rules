@@ -22,7 +22,7 @@ anchor:
     BlockState blockState = this.getPlacementState(blockPlaceContext);
 insert-after:
     final org.bukkit.block.BlockState shifuReplaced =
-            dev.shifu.event.ShifuEvents.blockPlaceListening()
+            dev.shifu.event.ShifuEvents.armPlace()
                     ? org.bukkit.craftbukkit.block.CraftBlock.at(
                             blockPlaceContext.getLevel(),
                             blockPlaceContext.getClickedPos()).getState()
@@ -37,6 +37,7 @@ insert:
             && !dev.shifu.event.ShifuEvents.blockPlace(
                     shifuLevel, player, blockPlaceContext.getHand(), shifuReplaced,
                     blockPlaceContext.getClickedPos())) {
+        dev.shifu.event.ShifuEvents.revertPlace(shifuLevel);
         shifuLevel.setBlock(blockPos, ((org.bukkit.craftbukkit.block.CraftBlockState) shifuReplaced).getHandle(),
                 net.minecraft.world.level.block.Block.UPDATE_ALL);
         return InteractionResult.FAIL;

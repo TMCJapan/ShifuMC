@@ -170,8 +170,18 @@ public final class ShifuEvents {
             return true;
         }
 
-        final org.bukkit.event.block.BlockPlaceEvent event = CraftEventFactory.callBlockPlaceEvent(
-                level, player, hand, replaced, clickedPos.getX(), clickedPos.getY(), clickedPos.getZ());
+        final org.bukkit.event.block.BlockPlaceEvent event;
+
+        if (multiPlaced.isEmpty()) {
+            event = CraftEventFactory.callBlockPlaceEvent(
+                    level, player, hand, replaced, clickedPos.getX(), clickedPos.getY(), clickedPos.getZ());
+        } else {
+            final List<org.bukkit.block.BlockState> all = new ArrayList<>();
+            all.add(replaced);
+            all.addAll(multiPlaced);
+            event = CraftEventFactory.callBlockMultiPlaceEvent(
+                    level, player, hand, all, clickedPos.getX(), clickedPos.getY(), clickedPos.getZ());
+        }
 
         return !event.isCancelled() && event.canBuild();
     }
@@ -179,6 +189,48 @@ public final class ShifuEvents {
     /** ブロックの設置を聞いている登録があるか。置く前の様子を控えるかの判断に使う。 */
     public static boolean blockPlaceListening() {
         return listening(org.bukkit.event.block.BlockPlaceEvent.getHandlerList());
+    }
+
+    /**
+     * 1 回の設置で 2 つ目以降に置かれる場所の控え。ベッド・扉・背の高い草。
+     *
+     * <p>{@code BlockMultiPlaceEvent} は {@code BlockPlaceEvent} の派生なので、
+     * 登録の判定は同じ {@link #blockPlaceListening()} で足りる。
+     */
+    private static final List<org.bukkit.block.BlockState> multiPlaced = new ArrayList<>();
+
+    /**
+     * 1 回の設置の始まり。控えを空にして、控えを取るかどうかを返す。
+     *
+     * <p>{@code BlockItem.place} の頭で 1 度だけ呼ぶ。
+     */
+    public static boolean armPlace() {
+        multiPlaced.clear();
+
+        return blockPlaceListening();
+    }
+
+    /**
+     * 2 つ目以降に置く場所の控えを取る。{@code setPlacedBy} が
+     * {@code setBlock} を呼ぶ直前。登録が無ければ何もしない。
+     */
+    public static void capturePlace(final net.minecraft.world.level.Level level, final BlockPos pos) {
+        if (!blockPlaceListening()) {
+            return;
+        }
+
+        multiPlaced.add(CraftBlock.at(level, pos).getState());
+    }
+
+    /** 取り消されたとき、2 つ目以降に置いた分を控えへ戻す。 */
+    public static void revertPlace(final ServerLevel level) {
+        for (final org.bukkit.block.BlockState one : multiPlaced) {
+            level.setBlock(((org.bukkit.craftbukkit.block.CraftBlockState) one).getPosition(),
+                    ((org.bukkit.craftbukkit.block.CraftBlockState) one).getHandle(),
+                    net.minecraft.world.level.block.Block.UPDATE_ALL);
+        }
+
+        multiPlaced.clear();
     }
 
 
@@ -306,6 +358,14 @@ public final class ShifuEvents {
      * 速度や向きも vanilla が決めたままになる。経験値オーブも同じ。
      */
     public static boolean catchDrop(final net.minecraft.world.entity.Entity entity) {
+        final List<net.minecraft.world.entity.item.ItemEntity> broken = blockDrops;
+
+        if (broken != null && entity instanceof net.minecraft.world.entity.item.ItemEntity dropped) {
+            // 壊したブロックの落とし物。**世界へは vanilla のとおり入れる。**
+            // 控えるのは「どれが出たか」だけで、発火はあとから。
+            broken.add(dropped);
+        }
+
         final DeathCapture current = capture;
 
         if (current == null) {
@@ -1476,6 +1536,62 @@ public final class ShifuEvents {
 
         return new io.papermc.paper.event.world.WorldGameRuleChangeEvent(source.getLevel().getWorld(),
                 source.getBukkitSender(), rule, value).callEvent();
+    }
+
+
+    // ------------------------------------------------------------ 壊したブロックの落とし物
+
+    /** 壊したブロックから出た落とし物。控えている最中だけ入る。 */
+    private static List<net.minecraft.world.entity.item.ItemEntity> blockDrops;
+
+    /**
+     * BlockDropItemEvent の控えを始める。{@code playerDestroy} の直前。
+     *
+     * <p>Paper は落とし物を世界に入れる前に押さえて、通ったものだけ入れる。
+     * Shifu は <b>vanilla のとおり先に入れて</b>、あとで発火し、
+     * プラグインが外したものだけ消す。入る順は vanilla のまま。
+     */
+    public static void blockDropArm() {
+        blockDrops = listening(org.bukkit.event.block.BlockDropItemEvent.getHandlerList())
+                ? new ArrayList<>() : null;
+    }
+
+    /**
+     * BlockDropItemEvent。落とし物が出そろった直後。
+     *
+     * <p>プラグインが並びから外した分は消す。
+     */
+    public static void blockDropFire(final ServerLevel level, final BlockPos pos,
+                                     final org.bukkit.block.BlockState state, final ServerPlayer player) {
+        final List<net.minecraft.world.entity.item.ItemEntity> dropped = blockDrops;
+        blockDrops = null;
+
+        if (dropped == null || dropped.isEmpty()) {
+            return;
+        }
+
+        final List<org.bukkit.entity.Item> items = new ArrayList<>();
+
+        for (final net.minecraft.world.entity.item.ItemEntity one : dropped) {
+            items.add((org.bukkit.entity.Item) one.getBukkitEntity());
+        }
+
+        final org.bukkit.event.block.BlockDropItemEvent event = new org.bukkit.event.block.BlockDropItemEvent(
+                CraftBlock.at(level, pos), state, player.getBukkitEntity(), items);
+
+        if (!event.callEvent()) {
+            for (final net.minecraft.world.entity.item.ItemEntity one : dropped) {
+                one.discard();
+            }
+
+            return;
+        }
+
+        for (final net.minecraft.world.entity.item.ItemEntity one : dropped) {
+            if (!items.contains(one.getBukkitEntity())) {
+                one.discard();
+            }
+        }
     }
 
 }

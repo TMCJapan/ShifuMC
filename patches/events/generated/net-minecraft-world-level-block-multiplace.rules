@@ -1,0 +1,23 @@
+# BlockMultiPlaceEvent。1 回の設置で 2 つ目以降に置く場所の控えを取る。
+# 登録が無ければ控えも取らない。
+
+# ベッドの頭
+file: net/minecraft/world/level/block/BedBlock.java
+anchor:
+            world.setBlock(blockPos, state.setValue(PART, BedPart.HEAD), 3);
+insert:
+    dev.shifu.event.ShifuEvents.capturePlace(world, blockPos);
+
+# 扉の上半分
+file: net/minecraft/world/level/block/DoorBlock.java
+anchor:
+        world.setBlock(pos.above(), state.setValue(HALF, DoubleBlockHalf.UPPER), 3);
+insert:
+    dev.shifu.event.ShifuEvents.capturePlace(world, pos.above());
+
+# 背の高い草・花の上半分
+file: net/minecraft/world/level/block/DoublePlantBlock.java
+anchor:
+        world.setBlock(blockPos, copyWaterloggedFrom(world, blockPos, this.defaultBlockState().setValue(HALF, DoubleBlockHalf.UPPER)), 3);
+insert:
+    dev.shifu.event.ShifuEvents.capturePlace(world, blockPos);
