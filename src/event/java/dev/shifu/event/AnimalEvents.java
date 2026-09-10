@@ -700,4 +700,71 @@ public final class AnimalEvents {
         return event.callEvent();
     }
 
+
+    /** EntitySpellCastEvent。呪文を唱える直前。 */
+    public static boolean spellCast(final net.minecraft.world.entity.monster.SpellcasterIllager caster,
+                                    final net.minecraft.world.entity.monster.SpellcasterIllager.IllagerSpell spell) {
+        if (!listening(org.bukkit.event.entity.EntitySpellCastEvent.getHandlerList())) {
+            return true;
+        }
+
+        return org.bukkit.craftbukkit.event.CraftEventFactory.handleEntitySpellCastEvent(caster, spell);
+    }
+
+    /** WardenAngerChangeEvent に登録があるか。今の怒りを引く前に見る。 */
+    public static boolean wardenAngerListening() {
+        return listening(io.papermc.paper.event.entity.WardenAngerChangeEvent.getHandlerList());
+    }
+
+    /**
+     * WardenAngerChangeEvent。怒りが増える直前。
+     *
+     * @return 新しい怒りの合計。取り消されたら null
+     */
+    public static Integer wardenAngerChange(final net.minecraft.world.entity.monster.warden.Warden warden,
+                                            final net.minecraft.world.entity.Entity target,
+                                            final int oldAnger, final int newAnger) {
+        final io.papermc.paper.event.entity.WardenAngerChangeEvent event =
+                new io.papermc.paper.event.entity.WardenAngerChangeEvent(
+                        (org.bukkit.entity.Warden) warden.getBukkitEntity(),
+                        target == null ? null : target.getBukkitEntity(), oldAnger, newAnger);
+
+        return event.callEvent() ? event.getNewAnger() : null;
+    }
+
+    /** TameableDeathMessageEvent に登録があるか。 */
+    public static boolean tameableDeathListening() {
+        return listening(io.papermc.paper.event.entity.TameableDeathMessageEvent.getHandlerList());
+    }
+
+    /**
+     * TameableDeathMessageEvent。飼い主に死んだことを伝える直前。
+     *
+     * @return 伝える文。取り消されたら null
+     */
+    public static net.minecraft.network.chat.Component tameableDeathMessage(
+            final net.minecraft.world.entity.TamableAnimal animal,
+            final net.minecraft.network.chat.Component message) {
+        final io.papermc.paper.event.entity.TameableDeathMessageEvent event =
+                new io.papermc.paper.event.entity.TameableDeathMessageEvent(
+                        (org.bukkit.entity.Tameable) animal.getBukkitEntity(),
+                        io.papermc.paper.adventure.PaperAdventure.asAdventure(message));
+
+        return event.callEvent()
+                ? io.papermc.paper.adventure.PaperAdventure.asVanilla(event.deathMessage()) : null;
+    }
+
+    /** VillagerCareerChangeEvent。職に就く・失う直前。 */
+    public static boolean villagerCareerChange(final net.minecraft.world.entity.npc.Villager villager,
+                                               final net.minecraft.world.entity.npc.VillagerProfession profession,
+                                               final org.bukkit.event.entity.VillagerCareerChangeEvent.ChangeReason reason) {
+        if (!listening(org.bukkit.event.entity.VillagerCareerChangeEvent.getHandlerList())) {
+            return true;
+        }
+
+        return !org.bukkit.craftbukkit.event.CraftEventFactory.callVillagerCareerChangeEvent(villager,
+                org.bukkit.craftbukkit.entity.CraftVillager.CraftProfession.minecraftToBukkit(profession),
+                reason).isCancelled();
+    }
+
 }

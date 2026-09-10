@@ -1,0 +1,18 @@
+# PlayerBedFailEnterEvent。寝られなかったとき。
+
+# pos はこの手前で書き換わるので、ラムダに渡す用に控える
+file: net/minecraft/world/level/block/BedBlock.java
+anchor:
+                player.startSleepInBed(pos).ifLeft(reason -> {
+insert:
+    BlockPos shifuBedPos = pos;
+
+file: net/minecraft/world/level/block/BedBlock.java
+anchor:
+                    if (reason.getMessage() != null) {
+                        player.displayClientMessage(reason.getMessage(), true);
+                    }
+insert:
+    if (!dev.shifu.event.PlayerEvents.bedFailEnter(player, reason, world, shifuBedPos)) {
+        return;
+    }

@@ -1,0 +1,9 @@
+# SpawnerSpawnEvent。スポナーが出したものを世界に置く直前。
+
+file: net/minecraft/world/level/BaseSpawner.java
+anchor:
+                        if (!world.tryAddFreshEntityWithPassengers(entity)) {
+insert:
+    if (!dev.shifu.event.EntityEvents.spawnerSpawn(entity, pos)) {
+        continue;
+    }

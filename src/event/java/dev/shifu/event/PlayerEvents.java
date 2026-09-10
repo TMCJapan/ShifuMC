@@ -959,4 +959,26 @@ public final class PlayerEvents {
                 player.getTicksUsingItem()).callEvent();
     }
 
+
+    /**
+     * PlayerBedFailEnterEvent。寝られなかったとき。
+     *
+     * <p>爆発するかどうか({@code getWillExplode})は CraftBukkit が足した分岐で、
+     * vanilla のこの経路には無い。渡しているのは取り消しだけ。
+     */
+    public static boolean bedFailEnter(final net.minecraft.world.entity.player.Player player,
+                                       final net.minecraft.world.entity.player.Player.BedSleepingProblem reason,
+                                       final net.minecraft.world.level.Level level, final BlockPos pos) {
+        if (!(player instanceof ServerPlayer serverPlayer)
+                || !ShifuEvents.listening(io.papermc.paper.event.player.PlayerBedFailEnterEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new io.papermc.paper.event.player.PlayerBedFailEnterEvent(serverPlayer.getBukkitEntity(),
+                io.papermc.paper.event.player.PlayerBedFailEnterEvent.FailReason.values()[reason.ordinal()],
+                org.bukkit.craftbukkit.block.CraftBlock.at(level, pos),
+                !level.dimensionType().bedWorks(),
+                reason.getMessage() == null ? null : PaperAdventure.asAdventure(reason.getMessage())).callEvent();
+    }
+
 }

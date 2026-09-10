@@ -1,0 +1,10 @@
+# VillagerCareerChangeEvent。職に就く直前。
+
+file: net/minecraft/world/entity/ai/behavior/AssignProfessionFromJobSite.java
+anchor:
+                                                entity.setVillagerData(entity.getVillagerData().setProfession(profession));
+insert:
+    if (!dev.shifu.event.AnimalEvents.villagerCareerChange(entity, profession,
+            org.bukkit.event.entity.VillagerCareerChangeEvent.ChangeReason.EMPLOYED)) {
+        return;
+    }

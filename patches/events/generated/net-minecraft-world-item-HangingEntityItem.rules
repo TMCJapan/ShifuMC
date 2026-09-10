@@ -1,0 +1,10 @@
+# HangingPlaceEvent。額縁や絵を掛ける直前。
+
+file: net/minecraft/world/item/HangingEntityItem.java
+anchor:
+                    hangingEntity.playPlacementSound();
+insert:
+    if (!dev.shifu.event.EntityEvents.hangingPlace(hangingEntity, player, blockPos, direction,
+            context.getHand(), itemStack)) {
+        return InteractionResult.CONSUME;
+    }

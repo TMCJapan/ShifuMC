@@ -1,0 +1,15 @@
+# WardenAngerChangeEvent。怒りが増える直前。登録があるときだけ組み直す。
+
+file: net/minecraft/world/entity/monster/warden/Warden.java
+anchor:
+            int i = this.angerManagement.increaseAnger(entity, amount);
+insert:
+    if (dev.shifu.event.AnimalEvents.wardenAngerListening()) {
+        int shifuActive = this.angerManagement.getActiveAnger(entity);
+        Integer shifuNew = dev.shifu.event.AnimalEvents.wardenAngerChange(this, entity, shifuActive,
+                Math.min(150, shifuActive + amount));
+        if (shifuNew == null) {
+            return;
+        }
+        amount = shifuNew - shifuActive;
+    }

@@ -1,0 +1,9 @@
+# EntitySpellCastEvent。呪文を唱える直前。
+
+file: net/minecraft/world/entity/monster/SpellcasterIllager.java
+anchor:
+                this.performSpellCasting();
+insert:
+    if (!dev.shifu.event.AnimalEvents.spellCast(SpellcasterIllager.this, this.getSpell())) {
+        return;
+    }

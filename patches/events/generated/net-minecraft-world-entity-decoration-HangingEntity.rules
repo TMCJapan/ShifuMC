@@ -1,0 +1,10 @@
+# HangingBreakEvent。支えが無くなって落ちる直前。
+
+file: net/minecraft/world/entity/decoration/HangingEntity.java
+anchor:
+                    this.discard();
+                    this.dropItem(null);
+insert:
+    if (dev.shifu.event.EntityEvents.hangingBreak(this)) {
+insert-after:
+    }

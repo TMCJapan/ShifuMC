@@ -1,0 +1,16 @@
+# TameableDeathMessageEvent。飼い主に死んだことを伝える直前。
+# 登録があるときは差し替えた文を使い、無ければ vanilla の行をそのまま通す。
+
+file: net/minecraft/world/entity/TamableAnimal.java
+anchor:
+            this.getOwner().sendSystemMessage(this.getCombatTracker().getDeathMessage());
+insert:
+    if (dev.shifu.event.AnimalEvents.tameableDeathListening()) {
+        net.minecraft.network.chat.Component shifuDeath =
+                dev.shifu.event.AnimalEvents.tameableDeathMessage(this, this.getCombatTracker().getDeathMessage());
+        if (shifuDeath != null) {
+            this.getOwner().sendSystemMessage(shifuDeath);
+        }
+    } else {
+insert-after:
+    }

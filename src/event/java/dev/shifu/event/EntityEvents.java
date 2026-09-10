@@ -1154,4 +1154,51 @@ public final class EntityEvents {
                 (org.bukkit.entity.AreaEffectCloud) cloud.getBukkitEntity()).callEvent();
     }
 
+
+    /** SpawnerSpawnEvent。スポナーが出したものを世界に置く直前。 */
+    public static boolean spawnerSpawn(final Entity entity, final net.minecraft.core.BlockPos pos) {
+        if (!listening(org.bukkit.event.entity.SpawnerSpawnEvent.getHandlerList())) {
+            return true;
+        }
+
+        return !org.bukkit.craftbukkit.event.CraftEventFactory.callSpawnerSpawnEvent(entity, pos).isCancelled();
+    }
+
+
+    /** HangingPlaceEvent。額縁や絵を掛ける直前。 */
+    public static boolean hangingPlace(final net.minecraft.world.entity.decoration.HangingEntity hanging,
+                                       final net.minecraft.world.entity.player.Player player,
+                                       final net.minecraft.core.BlockPos clicked,
+                                       final net.minecraft.core.Direction face,
+                                       final net.minecraft.world.InteractionHand hand,
+                                       final net.minecraft.world.item.ItemStack stack) {
+        if (!listening(org.bukkit.event.hanging.HangingPlaceEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.hanging.HangingPlaceEvent(
+                (org.bukkit.entity.Hanging) hanging.getBukkitEntity(),
+                player instanceof net.minecraft.server.level.ServerPlayer serverPlayer
+                        ? serverPlayer.getBukkitEntity() : null,
+                org.bukkit.craftbukkit.block.CraftBlock.at(hanging.level(), clicked),
+                org.bukkit.craftbukkit.block.CraftBlock.notchToBlockFace(face),
+                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack)).callEvent();
+    }
+
+    /** HangingBreakEvent。支えが無くなって落ちる直前。 */
+    public static boolean hangingBreak(final net.minecraft.world.entity.decoration.HangingEntity hanging) {
+        if (!listening(org.bukkit.event.hanging.HangingBreakEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.event.hanging.HangingBreakEvent.RemoveCause cause =
+                hanging.level().getBlockState(hanging.blockPosition()).isAir()
+                        ? org.bukkit.event.hanging.HangingBreakEvent.RemoveCause.PHYSICS
+                        : org.bukkit.event.hanging.HangingBreakEvent.RemoveCause.OBSTRUCTION;
+
+        return new org.bukkit.event.hanging.HangingBreakEvent(
+                (org.bukkit.entity.Hanging) hanging.getBukkitEntity(), cause).callEvent();
+    }
+
 }
