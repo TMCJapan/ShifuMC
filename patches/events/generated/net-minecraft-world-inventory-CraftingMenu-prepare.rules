@@ -1,0 +1,7 @@
+# PrepareItemCraftEvent。作業台の結果が決まった直後。
+
+file: net/minecraft/world/inventory/CraftingMenu.java
+anchor:
+            resultInventory.setItem(0, itemStack);
+insert:
+    itemStack = dev.shifu.event.ItemEvents.prepareCraft(handler, itemStack);

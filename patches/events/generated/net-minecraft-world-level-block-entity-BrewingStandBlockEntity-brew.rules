@@ -1,0 +1,10 @@
+# BrewEvent。醸造が終わって中身を書き換える直前。vanilla の文を囲む。
+
+file: net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
+anchor:
+                doBrew(world, pos, blockEntity.items);
+                setChanged(world, pos, state);
+insert:
+    if (dev.shifu.event.BlockEvents.brew(world, pos, blockEntity, blockEntity.items, blockEntity.fuel)) {
+insert-after:
+    }

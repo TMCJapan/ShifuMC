@@ -1,0 +1,8 @@
+# PrepareItemEnchantEvent。3 つの候補が決まった直後。
+
+file: net/minecraft/world/inventory/EnchantmentMenu.java
+anchor:
+                    this.broadcastChanges();
+insert:
+    dev.shifu.event.ItemEvents.prepareEnchant(this, itemStack, this.costs, this.enchantClue, this.levelClue,
+            ix, world, pos);

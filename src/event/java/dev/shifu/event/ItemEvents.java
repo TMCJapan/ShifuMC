@@ -648,4 +648,182 @@ public final class ItemEvents {
         return allowed;
     }
 
+
+    /**
+     * PrepareItemCraftEvent。作業台の結果が決まった直後。
+     *
+     * @return 結果のアイテム。プラグインが差し替えたらそれ
+     */
+    public static ItemStack prepareCraft(final AbstractContainerMenu menu, final ItemStack result) {
+        if (!ShifuEvents.listening(org.bukkit.event.inventory.PrepareItemCraftEvent.getHandlerList())) {
+            return result;
+        }
+
+        final org.bukkit.inventory.InventoryView view = menu.getBukkitView();
+
+        if (!(view.getTopInventory() instanceof org.bukkit.inventory.CraftingInventory inventory)) {
+            return result;
+        }
+
+        inventory.setResult(org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(result));
+        new org.bukkit.event.inventory.PrepareItemCraftEvent(inventory, view, false).callEvent();
+
+        return org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(inventory.getResult());
+    }
+
+
+    /**
+     * EnchantItemEvent。エンチャントを付ける直前。
+     *
+     * <p>Paper はプラグインが差し替えた付与内容と経験値の量を使う。vanilla の
+     * 行はその場で決めた並びをそのまま使うので、<b>渡しているのは取り消しだけ。</b>
+     */
+    public static boolean enchantItem(final net.minecraft.world.inventory.EnchantmentMenu menu,
+                                      final net.minecraft.world.entity.player.Player player,
+                                      final net.minecraft.world.item.ItemStack item,
+                                      final java.util.List<net.minecraft.world.item.enchantment.EnchantmentInstance> list,
+                                      final int cost, final int button, final int clueId, final int clueLevel,
+                                      final net.minecraft.world.level.Level level,
+                                      final net.minecraft.core.BlockPos pos) {
+        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)
+                || !ShifuEvents.listening(org.bukkit.event.enchantment.EnchantItemEvent.getHandlerList())) {
+            return true;
+        }
+
+        final java.util.Map<org.bukkit.enchantments.Enchantment, Integer> enchants = new java.util.LinkedHashMap<>();
+
+        for (final net.minecraft.world.item.enchantment.EnchantmentInstance one : list) {
+            enchants.put(org.bukkit.craftbukkit.enchantments.CraftEnchantment.minecraftToBukkit(one.enchantment),
+                    one.level);
+        }
+
+        final org.bukkit.enchantments.Enchantment hint = clueId >= 0
+                ? org.bukkit.craftbukkit.enchantments.CraftEnchantment.minecraftToBukkit(
+                        net.minecraft.world.item.enchantment.Enchantment.byId(clueId))
+                : null;
+
+        return new org.bukkit.event.enchantment.EnchantItemEvent(serverPlayer.getBukkitEntity(),
+                menu.getBukkitView(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(item),
+                cost, enchants, hint, clueLevel, button).callEvent();
+    }
+
+
+    /**
+     * PrepareItemEnchantEvent。3 つの候補が決まった直後。
+     *
+     * <p>プラグインが直した候補({@code EnchantmentOffer})の必要レベルは
+     * {@code costs} に書き戻す。取り消されたら候補を全部消す。
+     * 付ける中身({@code enchantClue} / {@code levelClue})は vanilla が
+     * 付与のときに引き直すので、書き戻していない。
+     */
+    public static void prepareEnchant(final net.minecraft.world.inventory.EnchantmentMenu menu,
+                                      final net.minecraft.world.item.ItemStack item,
+                                      final int[] costs, final int[] enchantClue, final int[] levelClue,
+                                      final int bookshelves,
+                                      final net.minecraft.world.level.Level level,
+                                      final net.minecraft.core.BlockPos pos) {
+        if (!ShifuEvents.listening(org.bukkit.event.enchantment.PrepareItemEnchantEvent.getHandlerList())) {
+            return;
+        }
+
+        if (!(menu.getBukkitView().getPlayer() instanceof org.bukkit.entity.Player player)) {
+            return;
+        }
+
+        final org.bukkit.enchantments.EnchantmentOffer[] offers = new org.bukkit.enchantments.EnchantmentOffer[3];
+
+        for (int i = 0; i < 3; i++) {
+            final org.bukkit.enchantments.Enchantment enchantment = enchantClue[i] >= 0
+                    ? org.bukkit.craftbukkit.enchantments.CraftEnchantment.minecraftToBukkit(
+                            net.minecraft.world.item.enchantment.Enchantment.byId(enchantClue[i]))
+                    : null;
+            offers[i] = enchantment != null
+                    ? new org.bukkit.enchantments.EnchantmentOffer(enchantment, levelClue[i], costs[i]) : null;
+        }
+
+        final org.bukkit.event.enchantment.PrepareItemEnchantEvent event =
+                new org.bukkit.event.enchantment.PrepareItemEnchantEvent(player, menu.getBukkitView(),
+                        org.bukkit.craftbukkit.block.CraftBlock.at(level, pos),
+                        org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(item), offers, bookshelves);
+        event.setCancelled(!item.isEnchantable());
+        event.callEvent();
+
+        for (int i = 0; i < 3; i++) {
+            if (event.isCancelled()) {
+                costs[i] = 0;
+                enchantClue[i] = -1;
+                levelClue[i] = -1;
+            } else if (event.getOffers()[i] != null) {
+                costs[i] = event.getOffers()[i].getCost();
+            }
+        }
+    }
+
+
+    /** AnvilDamagedEvent に登録があるか。 */
+    public static boolean anvilDamagedListening() {
+        return ShifuEvents.listening(com.destroystokyo.paper.event.block.AnvilDamagedEvent.getHandlerList());
+    }
+
+    /**
+     * AnvilDamagedEvent。金床が傷む直前。
+     *
+     * @param before 傷む前の状態。取り消されたときの印にも使う
+     * @param after  vanilla が決めた傷んだあとの状態。壊れるときは null
+     * @return 実際に置く状態。{@code before} がそのまま返ったら取り消し
+     */
+    public static net.minecraft.world.level.block.state.BlockState anvilDamaged(
+            final net.minecraft.world.inventory.AnvilMenu menu,
+            final net.minecraft.world.level.block.state.BlockState before,
+            final net.minecraft.world.level.block.state.BlockState after) {
+        final com.destroystokyo.paper.event.block.AnvilDamagedEvent event =
+                new com.destroystokyo.paper.event.block.AnvilDamagedEvent(menu.getBukkitView(),
+                        after != null ? org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(after) : null);
+
+        if (!event.callEvent()) {
+            return before;
+        }
+
+        if (event.getDamageState() == com.destroystokyo.paper.event.block.AnvilDamagedEvent.DamageState.BROKEN) {
+            return null;
+        }
+
+        return ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getDamageState().getMaterial()
+                .createBlockData()).getState().setValue(
+                        net.minecraft.world.level.block.AnvilBlock.FACING,
+                        before.getValue(net.minecraft.world.level.block.AnvilBlock.FACING));
+    }
+
+
+    /**
+     * PlayerChangeBeaconEffectEvent。ビーコンの効果を決める直前。
+     *
+     * <p>差し替えた効果({@code setPrimary} / {@code setSecondary})は
+     * vanilla の行が引数を持つので使っていない。渡しているのは取り消しだけ。
+     */
+    public static boolean changeBeaconEffect(final net.minecraft.world.inventory.BeaconMenu menu,
+                                             final net.minecraft.world.entity.player.Player player,
+                                             final java.util.Optional<net.minecraft.core.Holder<
+                                                     net.minecraft.world.effect.MobEffect>> primary,
+                                             final java.util.Optional<net.minecraft.core.Holder<
+                                                     net.minecraft.world.effect.MobEffect>> secondary) {
+        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)
+                || !ShifuEvents.listening(
+                        io.papermc.paper.event.player.PlayerChangeBeaconEffectEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new io.papermc.paper.event.player.PlayerChangeBeaconEffectEvent(serverPlayer.getBukkitEntity(),
+                convert(primary), convert(secondary),
+                menu.getBukkitView().getTopInventory().getLocation() == null
+                        ? null : menu.getBukkitView().getTopInventory().getLocation().getBlock()).callEvent();
+    }
+
+    private static org.bukkit.potion.PotionEffectType convert(
+            final java.util.Optional<net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect>> effect) {
+        return effect.map(holder -> org.bukkit.craftbukkit.potion.CraftPotionEffectType.minecraftHolderToBukkit(holder))
+                .orElse(null);
+    }
+
 }

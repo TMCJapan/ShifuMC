@@ -1440,4 +1440,49 @@ public final class PlayerEvents {
         return false;
     }
 
+
+    /** PlayerUseUnknownEntityEvent。相手が見つからないまま触ったとき。 */
+    public static void useUnknownEntity(final ServerPlayer player,
+                                        final net.minecraft.network.protocol.game.ServerboundInteractPacket packet,
+                                        final net.minecraft.world.InteractionHand hand) {
+        if (!ShifuEvents.listening(
+                com.destroystokyo.paper.event.player.PlayerUseUnknownEntityEvent.getHandlerList())) {
+            return;
+        }
+
+        new com.destroystokyo.paper.event.player.PlayerUseUnknownEntityEvent(player.getBukkitEntity(),
+                packet.getEntityId(), packet.isAttack(),
+                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand),
+                new org.bukkit.util.Vector()).callEvent();
+    }
+
+
+    /**
+     * PlayerInitialSpawnEvent(親は PlayerSpawnLocationEvent)。
+     * 出る場所が決まった直後。プラグインが直した場所へ移す。
+     *
+     * <p>世界をまたぐ差し替えには対応していない。vanilla の
+     * {@code setServerLevel} はもう済んでいて、そこを戻すと
+     * 木の中の並びが変わる。
+     */
+    public static void initialSpawn(final ServerPlayer player) {
+        if (!ShifuEvents.listening(org.spigotmc.event.player.PlayerSpawnLocationEvent.getHandlerList())) {
+            return;
+        }
+
+        final org.bukkit.entity.Player bukkit = player.getBukkitEntity();
+        final org.spigotmc.event.player.PlayerSpawnLocationEvent event =
+                new com.destroystokyo.paper.event.player.PlayerInitialSpawnEvent(bukkit, bukkit.getLocation());
+        event.callEvent();
+
+        final org.bukkit.Location to = event.getSpawnLocation();
+
+        if (to == null || to.getWorld() != bukkit.getWorld()) {
+            return;
+        }
+
+        player.setPosRaw(to.getX(), to.getY(), to.getZ());
+        player.setRot(to.getYaw(), to.getPitch());
+    }
+
 }

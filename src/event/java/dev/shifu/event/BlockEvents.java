@@ -1214,4 +1214,65 @@ public final class BlockEvents {
                 !org.bukkit.Bukkit.isPrimaryThread()).callEvent();
     }
 
+
+    /**
+     * InventoryMoveItemEvent。ホッパーなどが 1 個ずつ移す直前。
+     *
+     * <p>渡す入れ物は {@code CraftInventory} をそのまま作る。Paper は
+     * 二重チェストなどを見分けているが、その振り分けは 1.20.6 の木に無い。
+     * 差し替えたアイテム({@code setItem})も vanilla の行が持つので使っていない。
+     *
+     * @return 移してよいか
+     */
+    public static boolean inventoryMoveItem(final net.minecraft.world.Container from,
+                                            final net.minecraft.world.Container to,
+                                            final net.minecraft.world.item.ItemStack stack) {
+        if (from == null
+                || !ShifuEvents.listening(org.bukkit.event.inventory.InventoryMoveItemEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.inventory.InventoryMoveItemEvent(
+                new org.bukkit.craftbukkit.inventory.CraftInventory(from),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack),
+                new org.bukkit.craftbukkit.inventory.CraftInventory(to),
+                from instanceof net.minecraft.world.level.block.entity.Hopper).callEvent();
+    }
+
+
+    /**
+     * BrewEvent。醸造が終わって中身を書き換える直前。
+     *
+     * <p>Paper はプラグインが直した結果を入れる。vanilla は
+     * {@code doBrew} の中で作るので、<b>渡しているのは取り消しだけ。</b>
+     *
+     * @return 醸造してよいか
+     */
+    public static boolean brew(final net.minecraft.world.level.Level level, final net.minecraft.core.BlockPos pos,
+                               final net.minecraft.world.level.block.entity.BrewingStandBlockEntity stand,
+                               final net.minecraft.core.NonNullList<net.minecraft.world.item.ItemStack> slots,
+                               final int fuel) {
+        if (!ShifuEvents.listening(org.bukkit.event.inventory.BrewEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+
+        if (!(block.getState() instanceof org.bukkit.block.BrewingStand state)) {
+            return true;
+        }
+
+        final net.minecraft.world.item.ItemStack ingredient = slots.get(3);
+        final net.minecraft.world.item.alchemy.PotionBrewing brewing = level.potionBrewing();
+        final java.util.List<org.bukkit.inventory.ItemStack> results = new java.util.ArrayList<>();
+
+        for (int i = 0; i < 3; i++) {
+            results.add(i, org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(
+                    brewing.mix(ingredient, slots.get(i))));
+        }
+
+        return new org.bukkit.event.inventory.BrewEvent(block,
+                (org.bukkit.inventory.BrewerInventory) state.getInventory(), results, fuel).callEvent();
+    }
+
 }

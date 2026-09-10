@@ -1,0 +1,7 @@
+# PlayerInitialSpawnEvent(PlayerSpawnLocationEvent)。出る場所が決まった直後。
+
+file: net/minecraft/server/players/PlayerList.java
+anchor:
+        player.setServerLevel(serverLevel2);
+insert-after:
+    dev.shifu.event.PlayerEvents.initialSpawn(player);

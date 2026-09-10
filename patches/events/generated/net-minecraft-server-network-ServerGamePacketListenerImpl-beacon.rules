@@ -1,0 +1,10 @@
+# PlayerChangeBeaconEffectEvent。ビーコンの効果を決める直前。
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+            beaconMenu.updateEffects(packet.primary(), packet.secondary());
+insert:
+    if (!dev.shifu.event.ItemEvents.changeBeaconEffect(beaconMenu, this.player,
+            packet.primary(), packet.secondary())) {
+        return;
+    }

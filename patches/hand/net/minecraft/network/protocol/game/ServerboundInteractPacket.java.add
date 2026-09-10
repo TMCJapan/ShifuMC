@@ -1,0 +1,12 @@
+// 自前で書いた追加。Paper の宣言だけを写す。
+
+// ServerboundInteractPacket.getEntityId
+    // PlayerUseUnknownEntityEvent に要る。相手が見つからなかったときの番号。
+    public int getEntityId() {
+        return this.entityId;
+    }
+
+// ServerboundInteractPacket.isAttack
+    public boolean isAttack() {
+        return this.action.getType() == ServerboundInteractPacket.ActionType.ATTACK;
+    }

@@ -1,14 +1,13 @@
+# AnvilDamagedEvent。金床が傷む直前。登録があるときだけ組み直す。
 
-
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
-
-# main(26.2)の規則を reanchor.py で局所変数の名前だけ当て直したもの。
-
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
-
-# callPrepareResultEvent
 file: net/minecraft/world/inventory/AnvilMenu.java
 anchor:
-    return true;
-insert:
-    org.bukkit.craftbukkit.event.CraftEventFactory.callPrepareResultEvent(this, RESULT_SLOT); // Paper - Add PrepareResultEvent
+                BlockState blockState2 = AnvilBlock.damage(blockState);
+insert-after:
+    if (dev.shifu.event.ItemEvents.anvilDamagedListening()) {
+        BlockState shifuAnvil = dev.shifu.event.ItemEvents.anvilDamaged(this, blockState, blockState2);
+        if (shifuAnvil == blockState) {
+            return;
+        }
+        blockState2 = shifuAnvil;
+    }

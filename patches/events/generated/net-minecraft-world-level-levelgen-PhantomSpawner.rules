@@ -1,0 +1,9 @@
+# PhantomPreSpawnEvent。ファントムを 1 匹作る直前。
+
+file: net/minecraft/world/level/levelgen/PhantomSpawner.java
+anchor:
+                                                Phantom phantom = EntityType.PHANTOM.create(world);
+insert:
+    if (!dev.shifu.event.EntityEvents.phantomPreSpawn(world, blockPos2, serverPlayer)) {
+        continue;
+    }

@@ -1,0 +1,9 @@
+# PlayerUseUnknownEntityEvent。相手が見つからないまま触ったとき。
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+        this.player.setShiftKeyDown(packet.isUsingSecondaryAction());
+insert-after:
+    if (entity == null) {
+        dev.shifu.event.PlayerEvents.useUnknownEntity(this.player, packet, net.minecraft.world.InteractionHand.MAIN_HAND);
+    }

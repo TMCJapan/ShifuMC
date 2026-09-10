@@ -1340,4 +1340,23 @@ public final class EntityEvents {
                 org.bukkit.craftbukkit.util.CraftVector.toBukkit(wanted)).callEvent();
     }
 
+
+    /**
+     * PhantomPreSpawnEvent。ファントムを 1 匹作る直前。
+     *
+     * <p>{@code shouldAbortSpawn} は「その群れを打ち切る」印。vanilla の
+     * ループを外から止められないので、<b>1 匹ずつ飛ばすだけにしている。</b>
+     */
+    public static boolean phantomPreSpawn(final ServerLevel level, final net.minecraft.core.BlockPos pos,
+                                          final net.minecraft.server.level.ServerPlayer player) {
+        if (!listening(com.destroystokyo.paper.event.entity.PhantomPreSpawnEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.entity.PhantomPreSpawnEvent(
+                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level),
+                player.getBukkitEntity(),
+                org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL).callEvent();
+    }
+
 }
