@@ -55,6 +55,11 @@ python tools/check_lambdas.py "$CLASSES_M" "$MOJANG" --list || true
 
 python tools/keep_vanilla_classes.py "$CLASSES_M" "$MOJANG"
 
+# 無名クラスが捕まえた欄の名前が公式と違うと、そこを @Shadow している MOD の
+# mixin が当たらずにサーバーが起動しない(理由は tools/check_synthetic_names.py)。
+# 外側に 1 行足しただけでも起きるので、数を出しておく。
+python tools/check_synthetic_names.py "$CLASSES_M" "$MOJANG" | tail -1 || true
+
 # 公式と命令列が違うメソッドを数える(tools/lvtmatch の CodeDiff)。
 # 差し込みで意図して増える分だけのはずなので、増えたら何かが余計に触っている。
 # **同じ道具に組み上がった jar を渡して、同じ数になることも確かめること。**

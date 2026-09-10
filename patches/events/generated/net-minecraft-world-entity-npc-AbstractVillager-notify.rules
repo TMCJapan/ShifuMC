@@ -1,0 +1,7 @@
+# PlayerTradeEvent。取引が成立した直後。
+
+file: net/minecraft/world/entity/npc/AbstractVillager.java
+anchor:
+        offer.increaseUses();
+insert:
+    dev.shifu.event.EntityEvents.playerTrade(this, offer);

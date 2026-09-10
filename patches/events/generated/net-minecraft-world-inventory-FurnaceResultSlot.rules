@@ -1,0 +1,7 @@
+# FurnaceExtractEvent。取り出した人と数を控えて、経験値を出すところで載せる。
+
+file: net/minecraft/world/inventory/FurnaceResultSlot.java
+anchor:
+        stack.onCraftedBy(this.player.level(), this.player, this.removeCount);
+insert:
+    dev.shifu.event.BlockEvents.furnaceTakeBy(this.player, stack, this.removeCount);

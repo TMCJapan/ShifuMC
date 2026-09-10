@@ -1,0 +1,9 @@
+# StructuresLocateEvent。構造物を探す直前。
+
+file: net/minecraft/world/level/chunk/ChunkGenerator.java
+anchor:
+        ChunkGeneratorStructureState chunkGeneratorStructureState = world.getChunkSource().getGeneratorState();
+insert:
+    if (!dev.shifu.event.BlockEvents.structuresLocate(world, center, structures, radius, skipReferencedStructures)) {
+        return null;
+    }

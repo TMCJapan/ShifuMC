@@ -1,0 +1,17 @@
+# EntityPathfindEvent。道を引く直前。
+
+file: net/minecraft/world/entity/ai/navigation/PathNavigation.java
+anchor:
+        return this.createPath(ImmutableSet.of(target), 8, false, distance);
+insert:
+    if (!dev.shifu.event.EntityEvents.pathfind(this.mob, target, null)) {
+        return null;
+    }
+
+file: net/minecraft/world/entity/ai/navigation/PathNavigation.java
+anchor:
+        return this.createPath(ImmutableSet.of(entity.blockPosition()), 16, true, distance);
+insert:
+    if (!dev.shifu.event.EntityEvents.pathfind(this.mob, entity.blockPosition(), entity)) {
+        return null;
+    }

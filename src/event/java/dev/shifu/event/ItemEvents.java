@@ -860,4 +860,69 @@ public final class ItemEvents {
                 org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack)).callEvent();
     }
 
+
+    /** 書見台の入れ物から Bukkit の {@code Lectern} を引く。ブロックでなければ null。 */
+    private static org.bukkit.block.Lectern lecternOf(final net.minecraft.world.Container lectern) {
+        if (!(lectern instanceof net.minecraft.world.level.block.entity.LecternBlockEntity entity)
+                || entity.getLevel() == null) {
+            return null;
+        }
+
+        final org.bukkit.block.BlockState state =
+                org.bukkit.craftbukkit.block.CraftBlock.at(entity.getLevel(), entity.getBlockPos()).getState();
+
+        return state instanceof org.bukkit.block.Lectern found ? found : null;
+    }
+
+    /**
+     * PlayerLecternPageChangeEvent。書見台のページを送る直前。
+     *
+     * @return 送ってよいか
+     */
+    public static boolean lecternPage(final net.minecraft.world.entity.player.Player player,
+                                      final net.minecraft.world.Container lectern,
+                                      final int from, final int to) {
+        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)
+                || !ShifuEvents.listening(
+                        io.papermc.paper.event.player.PlayerLecternPageChangeEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.block.Lectern holder = lecternOf(lectern);
+
+        if (holder == null) {
+            return true;
+        }
+
+        final io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection direction = to > from
+                ? io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection.RIGHT
+                : io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection.LEFT;
+
+        return new io.papermc.paper.event.player.PlayerLecternPageChangeEvent(serverPlayer.getBukkitEntity(),
+                holder, holder.getInventory().getItem(0), direction, from, to).callEvent();
+    }
+
+    /**
+     * PlayerTakeLecternBookEvent。書見台から本を取る直前。
+     *
+     * @return 取ってよいか
+     */
+    public static boolean lecternTake(final net.minecraft.world.entity.player.Player player,
+                                      final net.minecraft.world.Container lectern) {
+        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)
+                || !ShifuEvents.listening(
+                        org.bukkit.event.player.PlayerTakeLecternBookEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.block.Lectern holder = lecternOf(lectern);
+
+        if (holder == null) {
+            return true;
+        }
+
+        return new org.bukkit.event.player.PlayerTakeLecternBookEvent(serverPlayer.getBukkitEntity(),
+                holder).callEvent();
+    }
+
 }

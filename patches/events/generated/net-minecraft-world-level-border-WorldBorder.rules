@@ -24,3 +24,12 @@ insert:
     if (!dev.shifu.event.BlockEvents.borderCenter(this.world, this.centerX, this.centerZ, x, z)) {
         return;
     }
+
+# WorldBorderBoundsChangeFinishEvent。移動が終わった直後。
+file: net/minecraft/world/level/border/WorldBorder.java
+anchor:
+            return (WorldBorder.BorderExtent)(this.getLerpRemainingTime() <= 0L ? WorldBorder.this.new StaticBorderExtent(this.to) : this);
+insert:
+    if (this.getLerpRemainingTime() <= 0L) {
+        dev.shifu.event.BlockEvents.borderFinish(WorldBorder.this.world, this.from, this.to, this.lerpDuration);
+    }

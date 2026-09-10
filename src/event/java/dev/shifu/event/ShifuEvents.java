@@ -1398,6 +1398,11 @@ public final class ShifuEvents {
     }
 
 
+    /** PaperServerListPingEvent に登録があるか。Paper の実装をそのまま呼ぶ。 */
+    public static boolean paperListPingListening() {
+        return listening(com.destroystokyo.paper.event.server.PaperServerListPingEvent.getHandlerList());
+    }
+
     /** ServerListPingEvent に登録があるか。 */
     public static boolean serverListPingListening() {
         return listening(org.bukkit.event.server.ServerListPingEvent.getHandlerList());
@@ -1435,6 +1440,42 @@ public final class ShifuEvents {
                 status.players().map(players -> new net.minecraft.network.protocol.status.ServerStatus.Players(
                         event.getMaxPlayers(), players.online(), players.sample())),
                 status.version(), status.favicon(), status.enforcesSecureChat());
+    }
+
+
+    /**
+     * WorldGameRuleChangeEvent。{@code /gamerule} で値を変える直前。
+     *
+     * <p>新しい値は Brigadier の引数から文字にして渡す。Paper は
+     * {@code setFromArgument} に鍵を足して中で出しているが、vanilla の署名は
+     * 変えられないので呼ぶ側で出す。
+     *
+     * @return 変えてよいか
+     */
+    public static boolean gameRuleChange(final net.minecraft.commands.CommandSourceStack source,
+                                         final net.minecraft.world.level.GameRules.Key<?> key,
+                                         final com.mojang.brigadier.context.CommandContext<
+                                                 net.minecraft.commands.CommandSourceStack> context) {
+        if (!listening(io.papermc.paper.event.world.WorldGameRuleChangeEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.GameRule<?> rule = org.bukkit.GameRule.getByName(key.getId());
+
+        if (rule == null) {
+            return true;
+        }
+
+        final String value;
+
+        try {
+            value = String.valueOf(context.getArgument("value", Object.class));
+        } catch (final IllegalArgumentException unknown) {
+            return true;
+        }
+
+        return new io.papermc.paper.event.world.WorldGameRuleChangeEvent(source.getLevel().getWorld(),
+                source.getBukkitSender(), rule, value).callEvent();
     }
 
 }

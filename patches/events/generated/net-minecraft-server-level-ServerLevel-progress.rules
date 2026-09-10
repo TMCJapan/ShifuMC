@@ -1,0 +1,9 @@
+# BlockBreakProgressUpdateEvent。壊れ具合を送る直前。
+
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    public void destroyBlockProgress(int entityId, BlockPos pos, int progress) {
+insert-after:
+    if (!dev.shifu.event.BlockEvents.breakProgress(this, pos, progress, this.getEntity(entityId))) {
+        return;
+    }

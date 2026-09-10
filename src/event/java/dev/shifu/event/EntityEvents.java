@@ -1428,4 +1428,41 @@ public final class EntityEvents {
                 .isCancelled();
     }
 
+
+    /**
+     * EntityPathfindEvent。道を引く直前。
+     *
+     * @return 引いてよいか
+     */
+    public static boolean pathfind(final net.minecraft.world.entity.Mob mob,
+                                   final net.minecraft.core.BlockPos target,
+                                   final Entity targetEntity) {
+        if (!listening(com.destroystokyo.paper.event.entity.EntityPathfindEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.entity.EntityPathfindEvent(mob.getBukkitEntity(),
+                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(target, mob.level()),
+                targetEntity == null ? null : targetEntity.getBukkitEntity()).callEvent();
+    }
+
+    /**
+     * PlayerTradeEvent。取引が成立した直後。
+     *
+     * <p>Paper は {@code processTrade} に引数を足して、取り消しと
+     * 「使用回数を増やすか」を通している。vanilla の署名は変えられないので、
+     * <b>渡しているのは出すことだけ。</b>
+     */
+    public static void playerTrade(final net.minecraft.world.entity.npc.AbstractVillager villager,
+                                   final net.minecraft.world.item.trading.MerchantOffer offer) {
+        if (!(villager.getTradingPlayer() instanceof net.minecraft.server.level.ServerPlayer player)
+                || !listening(io.papermc.paper.event.player.PlayerTradeEvent.getHandlerList())) {
+            return;
+        }
+
+        new io.papermc.paper.event.player.PlayerTradeEvent(player.getBukkitEntity(),
+                (org.bukkit.entity.AbstractVillager) villager.getBukkitEntity(),
+                offer.asBukkit(), true, true).callEvent();
+    }
+
 }

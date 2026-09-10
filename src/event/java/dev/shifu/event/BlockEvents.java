@@ -712,21 +712,54 @@ public final class BlockEvents {
         furnaceAt = pos;
     }
 
+    /** 結果の枠から取り出した人。FurnaceExtractEvent に載せる。 */
+    private static ServerPlayer furnaceTaker;
+
+    /** 取り出した数と品。 */
+    private static net.minecraft.world.item.ItemStack furnaceTaken;
+
+    private static int furnaceCount;
+
     /**
-     * BlockExpEvent。かまどの経験値を出す直前。
+     * かまどの結果を取り出した人を控える。{@code checkTakeAchievements} の頭。
      *
-     * <p>効かないもの: FurnaceExtractEvent(取り出したプレイヤーと数は結果の枠の側にしか無い)。
+     * <p>控えるのも「登録があるとき」だけ。読んだあとは消す。
+     */
+    public static void furnaceTakeBy(final net.minecraft.world.entity.player.Player player,
+                                     final net.minecraft.world.item.ItemStack stack, final int count) {
+        if (!(player instanceof ServerPlayer serverPlayer)
+                || !listening(org.bukkit.event.block.BlockExpEvent.getHandlerList())) {
+            return;
+        }
+
+        furnaceTaker = serverPlayer;
+        furnaceTaken = stack;
+        furnaceCount = count;
+    }
+
+    /**
+     * BlockExpEvent。かまどの経験値を出す直前。取り出した人が分かっていれば
+     * {@code FurnaceExtractEvent}(BlockExpEvent の派生)。
      *
      * @return 出す経験値
      */
     public static int furnaceExp(final ServerLevel level, final int xp) {
         final BlockPos pos = furnaceAt;
+        final ServerPlayer taker = furnaceTaker;
+        final net.minecraft.world.item.ItemStack taken = furnaceTaken;
+        final int count = furnaceCount;
+        furnaceTaker = null;
+        furnaceTaken = null;
+        furnaceCount = 0;
 
         if (pos == null || !listening(org.bukkit.event.block.BlockExpEvent.getHandlerList())) {
             return xp;
         }
 
-        final org.bukkit.event.block.BlockExpEvent event = new org.bukkit.event.block.BlockExpEvent(bukkit(level, pos), xp);
+        final org.bukkit.event.block.BlockExpEvent event = taker != null && taken != null
+                ? new org.bukkit.event.inventory.FurnaceExtractEvent(taker.getBukkitEntity(), bukkit(level, pos),
+                        org.bukkit.craftbukkit.inventory.CraftItemType.minecraftToBukkit(taken.getItem()), count, xp)
+                : new org.bukkit.event.block.BlockExpEvent(bukkit(level, pos), xp);
         event.callEvent();
 
         return event.getExpToDrop();
@@ -1405,6 +1438,59 @@ public final class BlockEvents {
                 org.bukkit.craftbukkit.block.CraftBlock.at(pointer.level(), pointer.pos()),
                 org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(armor.copyWithCount(1)).clone(),
                 (org.bukkit.craftbukkit.entity.CraftLivingEntity) target.getBukkitEntity()).callEvent();
+    }
+
+
+    /** BlockBreakProgressUpdateEvent。壊れ具合を送る直前。 */
+    public static boolean breakProgress(final ServerLevel level, final net.minecraft.core.BlockPos pos,
+                                        final int progress, final net.minecraft.world.entity.Entity breaker) {
+        if (breaker == null
+                || !ShifuEvents.listening(
+                        io.papermc.paper.event.block.BlockBreakProgressUpdateEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new io.papermc.paper.event.block.BlockBreakProgressUpdateEvent(bukkit(level, pos),
+                progress < 0 ? 0.0F : progress / 9.0F, breaker.getBukkitEntity()).callEvent();
+    }
+
+    /** StructuresLocateEvent。構造物を探す直前。 */
+    public static boolean structuresLocate(final ServerLevel level, final net.minecraft.core.BlockPos center,
+                                           final net.minecraft.core.HolderSet<
+                                                   net.minecraft.world.level.levelgen.structure.Structure> structures,
+                                           final int radius, final boolean findUnexplored) {
+        if (!ShifuEvents.listening(io.papermc.paper.event.world.StructuresLocateEvent.getHandlerList())) {
+            return true;
+        }
+
+        final java.util.List<org.bukkit.generator.structure.Structure> list = new java.util.ArrayList<>();
+
+        for (final net.minecraft.core.Holder<net.minecraft.world.level.levelgen.structure.Structure> one : structures) {
+            final org.bukkit.generator.structure.Structure bukkit =
+                    org.bukkit.craftbukkit.generator.structure.CraftStructure.minecraftToBukkit(one.value());
+
+            if (bukkit != null) {
+                list.add(bukkit);
+            }
+        }
+
+        return new io.papermc.paper.event.world.StructuresLocateEvent(level.getWorld(),
+                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(center, level), list, radius,
+                findUnexplored).callEvent();
+    }
+
+
+    /** WorldBorderBoundsChangeFinishEvent。境界の移動が終わった直後。 */
+    public static void borderFinish(final net.minecraft.server.level.ServerLevel level,
+                                    final double from, final double to, final double duration) {
+        if (level == null
+                || !ShifuEvents.listening(
+                        io.papermc.paper.event.world.border.WorldBorderBoundsChangeFinishEvent.getHandlerList())) {
+            return;
+        }
+
+        new io.papermc.paper.event.world.border.WorldBorderBoundsChangeFinishEvent(level.getWorld(),
+                level.getWorld().getWorldBorder(), from, to, duration).callEvent();
     }
 
 }

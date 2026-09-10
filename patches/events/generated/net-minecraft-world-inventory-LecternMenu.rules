@@ -1,0 +1,29 @@
+# PlayerLecternPageChangeEvent と PlayerTakeLecternBookEvent。
+
+file: net/minecraft/world/inventory/LecternMenu.java
+anchor:
+                    int k = this.lecternData.get(0);
+                    this.setData(0, k - 1);
+insert:
+    if (!dev.shifu.event.ItemEvents.lecternPage(player, this.lectern,
+            this.lecternData.get(0), this.lecternData.get(0) - 1)) {
+        return false;
+    }
+
+file: net/minecraft/world/inventory/LecternMenu.java
+anchor:
+                    int j = this.lecternData.get(0);
+                    this.setData(0, j + 1);
+insert:
+    if (!dev.shifu.event.ItemEvents.lecternPage(player, this.lectern,
+            this.lecternData.get(0), this.lecternData.get(0) + 1)) {
+        return false;
+    }
+
+file: net/minecraft/world/inventory/LecternMenu.java
+anchor:
+                    ItemStack itemStack = this.lectern.removeItemNoUpdate(0);
+insert:
+    if (!dev.shifu.event.ItemEvents.lecternTake(player, this.lectern)) {
+        return false;
+    }

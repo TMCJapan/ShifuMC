@@ -1629,4 +1629,25 @@ public final class PlayerEvents {
         return !event.isAllowed();
     }
 
+
+    /** PlayerTrackEntityEvent。相手が見えるようになる直前。 */
+    public static boolean trackEntity(final ServerPlayer player, final net.minecraft.world.entity.Entity entity) {
+        if (!ShifuEvents.listening(io.papermc.paper.event.player.PlayerTrackEntityEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new io.papermc.paper.event.player.PlayerTrackEntityEvent(player.getBukkitEntity(),
+                entity.getBukkitEntity()).callEvent();
+    }
+
+    /** PlayerUntrackEntityEvent。相手が見えなくなった直後。取り消しは無い。 */
+    public static void untrackEntity(final ServerPlayer player, final net.minecraft.world.entity.Entity entity) {
+        if (!ShifuEvents.listening(io.papermc.paper.event.player.PlayerUntrackEntityEvent.getHandlerList())) {
+            return;
+        }
+
+        new io.papermc.paper.event.player.PlayerUntrackEntityEvent(player.getBukkitEntity(),
+                entity.getBukkitEntity()).callEvent();
+    }
+
 }
