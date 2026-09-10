@@ -1,0 +1,10 @@
+# BlockPistonExtendEvent と BlockPistonRetractEvent。動かす位置が決まった直後。
+
+file: net/minecraft/world/level/block/piston/PistonBaseBlock.java
+anchor:
+            Map<BlockPos, BlockState> map = Maps.newHashMap();
+insert:
+    if (!dev.shifu.event.BlockEvents.pistonMove(world, pos, dir, retract,
+            pistonStructureResolver.getToPush(), pistonStructureResolver.getToDestroy())) {
+        return false;
+    }

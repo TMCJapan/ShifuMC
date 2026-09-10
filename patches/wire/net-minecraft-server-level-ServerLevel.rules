@@ -44,3 +44,11 @@ insert-after:
     if (dev.shifu.event.ShifuEvents.catchDrop(entity)) {
         return true;
     }
+
+# WorldBorder.world。WorldBorderBoundsChangeEvent などが読む。
+# Paper は ServerLevel の構築子で入れている。
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+        this.gameEventDispatcher = new GameEventDispatcher(this);
+insert-after:
+    this.getWorldBorder().world = this;

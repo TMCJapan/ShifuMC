@@ -839,4 +839,25 @@ public final class ItemEvents {
         org.bukkit.craftbukkit.event.CraftEventFactory.callPrepareResultEvent(menu, resultSlot);
     }
 
+
+    /**
+     * InventoryCreativeEvent。クリエイティブで枠に直接入れる直前。
+     *
+     * <p>差し替えたアイテム({@code setCursor})は vanilla の行が持つので使っていない。
+     *
+     * @return 入れてよいか
+     */
+    public static boolean inventoryCreative(final net.minecraft.server.level.ServerPlayer player,
+                                            final int slot, final ItemStack stack) {
+        if (!ShifuEvents.listening(org.bukkit.event.inventory.InventoryCreativeEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.inventory.InventoryView view = player.inventoryMenu.getBukkitView();
+        final org.bukkit.event.inventory.InventoryType.SlotType type = view.getSlotType(slot);
+
+        return new org.bukkit.event.inventory.InventoryCreativeEvent(view, type, slot,
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack)).callEvent();
+    }
+
 }

@@ -1,0 +1,9 @@
+# InventoryCreativeEvent。クリエイティブで枠に直接入れる直前。
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+                this.player.inventoryMenu.getSlot(packet.slotNum()).setByPlayer(itemStack);
+insert:
+    if (!dev.shifu.event.ItemEvents.inventoryCreative(this.player, packet.slotNum(), itemStack)) {
+        return;
+    }

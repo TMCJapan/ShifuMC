@@ -1,13 +1,26 @@
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+# WorldBorderBoundsChangeEvent と WorldBorderCenterChangeEvent。
 
-# WorldBorderBoundsChangeFinishEvent
 file: net/minecraft/world/level/border/WorldBorder.java
 anchor:
-    return (WorldBorder.BorderExtent)(this.getLerpRemainingTime() <= 0L ? WorldBorder.this.new StaticBorderExtent(this.to) : this);
+        this.extent = new WorldBorder.StaticBorderExtent(size);
 insert:
-    // Paper - Add worldborder events
-    if (this.getLerpRemainingTime() <= 0L && WorldBorder.this.world != null) {
-        new io.papermc.paper.event.world.border.WorldBorderBoundsChangeFinishEvent(
-                WorldBorder.this.world.getWorld(), WorldBorder.this.world.getWorld().getWorldBorder(),
-                this.from, this.to, this.lerpDuration).callEvent();
+    if (!dev.shifu.event.BlockEvents.borderBounds(this.world, this.getSize(), size, 0L)) {
+        return;
+    }
+
+file: net/minecraft/world/level/border/WorldBorder.java
+anchor:
+        this.extent = (WorldBorder.BorderExtent)(fromSize == toSize
+insert:
+    if (!dev.shifu.event.BlockEvents.borderBounds(this.world, fromSize, toSize, time)) {
+        return;
+    }
+
+file: net/minecraft/world/level/border/WorldBorder.java
+anchor:
+        this.centerX = x;
+        this.centerZ = z;
+insert:
+    if (!dev.shifu.event.BlockEvents.borderCenter(this.world, this.centerX, this.centerZ, x, z)) {
+        return;
     }

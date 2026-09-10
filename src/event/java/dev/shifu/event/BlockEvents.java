@@ -1293,4 +1293,99 @@ public final class BlockEvents {
                 new org.bukkit.craftbukkit.boss.CraftDragonBattle(fight)).callEvent();
     }
 
+
+    /**
+     * BlockPistonExtendEvent と BlockPistonRetractEvent。動かす位置が決まった直後。
+     *
+     * <p>Paper は粘着でないピストンが空を引くときも RetractEvent を出す。
+     * vanilla のその位置は分岐の外なので、<b>出しているのは動かす物があるときだけ。</b>
+     *
+     * @return 動かしてよいか
+     */
+    public static boolean pistonMove(final net.minecraft.world.level.Level level,
+                                     final net.minecraft.core.BlockPos pos,
+                                     final net.minecraft.core.Direction facing, final boolean retract,
+                                     final java.util.List<net.minecraft.core.BlockPos> push,
+                                     final java.util.List<net.minecraft.core.BlockPos> destroy) {
+        final org.bukkit.event.HandlerList handlers = retract
+                ? org.bukkit.event.block.BlockPistonRetractEvent.getHandlerList()
+                : org.bukkit.event.block.BlockPistonExtendEvent.getHandlerList();
+
+        if (!ShifuEvents.listening(handlers)) {
+            return true;
+        }
+
+        final java.util.List<org.bukkit.block.Block> blocks = new java.util.ArrayList<>();
+
+        for (final net.minecraft.core.BlockPos one : push) {
+            blocks.add(org.bukkit.craftbukkit.block.CraftBlock.at(level, one));
+        }
+
+        for (final net.minecraft.core.BlockPos one : destroy) {
+            blocks.add(org.bukkit.craftbukkit.block.CraftBlock.at(level, one));
+        }
+
+        final org.bukkit.block.Block piston = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+        final org.bukkit.block.BlockFace face = org.bukkit.craftbukkit.block.CraftBlock.notchToBlockFace(facing);
+
+        return retract
+                ? new org.bukkit.event.block.BlockPistonRetractEvent(piston, blocks, face).callEvent()
+                : new org.bukkit.event.block.BlockPistonExtendEvent(piston, blocks, face).callEvent();
+    }
+
+
+    /**
+     * WorldBorderBoundsChangeEvent。世界の境界の大きさを変える直前。
+     *
+     * @return 変えてよいか
+     */
+    public static boolean borderBounds(final net.minecraft.server.level.ServerLevel level,
+                                       final double from, final double to, final long time) {
+        if (level == null
+                || !ShifuEvents.listening(
+                        io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.getHandlerList())) {
+            return true;
+        }
+
+        final io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.Type type = time > 0
+                ? io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.Type.STARTED_MOVE
+                : io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent.Type.INSTANT_MOVE;
+
+        return new io.papermc.paper.event.world.border.WorldBorderBoundsChangeEvent(level.getWorld(),
+                level.getWorld().getWorldBorder(), type, from, to, time).callEvent();
+    }
+
+    /** WorldBorderCenterChangeEvent。世界の境界の中心を変える直前。 */
+    public static boolean borderCenter(final net.minecraft.server.level.ServerLevel level,
+                                       final double oldX, final double oldZ,
+                                       final double newX, final double newZ) {
+        if (level == null
+                || !ShifuEvents.listening(
+                        io.papermc.paper.event.world.border.WorldBorderCenterChangeEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new io.papermc.paper.event.world.border.WorldBorderCenterChangeEvent(level.getWorld(),
+                level.getWorld().getWorldBorder(),
+                new org.bukkit.Location(level.getWorld(), oldX, 0.0, oldZ),
+                new org.bukkit.Location(level.getWorld(), newX, 0.0, newZ)).callEvent();
+    }
+
+
+    /**
+     * SculkBloomEvent。スカルクの広がりを 1 つ足す直前。
+     *
+     * <p>世界生成の途中では出さない(Paper と同じ)。
+     */
+    public static boolean sculkBloom(final net.minecraft.world.level.LevelAccessor level,
+                                     final net.minecraft.core.BlockPos pos, final int charge) {
+        if (level == null
+                || !ShifuEvents.listening(org.bukkit.event.block.SculkBloomEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.block.SculkBloomEvent(
+                org.bukkit.craftbukkit.block.CraftBlock.at(level, pos), charge).callEvent();
+    }
+
 }

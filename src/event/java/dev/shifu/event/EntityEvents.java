@@ -1400,4 +1400,27 @@ public final class EntityEvents {
                 guardian, player.getBukkitEntity()).callEvent();
     }
 
+
+    /**
+     * AreaEffectCloudApplyEvent。雲が効果をかける直前。
+     *
+     * <p>Paper はプラグインが絞った相手だけにかける。vanilla の行は元の並びを
+     * 使うので、<b>渡しているのは取り消しだけ。</b>取り消されたら並びを空にする。
+     */
+    public static boolean areaEffectCloudApply(final net.minecraft.world.entity.AreaEffectCloud cloud,
+                                               final java.util.List<LivingEntity> affected) {
+        if (!listening(org.bukkit.event.entity.AreaEffectCloudApplyEvent.getHandlerList())) {
+            return true;
+        }
+
+        final java.util.List<org.bukkit.entity.LivingEntity> bukkit = new java.util.ArrayList<>();
+
+        for (final LivingEntity one : affected) {
+            bukkit.add(one.getBukkitLivingEntity());
+        }
+
+        return !org.bukkit.craftbukkit.event.CraftEventFactory.callAreaEffectCloudApplyEvent(cloud, bukkit)
+                .isCancelled();
+    }
+
 }

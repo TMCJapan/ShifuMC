@@ -1,0 +1,9 @@
+# AreaEffectCloudApplyEvent。雲が効果をかける直前。
+
+file: net/minecraft/world/entity/AreaEffectCloud.java
+anchor:
+                        for (LivingEntity livingEntity : list2) {
+insert:
+    if (!dev.shifu.event.EntityEvents.areaEffectCloudApply(this, list2)) {
+        list2.clear();
+    }

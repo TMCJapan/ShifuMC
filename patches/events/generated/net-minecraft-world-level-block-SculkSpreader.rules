@@ -1,0 +1,9 @@
+# SculkBloomEvent。スカルクの広がりを 1 つ足す直前。
+
+file: net/minecraft/world/level/block/SculkSpreader.java
+anchor:
+            this.cursors.add(cursor);
+insert:
+    if (!this.isWorldGeneration() && !dev.shifu.event.BlockEvents.sculkBloom(this.level, cursor.getPos(), cursor.getCharge())) {
+        return;
+    }
