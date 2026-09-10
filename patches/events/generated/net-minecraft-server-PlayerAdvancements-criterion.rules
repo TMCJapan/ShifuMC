@@ -1,0 +1,10 @@
+# PlayerAdvancementCriterionGrantEvent。条件が 1 つ埋まった直後。
+
+file: net/minecraft/server/PlayerAdvancements.java
+anchor:
+        if (advancementProgress.grantProgress(criterionName)) {
+insert-after:
+    if (!dev.shifu.event.PlayerEvents.advancementCriterion(this.player, advancement, criterionName)) {
+        advancementProgress.revokeProgress(criterionName);
+        return false;
+    }

@@ -1,0 +1,10 @@
+# CampfireStartEvent。焚き火に載せた直後。登録があるときだけ時間を引き直す。
+
+file: net/minecraft/world/level/block/entity/CampfireBlockEntity.java
+anchor:
+                this.cookingTime[i] = cookTime;
+insert-after:
+    if (dev.shifu.event.BlockEvents.campfireStartListening()) {
+        this.cookingTime[i] = dev.shifu.event.BlockEvents.campfireStart(this.level, this.getBlockPos(), stack,
+                this.getCookableRecipe(stack).orElse(null), this.cookingTime[i]);
+    }

@@ -1,0 +1,17 @@
+# WeatherChangeEvent と ThunderChangeEvent。天気の切り替え直前。
+
+file: net/minecraft/world/level/storage/PrimaryLevelData.java
+anchor:
+    public void setThundering(boolean thundering) {
+insert-after:
+    if (!dev.shifu.event.ShifuEvents.thunderChange(this.getLevelName(), thundering)) {
+        return;
+    }
+
+file: net/minecraft/world/level/storage/PrimaryLevelData.java
+anchor:
+    public void setRaining(boolean raining) {
+insert-after:
+    if (!dev.shifu.event.ShifuEvents.weatherChange(this.getLevelName(), raining)) {
+        return;
+    }

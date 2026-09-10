@@ -1,0 +1,15 @@
+# EntityAddToWorldEvent と EntityRemoveFromWorldEvent。
+
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+            entity.inWorld = true;
+            entity.valid = true;
+insert-after:
+    dev.shifu.event.ShifuEvents.entityAddToWorld(entity, ServerLevel.this);
+
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+            entity.updateDynamicGameEventListener(DynamicGameEventListener::remove);
+            entity.valid = false;
+insert-after:
+    dev.shifu.event.ShifuEvents.entityRemoveFromWorld(entity, ServerLevel.this);

@@ -1280,4 +1280,63 @@ public final class ShifuEvents {
 
     // ------------------------------------------------------------ コンソール
 
+
+    // ------------------------------------------------------------ 世界
+
+    /**
+     * WeatherChangeEvent。雨の切り替え直前。
+     *
+     * <p>1.20.6 の vanilla に理由を運ぶ引数は無いので、理由は常に {@code UNKNOWN}。
+     */
+    public static boolean weatherChange(final String levelName, final boolean raining) {
+        if (!listening(org.bukkit.event.weather.WeatherChangeEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.World world = org.bukkit.Bukkit.getWorld(levelName);
+
+        if (world == null) {
+            return true;
+        }
+
+        return new org.bukkit.event.weather.WeatherChangeEvent(world, raining,
+                org.bukkit.event.weather.WeatherChangeEvent.Cause.UNKNOWN).callEvent();
+    }
+
+    /** ThunderChangeEvent。雷雨の切り替え直前。理由は常に {@code UNKNOWN}。 */
+    public static boolean thunderChange(final String levelName, final boolean thundering) {
+        if (!listening(org.bukkit.event.weather.ThunderChangeEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.World world = org.bukkit.Bukkit.getWorld(levelName);
+
+        if (world == null) {
+            return true;
+        }
+
+        return new org.bukkit.event.weather.ThunderChangeEvent(world, thundering,
+                org.bukkit.event.weather.ThunderChangeEvent.Cause.UNKNOWN).callEvent();
+    }
+
+    /** EntityAddToWorldEvent。世界に入り切った直後。 */
+    public static void entityAddToWorld(final Entity entity, final ServerLevel level) {
+        if (!listening(com.destroystokyo.paper.event.entity.EntityAddToWorldEvent.getHandlerList())) {
+            return;
+        }
+
+        new com.destroystokyo.paper.event.entity.EntityAddToWorldEvent(
+                entity.getBukkitEntity(), level.getWorld()).callEvent();
+    }
+
+    /** EntityRemoveFromWorldEvent。世界から抜けた直後。 */
+    public static void entityRemoveFromWorld(final Entity entity, final ServerLevel level) {
+        if (!listening(com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent.getHandlerList())) {
+            return;
+        }
+
+        new com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent(
+                entity.getBukkitEntity(), level.getWorld()).callEvent();
+    }
+
 }

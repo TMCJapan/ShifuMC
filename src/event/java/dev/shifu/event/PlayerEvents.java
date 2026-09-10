@@ -981,4 +981,50 @@ public final class PlayerEvents {
                 reason.getMessage() == null ? null : PaperAdventure.asAdventure(reason.getMessage())).callEvent();
     }
 
+
+    /** PlayerResourcePackStatusEvent。リソースパックの結果を受け取った直後。 */
+    public static void resourcePackStatus(final ServerPlayer player, final java.util.UUID id, final int action) {
+        if (!ShifuEvents.listening(org.bukkit.event.player.PlayerResourcePackStatusEvent.getHandlerList())) {
+            return;
+        }
+
+        new org.bukkit.event.player.PlayerResourcePackStatusEvent(player.getBukkitEntity(), id,
+                org.bukkit.event.player.PlayerResourcePackStatusEvent.Status.values()[action]).callEvent();
+    }
+
+    /** PlayerAdvancementCriterionGrantEvent。進捗の条件が 1 つ埋まった直後。 */
+    public static boolean advancementCriterion(final ServerPlayer player,
+                                               final net.minecraft.advancements.AdvancementHolder advancement,
+                                               final String criterionName) {
+        if (!ShifuEvents.listening(
+                com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent(
+                player.getBukkitEntity(), advancement.toBukkit(), criterionName).callEvent();
+    }
+
+    /**
+     * PlayerInventorySlotChangeEvent。持ち物の 1 枠が変わった直後。
+     *
+     * @return 進捗の判定を回してよいか
+     */
+    public static boolean inventorySlotChange(final ServerPlayer player, final int slot,
+                                              final net.minecraft.world.item.ItemStack from,
+                                              final net.minecraft.world.item.ItemStack to) {
+        if (!ShifuEvents.listening(
+                io.papermc.paper.event.player.PlayerInventorySlotChangeEvent.getHandlerList())) {
+            return true;
+        }
+
+        final io.papermc.paper.event.player.PlayerInventorySlotChangeEvent event =
+                new io.papermc.paper.event.player.PlayerInventorySlotChangeEvent(player.getBukkitEntity(), slot,
+                        org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(from),
+                        org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(to));
+        event.callEvent();
+
+        return event.shouldTriggerAdvancements();
+    }
+
 }

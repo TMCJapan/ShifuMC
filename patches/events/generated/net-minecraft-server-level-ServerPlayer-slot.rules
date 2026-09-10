@@ -1,0 +1,10 @@
+# PlayerInventorySlotChangeEvent。持ち物の 1 枠が変わった直後。
+
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+                    CriteriaTriggers.INVENTORY_CHANGED.trigger(ServerPlayer.this, ServerPlayer.this.getInventory(), stack);
+insert:
+    if (!dev.shifu.event.PlayerEvents.inventorySlotChange(ServerPlayer.this, slotId,
+            slot.getItem(), stack)) {
+        return;
+    }

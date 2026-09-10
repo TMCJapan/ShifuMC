@@ -1,0 +1,9 @@
+# BrewingStartEvent。醸造が始まる直後。登録があるときだけ時間を引き直す。
+
+file: net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
+anchor:
+            blockEntity.brewTime = 400;
+insert-after:
+    if (dev.shifu.event.BlockEvents.brewingStartListening()) {
+        blockEntity.brewTime = dev.shifu.event.BlockEvents.brewingStart(world, pos, itemStack2, blockEntity.brewTime);
+    }

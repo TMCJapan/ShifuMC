@@ -1,0 +1,9 @@
+# InventoryPickupItemEvent。ホッパーが落ちている物を吸う直前。
+
+file: net/minecraft/world/level/block/entity/HopperBlockEntity.java
+anchor:
+        ItemStack itemStack = itemEntity.getItem().copy();
+insert:
+    if (!dev.shifu.event.BlockEvents.inventoryPickup(inventory, itemEntity)) {
+        return false;
+    }

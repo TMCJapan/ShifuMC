@@ -1,0 +1,10 @@
+# PlayerResourcePackStatusEvent。リソースパックの結果を受け取った直後。
+
+file: net/minecraft/server/network/ServerCommonPacketListenerImpl.java
+anchor:
+    public void handleResourcePackResponse(ServerboundResourcePackPacket packet) {
+        PacketUtils.ensureRunningOnSameThread(packet, this, this.server);
+insert-after:
+    if (this instanceof net.minecraft.server.network.ServerGamePacketListenerImpl shifuGame) {
+        dev.shifu.event.PlayerEvents.resourcePackStatus(shifuGame.player, packet.id(), packet.action().ordinal());
+    }

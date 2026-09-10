@@ -1101,4 +1101,93 @@ public final class BlockEvents {
 
 
 
+
+    /**
+     * BeaconEffectEvent。ビーコンの効果を 1 人にかける直前。
+     *
+     * <p>Paper はプラグインが差し替えた効果をかける。vanilla の
+     * {@code addEffect} の引数は変えられないので、<b>渡しているのは取り消しだけ。</b>
+     */
+    public static boolean beaconEffect(final net.minecraft.world.level.Level level,
+                                       final net.minecraft.core.BlockPos pos,
+                                       final net.minecraft.world.entity.player.Player player,
+                                       final net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> effect,
+                                       final int duration, final int amplifier, final boolean primary) {
+        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)
+                || !ShifuEvents.listening(com.destroystokyo.paper.event.block.BeaconEffectEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.block.BeaconEffectEvent(
+                org.bukkit.craftbukkit.block.CraftBlock.at(level, pos),
+                org.bukkit.craftbukkit.potion.CraftPotionUtil.toBukkit(
+                        new net.minecraft.world.effect.MobEffectInstance(effect, duration, amplifier, true, true)),
+                serverPlayer.getBukkitEntity(), primary).callEvent();
+    }
+
+    /**
+     * InventoryPickupItemEvent。ホッパーが落ちている物を吸う直前。
+     *
+     * <p>渡す入れ物は {@code CraftInventory} をそのまま作る。Paper は
+     * 二重チェストなどを見分けているが、その振り分けは 1.20.6 の木に無い。
+     */
+    public static boolean inventoryPickup(final net.minecraft.world.Container container,
+                                          final net.minecraft.world.entity.item.ItemEntity item) {
+        if (!ShifuEvents.listening(org.bukkit.event.inventory.InventoryPickupItemEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.inventory.InventoryPickupItemEvent(
+                new org.bukkit.craftbukkit.inventory.CraftInventory(container),
+                (org.bukkit.entity.Item) item.getBukkitEntity()).callEvent();
+    }
+
+    /** BrewingStartEvent に登録があるか。 */
+    public static boolean brewingStartListening() {
+        return ShifuEvents.listening(org.bukkit.event.block.BrewingStartEvent.getHandlerList());
+    }
+
+    /**
+     * BrewingStartEvent。醸造が始まる直後。
+     *
+     * @return 醸造にかける時間
+     */
+    public static int brewingStart(final net.minecraft.world.level.Level level, final net.minecraft.core.BlockPos pos,
+                                   final net.minecraft.world.item.ItemStack ingredient, final int brewTime) {
+        final org.bukkit.event.block.BrewingStartEvent event = new org.bukkit.event.block.BrewingStartEvent(
+                org.bukkit.craftbukkit.block.CraftBlock.at(level, pos),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(ingredient), brewTime);
+        event.callEvent();
+
+        return event.getTotalBrewTime();
+    }
+
+    /** CampfireStartEvent に登録があるか。 */
+    public static boolean campfireStartListening() {
+        return ShifuEvents.listening(org.bukkit.event.block.CampfireStartEvent.getHandlerList());
+    }
+
+    /**
+     * CampfireStartEvent。焚き火に載せた直後。
+     *
+     * @return 焼くのにかける時間
+     */
+    public static int campfireStart(final net.minecraft.world.level.Level level, final net.minecraft.core.BlockPos pos,
+                                    final net.minecraft.world.item.ItemStack food,
+                                    final net.minecraft.world.item.crafting.RecipeHolder<
+                                            net.minecraft.world.item.crafting.CampfireCookingRecipe> recipe,
+                                    final int cookTime) {
+        if (recipe == null) {
+            return cookTime;
+        }
+
+        final org.bukkit.event.block.CampfireStartEvent event = new org.bukkit.event.block.CampfireStartEvent(
+                org.bukkit.craftbukkit.block.CraftBlock.at(level, pos),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(food),
+                (org.bukkit.inventory.CampfireRecipe) recipe.toBukkitRecipe());
+        event.callEvent();
+
+        return event.getTotalCookTime();
+    }
+
 }
