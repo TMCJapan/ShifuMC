@@ -1,0 +1,10 @@
+# BlockBreakBlockEvent。水や溶岩が流れ込んで壊したブロックの落とし物が
+# 出そろった直後。取り消せない催しなので、vanilla のとおり出してから並べ直す。
+
+file: net/minecraft/world/level/material/FlowingFluid.java
+anchor:
+                this.beforeDestroyingBlock(world, pos, state);
+insert:
+    dev.shifu.event.ShifuEvents.armBreakBlock();
+insert-after:
+    dev.shifu.event.ShifuEvents.fireBreakBlock(world, pos, pos.relative(direction.getOpposite()));

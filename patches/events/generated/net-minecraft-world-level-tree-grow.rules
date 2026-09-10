@@ -1,0 +1,70 @@
+# StructureGrowEvent と BlockFertilizeEvent。
+#
+# どの位置が変わったかをプラグインへ渡す催しなので、生成の中で置かれる
+# ブロックを押さえるほかない。押さえるのは Level.captureTreeGeneration を
+# 立てているあいだだけで、立てるのは聞き手がいるときだけ。
+#
+# 読んだ位置(Paper 1.20.6):
+#   Paper-Server src/main/java/net/minecraft/world/level/Level.java:898
+#   Paper-Server src/main/java/net/minecraft/world/level/block/SaplingBlock.java:63
+#   Paper-Server src/main/java/net/minecraft/world/level/block/grower/TreeGrower.java:97,133
+#   Paper-Server src/main/java/net/minecraft/world/item/ItemStack.java:405,421
+
+file: net/minecraft/world/level/Level.java
+anchor:
+    public boolean setBlock(BlockPos pos, BlockState state, int flags, int maxUpdateDepth) {
+insert-after:
+    if (this.captureTreeGeneration) {
+        return dev.shifu.event.BlockEvents.captureTreeBlock(this, pos, state, flags);
+    }
+
+# 苗木が自分で育つとき
+file: net/minecraft/world/level/block/SaplingBlock.java
+anchor:
+            this.treeGrower.growTree(world, world.getChunkSource().getGenerator(), pos, state, random);
+insert:
+    final boolean shifuGrow = dev.shifu.event.BlockEvents.armTreeGrow(world, false);
+insert-after:
+    if (shifuGrow) {
+        dev.shifu.event.BlockEvents.treeGrow(world, pos);
+    }
+
+# 育てる木の種類。StructureGrowEvent が要る
+file: net/minecraft/world/level/block/grower/TreeGrower.java
+anchor:
+                for (int i = 0; i >= -1; i--) {
+insert:
+    dev.shifu.event.BlockEvents.treeType(world, holder);
+
+file: net/minecraft/world/level/block/grower/TreeGrower.java
+anchor:
+                ConfiguredFeature<?, ?> configuredFeature2 = holder2.value();
+insert:
+    dev.shifu.event.BlockEvents.treeType(world, holder2);
+
+# 骨粉。手で使ったとき
+file: net/minecraft/world/item/ItemStack.java
+anchor:
+            InteractionResult interactionResult = item.useOn(context);
+insert:
+    final boolean shifuFertilize = item == net.minecraft.world.item.Items.BONE_MEAL
+            && dev.shifu.event.BlockEvents.armTreeGrow(context.getLevel(), true);
+insert-after:
+    if (shifuFertilize) {
+        dev.shifu.event.BlockEvents.fertilize(context.getLevel(), blockPos, player);
+    }
+
+# 骨粉。ディスペンサーが撒いたとき
+file: net/minecraft/core/dispenser/DispenseItemBehavior.java
+anchor:
+                if (!BoneMealItem.growCrop(stack, level, blockPos) && !BoneMealItem.growWaterPlant(stack, level, blockPos, null)) {
+                    this.setSuccess(false);
+                } else if (!level.isClientSide) {
+                    level.levelEvent(1505, blockPos, 15);
+                }
+insert:
+    final boolean shifuFertilize = dev.shifu.event.BlockEvents.armTreeGrow(level, true);
+insert-after:
+    if (shifuFertilize) {
+        dev.shifu.event.BlockEvents.fertilize(level, blockPos, null);
+    }

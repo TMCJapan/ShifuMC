@@ -8,3 +8,14 @@ insert:
             pistonStructureResolver.getToPush(), pistonStructureResolver.getToDestroy())) {
         return false;
     }
+
+# BlockBreakBlockEvent。ピストンが壊したブロックの落とし物が出そろった直後。
+# 取り消せない催しなので、vanilla のとおり出してから並べ直す。
+
+file: net/minecraft/world/level/block/piston/PistonBaseBlock.java
+anchor:
+                dropResources(blockState2, world, blockPos3, blockEntity);
+insert:
+    dev.shifu.event.ShifuEvents.armBreakBlock();
+insert-after:
+    dev.shifu.event.ShifuEvents.fireBreakBlock(world, blockPos3, pos);

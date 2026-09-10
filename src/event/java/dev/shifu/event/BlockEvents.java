@@ -1493,4 +1493,230 @@ public final class BlockEvents {
                 level.getWorld().getWorldBorder(), from, to, duration).callEvent();
     }
 
+
+    /**
+     * AsyncStructureSpawnEvent。構造物の置き場所が決まった直後、
+     * チャンクへ書き込む手前。
+     *
+     * <p>世界生成の担い手の上で走るので、Paper と同じく main ではない。
+     *
+     * <p>読んだ位置(Paper 1.20.6):
+     *   Paper-Server src/main/java/net/minecraft/world/level/chunk/ChunkGenerator.java:643
+     */
+    public static boolean structureSpawn(final net.minecraft.world.level.StructureManager accessor,
+                                         final net.minecraft.world.level.levelgen.structure.Structure structure,
+                                         final net.minecraft.world.level.levelgen.structure.StructureStart start,
+                                         final net.minecraft.world.level.ChunkPos pos) {
+        if (!listening(org.bukkit.event.world.AsyncStructureSpawnEvent.getHandlerList())) {
+            return true;
+        }
+
+        final net.minecraft.world.level.levelgen.structure.BoundingBox box = start.getBoundingBox();
+
+        return new org.bukkit.event.world.AsyncStructureSpawnEvent(
+                accessor.level.getMinecraftWorld().getWorld(),
+                org.bukkit.craftbukkit.generator.structure.CraftStructure.minecraftToBukkit(structure),
+                new org.bukkit.util.BoundingBox(box.minX(), box.minY(), box.minZ(),
+                        box.maxX(), box.maxY(), box.maxZ()),
+                pos.x, pos.z).callEvent();
+    }
+
+
+    // ------------------------------------------------------------ 木の育ち
+
+    /**
+     * 木が育つあいだのブロックを控える。{@code Level.setBlock} の先頭。
+     *
+     * <p>StructureGrowEvent と BlockFertilizeEvent は「どの位置が変わったか」を
+     * プラグインに渡し、外された分は置かない。位置は生成の中で決まるので、
+     * 置く手前で押さえるほかない。押さえるのは
+     * {@code captureTreeGeneration} を立てているあいだだけで、立てるのは
+     * 聞き手がいるときだけなので、いないときは真偽値 1 つの比較で終わる。
+     *
+     * <p>読んだ位置(Paper 1.20.6):
+     *   Paper-Server src/main/java/net/minecraft/world/level/Level.java:898
+     */
+    public static boolean captureTreeBlock(final Level level, final BlockPos pos,
+                                           final BlockState state, final int flags) {
+        CraftBlockState captured = level.capturedBlockStates.get(pos);
+
+        if (captured == null) {
+            captured = org.bukkit.craftbukkit.block.CapturedBlockState.getTreeBlockState(level, pos, flags);
+            level.capturedBlockStates.put(pos.immutable(), captured);
+        }
+
+        captured.setData(state);
+        captured.setFlag(flags);
+
+        return true;
+    }
+
+    /**
+     * 育てようとしている木の種類を控える。{@code TreeGrower.growTree} の中、
+     * 生成物が決まった直後。StructureGrowEvent が種類を要る。
+     *
+     * <p>控えている最中でなければ何もしない。Paper は知らない生成物で例外を
+     * 投げるが、MOD が足した木で落ちるので、Shifu は種類を空のままにする
+     * (StructureGrowEvent は出ず、BlockFertilizeEvent だけが出る)。
+     *
+     * <p>読んだ位置(Paper 1.20.6):
+     *   Paper-Server src/main/java/net/minecraft/world/level/block/grower/TreeGrower.java:175
+     */
+    public static void treeType(final Level level,
+                                final net.minecraft.core.Holder<
+                                        net.minecraft.world.level.levelgen.feature.ConfiguredFeature<?, ?>> holder) {
+        if (!level.captureTreeGeneration) {
+            return;
+        }
+
+        final net.minecraft.resources.ResourceKey<
+                net.minecraft.world.level.levelgen.feature.ConfiguredFeature<?, ?>> key =
+                        holder.unwrapKey().orElse(null);
+
+        net.minecraft.world.level.block.SaplingBlock.treeType = treeTypeOf(key);
+    }
+
+    private static org.bukkit.TreeType treeTypeOf(
+            final net.minecraft.resources.ResourceKey<
+                    net.minecraft.world.level.levelgen.feature.ConfiguredFeature<?, ?>> key) {
+        if (key == null) {
+            return null;
+        }
+
+        if (key == net.minecraft.data.worldgen.features.TreeFeatures.OAK
+                || key == net.minecraft.data.worldgen.features.TreeFeatures.OAK_BEES_005) {
+            return org.bukkit.TreeType.TREE;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.HUGE_RED_MUSHROOM) {
+            return org.bukkit.TreeType.RED_MUSHROOM;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.HUGE_BROWN_MUSHROOM) {
+            return org.bukkit.TreeType.BROWN_MUSHROOM;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.JUNGLE_TREE) {
+            return org.bukkit.TreeType.COCOA_TREE;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.JUNGLE_TREE_NO_VINE) {
+            return org.bukkit.TreeType.SMALL_JUNGLE;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.PINE) {
+            return org.bukkit.TreeType.TALL_REDWOOD;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.SPRUCE) {
+            return org.bukkit.TreeType.REDWOOD;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.ACACIA) {
+            return org.bukkit.TreeType.ACACIA;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.BIRCH
+                || key == net.minecraft.data.worldgen.features.TreeFeatures.BIRCH_BEES_005) {
+            return org.bukkit.TreeType.BIRCH;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.SUPER_BIRCH_BEES_0002) {
+            return org.bukkit.TreeType.TALL_BIRCH;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.SWAMP_OAK) {
+            return org.bukkit.TreeType.SWAMP;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.FANCY_OAK
+                || key == net.minecraft.data.worldgen.features.TreeFeatures.FANCY_OAK_BEES_005) {
+            return org.bukkit.TreeType.BIG_TREE;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.JUNGLE_BUSH) {
+            return org.bukkit.TreeType.JUNGLE_BUSH;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.DARK_OAK) {
+            return org.bukkit.TreeType.DARK_OAK;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.MEGA_SPRUCE) {
+            return org.bukkit.TreeType.MEGA_REDWOOD;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.MEGA_PINE) {
+            return org.bukkit.TreeType.MEGA_PINE;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.MEGA_JUNGLE_TREE) {
+            return org.bukkit.TreeType.JUNGLE;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.AZALEA_TREE) {
+            return org.bukkit.TreeType.AZALEA;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.MANGROVE) {
+            return org.bukkit.TreeType.MANGROVE;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.TALL_MANGROVE) {
+            return org.bukkit.TreeType.TALL_MANGROVE;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.CHERRY
+                || key == net.minecraft.data.worldgen.features.TreeFeatures.CHERRY_BEES_005) {
+            return org.bukkit.TreeType.CHERRY;
+        }
+
+        return null;
+    }
+
+    /**
+     * 木の育ちの控えを始める。育てる呼び出しの直前。
+     *
+     * <p>既に外側が控えているときは false を返す。骨粉から苗木を育てるときに
+     * 二重に発火しないため。
+     */
+    public static boolean armTreeGrow(final Level level, final boolean bonemeal) {
+        if (level.captureTreeGeneration) {
+            return false;
+        }
+
+        if (!listening(org.bukkit.event.world.StructureGrowEvent.getHandlerList())
+                && !(bonemeal && listening(org.bukkit.event.block.BlockFertilizeEvent.getHandlerList()))) {
+            return false;
+        }
+
+        level.captureTreeGeneration = true;
+
+        return true;
+    }
+
+    /** StructureGrowEvent。苗木が自分で育ったとき。 */
+    public static void treeGrow(final Level level, final BlockPos pos) {
+        fireGrow(level, pos, null, false, false);
+    }
+
+    /** StructureGrowEvent と BlockFertilizeEvent。骨粉をまいたとき。 */
+    public static void fertilize(final Level level, final BlockPos pos, final Entity user) {
+        fireGrow(level, pos, user instanceof ServerPlayer player ? player : null, true, true);
+    }
+
+    /**
+     * 控えを閉じて発火する。通ったものだけ世界へ入れる。
+     *
+     * <p>読んだ位置(Paper 1.20.6):
+     *   Paper-Server src/main/java/net/minecraft/world/level/block/SaplingBlock.java:68
+     *   Paper-Server src/main/java/net/minecraft/world/item/ItemStack.java:421
+     */
+    private static void fireGrow(final Level level, final BlockPos pos, final ServerPlayer player,
+                                 final boolean bonemeal, final boolean fertilize) {
+        level.captureTreeGeneration = false;
+
+        final org.bukkit.TreeType type = net.minecraft.world.level.block.SaplingBlock.treeType;
+        net.minecraft.world.level.block.SaplingBlock.treeType = null;
+
+        if (level.capturedBlockStates.isEmpty()) {
+            return;
+        }
+
+        final List<org.bukkit.block.BlockState> blocks =
+                new ArrayList<>(level.capturedBlockStates.values());
+        level.capturedBlockStates.clear();
+
+        final org.bukkit.entity.Player who = player == null
+                ? null : (org.bukkit.entity.Player) player.getBukkitEntity();
+        org.bukkit.event.world.StructureGrowEvent grow = null;
+
+        if (type != null) {
+            grow = new org.bukkit.event.world.StructureGrowEvent(
+                    org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level.getWorld()),
+                    type, bonemeal, who, blocks);
+            grow.callEvent();
+        }
+
+        if (fertilize) {
+            final org.bukkit.event.block.BlockFertilizeEvent event =
+                    new org.bukkit.event.block.BlockFertilizeEvent(CraftBlock.at(level, pos), who, blocks);
+            event.setCancelled(grow != null && grow.isCancelled());
+
+            if (!event.callEvent()) {
+                return;
+            }
+        } else if (grow != null && grow.isCancelled()) {
+            return;
+        }
+
+        for (final org.bukkit.block.BlockState one : blocks) {
+            org.bukkit.craftbukkit.block.CapturedBlockState.setBlockState(one);
+
+            if (one instanceof CraftBlockState craft) {
+                level.checkCapturedTreeStateForObserverNotify(pos, craft);
+            }
+        }
+    }
+
 }

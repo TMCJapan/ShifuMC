@@ -1,9 +1,12 @@
-# StructuresLocateEvent。構造物を探す直前。
+# AsyncStructureSpawnEvent。構造物の置き場所が決まって、チャンクへ書き込む手前。
+#
+# 読んだ位置(Paper 1.20.6):
+#   Paper-Server src/main/java/net/minecraft/world/level/chunk/ChunkGenerator.java:643
 
 file: net/minecraft/world/level/chunk/ChunkGenerator.java
 anchor:
-        ChunkGeneratorStructureState chunkGeneratorStructureState = world.getChunkSource().getGeneratorState();
+            structureAccessor.setStartForStructure(sectionPos, structure, structureStart, chunk);
 insert:
-    if (!dev.shifu.event.BlockEvents.structuresLocate(world, center, structures, radius, skipReferencedStructures)) {
-        return null;
+    if (!dev.shifu.event.BlockEvents.structureSpawn(structureAccessor, structure, structureStart, pos)) {
+        return true;
     }

@@ -19,6 +19,7 @@ import org.bukkit.Location;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.block.CraftBlock;
 import org.bukkit.craftbukkit.event.CraftEventFactory;
+import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.craftbukkit.util.CraftLocation;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -364,6 +365,14 @@ public final class ShifuEvents {
             // 壊したブロックの落とし物。**世界へは vanilla のとおり入れる。**
             // 控えるのは「どれが出たか」だけで、発火はあとから。
             broken.add(dropped);
+        }
+
+        final List<net.minecraft.world.entity.Entity> byBlock = brokenByBlock;
+
+        if (byBlock != null
+                && (entity instanceof net.minecraft.world.entity.item.ItemEntity
+                        || entity instanceof ExperienceOrb)) {
+            byBlock.add(entity);
         }
 
         final DeathCapture current = capture;
@@ -1591,6 +1600,68 @@ public final class ShifuEvents {
             if (!items.contains(one.getBukkitEntity())) {
                 one.discard();
             }
+        }
+    }
+
+    /** ブロックがブロックを壊して出たもの。控えている最中だけ入る。 */
+    private static List<net.minecraft.world.entity.Entity> brokenByBlock;
+
+    /**
+     * BlockBreakBlockEvent の控えを始める。壊す呼び出しの直前。
+     *
+     * <p>Paper は dropResources を差し替えて落とし物を世界に入れる前に押さえる。
+     * Shifu は <b>vanilla のとおり先に入れて</b>、あとで発火し、
+     * プラグインが決めた並びで出し直す。聞き手がいなければ控えないので、
+     * そのときの手間は静的呼び出し 1 つ。
+     */
+    public static void armBreakBlock() {
+        brokenByBlock = listening(io.papermc.paper.event.block.BlockBreakBlockEvent.getHandlerList())
+                ? new ArrayList<>() : null;
+    }
+
+    /**
+     * BlockBreakBlockEvent。ピストンと液体が別のブロックを壊したとき。
+     *
+     * <p>取り消せない催しなので、見るのは落とし物と経験値だけ。
+     */
+    public static void fireBreakBlock(final net.minecraft.world.level.LevelAccessor world,
+                                      final BlockPos pos, final BlockPos source) {
+        final List<net.minecraft.world.entity.Entity> spawned = brokenByBlock;
+        brokenByBlock = null;
+
+        if (spawned == null || !(world instanceof ServerLevel level)) {
+            return;
+        }
+
+        final List<org.bukkit.inventory.ItemStack> drops = new ArrayList<>();
+        int exp = 0;
+
+        for (final net.minecraft.world.entity.Entity one : spawned) {
+            if (one instanceof net.minecraft.world.entity.item.ItemEntity item) {
+                drops.add(CraftItemStack.asBukkitCopy(item.getItem()));
+            } else if (one instanceof ExperienceOrb orb) {
+                exp += orb.getValue();
+            }
+        }
+
+        final io.papermc.paper.event.block.BlockBreakBlockEvent event =
+                new io.papermc.paper.event.block.BlockBreakBlockEvent(
+                        CraftBlock.at(level, pos), CraftBlock.at(level, source), drops);
+        event.setExpToDrop(exp);
+        event.callEvent();
+
+        for (final net.minecraft.world.entity.Entity one : spawned) {
+            one.discard();
+        }
+
+        for (final org.bukkit.inventory.ItemStack stack : event.getDrops()) {
+            net.minecraft.world.level.block.Block.popResource(
+                    level, pos, CraftItemStack.asNMSCopy(stack));
+        }
+
+        if (event.getExpToDrop() > 0 && level.getGameRules().getBoolean(
+                net.minecraft.world.level.GameRules.RULE_DOBLOCKDROPS)) {
+            ExperienceOrb.award(level, net.minecraft.world.phys.Vec3.atCenterOf(pos), event.getExpToDrop());
         }
     }
 

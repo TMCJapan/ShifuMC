@@ -1,0 +1,16 @@
+# AsyncTabCompleteEvent。補完の要求が届いた直後、main へ積み直す手前。
+#
+# vanilla の ensureRunningOnSameThread より前は受信の担い手の上なので、
+# そこで発火すれば Paper と同じく main の外で聞ける。main で 2 度目に
+# 通るときは中で何もしない。
+#
+# 読んだ位置(Paper 1.20.6):
+#   Paper-Server src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java:787
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    public void handleCustomCommandSuggestions(ServerboundCommandSuggestionPacket packet) {
+insert-after:
+    if (dev.shifu.event.PlayerEvents.asyncTabComplete(this, this.server, this.player, packet)) {
+        return;
+    }

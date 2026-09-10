@@ -1650,4 +1650,73 @@ public final class PlayerEvents {
                 entity.getBukkitEntity()).callEvent();
     }
 
+
+    /**
+     * AsyncTabCompleteEvent。補完の要求が届いた直後、main へ渡す手前。
+     *
+     * <p>vanilla は {@code PacketUtils.ensureRunningOnSameThread} で main へ
+     * 積み直す。その手前は受信の担い手の上なので、そこで発火すれば Paper と
+     * 同じく main の外で聞ける。main で 2 度目に通るときは何もしない。
+     *
+     * <p>返り値は「vanilla の道を止めるか」。プラグインが答えを出した
+     * (isHandled)ときと、答えを出さずに取り消したときだけ止める。
+     *
+     * <p>読んだ位置(Paper 1.20.6):
+     *   Paper-Server src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java:811
+     */
+    public static boolean asyncTabComplete(
+            final net.minecraft.server.network.ServerGamePacketListenerImpl listener,
+            final net.minecraft.server.MinecraftServer server,
+            final net.minecraft.server.level.ServerPlayer player,
+            final net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket packet) {
+        if (server.isSameThread()
+                || !listening(com.destroystokyo.paper.event.server.AsyncTabCompleteEvent.getHandlerList())) {
+            return false;
+        }
+
+        final com.destroystokyo.paper.event.server.AsyncTabCompleteEvent event =
+                new com.destroystokyo.paper.event.server.AsyncTabCompleteEvent(
+                        player.getBukkitEntity(), packet.getCommand(), true, null);
+        event.callEvent();
+
+        if (!event.isHandled()) {
+            return event.isCancelled();
+        }
+
+        if (event.isCancelled() || event.completions().isEmpty()) {
+            return true;
+        }
+
+        final com.mojang.brigadier.StringReader reader =
+                new com.mojang.brigadier.StringReader(packet.getCommand());
+
+        if (reader.canRead() && reader.peek() == '/') {
+            reader.skip();
+        }
+
+        final com.mojang.brigadier.suggestion.SuggestionsBuilder head =
+                new com.mojang.brigadier.suggestion.SuggestionsBuilder(
+                        packet.getCommand(), reader.getTotalLength());
+        final com.mojang.brigadier.suggestion.SuggestionsBuilder builder =
+                head.createOffset(head.getInput().lastIndexOf(' ') + 1);
+
+        for (final com.destroystokyo.paper.event.server.AsyncTabCompleteEvent.Completion one
+                : event.completions()) {
+            final net.minecraft.network.chat.Component tooltip = one.tooltip() == null
+                    ? null : io.papermc.paper.adventure.PaperAdventure.asVanilla(one.tooltip());
+            final Integer number = com.google.common.primitives.Ints.tryParse(one.suggestion());
+
+            if (number != null) {
+                builder.suggest(number, tooltip);
+            } else {
+                builder.suggest(one.suggestion(), tooltip);
+            }
+        }
+
+        listener.send(new net.minecraft.network.protocol.game.ClientboundCommandSuggestionsPacket(
+                packet.getId(), builder.buildFuture().join()));
+
+        return true;
+    }
+
 }
