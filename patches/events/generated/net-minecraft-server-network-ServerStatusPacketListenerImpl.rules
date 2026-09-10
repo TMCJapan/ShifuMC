@@ -1,0 +1,12 @@
+# ServerListPingEvent。一覧に出す情報を送る直前。
+# 登録があるときだけ組み直して送る。
+
+file: net/minecraft/server/network/ServerStatusPacketListenerImpl.java
+anchor:
+            this.connection.send(new ClientboundStatusResponsePacket(this.status));
+insert:
+    if (dev.shifu.event.ShifuEvents.serverListPingListening()) {
+        this.connection.send(new ClientboundStatusResponsePacket(
+                dev.shifu.event.ShifuEvents.serverListPing(this.connection, this.status)));
+        return;
+    }

@@ -1388,4 +1388,23 @@ public final class BlockEvents {
                 org.bukkit.craftbukkit.block.CraftBlock.at(level, pos), charge).callEvent();
     }
 
+
+    /**
+     * BlockDispenseArmorEvent。ディスペンサーが防具を着せる直前。
+     *
+     * <p>差し替えた品({@code setItem})は vanilla の行が持つので使っていない。
+     */
+    public static boolean dispenseArmor(final net.minecraft.core.dispenser.BlockSource pointer,
+                                        final net.minecraft.world.item.ItemStack armor,
+                                        final net.minecraft.world.entity.LivingEntity target) {
+        if (!ShifuEvents.listening(org.bukkit.event.block.BlockDispenseArmorEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.block.BlockDispenseArmorEvent(
+                org.bukkit.craftbukkit.block.CraftBlock.at(pointer.level(), pointer.pos()),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(armor.copyWithCount(1)).clone(),
+                (org.bukkit.craftbukkit.entity.CraftLivingEntity) target.getBukkitEntity()).callEvent();
+    }
+
 }

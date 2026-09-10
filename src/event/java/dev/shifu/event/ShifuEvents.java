@@ -1397,4 +1397,44 @@ public final class ShifuEvents {
         }
     }
 
+
+    /** ServerListPingEvent に登録があるか。 */
+    public static boolean serverListPingListening() {
+        return listening(org.bukkit.event.server.ServerListPingEvent.getHandlerList());
+    }
+
+    /**
+     * ServerListPingEvent。一覧に出す情報を送る直前。
+     *
+     * <p>CraftBukkit は無名の派生クラスでプレイヤーの並びまで差し替えられるように
+     * している。ここでは <b>説明文・最大人数・今の人数</b>だけを反映する。
+     * アイコンとプレイヤーの見本は vanilla のものをそのまま通す。
+     *
+     * @return 送る情報
+     */
+    public static net.minecraft.network.protocol.status.ServerStatus serverListPing(
+            final net.minecraft.network.Connection connection,
+            final net.minecraft.network.protocol.status.ServerStatus status) {
+        final java.net.InetAddress address =
+                connection.getRemoteAddress() instanceof java.net.InetSocketAddress socket
+                        && socket.getAddress() != null
+                        ? socket.getAddress() : java.net.InetAddress.getLoopbackAddress();
+        final int max = status.players().map(net.minecraft.network.protocol.status.ServerStatus.Players::max)
+                .orElse(0);
+        final int online = status.players().map(net.minecraft.network.protocol.status.ServerStatus.Players::online)
+                .orElse(0);
+        final org.bukkit.event.server.ServerListPingEvent event = new org.bukkit.event.server.ServerListPingEvent(
+                connection.hostname, address, PaperAdventure.asAdventure(status.description()), online, max);
+
+        if (!event.callEvent()) {
+            return status;
+        }
+
+        return new net.minecraft.network.protocol.status.ServerStatus(
+                PaperAdventure.asVanilla(event.motd()),
+                status.players().map(players -> new net.minecraft.network.protocol.status.ServerStatus.Players(
+                        event.getMaxPlayers(), players.online(), players.sample())),
+                status.version(), status.favicon(), status.enforcesSecureChat());
+    }
+
 }

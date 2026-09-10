@@ -5,4 +5,6 @@ file: net/minecraft/world/effect/MobEffectUtil.java
 anchor:
         list.forEach(player -> player.addEffect(new MobEffectInstance(statusEffectInstance), entity));
 insert:
-    list.removeIf(player -> !dev.shifu.event.EntityEvents.elderGuardianAppearance(entity, player));
+    if (dev.shifu.event.EntityEvents.elderGuardianListening()) {
+        list.removeIf(player -> !dev.shifu.event.EntityEvents.elderGuardianAppearance(entity, player));
+    }

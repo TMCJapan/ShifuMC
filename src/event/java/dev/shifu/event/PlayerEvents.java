@@ -724,11 +724,20 @@ public final class PlayerEvents {
      * PlayerChangedMainHandEvent と PlayerLocaleChangeEvent(Bukkit と Paper の両方)。
      * {@code updateOptions} が値を書き換える前。
      *
-     * <p><b>未対応:</b> {@code PlayerClientOptionsChangeEvent}。構築子が取る
-     * ClientOption の Map を作る Paper のメソッドが 1.20.6 の木に無い。
      */
     public static void clientOptions(final ServerPlayer player, final String oldLanguage,
                                      final net.minecraft.server.level.ClientInformation options) {
+        if (ShifuEvents.listening(
+                com.destroystokyo.paper.event.player.PlayerClientOptionsChangeEvent.getHandlerList())) {
+            new com.destroystokyo.paper.event.player.PlayerClientOptionsChangeEvent(player.getBukkitEntity(),
+                    options.language(), options.viewDistance(),
+                    com.destroystokyo.paper.ClientOption.ChatVisibility.valueOf(options.chatVisibility().name()),
+                    options.chatColors(),
+                    new com.destroystokyo.paper.PaperSkinParts(options.modelCustomisation()),
+                    options.mainHand() == net.minecraft.world.entity.HumanoidArm.LEFT
+                            ? org.bukkit.inventory.MainHand.LEFT : org.bukkit.inventory.MainHand.RIGHT).callEvent();
+        }
+
         if (player.getMainArm() != options.mainHand()
                 && ShifuEvents.listening(org.bukkit.event.player.PlayerChangedMainHandEvent.getHandlerList())) {
             new org.bukkit.event.player.PlayerChangedMainHandEvent(player.getBukkitEntity(),
@@ -1554,6 +1563,33 @@ public final class PlayerEvents {
         return new com.destroystokyo.paper.event.player.PlayerReadyArrowEvent(serverPlayer.getBukkitEntity(),
                 org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(bow),
                 org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(arrow)).callEvent();
+    }
+
+
+    /**
+     * PlayerFailMoveEvent。移動の packet をはねる直前。
+     *
+     * <p>1.20.6 の vanilla に理由の種類は無いので、Paper の
+     * {@code MOVED_TOO_QUICKLY} と {@code MOVED_WRONGLY} だけを渡す。
+     *
+     * @return はねてよいか。取り消されたらそのまま通す
+     */
+    public static boolean failMove(final ServerPlayer player,
+                                   final io.papermc.paper.event.player.PlayerFailMoveEvent.FailReason reason,
+                                   final double toX, final double toY, final double toZ,
+                                   final float toYaw, final float toPitch) {
+        if (!ShifuEvents.listening(io.papermc.paper.event.player.PlayerFailMoveEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.entity.Player bukkit = player.getBukkitEntity();
+        final org.bukkit.Location from = bukkit.getLocation();
+        final org.bukkit.Location to = new org.bukkit.Location(bukkit.getWorld(), toX, toY, toZ, toYaw, toPitch);
+        final io.papermc.paper.event.player.PlayerFailMoveEvent event =
+                new io.papermc.paper.event.player.PlayerFailMoveEvent(bukkit, reason, false, true, from, to);
+        event.callEvent();
+
+        return !event.isAllowed();
     }
 
 }

@@ -1388,6 +1388,11 @@ public final class EntityEvents {
                 lightning.getBukkitEntity()).callEvent();
     }
 
+    /** ElderGuardianAppearanceEvent に登録があるか。並びを絞る前に見る。 */
+    public static boolean elderGuardianListening() {
+        return listening(io.papermc.paper.event.entity.ElderGuardianAppearanceEvent.getHandlerList());
+    }
+
     /** ElderGuardianAppearanceEvent。エルダーガーディアンの幻を見せる直前。 */
     public static boolean elderGuardianAppearance(final Entity source,
                                                   final net.minecraft.server.level.ServerPlayer player) {

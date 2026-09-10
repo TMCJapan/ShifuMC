@@ -120,6 +120,8 @@ def looped(old, new, nearby):
 
 
 TAIL = re.compile(r"^(?P<head>.*) && dev\.shifu\.event\.[\w.]+\(.*\);$")
+# 判定の式そのものに足す形。`if (…) {` の中身の末尾に付く。
+TAIL_IF = re.compile(r"^(?P<head>.*) && dev\.shifu\.event\.[\w.]+\(.*\)\) \{$")
 
 
 def tailFired(old, new):
@@ -131,7 +133,12 @@ def tailFired(old, new):
     """
     found = TAIL.match(new)
 
-    return found is not None and found.group("head").strip() + ";" == old.strip()
+    if found is not None and found.group("head").strip() + ";" == old.strip():
+        return True
+
+    found = TAIL_IF.match(new)
+
+    return found is not None and found.group("head").strip() + ") {" == old.strip()
 
 
 def hoisted(old, new, nearby):
