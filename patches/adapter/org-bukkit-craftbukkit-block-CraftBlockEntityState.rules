@@ -1,0 +1,10 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+#
+# Paper は persistentDataContainer をコンストラクタで必ず作る。Shifu は要るときに作るので、
+# 読む側を取得メソッドに通す。
+
+file: org/bukkit/craftbukkit/block/CraftBlockEntityState.java
+replace:
+        return this.getSnapshot().persistentDataContainer;
+with:
+        return this.getSnapshot().shifuPersistentData(); // Shifu

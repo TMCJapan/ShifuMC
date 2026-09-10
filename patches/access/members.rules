@@ -107,3 +107,10 @@ line:
 file: net/minecraft/world/item/ServerItemCooldowns.java
 line:
     private final ServerPlayer player;
+
+# getChunkFutureMainThread。CraftWorld.getChunkAtAsync を vanilla のチャンク供給に
+# 載せるのに要る。公開の getChunkFuture は main で managedBlock するので、
+# 非同期の要求に使うと main が止まる
+file: net/minecraft/server/level/ServerChunkCache.java
+line:
+    private CompletableFuture<ChunkResult<ChunkAccess>> getChunkFutureMainThread(int chunkX, int chunkZ, ChunkStatus leastStatus, boolean create) {

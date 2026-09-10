@@ -16,7 +16,12 @@ RUN=$PW/run-mix
 DIST=$SHIFU/tools/build/dist
 ADDONS=$SHIFU/tools/build/addons/$MC_VERSION
 
-[ -f "$DIST/shifu-server.jar" ] || sh "$SHIFU/tools/dist.sh" --build
+# 組み直したクラスより jar が古いと、直したはずのものを試さずに終わる。
+# 一度これで 3 回続けて古い jar を動かした。無いときだけでなく、古いときも組み直す。
+CLASSES=$PW/Paper-Server/build/classes/java/main
+if [ ! -f "$DIST/shifu-server.jar" ]         || { [ -d "$CLASSES" ] && [ -n "$(find "$CLASSES" -name "*.class" -newer "$DIST/shifu-server.jar" -print -quit)" ]; }; then
+    sh "$SHIFU/tools/dist.sh" --build
+fi
 
 python "$SHIFU/tools/fetch_addons.py" "$ADDONS"
 

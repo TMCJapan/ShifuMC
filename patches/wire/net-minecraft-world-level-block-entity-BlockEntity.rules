@@ -1,0 +1,39 @@
+# ブロックエンティティの PersistentDataContainer(PublicBukkitValues)。
+#
+# 繋がないと NBT-API の NBTTileEntity が中身を読めず、
+# Bukkit の BlockState#getPersistentDataContainer も空のまま保存されない。
+#
+# 読んだ位置(Paper 1.20.6):
+#   Paper-Server src/main/java/net/minecraft/world/level/block/entity/BlockEntity.java:62,84,132,144
+
+file: net/minecraft/world/level/block/entity/BlockEntity.java
+anchor:
+    protected void loadAdditional(CompoundTag nbt, HolderLookup.Provider registryLookup) {
+insert-after:
+    final net.minecraft.nbt.Tag shifuValues = nbt.get("PublicBukkitValues");
+
+    if (shifuValues instanceof CompoundTag shifuCompound) {
+        final CraftPersistentDataContainer shifuData = this.shifuPersistentData();
+        shifuData.clear();
+        shifuData.putAll(shifuCompound);
+    } else if (this.persistentDataContainer != null) {
+        this.persistentDataContainer.clear();
+    }
+
+file: net/minecraft/world/level/block/entity/BlockEntity.java
+anchor:
+            .ifPresent(nbt -> compoundTag.merge((CompoundTag)nbt));
+insert-after:
+    if (this.persistentDataContainer != null && !this.persistentDataContainer.isEmpty()) {
+        compoundTag.put("PublicBukkitValues", this.persistentDataContainer.toTagCompound());
+    }
+
+file: net/minecraft/world/level/block/entity/BlockEntity.java
+anchor:
+    public final CompoundTag saveCustomOnly(HolderLookup.Provider registryLookup) {
+        CompoundTag compoundTag = new CompoundTag();
+        this.saveAdditional(compoundTag, registryLookup);
+insert-after:
+    if (this.persistentDataContainer != null && !this.persistentDataContainer.isEmpty()) {
+        compoundTag.put("PublicBukkitValues", this.persistentDataContainer.toTagCompound());
+    }

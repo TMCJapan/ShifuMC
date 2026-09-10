@@ -1,0 +1,49 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+//
+// Paper は書き直したチャンク系(ChunkHolderManager)へ通す。Shifu は vanilla の
+// チャンク系のままなので、同じことを vanilla の ticket の表で行う。
+
+// DistanceManager.addRegionTicketAtDistance
+    // Paper の「距離」は vanilla の addRegionTicket の半径と同じ意味
+    // (どちらも ChunkLevel.byStatus(FULL) から引く)。
+    public <T> boolean addRegionTicketAtDistance(TicketType<T> ticketType, ChunkPos pos, int distance, T identifier) {
+        final Ticket<T> ticket = new Ticket<>(ticketType, ChunkLevel.byStatus(FullChunkStatus.FULL) - distance, identifier);
+        final SortedArraySet<Ticket<?>> existing = this.tickets.get(pos.toLong());
+        final boolean had = existing != null && existing.contains(ticket);
+
+        this.addRegionTicket(ticketType, pos, distance, identifier);
+
+        return !had;
+    }
+
+// DistanceManager.removeRegionTicketAtDistance
+    public <T> boolean removeRegionTicketAtDistance(TicketType<T> ticketType, ChunkPos pos, int distance, T identifier) {
+        final Ticket<T> ticket = new Ticket<>(ticketType, ChunkLevel.byStatus(FullChunkStatus.FULL) - distance, identifier);
+        final SortedArraySet<Ticket<?>> existing = this.tickets.get(pos.toLong());
+
+        if (existing == null || !existing.contains(ticket)) {
+            return false;
+        }
+
+        this.removeRegionTicket(ticketType, pos, distance, identifier);
+
+        return true;
+    }
+
+// DistanceManager.removeAllTicketsFor
+    // プラグインを無効にするときに、そのプラグインが立てた ticket を全部外す。
+    public <T> void removeAllTicketsFor(TicketType<T> ticketType, int ticketLevel, T ticketIdentifier) {
+        final Ticket<T> target = new Ticket<>(ticketType, ticketLevel, ticketIdentifier);
+        final it.unimi.dsi.fastutil.longs.LongArrayList found = new it.unimi.dsi.fastutil.longs.LongArrayList();
+
+        for (final it.unimi.dsi.fastutil.longs.Long2ObjectMap.Entry<SortedArraySet<Ticket<?>>> entry
+                : this.tickets.long2ObjectEntrySet()) {
+            if (entry.getValue().contains(target)) {
+                found.add(entry.getLongKey());
+            }
+        }
+
+        for (int i = 0; i < found.size(); i++) {
+            this.removeTicket(found.getLong(i), target);
+        }
+    }

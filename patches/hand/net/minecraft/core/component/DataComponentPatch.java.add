@@ -1,0 +1,27 @@
+// 自前で書いた追加。Paper の宣言だけを写す。
+//
+// shim は「アダプタ層が名前で呼んでいるメンバー」だけを足す。equals と hashCode は
+// Object から継承しているので名前で呼んでも解決してしまい、要求として拾えない。
+// CraftMetaItem.equalsCommon は unhandledTags(この Builder)を equals で比べるので、
+// 足さないと同じ中身の ItemMeta が必ず不一致になる。
+// (NBT-API の ItemConversionTest と DirectApplyTest がそれで落ちていた)
+
+// Builder.equals
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+
+        if (object instanceof DataComponentPatch.Builder patch) {
+            return this.map.equals(patch.map);
+        }
+
+        return false;
+    }
+
+// Builder.hashCode
+    @Override
+    public int hashCode() {
+        return this.map.hashCode();
+    }

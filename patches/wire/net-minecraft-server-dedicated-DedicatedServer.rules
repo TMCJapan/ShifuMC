@@ -4,12 +4,21 @@
 # SpigotConfig.init は CraftServer.loadPlugins でも呼ばれるが、Paper の設定の既定値が
 # SpigotWorldConfig を先に要求するので、ここでも先に読む。
 # GlobalConfiguration.get() はこれが済むまで null を返す(WatchdogThread が読む)。
+#
+# watchdog は **プラグインを読む前** に起動する。WorldEdit は org.spigotmc.WatchdogThread を
+# 見つけると長い操作の途中で tick() を呼ぶ(PaperweightAdapter$SpigotWatchdog)が、
+# その中で instance と lastTick を反射で読むだけで null を見ない。STARTUP の enable の
+# 中(LegacyMapper の読み込み)で呼ばれるので、そこまでに instance が要る。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/dedicated/DedicatedServer.java.patch
+#            worldedit@7.3.10 worldedit-bukkit/adapters/.../PaperweightAdapter.java:1133-1154
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
     this.setPlayerList(new DedicatedPlayerList(this, this.registries(), this.playerDataStorage));
 insert-after:
     org.spigotmc.SpigotConfig.init((java.io.File) this.options.valueOf("spigot-settings"));
     dev.shifu.event.ShifuBootstrap.initializeConfigurations(this);
+    org.spigotmc.WatchdogThread.doStart(org.spigotmc.SpigotConfig.timeoutTime, org.spigotmc.SpigotConfig.restartOnCrash);
     this.server.loadPlugins();
     this.server.enablePlugins(org.bukkit.plugin.PluginLoadOrder.STARTUP);
 
@@ -36,23 +45,6 @@ anchor:
     Util.shutdownExecutors();
 insert-after:
     dev.shifu.event.ShifuBootstrap.exitAfterServerThread();
-
-# Paper の watchdog を起動する
-#
-# WorldEdit は org.spigotmc.WatchdogThread を見つけると、長い操作の途中で tick() を
-# 呼んで watchdog に生存を知らせる(PaperweightAdapter$SpigotWatchdog)。Shifu が
-# thread を起動していないと instance が null で、//set が途中で止まる。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/server/dedicated/DedicatedServer.java.patch
-#            worldedit@7.4.5 worldedit-bukkit/adapters/.../PaperweightAdapter.java:1228-1252
-# WatchdogThread の作成は GlobalConfiguration.get() を読むので、設定が入ったあとに置く。
-file: net/minecraft/server/dedicated/DedicatedServer.java
-anchor:
-    this.tickTimeLogger = new RemoteSampleLogger(
-    TpsDebugDimensions.values().length, this.debugSampleSubscriptionTracker, RemoteDebugSampleType.TICK_TIME
-    );
-insert:
-    org.spigotmc.WatchdogThread.doStart(org.spigotmc.SpigotConfig.timeoutTime, org.spigotmc.SpigotConfig.restartOnCrash);
 
 # 起動が終わったことを watchdog に伝える。ここまでは長くかかっても落とさない
 file: net/minecraft/server/dedicated/DedicatedServer.java

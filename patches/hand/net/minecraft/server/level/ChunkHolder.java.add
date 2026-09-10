@@ -14,3 +14,35 @@
                        io.papermc.paper.chunk.system.scheduling.NewChunkHolder newChunkHolder) {
         this(pos, net.minecraft.server.level.ChunkLevel.MAX_LEVEL, world, lightingProvider, null, playersWatchingChunkProvider);
     }
+
+// Paper の書き直したチャンク系(NewChunkHolder)を使う版の置き換え。
+// Shifu は vanilla のチャンク系のままなので、vanilla の holder が持つ値で答える。
+
+// ChunkHolder.getAvailableChunkNow
+    public @Nullable ChunkAccess getAvailableChunkNow() {
+        return this.getLastAvailable();
+    }
+
+// ChunkHolder.getChunkHolderStatus
+    public @Nullable ChunkStatus getChunkHolderStatus() {
+        return this.getLastAvailableStatus();
+    }
+
+// ChunkHolder.isFullChunkReady
+    public final boolean isFullChunkReady() {
+        return this.getFullStatus().isOrAfter(FullChunkStatus.FULL);
+    }
+
+// ChunkHolder.getFullChunkNow
+    public LevelChunk getFullChunkNow() {
+        if (!this.isFullChunkReady() || !(this.getAvailableChunkNow() instanceof LevelChunk chunk)) {
+            return null;
+        }
+
+        return chunk;
+    }
+
+// ChunkHolder.getFullChunkNowUnchecked
+    public LevelChunk getFullChunkNowUnchecked() {
+        return this.getAvailableChunkNow() instanceof LevelChunk chunk ? chunk : null;
+    }

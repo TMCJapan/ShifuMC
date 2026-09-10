@@ -136,7 +136,35 @@ public final class PluginDrive extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         this.getServer().getPluginManager().registerEvents(this, this);
+        this.itemRoundTrip();
         this.getLogger().info("[drive] waiting for the bot");
+    }
+
+    // NBT-API の ItemConversionTest と同じ道を、NMS で直に通す。
+    // 落ちる場所が Shifu 側か NBT-API 側かを分ける
+    private void itemRoundTrip() {
+        try {
+            final org.bukkit.inventory.ItemStack item = new org.bukkit.inventory.ItemStack(Material.STONE, 1);
+            final org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+            meta.setLore(java.util.Arrays.asList("Firest Line", "Second Line"));
+            item.setItemMeta(meta);
+
+            final net.minecraft.world.item.ItemStack nms =
+                    org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(item);
+            final net.minecraft.core.HolderLookup.Provider registries =
+                    net.minecraft.server.MinecraftServer.getServer().registryAccess();
+            final String text = nms.save(registries).toString();
+            final net.minecraft.nbt.CompoundTag parsed = net.minecraft.nbt.TagParser.parseTag(text);
+            final net.minecraft.world.item.ItemStack back = net.minecraft.world.item.ItemStack
+                    .parse(registries, parsed).orElse(net.minecraft.world.item.ItemStack.EMPTY);
+            final org.bukkit.inventory.ItemStack backBukkit =
+                    org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(back);
+
+            this.note("item roundtrip similar=" + item.isSimilar(backBukkit)
+                    + " metaEquals=" + item.getItemMeta().equals(backBukkit.getItemMeta()));
+        } catch (final Throwable broken) {
+            this.note("item roundtrip broken: " + broken);
+        }
     }
 
     private void note(final String text) {

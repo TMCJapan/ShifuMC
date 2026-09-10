@@ -13,3 +13,80 @@ replace:
         chunk.level.chunkSource.chunkMap.tickingGenerated.incrementAndGet();
 with:
         ((net.minecraft.server.level.ServerLevel) chunk.level).chunkSource.chunkMap.tickingGenerated.incrementAndGet();
+
+# Paper の書き直したチャンク系(ServerLevel.chunkTaskScheduler)へ通しているところ。
+# Shifu は vanilla のチャンク系のままなので、そこに繋ぎ直す。
+# 繋がないと CraftWorld.getLoadedChunks と getChunkAtAsync が NPE で落ち、
+# WorldGuard が有効にならず、HuskHomes の teleportAsync も失敗する。
+
+file: io/papermc/paper/chunk/system/ChunkSystem.java
+replace:
+        level.chunkTaskScheduler.scheduleChunkTask(chunkX, chunkZ, run, priority); // Paper - rewrite chunk system
+with:
+        level.getServer().execute(run); // Shifu - vanilla のチャンク系は main で回る
+
+file: io/papermc/paper/chunk/system/ChunkSystem.java
+replace:
+        level.chunkTaskScheduler.scheduleChunkLoad(chunkX, chunkZ, gen, toStatus, addTicket, priority, onComplete); // Paper - rewrite chunk system
+with:
+        shifuScheduleLoad(level, chunkX, chunkZ, gen, toStatus, addTicket, onComplete); // Shifu
+
+file: io/papermc/paper/chunk/system/ChunkSystem.java
+replace:
+        level.chunkTaskScheduler.scheduleChunkLoad(chunkX, chunkZ, toStatus, addTicket, priority, onComplete); // Paper - rewrite chunk system
+with:
+        shifuScheduleLoad(level, chunkX, chunkZ, true, toStatus, addTicket, onComplete); // Shifu
+
+file: io/papermc/paper/chunk/system/ChunkSystem.java
+replace:
+        level.chunkTaskScheduler.scheduleTickingState(chunkX, chunkZ, toStatus, addTicket, priority, onComplete); // Paper - rewrite chunk system
+with:
+        // Shifu - 段階まで読んでから、その場で完全チャンクとして渡す
+        shifuScheduleLoad(level, chunkX, chunkZ, true, ChunkStatus.FULL, addTicket, (chunk) -> {
+            onComplete.accept(chunk instanceof LevelChunk full ? full : null);
+        });
+
+file: io/papermc/paper/chunk/system/ChunkSystem.java
+count: 2
+replace:
+        return level.chunkTaskScheduler.chunkHolderManager.getOldChunkHolders(); // Paper - rewrite chunk system
+with:
+        return new ArrayList<>(level.chunkSource.chunkMap.visibleChunkMap.values()); // Shifu
+
+file: io/papermc/paper/chunk/system/ChunkSystem.java
+count: 2
+replace:
+        return level.chunkTaskScheduler.chunkHolderManager.size(); // Paper - rewrite chunk system
+with:
+        return level.chunkSource.chunkMap.visibleChunkMap.size(); // Shifu
+
+# vanilla のチャンク供給に載せる本体。
+# 公開の getChunkFuture は main で managedBlock するので、非同期の要求に使うと
+# main が止まる。止まらない getChunkFutureMainThread を main の上で呼ぶ
+# (patches/access で公開にしてある)。
+file: io/papermc/paper/chunk/system/ChunkSystem.java
+replace:
+    public static void scheduleChunkTask(final ServerLevel level, final int chunkX, final int chunkZ, final Runnable run) {
+with:
+// Shifu - vanilla のチャンク供給に載せる
+private static void shifuScheduleLoad(final ServerLevel level, final int chunkX, final int chunkZ,
+                                      final boolean gen, final ChunkStatus toStatus, final boolean addTicket,
+                                      final Consumer<ChunkAccess> onComplete) {
+    level.getServer().execute(() -> {
+        final CompletableFuture<net.minecraft.server.level.ChunkResult<ChunkAccess>> future =
+                level.chunkSource.getChunkFutureMainThread(chunkX, chunkZ, toStatus, gen || addTicket);
+
+        future.whenComplete((result, throwable) -> level.getServer().execute(() -> {
+            if (throwable != null) {
+                LOGGER.error("Failed to load chunk " + chunkX + "," + chunkZ, throwable);
+                onComplete.accept(null);
+
+                return;
+            }
+
+            onComplete.accept(result == null ? null : result.orElse(null));
+        }));
+    });
+}
+
+public static void scheduleChunkTask(final ServerLevel level, final int chunkX, final int chunkZ, final Runnable run) {
