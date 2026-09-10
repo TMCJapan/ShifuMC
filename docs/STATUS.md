@@ -105,9 +105,24 @@ spigot 側の逆コンパイラの方言**になっている。文脈行が vani
 `AnvilMenu`。`tools/check_wires.py main` は配線 31 件を挙げるが、読むと全部
 26.2 だけのものか名前の違いだった。
 
-足したが誰も代入しない欄が 36 件ある。大半は Paper のチャンク系(`chunkTaskScheduler`、
-`newChunkHolder`、`entityLookup`)で、Shifu は繋いでいないので読むと NPE になる。
-残る例外 14〜24 行はほぼこれと NBTAPI の自己診断。
+足したが誰も代入しない欄があった。Paper のチャンク系(`chunkTaskScheduler`、
+`newChunkHolder`)とブロックエンティティの `persistentDataContainer` は
+2026-09-10 に vanilla のチャンク系と遅延生成へ繋ぎ直した(下)。
+
+### アダプタ層が Paper の作りを前提にしているところ(2026-09-10 に直した)
+
+MOD 102 個とプラグイン 26 個を入れて動かしたときの例外は 24 → 2 になった。
+
+| 出ていたもの | 何が起きていたか | 直し方 |
+|---|---|---|
+| **WorldGuard が有効にならない**、HuskHomes の `teleportAsync` が失敗、NBTAPI の 4 件 | shim が `ServerLevel.chunkTaskScheduler` の宣言だけ持ち込み、Shifu は何も入れていない。`CraftWorld.getLoadedChunks` / `getChunkAtAsync` / `removePluginChunkTickets` と `ChunkHolder.isFullChunkReady` が全部 NPE | vanilla のチャンク系(`chunkSource.chunkMap`、`DistanceManager` の ticket の表)に繋ぎ直す。非同期の読み込みは `getChunkFutureMainThread` を main の上で呼ぶ(公開の `getChunkFuture` は main で `managedBlock` するのでそこで止まる) |
+| WorldEdit が起動時に NPE を 2 件出す | WorldEdit は STARTUP の enable の中で `WatchdogThread.tick()` を呼ぶが、`instance` を反射で読むだけで null を見ない。`doStart` が `enablePlugins(STARTUP)` の後だった | `doStart` をプラグインを読む前に出す |
+| NBTAPI の `NBTTiles` 2 件 | ブロックエンティティの `persistentDataContainer` を作りも読み書きもしていない | 要るときに作る(Paper はコンストラクタで必ず作る)。読み書きは `PublicBukkitValues` が付いているときだけ |
+| NBTAPI の `ItemConversionTest` / `DirectApplyTest` | `DataComponentPatch.Builder` に `equals` / `hashCode` が無い。shim は「アダプタ層が名前で呼ぶメンバー」だけを足すが、この 2 つは Object から継承していて名前で解決するので要求として拾えない。`CraftMetaItem.equalsCommon` は `unhandledTags` をこの `equals` で比べるので、**中身が同じ ItemMeta が必ず不一致になっていた** | `patches/hand` で足す |
+
+残る 2 件はどちらも Shifu の外。`ca/spottedleaf/starlight/.../SchedulingUtil` が無いという
+Mixin の警告(Paper 1.20.6 にも無いクラス。当たらない mixin は飛ばされる)と、
+AuthMe の GeoLite2 の取得失敗(ファイルが無く、落としに行けない)。
 
 ### 名前空間の橋(1.20.6)
 
