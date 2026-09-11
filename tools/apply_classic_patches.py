@@ -48,6 +48,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 from email.utils import parsedate_to_datetime
 
 HEAD = re.compile(r"^@@ -0,0 \+0,0 @@(.*)$")
@@ -340,8 +341,17 @@ def introduced(root):
 
 
 def git(repo, *args):
-    return subprocess.run(["git", "-C", repo] + list(args), env=ENV,
-                          capture_output=True, text=True, errors="replace")
+    # Windows で git の起動が WinError 5(アクセス拒否)で落ちることがある。
+    # 1.19.4 の API パッチで 993 塊のうち 1 回だけ出た。少し待って掛け直す。
+    for attempt in range(5):
+        try:
+            return subprocess.run(["git", "-C", repo] + list(args), env=ENV,
+                                  capture_output=True, text=True, errors="replace")
+        except PermissionError:
+            if attempt == 4:
+                raise
+
+            time.sleep(0.5 * (attempt + 1))
 
 
 def main():

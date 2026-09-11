@@ -149,16 +149,16 @@ public final class PluginDrive extends JavaPlugin implements Listener {
             meta.setLore(java.util.Arrays.asList("Firest Line", "Second Line"));
             item.setItemMeta(meta);
 
-            final net.minecraft.world.item.ItemStack nms =
-                    org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(item);
-            final net.minecraft.core.HolderLookup.Provider registries =
-                    net.minecraft.server.MinecraftServer.getServer().registryAccess();
-            final String text = nms.save(registries).toString();
-            final net.minecraft.nbt.CompoundTag parsed = net.minecraft.nbt.TagParser.parseTag(text);
-            final net.minecraft.world.item.ItemStack back = net.minecraft.world.item.ItemStack
-                    .parse(registries, parsed).orElse(net.minecraft.world.item.ItemStack.EMPTY);
+            // NMS の save / parse は版ごとに署名が違う(1.20.5 で registries が付き、
+            // 1.21.5 で ValueOutput になった)。Paper の serializeAsBytes は中で同じ道を
+            // 通り、1.19.3 から署名が変わらない。無い版(1.18.2)は reflection で飛ばす。
+            final java.lang.reflect.Method save =
+                    org.bukkit.inventory.ItemStack.class.getMethod("serializeAsBytes");
+            final java.lang.reflect.Method load =
+                    org.bukkit.inventory.ItemStack.class.getMethod("deserializeBytes", byte[].class);
+            final byte[] bytes = (byte[]) save.invoke(item);
             final org.bukkit.inventory.ItemStack backBukkit =
-                    org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(back);
+                    (org.bukkit.inventory.ItemStack) load.invoke(null, (Object) bytes);
 
             this.note("item roundtrip similar=" + item.isSimilar(backBukkit)
                     + " metaEquals=" + item.getItemMeta().equals(backBukkit.getItemMeta()));

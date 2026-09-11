@@ -52,9 +52,22 @@ fi
 # 要る JDK。mache は逆コンパイルしたソースが class file 69 になるので 25 が要る。
 # classic の gradle ラッパーは 8.7 で、動くのは Java 21 まで。
 # 22 でも「Unsupported class file major version 66」で落ちる。
+# 1.20.5 より前の Paper は Java 17 で組む(gradle 8.0 は 17 まで、NMS も 17 向け)。
 if [ "$LAYOUT" = classic ]; then
-    JDK_MIN=21
-    JDK_MAX=21
+    _mc=$(sed -n 's/^mcVersion=//p' "$PW/gradle.properties" 2>/dev/null | head -1)
+
+    case "$_mc" in
+        1.1[0-9].*|1.20|1.20.[1-4])
+            JDK_MIN=17
+            JDK_MAX=17
+            ;;
+        *)
+            JDK_MIN=21
+            JDK_MAX=21
+            ;;
+    esac
+
+    unset _mc
 else
     JDK_MIN=25
     JDK_MAX=99
@@ -143,8 +156,12 @@ shifu_reset_paper() {
         git -C "$PW/Paper-Server" checkout -q -- src/main/java
         # Paper は岩盤生成を paper:optionally_flat_bedrock_condition_source に差し替える。
         # vanilla の挙動が変わるので、当たる前の中身に戻す。
-        git -C "$PW/Paper-Server" checkout -q "$SHIFU_BASE_PAPER" -- \
-            src/main/resources/data/minecraft/worldgen
+        # 1.19.4 にはこの差し替えが無い(resources に data/ が無い)ので、あるときだけ。
+        if git -C "$PW/Paper-Server" ls-tree -d "$SHIFU_BASE_PAPER" -- \
+                src/main/resources/data/minecraft/worldgen 2>/dev/null | grep -q .; then
+            git -C "$PW/Paper-Server" checkout -q "$SHIFU_BASE_PAPER" -- \
+                src/main/resources/data/minecraft/worldgen
+        fi
         # Paper が同梱している Alternate Current(別のレッドストーン実装)を外す。
         # vanilla の挙動を変えるものなので Shifu は使わず、NMS からの参照も無い。
         # 残すと、同じパッケージ名の Fabric MOD(alternate-current)がサーバー側の

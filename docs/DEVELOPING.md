@@ -29,6 +29,16 @@ git -C "$PW" worktree add /d/.pw11 origin/ver/1.21.11
 SHIFU_PAPER=/d/.pw11 sh tools/setup.sh
 ```
 
+classic(1.21.3 以前)は `setup.sh` ではなく `setup-classic.sh`。paperweight の
+`applyPatches` が通らないので、API と NMS の逆コンパイルまでを paperweight にやらせ、
+パッチは `apply_classic_by_file.py` で当てる。Paper に `ver/` ブランチが無い版は
+`gradle.properties` の `mcVersion` が次の版へ変わる直前のコミットを渡す
+(1.19.4 は `100462074`、1.18.2 は `f34f678b2`)。JDK は 1.20.5 以降が 21、それより前が 17。
+
+```sh
+SHIFU_PAPER=/d/.pw194 JAVA_HOME="/c/Program Files/Java/jdk-17" sh tools/setup-classic.sh 100462074
+```
+
 `tools/env.sh` は基点コミットをそのクローンの履歴から拾うので、`SHIFU_PAPER` を
 差し替えるだけでツールは全部そのバージョンを見る。
 

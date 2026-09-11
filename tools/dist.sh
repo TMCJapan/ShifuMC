@@ -34,12 +34,16 @@ echo "==== サーバー(paperclip)===="
 sh "$SHIFU/tools/postcompile.sh"
 # 26.x は :paper-server:createPaperclipJar の 1 つだけ。難読化があるバージョンは
 # mojmap と reobf に分かれ、タスクは根のプロジェクトにある(Shifu は実行時も mojmap)。
-PAPERCLIP=:paper-server:createPaperclipJar
-LIBS=$PW/paper-server/build/libs
-
-if (cd "$PW" && "$GRADLEW" --no-daemon "tasks" --all 2>/dev/null) | grep -q createMojmapPaperclipJar; then
+if [ "$LAYOUT" = classic ]; then
     PAPERCLIP=:createMojmapPaperclipJar
     LIBS=$PW/build/libs
+else
+    PAPERCLIP=:paper-server:createPaperclipJar
+    LIBS=$PW/paper-server/build/libs
+
+    if (cd "$PW" && "$GRADLEW" --no-daemon ":paper-server:tasks" --all 2>/dev/null) | grep -q createMojmapPaperclipJar; then
+        PAPERCLIP=:paper-server:createMojmapPaperclipJar
+    fi
 fi
 
 (cd "$PW" && "$GRADLEW" --no-daemon -I "$(cygpath -w "$SHIFU/tools/keepfields.gradle")" \

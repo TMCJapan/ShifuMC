@@ -20,12 +20,17 @@ if [ "$1" != "--skip-build" ]; then
     sh "$SHIFU/tools/postcompile.sh"
     # 26.x は createBundlerJar の 1 つだけ。1.21.x は mojmap と reobf に分かれる。
     # Shifu は実行時も mojmap なので mojmap の方を組む。
-    BUNDLE=:paper-server:createBundlerJar
-    LIBS=$PW/paper-server/build/libs
-
-    if "$GRADLEW" --no-daemon "tasks" --all 2>/dev/null | grep -q createMojmapBundlerJar; then
+    # classic はタスクが根のプロジェクトにあり、出力も根の build/libs。
+    if [ "$LAYOUT" = classic ]; then
         BUNDLE=:createMojmapBundlerJar
         LIBS=$PW/build/libs
+    else
+        BUNDLE=:paper-server:createBundlerJar
+        LIBS=$PW/paper-server/build/libs
+
+        if "$GRADLEW" --no-daemon ":paper-server:tasks" --all 2>/dev/null | grep -q createMojmapBundlerJar; then
+            BUNDLE=:paper-server:createMojmapBundlerJar
+        fi
     fi
 
     "$GRADLEW" --no-daemon -I "$(cygpath -w "$SHIFU/tools/keepfields.gradle")" \
