@@ -98,6 +98,14 @@ rm -f launch.out launch.err bot.out
 "$JAVA" -jar shifu.jar nogui > launch.out 2> launch.err &
 SERVER=$!
 
+# MSYS の kill は Windows の java に届かないことがある(起動しなかった回に 2 時間残った)。
+# ps -W で Windows の PID を引いて taskkill でも止める。
+stop_server() {
+    kill $SERVER 2>/dev/null || true
+    _win=$(ps -W -p $SERVER 2>/dev/null | awk 'NR == 2 { print $4 }')
+    [ -n "$_win" ] && taskkill //F //PID "$_win" > /dev/null 2>&1 || true
+}
+
 for i in $(seq 1 300); do
     if grep -aq "Done (" launch.out 2>/dev/null; then
         break
@@ -108,7 +116,7 @@ done
 if ! grep -aq "Done (" launch.out; then
     echo "起動しなかった"
     tail -5 launch.out
-    kill $SERVER 2>/dev/null || true
+    stop_server
     exit 1
 fi
 
@@ -121,7 +129,7 @@ done
 
 "$JAVA" -cp "$(cygpath -w "$SHIFU/tools/build/bot");$CP" dev.shifu.bot.Bot 127.0.0.1 25593 ShifuBot 50 > bot.out 2>&1 || true
 sleep 8
-kill $SERVER 2>/dev/null || true
+stop_server
 
 echo "==== MOD ===="
 grep -a "Loading .* mods" -A 8 launch.out | head -12
