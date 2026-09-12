@@ -1,9 +1,0 @@
-# Paper が vanilla のメソッドの中で行う代入。既存の行は変えていない。
-
-# PluginBootstrap を持つ Paper 形式のプラグインの bootstrap(context) を走らせる
-file: net/minecraft/server/Bootstrap.java
-anchor:
-    Instant instant = Instant.now();
-insert-after:
-    io.papermc.paper.plugin.entrypoint.LaunchEntryPointHandler.enterBootstrappers();
-

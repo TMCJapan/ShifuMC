@@ -21,9 +21,7 @@ insert-after:
 # PlayerQuitEvent。3 行にまたがる文を囲む
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    this.server
-        .getPlayerList()
-        .broadcastSystemMessage(Component.translatable("multiplayer.player.left", this.player.getDisplayName()).withStyle(ChatFormatting.YELLOW), false);
+    this.server.getPlayerList().broadcastSystemMessage(Component.translatable("multiplayer.player.left", this.player.getDisplayName()).withStyle(ChatFormatting.YELLOW), false);
 insert:
     if (dev.shifu.event.ShifuEvents.silentQuit()
             || dev.shifu.event.ShifuEvents.playerQuit(this.player, Component.translatable("multiplayer.player.left", this.player.getDisplayName()).withStyle(ChatFormatting.YELLOW))) {
@@ -74,7 +72,7 @@ insert:
 # 1.20.6 のコーラスフルーツは ChorusFruitItem が直接飛ばす
 file: net/minecraft/world/item/ChorusFruitItem.java
 anchor:
-    if (user.randomTeleport(d, e, f, true)) {
+    if (user.randomTeleport(g, h, j, true)) {
 insert:
     dev.shifu.event.ShifuEvents.teleportCause(user, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.CHORUS_FRUIT);
 
@@ -114,14 +112,14 @@ insert:
 
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    boolean bl = this.level().getGameRules().getBoolean(GameRules.RULE_SHOWDEATHMESSAGES);
+    boolean bl = this.level.getGameRules().getBoolean(GameRules.RULE_SHOWDEATHMESSAGES);
     if (bl) {
 insert:
     if (!shifuDeath) {
 
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    this.connection.send(new ClientboundPlayerCombatKillPacket(this.getId(), CommonComponents.EMPTY));
+    this.connection.send(new ClientboundPlayerCombatKillPacket(this.getCombatTracker(), CommonComponents.EMPTY));
     }
 insert-after:
     }
@@ -184,7 +182,7 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch(PlayerToggleFlightEvent)
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    Either<Player.BedSleepingProblem, Unit> either = super.startSleepInBed(pos).ifRight(unit -> {
+    Either<Player.BedSleepingProblem, Unit> either = super.startSleepInBed(pos).ifRight((unit) -> {
 insert:
     // 波括弧で囲って、局所変数の生存範囲をここで終わらせる。囲まないと
     // すぐ下の either が公式より 1 つ後ろの slot に入る(javac は scope の

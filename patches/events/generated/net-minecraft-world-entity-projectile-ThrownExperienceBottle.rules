@@ -3,7 +3,7 @@
 # callExpBottleEvent
 file: net/minecraft/world/entity/projectile/ThrownExperienceBottle.java
 anchor:
-    ExperienceOrb.award((ServerLevel)this.level(), this.position(), i);
+    ExperienceOrb.award((ServerLevel)this.level, this.position(), i);
 insert:
     // Paper start - exp bottle event
     org.bukkit.event.entity.ExpBottleEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callExpBottleEvent(this, hitResult, i);

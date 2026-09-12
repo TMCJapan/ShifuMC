@@ -6,7 +6,7 @@
 # 読んだ位置: patches/sources/net/minecraft/server/network/ServerHandshakePacketListenerImpl.java.patch(NetworkClient implementation)
 file: net/minecraft/server/network/ServerHandshakePacketListenerImpl.java
 anchor:
-                throw new UnsupportedOperationException("Invalid intention " + packet.intention());
+                throw new UnsupportedOperationException("Invalid intention " + packet.getIntention());
         }
 insert-after:
     this.connection.protocolVersion = packet.protocolVersion();
@@ -26,7 +26,7 @@ insert:
 # 読んだ位置: patches/sources/net/minecraft/server/level/ServerLevel.java.patch(getMapData / setMapData)
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    return this.getServer().overworld().getDataStorage().get(MapItemSavedData.factory(), id.key());
+    return this.getServer().overworld().getDataStorage().get(MapItemSavedData::load, id);
 insert:
     {
         final MapItemSavedData shifuMap = this.getServer().overworld().getDataStorage().get(MapItemSavedData.factory(), id.key());
@@ -37,19 +37,17 @@ insert:
 
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    this.getServer().overworld().getDataStorage().set(id.key(), state);
+    this.getServer().overworld().getDataStorage().set(id, state);
 insert:
     state.id = id;
 
 # LootTable.craftLootTable(データパックの検証のとき)
 # 読んだ位置: patches/sources/net/minecraft/world/level/storage/loot/LootDataType.java.patch
-file: net/minecraft/world/level/storage/loot/LootDataType.java
+file: net/minecraft/world/level/storage/loot/LootTables.java
 anchor:
-    this.validator.run(reporter, key, value);
-insert-after:
-    if (value instanceof LootTable lootTable) {
-        lootTable.craftLootTable = new org.bukkit.craftbukkit.CraftLootTable(org.bukkit.craftbukkit.util.CraftNamespacedKey.fromMinecraft(key.location()), lootTable);
-    }
+    builder.put(id, lootTable);
+insert:
+    lootTable.craftLootTable = new org.bukkit.craftbukkit.CraftLootTable(org.bukkit.craftbukkit.util.CraftNamespacedKey.fromMinecraft(id), lootTable);
 
 # TransientCraftingContainer.resultInventory(作業台の結果欄。CraftInventoryCrafting が読む)
 # 1.20.6 は AbstractCraftingMenu が無く、CraftingMenu が欄で作る

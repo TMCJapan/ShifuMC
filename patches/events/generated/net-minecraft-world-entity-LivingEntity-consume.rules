@@ -3,7 +3,7 @@
 # PlayerItemConsumeEvent。食べ終える直前
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    ItemStack itemStack = this.useItem.finishUsingItem(this.level(), this);
+    ItemStack itemStack = this.useItem.finishUsingItem(this.level, this);
 insert:
     if (!dev.shifu.event.ShifuEvents.itemConsume(this, interactionHand)) {
         return;

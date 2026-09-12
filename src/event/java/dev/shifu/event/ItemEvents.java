@@ -44,7 +44,7 @@ import net.minecraft.world.inventory.SmithingMenu;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.inventory.RecipeHolder;
 import net.minecraft.world.item.crafting.StonecutterRecipe;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentInstance;
@@ -655,7 +655,7 @@ public final class ItemEvents {
     /** PlayerStonecutterRecipeSelectEvent。石切台のレシピを選んだ直前。 */
     public static boolean stonecutterSelect(final net.minecraft.world.entity.player.Player player,
                                             final net.minecraft.world.inventory.StonecutterMenu menu,
-                                            final net.minecraft.world.item.crafting.RecipeHolder<
+                                            final net.minecraft.world.inventory.RecipeHolder<
                                                     net.minecraft.world.item.crafting.StonecutterRecipe> recipe) {
         if (!ShifuEvents.listening(
                 io.papermc.paper.event.player.PlayerStonecutterRecipeSelectEvent.getHandlerList())) {

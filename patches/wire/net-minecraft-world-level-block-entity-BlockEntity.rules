@@ -8,7 +8,7 @@
 
 file: net/minecraft/world/level/block/entity/BlockEntity.java
 anchor:
-    protected void loadAdditional(CompoundTag nbt, HolderLookup.Provider registryLookup) {
+    public void load(CompoundTag nbt) {
 insert-after:
     final net.minecraft.nbt.Tag shifuValues = nbt.get("PublicBukkitValues");
 
@@ -20,19 +20,12 @@ insert-after:
         this.persistentDataContainer.clear();
     }
 
-file: net/minecraft/world/level/block/entity/BlockEntity.java
-anchor:
-            .ifPresent(nbt -> compoundTag.merge((CompoundTag)nbt));
-insert-after:
-    if (this.persistentDataContainer != null && !this.persistentDataContainer.isEmpty()) {
-        compoundTag.put("PublicBukkitValues", this.persistentDataContainer.toTagCompound());
-    }
 
 file: net/minecraft/world/level/block/entity/BlockEntity.java
 anchor:
-    public final CompoundTag saveCustomOnly(HolderLookup.Provider registryLookup) {
-        CompoundTag compoundTag = new CompoundTag();
-        this.saveAdditional(compoundTag, registryLookup);
+    public final CompoundTag saveWithoutMetadata() {
+    CompoundTag compoundTag = new CompoundTag();
+    this.saveAdditional(compoundTag);
 insert-after:
     if (this.persistentDataContainer != null && !this.persistentDataContainer.isEmpty()) {
         compoundTag.put("PublicBukkitValues", this.persistentDataContainer.toTagCompound());

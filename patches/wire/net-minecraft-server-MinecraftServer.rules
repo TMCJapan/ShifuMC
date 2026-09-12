@@ -3,8 +3,8 @@
 # 毎 tick のスケジューラ実行
 file: net/minecraft/server/MinecraftServer.java
 anchor:
-    this.getPlayerList().getPlayers().forEach(player -> player.connection.suspendFlushing());
-insert-after:
+    this.profiler.push("commandFunctions");
+insert:
     this.server.getScheduler().mainThreadHeartbeat(this.tickCount);
 
 # メインスレッド待ちのタスク列(processQueue)を毎 tick 流す。CraftBukkit は
@@ -20,7 +20,7 @@ insert-after:
 # 起動中に積まれた 1 tick 遅延のタスクを、最初の tick の前に 1 回流す
 file: net/minecraft/server/MinecraftServer.java
 anchor:
-                this.statusIcon = this.loadStatusIcon().orElse(null);
+                this.statusIcon = this.loadStatusIcon().orElse((ServerStatus.Favicon)null);
                 this.status = this.buildServerStatus();
 insert-after:
     this.server.getScheduler().mainThreadHeartbeat(this.tickCount);
@@ -75,7 +75,7 @@ insert-after:
 # MinecraftServer.currentTick を進める。Paper のプラグインが tick 番号として読む
 file: net/minecraft/server/MinecraftServer.java
 anchor:
-    boolean bl = l == 0L;
+    ++this.tickCount;
 insert:
     ++MinecraftServer.currentTick;
 
@@ -97,8 +97,8 @@ insert:
 # EntityMoveEvent に登録があるかを、世界を回す前に控える(Paper と同じ位置)
 file: net/minecraft/server/MinecraftServer.java
 anchor:
-    this.getPlayerList().getPlayers().forEach(player -> player.connection.suspendFlushing());
-insert-after:
+    this.profiler.push("commandFunctions");
+insert:
     for (net.minecraft.server.level.ServerLevel shifuLevel : this.getAllLevels()) {
         shifuLevel.hasEntityMoveEvent = io.papermc.paper.event.entity.EntityMoveEvent.getHandlerList().getRegisteredListeners().length > 0;
     }

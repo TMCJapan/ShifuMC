@@ -2,7 +2,7 @@
 
 file: net/minecraft/world/entity/monster/Shulker.java
 anchor:
-                    this.level().addFreshEntity(shulker);
+                    this.level.addFreshEntity(shulker);
 insert:
     if (!dev.shifu.event.AnimalEvents.shulkerDuplicate(shulker, this)) {
         return;

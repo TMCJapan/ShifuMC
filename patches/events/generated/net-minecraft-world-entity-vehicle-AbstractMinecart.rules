@@ -17,7 +17,7 @@ insert-after:
 file: net/minecraft/world/entity/vehicle/AbstractMinecart.java
 anchor:
     this.setRot(this.getYRot(), this.getXRot());
-    if (this.getMinecartType() == AbstractMinecart.Type.RIDEABLE && this.getDeltaMovement().horizontalDistanceSqr() > 0.01) {
+    if (this.getMinecartType() == AbstractMinecart.Type.RIDEABLE && this.getDeltaMovement().horizontalDistanceSqr() > 0.01D) {
 insert:
     dev.shifu.event.EntityEvents.vehicleMoveAfter(this);
 

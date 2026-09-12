@@ -5,4 +5,4 @@ anchor:
                     this.broadcastChanges();
 insert:
     dev.shifu.event.ItemEvents.prepareEnchant(this, itemStack, this.costs, this.enchantClue, this.levelClue,
-            ix, world, pos);
+            i, world, pos);

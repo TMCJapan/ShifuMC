@@ -56,12 +56,20 @@ public record ApiSource(net.minecraft.commands.CommandSourceStack handle) implem
 
     /** API の source(包んだもの)から NMS を取り出す。NMS がそのまま来ても通す。 */
     public static net.minecraft.commands.CommandSourceStack unwrap(final Object source) {
-        return switch (source) {
-            case null -> null;
-            case net.minecraft.commands.CommandSourceStack nms -> nms;
-            case PaperCommandSourceStack api -> api.getHandle();
-            default -> throw new IllegalArgumentException("知らない source: " + source.getClass());
-        };
+        // 1.19.4 は Java 17 で組むので、switch のパターンは使えない。
+        if (source == null) {
+            return null;
+        }
+
+        if (source instanceof net.minecraft.commands.CommandSourceStack nms) {
+            return nms;
+        }
+
+        if (source instanceof PaperCommandSourceStack api) {
+            return api.getHandle();
+        }
+
+        throw new IllegalArgumentException("知らない source: " + source.getClass());
     }
 
     // ------------------------------------------------------------ brigadier の部品を包み直す

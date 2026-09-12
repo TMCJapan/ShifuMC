@@ -13,7 +13,7 @@
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/AbstractContainerMenu.java.patch(InventoryDragEvent)
 file: net/minecraft/world/inventory/AbstractContainerMenu.java
 anchor:
-    for (Slot slot2 : this.quickcraftSlots) {
+    for(Slot slot2 : this.quickcraftSlots) {
 insert:
     dev.shifu.event.ItemEvents.dragBefore(this.quickcraftSlots, this);
 
@@ -38,8 +38,8 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/MinecartItem.java.patch
 file: net/minecraft/world/item/MinecartItem.java
 anchor:
-    serverLevel.addFreshEntity(abstractMinecart);
-    serverLevel.gameEvent(GameEvent.ENTITY_PLACE, blockPos, GameEvent.Context.of(context.getPlayer(), serverLevel.getBlockState(blockPos.below())));
+    level.addFreshEntity(abstractMinecart);
+    level.gameEvent(GameEvent.ENTITY_PLACE, blockPos, GameEvent.Context.of(context.getPlayer(), level.getBlockState(blockPos.below())));
 insert:
     if (!dev.shifu.event.ItemEvents.entityPlace(level, blockPos, context.getClickedFace(), context.getPlayer(), abstractMinecart, context.getHand())) {
         if (context.getPlayer() != null) {
@@ -48,7 +48,7 @@ insert:
         return InteractionResult.FAIL;
     }
     if (dev.shifu.event.ItemEvents.spawnCancelListening()) {
-        if (!serverLevel.addFreshEntity(abstractMinecart)) {
+        if (!level.addFreshEntity(abstractMinecart)) {
             return InteractionResult.PASS;
         }
     } else {
@@ -61,16 +61,7 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/CrossbowItem.java.patch
 file: net/minecraft/world/item/SnowballItem.java
 anchor:
-    world.playSound(
-    null,
-    user.getX(),
-    user.getY(),
-    user.getZ(),
-    SoundEvents.SNOWBALL_THROW,
-    SoundSource.NEUTRAL,
-    0.5F,
-    0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F)
-    );
+    world.playSound((Player)null, user.getX(), user.getY(), user.getZ(), SoundEvents.SNOWBALL_THROW, SoundSource.NEUTRAL, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F));
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -79,7 +70,9 @@ insert-after:
 file: net/minecraft/world/item/SnowballItem.java
 anchor:
     user.awardStat(Stats.ITEM_USED.get(this));
-    itemStack.consume(1, user);
+    if (!user.getAbilities().instabuild) {
+    itemStack.shrink(1);
+    }
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -87,9 +80,7 @@ insert-after:
 
 file: net/minecraft/world/item/EggItem.java
 anchor:
-    world.playSound(
-    null, user.getX(), user.getY(), user.getZ(), SoundEvents.EGG_THROW, SoundSource.PLAYERS, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F)
-    );
+    world.playSound((Player)null, user.getX(), user.getY(), user.getZ(), SoundEvents.EGG_THROW, SoundSource.PLAYERS, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F));
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -98,7 +89,9 @@ insert-after:
 file: net/minecraft/world/item/EggItem.java
 anchor:
     user.awardStat(Stats.ITEM_USED.get(this));
-    itemStack.consume(1, user);
+    if (!user.getAbilities().instabuild) {
+    itemStack.shrink(1);
+    }
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -106,16 +99,7 @@ insert-after:
 
 file: net/minecraft/world/item/EnderpearlItem.java
 anchor:
-    world.playSound(
-    null,
-    user.getX(),
-    user.getY(),
-    user.getZ(),
-    SoundEvents.ENDER_PEARL_THROW,
-    SoundSource.NEUTRAL,
-    0.5F,
-    0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F)
-    );
+    world.playSound((Player)null, user.getX(), user.getY(), user.getZ(), SoundEvents.ENDER_PEARL_THROW, SoundSource.NEUTRAL, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F));
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -124,7 +108,9 @@ insert-after:
 file: net/minecraft/world/item/EnderpearlItem.java
 anchor:
     user.awardStat(Stats.ITEM_USED.get(this));
-    itemStack.consume(1, user);
+    if (!user.getAbilities().instabuild) {
+    itemStack.shrink(1);
+    }
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -132,16 +118,7 @@ insert-after:
 
 file: net/minecraft/world/item/ExperienceBottleItem.java
 anchor:
-    world.playSound(
-    null,
-    user.getX(),
-    user.getY(),
-    user.getZ(),
-    SoundEvents.EXPERIENCE_BOTTLE_THROW,
-    SoundSource.NEUTRAL,
-    0.5F,
-    0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F)
-    );
+    world.playSound((Player)null, user.getX(), user.getY(), user.getZ(), SoundEvents.EXPERIENCE_BOTTLE_THROW, SoundSource.NEUTRAL, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F));
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -150,7 +127,9 @@ insert-after:
 file: net/minecraft/world/item/ExperienceBottleItem.java
 anchor:
     user.awardStat(Stats.ITEM_USED.get(this));
-    itemStack.consume(1, user);
+    if (!user.getAbilities().instabuild) {
+    itemStack.shrink(1);
+    }
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -160,7 +139,9 @@ insert-after:
 file: net/minecraft/world/item/ThrowablePotionItem.java
 anchor:
     user.awardStat(Stats.ITEM_USED.get(this));
-    itemStack.consume(1, user);
+    if (!user.getAbilities().instabuild) {
+    itemStack.shrink(1);
+    }
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -170,9 +151,13 @@ insert-after:
 #
 # ブロックに向けて使う: PlayerLaunchProjectileEvent。取り消しは PASS、消費しないなら手元を送り直す。
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/FireworkRocketItem.java.patch
+# 1.19.4 は itemStack.shrink(1) が use() にもあって 1 行では定まらないので、
+# addFreshEntity と shrink の 2 行を 1 つの規則で囲む。消費しないときは
+# 差し込みの側で同じ addFreshEntity を呼んで shrink だけを飛ばす。
 file: net/minecraft/world/item/FireworkRocketItem.java
 anchor:
     level.addFreshEntity(fireworkRocketEntity);
+    itemStack.shrink(1);
 insert:
     final boolean shifuFireworkConsume;
     if (dev.shifu.event.ItemEvents.launchListening()) {
@@ -184,32 +169,18 @@ insert:
         shifuFireworkConsume = shifuLaunched;
     } else {
         shifuFireworkConsume = true;
-insert-after:
     }
-
-file: net/minecraft/world/item/FireworkRocketItem.java
-anchor:
-    itemStack.shrink(1);
-insert:
-    if (shifuFireworkConsume) {
-insert-after:
-    } else {
+    if (!shifuFireworkConsume) {
+        level.addFreshEntity(fireworkRocketEntity);
         context.getPlayer().containerMenu.sendAllDataToRemote();
+    } else {
+insert-after:
     }
 
 # 飛行中に使う: PlayerElytraBoostEvent。登録があれば ItemEvents.elytraBoost が vanilla と同じ順で行う。
 file: net/minecraft/world/item/FishingRodItem.java
 anchor:
-    world.playSound(
-    null,
-    user.getX(),
-    user.getY(),
-    user.getZ(),
-    SoundEvents.FISHING_BOBBER_THROW,
-    SoundSource.NEUTRAL,
-    0.5F,
-    0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F)
-    );
+    world.playSound((Player)null, user.getX(), user.getY(), user.getZ(), SoundEvents.FISHING_BOBBER_THROW, SoundSource.NEUTRAL, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F));
 insert:
     if (!dev.shifu.event.ItemEvents.fishListening()) {
 insert-after:

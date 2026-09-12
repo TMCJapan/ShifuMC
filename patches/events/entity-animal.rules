@@ -44,23 +44,29 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/feline/Cat.java.patch(callEntityTameEvent)
 file: net/minecraft/world/entity/animal/Cat.java
 anchor:
-    private void tryToTame(Player player) {
-    if (this.random.nextInt(3) == 0) {
-insert-after:
+    this.tame(player);
+    this.setOrderedToSit(true);
+    this.level.broadcastEntityEvent(this, (byte)7);
+insert:
     if (!dev.shifu.event.AnimalEvents.tame(this, player)) {
-        this.level().broadcastEntityEvent(this, (byte) 6);
-        return;
+        this.level.broadcastEntityEvent(this, (byte) 6);
+    } else {
+insert-after:
     }
 
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/wolf/Wolf.java.patch(callEntityTameEvent)
 file: net/minecraft/world/entity/animal/Wolf.java
 anchor:
-    private void tryToTame(Player player) {
-    if (this.random.nextInt(3) == 0) {
-insert-after:
+    this.tame(player);
+    this.navigation.stop();
+    this.setTarget((LivingEntity)null);
+    this.setOrderedToSit(true);
+    this.level.broadcastEntityEvent(this, (byte)7);
+insert:
     if (!dev.shifu.event.AnimalEvents.tame(this, player)) {
-        this.level().broadcastEntityEvent(this, (byte) 6);
-        return;
+        this.level.broadcastEntityEvent(this, (byte) 6);
+    } else {
+insert-after:
     }
 
 # ヤマネコ(信頼)。
@@ -68,7 +74,7 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/feline/Ocelot.java.patch
 file: net/minecraft/world/entity/animal/Ocelot.java
 anchor:
-    if (!this.level().isClientSide) {
+    if (!this.level.isClientSide) {
     if (this.random.nextInt(3) == 0) {
 insert-after:
     if (!dev.shifu.event.AnimalEvents.tame(this, player)) {
@@ -80,7 +86,7 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/parrot/Parrot.java.patch
 file: net/minecraft/world/entity/animal/Parrot.java
 anchor:
-    if (!this.level().isClientSide) {
+    if (!this.level.isClientSide) {
     if (this.random.nextInt(10) == 0) {
 insert-after:
     if (!dev.shifu.event.AnimalEvents.tame(this, player)) {
@@ -131,7 +137,8 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/Animal.java.patch(callEntityBreedEvent)
 file: net/minecraft/world/entity/animal/Animal.java
 anchor:
-    this.finalizeSpawnChildFromBreeding(world, other, ageableMob);
+    this.setAge(6000);
+    other.setAge(6000);
 insert:
     if (!dev.shifu.event.AnimalEvents.breed(this, other, ageableMob)) {
         this.resetLove();
@@ -159,7 +166,8 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/frog/Frog.java.patch
 file: net/minecraft/world/entity/animal/frog/Frog.java
 anchor:
-    this.finalizeSpawnChildFromBreeding(world, other, null);
+    this.setAge(6000);
+    other.setAge(6000);
 insert:
     if (!dev.shifu.event.AnimalEvents.fertilizeEgg(this, other)) {
         return;
@@ -172,7 +180,7 @@ file: net/minecraft/world/entity/animal/Turtle.java
 anchor:
     if (serverPlayer != null) {
     serverPlayer.awardStat(Stats.ANIMALS_BRED);
-    CriteriaTriggers.BRED_ANIMALS.trigger(serverPlayer, this.animal, this.partner, null);
+    CriteriaTriggers.BRED_ANIMALS.trigger(serverPlayer, this.animal, this.partner, (AgeableMob)null);
 insert:
     if (!dev.shifu.event.AnimalEvents.fertilizeEgg(this.animal, this.partner)) {
         return;
@@ -210,14 +218,6 @@ insert:
         return InteractionResult.PASS;
     }
 
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/monster/skeleton/Bogged.java.patch(handlePlayerShearEntityEvent)
-file: net/minecraft/world/entity/monster/Bogged.java
-anchor:
-    this.shear(SoundSource.PLAYERS);
-insert:
-    if (!dev.shifu.event.AnimalEvents.shear(player, this, itemStack, hand)) {
-        return InteractionResult.PASS;
-    }
 
 
 # ============================================================ 拾う・落とす
@@ -281,7 +281,7 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/raid/Raids.java.patch(callRaidTriggerEvent)
 file: net/minecraft/world/entity/raid/Raids.java
 anchor:
-    Raid raid = this.getOrCreateRaid(player.serverLevel(), blockPos2);
+    Raid raid = this.getOrCreateRaid(player.getLevel(), blockPos3);
 insert-after:
     final boolean shifuNewRaid = dev.shifu.event.AnimalEvents.raidTriggerListening()
             && !raid.isStarted() && !this.raidMap.containsValue(raid);
@@ -294,7 +294,7 @@ insert:
 
 file: net/minecraft/world/entity/monster/Slime.java
 anchor:
-    slime.moveTo(this.getX() + (double)h, this.getY() + 0.5, this.getZ() + (double)m, this.random.nextFloat() * 360.0F, 0.0F);
+    slime.moveTo(this.getX() + (double)g, this.getY() + 0.5D, this.getZ() + (double)h, this.random.nextFloat() * 360.0F, 0.0F);
 insert-after:
     dev.shifu.event.AnimalEvents.splitCube(this, slime);
 
@@ -306,14 +306,14 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/monster/Slime.java.patch(Slime pathfinder events)
 file: net/minecraft/world/entity/animal/MushroomCow.java
 anchor:
-    Cow cow = EntityType.COW.create(this.level());
+    Cow cow = EntityType.COW.create(this.level);
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.SHEARED);
 
 # オタマジャクシがカエルになる
 file: net/minecraft/world/entity/animal/frog/Tadpole.java
 anchor:
-    Frog frog = EntityType.FROG.create(this.level());
+    Frog frog = EntityType.FROG.create(this.level);
 insert:
     dev.shifu.event.EntityEvents.transformReason(org.bukkit.event.entity.EntityTransformEvent.TransformReason.METAMORPHOSIS);
 
@@ -423,7 +423,7 @@ insert:
 
 file: net/minecraft/world/entity/ai/goal/target/TargetGoal.java
 anchor:
-    this.mob.setTarget(null);
+    this.mob.setTarget((LivingEntity)null);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.FORGOT_TARGET);
 
@@ -456,7 +456,7 @@ file: net/minecraft/world/entity/animal/Wolf.java
 anchor:
     this.jumping = false;
     this.navigation.stop();
-    this.setTarget(null);
+    this.setTarget((LivingEntity)null);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.FORGOT_TARGET);
 
@@ -481,13 +481,15 @@ insert:
 # stream の forEach が何体にも setTarget する。文の前で置いて、文のあとで外す
 file: net/minecraft/world/entity/monster/ZombifiedPiglin.java
 anchor:
-    this.level()
-    .getEntitiesOfClass(ZombifiedPiglin.class, aABB, EntitySelector.NO_SPECTATORS)
-    .stream()
-    .filter(zombifiedPiglin -> zombifiedPiglin != this)
-    .filter(zombifiedPiglin -> zombifiedPiglin.getTarget() == null)
-    .filter(zombifiedPiglin -> !zombifiedPiglin.isAlliedTo(this.getTarget()))
-    .forEach(zombifiedPiglin -> zombifiedPiglin.setTarget(this.getTarget()));
+    this.level.getEntitiesOfClass(ZombifiedPiglin.class, aABB, EntitySelector.NO_SPECTATORS).stream().filter((zombifiedPiglin) -> {
+    return zombifiedPiglin != this;
+    }).filter((zombifiedPiglin) -> {
+    return zombifiedPiglin.getTarget() == null;
+    }).filter((zombifiedPiglin) -> {
+    return !zombifiedPiglin.isAlliedTo(this.getTarget());
+    }).forEach((zombifiedPiglin) -> {
+    zombifiedPiglin.setTarget(this.getTarget());
+    });
 insert:
     dev.shifu.event.EntityEvents.targetReasonUntilDone(org.bukkit.event.entity.EntityTargetEvent.TargetReason.TARGET_ATTACKED_NEARBY_ENTITY);
 insert-after:
@@ -495,16 +497,14 @@ insert-after:
 
 file: net/minecraft/world/entity/NeutralMob.java
 anchor:
-    this.setTarget(null);
+    this.setTarget((LivingEntity)null);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.FORGOT_TARGET);
 
 # 襲撃者の呼びかけ。どちらも for のループなので、ループの前で置いてあとで外す
 file: net/minecraft/world/entity/raid/Raider.java
 anchor:
-    for (Raider raider : this.mob
-    .level()
-    .getNearbyEntities(Raider.class, this.shoutTargeting, this.mob, this.mob.getBoundingBox().inflate(8.0, 8.0, 8.0))) {
+    for(Raider raider : this.mob.level.getNearbyEntities(Raider.class, this.shoutTargeting, this.mob, this.mob.getBoundingBox().inflate(8.0D, 8.0D, 8.0D))) {
     raider.setTarget(this.mob.getTarget());
 insert:
     dev.shifu.event.EntityEvents.targetReasonUntilDone(org.bukkit.event.entity.EntityTargetEvent.TargetReason.FOLLOW_LEADER);
@@ -513,9 +513,7 @@ insert-after:
 
 file: net/minecraft/world/entity/raid/Raider.java
 anchor:
-    for (Raider raider : this.mob
-    .level()
-    .getNearbyEntities(Raider.class, this.shoutTargeting, this.mob, this.mob.getBoundingBox().inflate(8.0, 8.0, 8.0))) {
+    for(Raider raider : this.mob.level.getNearbyEntities(Raider.class, this.shoutTargeting, this.mob, this.mob.getBoundingBox().inflate(8.0D, 8.0D, 8.0D))) {
     raider.setTarget(livingEntity);
     raider.setAggressive(true);
 insert:
@@ -537,7 +535,7 @@ insert-after:
 file: net/minecraft/world/entity/monster/ZombieVillager.java
 anchor:
     this.removeEffect(MobEffects.WEAKNESS);
-    this.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, delay, Math.min(this.level().getDifficulty().getId() - 1, 0)));
+    this.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, delay, Math.min(this.level.getDifficulty().getId() - 1, 0)));
 insert:
     dev.shifu.event.EntityEvents.effectCauseUntilDone(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.CONVERSION);
 insert-after:
@@ -608,7 +606,7 @@ insert:
 # 効果付きの矢。1 本に効果が複数あるので、文の間だけ置く
 file: net/minecraft/world/entity/projectile/Arrow.java
 anchor:
-    for (MobEffectInstance mobEffectInstance2 : potionContents.customEffects()) {
+    for(MobEffectInstance mobEffectInstance2 : this.effects) {
     target.addEffect(mobEffectInstance2, entity);
     }
 insert:
@@ -640,7 +638,9 @@ insert:
 # ウィッチがポーションを飲む。1 本に効果が複数あるので、文の間だけ置く
 file: net/minecraft/world/entity/monster/Witch.java
 anchor:
-    potionContents.forEachEffect(this::addEffect);
+    for(MobEffectInstance mobEffectInstance : list) {
+    this.addEffect(new MobEffectInstance(mobEffectInstance));
+    }
 insert:
     dev.shifu.event.EntityEvents.effectCauseUntilDone(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 insert-after:
@@ -656,7 +656,7 @@ insert:
 # クモが湧くときに付く効果
 file: net/minecraft/world/entity/monster/Spider.java
 anchor:
-    this.addEffect(new MobEffectInstance(holder, -1));
+    this.addEffect(new MobEffectInstance(mobEffect, -1));
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.SPIDER_SPAWN);
 
@@ -712,6 +712,6 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/monster/Ravager.java.patch
 file: net/minecraft/world/entity/monster/Ravager.java
 anchor:
-    entity.push(d / f * 4.0, 0.2, e / f * 4.0);
+    entity.push(d / f * 4.0D, 0.2D, e / f * 4.0D);
 insert:
     dev.shifu.event.EntityEvents.pushedBy(this, entity);

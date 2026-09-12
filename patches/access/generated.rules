@@ -145,3 +145,115 @@ line:
 file: net/minecraft/world/phys/shapes/OffsetDoubleList.java
 line:
     private final double offset;
+
+# 1.19.4 のエラーから足したもの
+
+# mainThreadExecutor
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    private final BlockableEventLoop<Runnable> mainThreadExecutor;
+
+# postLoadProtoChunk(ServerLevel,List<CompoundTag>)
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    private static void postLoadProtoChunk(ServerLevel world, List<CompoundTag> nbt) {
+
+# structureTemplateManager
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    private final StructureTemplateManager structureTemplateManager;
+
+# updateChunkTracking(ServerPlayer,ChunkPos,MutableObject<ClientboundLevelChunkWithLightPacket>,boolean,boolean)
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    protected void updateChunkTracking(ServerPlayer player, ChunkPos pos, MutableObject<ClientboundLevelChunkWithLightPacket> packet, boolean oldWithinViewDistance, boolean newWithinViewDistance) {
+
+# connection
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+line:
+    private final Connection connection;
+
+# isChatMessageIllegal(String)
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+line:
+    private static boolean isChatMessageIllegal(String message) {
+
+# resources
+file: net/minecraft/server/packs/repository/Pack.java
+line:
+    private final Pack.ResourcesSupplier resources;
+
+# random
+file: net/minecraft/world/entity/Entity.java
+line:
+    protected final RandomSource random = RandomSource.create();
+
+# canDuplicate()
+file: net/minecraft/world/entity/animal/allay/Allay.java
+line:
+    private boolean canDuplicate() {
+
+# duplicationCooldown
+file: net/minecraft/world/entity/animal/allay/Allay.java
+line:
+    private long duplicationCooldown;
+
+# resetDuplicationCooldown()
+file: net/minecraft/world/entity/animal/allay/Allay.java
+line:
+    private void resetDuplicationCooldown() {
+
+# getExploredPositions()
+file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
+line:
+    private Stream<BlockPos> getExploredPositions() {
+
+# getState()
+file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
+line:
+    private Sniffer.State getState() {
+
+# storeExploredPosition(BlockPos)
+file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
+line:
+    private Sniffer storeExploredPosition(BlockPos pos) {
+
+# fallDamageMax
+file: net/minecraft/world/entity/item/FallingBlockEntity.java
+line:
+    private int fallDamageMax = 40;
+
+# fallDamagePerDistance
+file: net/minecraft/world/entity/item/FallingBlockEntity.java
+line:
+    private float fallDamagePerDistance;
+
+# teleport()
+file: net/minecraft/world/entity/monster/EnderMan.java
+line:
+    protected boolean teleport() {
+
+# resonating
+file: net/minecraft/world/level/block/entity/BellBlockEntity.java
+line:
+    private boolean resonating;
+
+# isPlaying
+file: net/minecraft/world/level/block/entity/JukeboxBlockEntity.java
+line:
+    private boolean isPlaying;
+
+# recordStartedTick
+file: net/minecraft/world/level/block/entity/JukeboxBlockEntity.java
+line:
+    private long recordStartedTick;
+
+# tickCount
+file: net/minecraft/world/level/block/entity/JukeboxBlockEntity.java
+line:
+    private long tickCount;
+
+# upgradeChunkTag(CompoundTag)
+file: net/minecraft/world/level/chunk/storage/EntityStorage.java
+line:
+    private CompoundTag upgradeChunkTag(CompoundTag chunkNbt) {

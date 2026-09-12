@@ -18,10 +18,10 @@ insert:
 # callBlockIgniteEvent
 file: net/minecraft/world/level/Explosion.java
 anchor:
-    this.level.setBlockAndUpdate(blockPos2, BaseFireBlock.getState(this.level, blockPos2));
+    this.level.setBlockAndUpdate(blockPos3, BaseFireBlock.getState(this.level, blockPos3));
 insert:
     // CraftBukkit start - Ignition by explosion
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(this.level, blockPos2, this).isCancelled()) {
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(this.level, blockPos3, this).isCancelled()) {
 insert-after:
     }
     // CraftBukkit end

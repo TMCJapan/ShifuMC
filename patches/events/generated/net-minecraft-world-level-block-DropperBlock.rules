@@ -10,6 +10,6 @@ insert:
 # handleBlockPreDispenseEvent
 file: net/minecraft/world/level/block/DropperBlock.java
 anchor:
-    itemStack2 = DISPENSE_BEHAVIOUR.dispense(blockSource, itemStack);
+    itemStack2 = DISPENSE_BEHAVIOUR.dispense(blockSourceImpl, itemStack);
 insert:
     if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockPreDispenseEvent(world, pos, itemStack, i)) return; // Paper - Add BlockPreDispenseEvent

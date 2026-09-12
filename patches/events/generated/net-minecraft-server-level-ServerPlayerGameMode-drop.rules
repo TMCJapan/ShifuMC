@@ -3,13 +3,13 @@
 
 file: net/minecraft/server/level/ServerPlayerGameMode.java
 anchor:
-                    if (bl && bl2) {
-                        block.playerDestroy(this.level, this.player, pos, blockState2, blockEntity, itemStack2);
-                    }
+    if (bl && bl2) {
+    block.playerDestroy(this.level, this.player, pos, blockState, blockEntity, itemStack2);
+    }
 insert:
     org.bukkit.block.BlockState shifuBrokenState =
             org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(
-                    this.level.getWorld(), pos, blockState2, blockEntity);
+                    this.level.getWorld(), pos, blockState, blockEntity);
     dev.shifu.event.ShifuEvents.blockDropArm();
 insert-after:
     dev.shifu.event.ShifuEvents.blockDropFire(this.level, pos, shifuBrokenState, this.player);

@@ -10,7 +10,7 @@
 file: net/minecraft/core/registries/BuiltInRegistries.java
 anchor:
     ResourceLocation resourceLocation = key.location();
-    LOADERS.put(resourceLocation, () -> initializer.run(registry));
+    LOADERS.put(resourceLocation, () -> {
 insert:
     io.papermc.paper.registry.PaperRegistryAccess.instance().registerRegistry(registry.key(), registry);
 
@@ -37,9 +37,3 @@ anchor:
 insert-after:
     io.papermc.paper.registry.PaperRegistryAccess.instance().registerRegistry(this.key, writableRegistry);
 
-# 読み直せるレジストリ(patches/sources/.../ReloadableServerRegistries.java.patch)
-file: net/minecraft/server/ReloadableServerRegistries.java
-anchor:
-    Map<ResourceLocation, JsonElement> map = new HashMap<>();
-insert:
-    io.papermc.paper.registry.PaperRegistryAccess.instance().registerReloadableRegistry(type.registryKey(), writableRegistry);

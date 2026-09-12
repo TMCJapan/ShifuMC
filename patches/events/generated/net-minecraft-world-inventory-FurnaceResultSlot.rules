@@ -2,6 +2,6 @@
 
 file: net/minecraft/world/inventory/FurnaceResultSlot.java
 anchor:
-        stack.onCraftedBy(this.player.level(), this.player, this.removeCount);
+        stack.onCraftedBy(this.player.level, this.player, this.removeCount);
 insert:
     dev.shifu.event.BlockEvents.furnaceTakeBy(this.player, stack, this.removeCount);

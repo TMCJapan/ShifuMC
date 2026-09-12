@@ -5,7 +5,7 @@
 # EntityDropItemEvent
 file: net/minecraft/world/entity/ai/behavior/BehaviorUtils.java
 anchor:
-    entity.level().addFreshEntity(itemEntity);
+    entity.level.addFreshEntity(itemEntity);
 insert:
     // CraftBukkit start
     org.bukkit.event.entity.EntityDropItemEvent event = new org.bukkit.event.entity.EntityDropItemEvent(entity.getBukkitEntity(), (org.bukkit.entity.Item) itemEntity.getBukkitEntity());

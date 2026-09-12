@@ -28,7 +28,7 @@ insert-after:
 # SpigotWorldConfig を先に要求するので、ここでも先に読む。
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
-    LOGGER.info("Done ({})! For help, type \"help\"", string);
+    LOGGER.info("Done ({})! For help, type \"help\"", (Object)string);
 insert:
     this.server.enablePlugins(org.bukkit.plugin.PluginLoadOrder.POSTWORLD);
     io.papermc.paper.command.brigadier.PaperCommands.INSTANCE.setValid();
@@ -49,7 +49,7 @@ insert-after:
 # 起動が終わったことを watchdog に伝える。ここまでは長くかかっても落とさない
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
-    LOGGER.info("Done ({})! For help, type \"help\"", string);
+    LOGGER.info("Done ({})! For help, type \"help\"", (Object)string);
 insert-after:
     org.spigotmc.WatchdogThread.tick();
     org.spigotmc.WatchdogThread.hasStarted = true;

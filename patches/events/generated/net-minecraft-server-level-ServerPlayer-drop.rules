@@ -5,7 +5,7 @@
 # retainOwnership が false なら「手から投げた」= Paper の thrownFromHand
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    this.level().addFreshEntity(itemEntity);
+    this.level.addFreshEntity(itemEntity);
 insert:
     if (!dev.shifu.event.ShifuEvents.playerDropItem(this, itemEntity, !retainOwnership)) {
         return null;

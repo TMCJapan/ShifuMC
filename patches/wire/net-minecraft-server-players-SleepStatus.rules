@@ -20,9 +20,9 @@ insert:
 file: net/minecraft/server/players/SleepStatus.java
 anchor:
     if (serverPlayer.isSleeping()) {
-    this.sleepingPlayers++;
+    ++this.sleepingPlayers;
     }
 insert:
     if (!serverPlayer.isSleeping() && serverPlayer.fauxSleeping) {
-        this.sleepingPlayers++;
+        ++this.sleepingPlayers;
     }

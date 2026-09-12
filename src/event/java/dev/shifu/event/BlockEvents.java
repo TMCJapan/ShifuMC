@@ -6,7 +6,7 @@ import java.util.List;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.dispenser.BlockSource;
+import net.minecraft.core.BlockSource;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
@@ -496,56 +496,45 @@ public final class BlockEvents {
 
 
 
-    private static boolean signFront = true;
-
     /**
-     * SignChangeEvent。文を組み立てたあと、返す直前。
+     * SignChangeEvent。1.19.4 は看板に面が無く、行は ServerGamePacketListenerImpl.updateSignText で
+     * 1 行ずつ setMessage される。その手前で発火して、書き換えた行を返す。
      *
-     * @return 返す文。取り消されたら元の文
+     * @return 書き込む行。取り消されたら null
      */
-    public static net.minecraft.world.level.block.entity.SignText signChange(
+    public static java.util.List<net.minecraft.server.network.FilteredText> signChange(
             final net.minecraft.world.level.block.entity.SignBlockEntity sign,
-            final net.minecraft.world.entity.player.Player player,
-            final net.minecraft.world.level.block.entity.SignText original,
-            final net.minecraft.world.level.block.entity.SignText text,
+            final net.minecraft.server.level.ServerPlayer player,
             final java.util.List<net.minecraft.server.network.FilteredText> lines) {
-        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)
-                || !ShifuEvents.listening(org.bukkit.event.block.SignChangeEvent.getHandlerList())) {
-            return text;
+        if (!ShifuEvents.listening(org.bukkit.event.block.SignChangeEvent.getHandlerList())) {
+            return lines;
         }
 
         final java.util.List<net.kyori.adventure.text.Component> componentLines = new java.util.ArrayList<>();
 
-        for (int i = 0; i < lines.size(); i++) {
-            componentLines.add(io.papermc.paper.adventure.PaperAdventure.asAdventure(
-                    text.getMessage(i, player.isTextFilteringEnabled())));
+        for (final net.minecraft.server.network.FilteredText line : lines) {
+            componentLines.add(net.kyori.adventure.text.Component.text(
+                    player.isTextFilteringEnabled() ? line.filteredOrEmpty() : line.raw()));
         }
 
         final org.bukkit.event.block.SignChangeEvent event = new org.bukkit.event.block.SignChangeEvent(
-                bukkit(sign.getLevel(), sign.getBlockPos()), serverPlayer.getBukkitEntity(),
-                new java.util.ArrayList<>(componentLines),
-                signFront ? org.bukkit.block.sign.Side.FRONT : org.bukkit.block.sign.Side.BACK);
+                bukkit(sign.getLevel(), sign.getBlockPos()), player.getBukkitEntity(),
+                new java.util.ArrayList<>(componentLines));
 
         if (!event.callEvent()) {
-            return original;
+            return null;
         }
 
-        net.minecraft.world.level.block.entity.SignText result = text;
-        final net.minecraft.network.chat.Component[] components =
-                org.bukkit.craftbukkit.block.CraftSign.sanitizeLines(event.lines());
+        final java.util.List<net.minecraft.server.network.FilteredText> result = new java.util.ArrayList<>(lines);
 
-        for (int i = 0; i < components.length; i++) {
+        for (int i = 0; i < result.size() && i < event.lines().size(); i++) {
             if (!java.util.Objects.equals(componentLines.get(i), event.line(i))) {
-                result = result.setMessage(i, components[i]);
+                result.set(i, net.minecraft.server.network.FilteredText.passThrough(
+                        net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(event.line(i))));
             }
         }
 
         return result;
-    }
-
-    /** 看板の面。setMessages には渡らないので、書き換える側で置く。 */
-    public static void signSide(final boolean front) {
-        signFront = front;
     }
 
 
@@ -661,7 +650,7 @@ public final class BlockEvents {
      */
     public static ItemStack furnaceSmelt(final ServerLevel level, final BlockPos pos, final net.minecraft.core.NonNullList<ItemStack> items,
                                          final ItemStack ingredient, final ItemStack result,
-                                         final net.minecraft.world.item.crafting.RecipeHolder<? extends net.minecraft.world.item.crafting.AbstractCookingRecipe> recipe) {
+                                         final net.minecraft.world.inventory.RecipeHolder<? extends net.minecraft.world.item.crafting.AbstractCookingRecipe> recipe) {
         if (!listening(org.bukkit.event.inventory.FurnaceSmeltEvent.getHandlerList())) {
             return result;
         }
@@ -1207,7 +1196,7 @@ public final class BlockEvents {
      */
     public static int campfireStart(final net.minecraft.world.level.Level level, final net.minecraft.core.BlockPos pos,
                                     final net.minecraft.world.item.ItemStack food,
-                                    final net.minecraft.world.item.crafting.RecipeHolder<
+                                    final net.minecraft.world.inventory.RecipeHolder<
                                             net.minecraft.world.item.crafting.CampfireCookingRecipe> recipe,
                                     final int cookTime) {
         if (recipe == null) {
@@ -1429,7 +1418,7 @@ public final class BlockEvents {
      *
      * <p>差し替えた品({@code setItem})は vanilla の行が持つので使っていない。
      */
-    public static boolean dispenseArmor(final net.minecraft.core.dispenser.BlockSource pointer,
+    public static boolean dispenseArmor(final net.minecraft.core.BlockSource pointer,
                                         final net.minecraft.world.item.ItemStack armor,
                                         final net.minecraft.world.entity.LivingEntity target) {
         if (!ShifuEvents.listening(org.bukkit.event.block.BlockDispenseArmorEvent.getHandlerList())) {

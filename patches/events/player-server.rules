@@ -13,7 +13,7 @@
 # 読んだ位置: paper-server patches/sources/net/minecraft/commands/Commands.java.patch(UnknownCommandEvent)
 file: net/minecraft/commands/Commands.java
 anchor:
-    source.sendFailure(ComponentUtils.fromMessage(var7.getRawMessage()));
+    commandSourceStack.sendFailure(ComponentUtils.fromMessage(var14.getRawMessage()));
 insert:
     if (dev.shifu.event.PlayerEvents.silentUnknownCommand()) {
 insert-after:
@@ -29,7 +29,7 @@ insert:
 # 差し替えられたら、差し替えた文で呼び直して vanilla の続きを飛ばす。
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    ParseResults<CommandSourceStack> parseResults = this.parseCommand(command);
+    ParseResults<CommandSourceStack> parseResults = this.parseCommand(packet.command());
 insert:
     if (!dev.shifu.event.PlayerEvents.commandPreprocess(this, command)) {
         return;
@@ -42,7 +42,7 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/MinecraftServer.java.patch(WorldDifficultyChangeEvent)
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
-    this.settings.update(serverPropertiesHandler -> serverPropertiesHandler.whiteList.update(this.registryAccess(), useWhitelist));
+    return serverPropertiesHandler.whiteList.update(this.registryAccess(), useWhitelist);
 insert:
     dev.shifu.event.PlayerEvents.whitelistToggle(useWhitelist);
 
@@ -51,7 +51,7 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/dedicated/DedicatedServer.java.patch(RemoteServerCommandEvent)
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
-    this.executeBlocking(() -> this.getCommands().performPrefixedCommand(this.rconConsoleSource.createCommandSourceStack(), command));
+    this.getCommands().performPrefixedCommand(this.rconConsoleSource.createCommandSourceStack(), command);
 insert:
     if (dev.shifu.event.PlayerEvents.remoteCommand(this, this.rconConsoleSource, command)) {
 insert-after:
@@ -121,7 +121,7 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/world/NaturalSpawner.java.patch
 file: net/minecraft/world/level/NaturalSpawner.java
 anchor:
-    return entityType.getCategory() != MobCategory.MISC
+    if (entityType.getCategory() == MobCategory.MISC) {
 insert:
     if (!dev.shifu.event.PlayerEvents.preCreatureSpawn(world, pos, entityType)) {
         return false;
@@ -166,18 +166,10 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/world/ServerPlayer.java.patch(PlayerSetSpawnEvent)
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    this.setRespawnPosition(this.level().dimension(), pos, this.getYRot(), false, true);
+    this.setRespawnPosition(this.level.dimension(), pos, this.getYRot(), false, true);
 insert:
     dev.shifu.event.PlayerEvents.spawnCause(this, com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause.BED);
 
-# PlayerInteractEvent(左クリック、触れない場所)。Paper と同じく結果は見ない
-file: net/minecraft/world/effect/SaturationMobEffect.java
-anchor:
-    player.getFoodData().eat(amplifier + 1, 1.0F);
-insert:
-    if (dev.shifu.event.PlayerEvents.saturation(player, amplifier)) {
-insert-after:
-    }
 
 # PlayerShieldDisableEvent。クールダウンを付ける前。攻撃者は Player.blockUsingItem で置く(担当範囲外)
 #
@@ -185,9 +177,9 @@ insert-after:
 # 1.20.6 は Player.eat が食べる。FoodProperties は成分から取る
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-    this.getFoodData().eat(stack);
+    this.getFoodData().eat(stack.getItem(), stack);
 insert:
-    final net.minecraft.world.food.FoodProperties shifuFood = stack.get(net.minecraft.core.component.DataComponents.FOOD);
+    final net.minecraft.world.food.FoodProperties shifuFood = stack.getItem().getFoodProperties();
     if (shifuFood == null || dev.shifu.event.PlayerEvents.eatFood(this, shifuFood, stack)) {
 insert-after:
     }
@@ -197,6 +189,6 @@ insert-after:
 file: net/minecraft/world/entity/player/Player.java
 anchor:
     if (attacker.canDisableShield()) {
-    this.disableShield();
+    this.disableShield(true);
 insert:
     dev.shifu.event.PlayerEvents.shieldAttacker(attacker);

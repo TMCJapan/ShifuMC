@@ -10,9 +10,7 @@
 #   worlds       — Bukkit.getWorlds() と Bukkit.getWorld(名前)。addWorld で入る
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-        this.randomSequences = Objects.requireNonNullElseGet(
-            randomSequencesState, () -> this.getDataStorage().computeIfAbsent(RandomSequences.factory(l), "random_sequences")
-        );
+    this.sleepStatus = new SleepStatus();
 insert-after:
     this.convertable = session;
     // 次元のフォルダはチャンクを保存するときに作られるので、この時点ではまだ無い。

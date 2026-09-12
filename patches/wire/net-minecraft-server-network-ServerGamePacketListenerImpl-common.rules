@@ -3,32 +3,21 @@
 # Paper は構築子で cserver に CraftServer を入れる。1.20.6 の
 # ServerCommonPacketListenerImpl は disconnect と PlayerKickEvent の発火で
 # this.cserver を読むので、入れないと kick した瞬間に NPE になる。
-file: net/minecraft/server/network/ServerCommonPacketListenerImpl.java
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
         this.connection = connection;
 insert-after:
     this.cserver = server.server;
 
-# プラグインメッセージ(Bukkit の Messenger)。vanilla の handleCustomPayload は空で、
-# DiscardedPayload の codec は本文を捨てる。捨てる直前に控えた本文を
-# (patches/wire/net-minecraft-network-protocol-common-custom-DiscardedPayload.rules)
-# ここで取り出して Messenger へ渡す。プラグインが 1 つも入っていなければ何もしない。
-#
-# 読んだ位置: Paper-Server src/main/java/net/minecraft/server/network/ServerCommonPacketListenerImpl.java:150
-file: net/minecraft/server/network/ServerCommonPacketListenerImpl.java
-anchor:
-    public void handleCustomPayload(ServerboundCustomPayloadPacket packet) {
-insert-after:
-    dev.shifu.event.PluginMessages.handle(this, packet);
 
 # Player.getCompassTarget() が読む欄。CraftBukkit は「ここでは直に入れず、
 # packet を送るところで入れる」形にしている(CraftPlayer.setCompassTarget の注記)。
 # 入れないと getCompassTarget() が null を返す。
-file: net/minecraft/server/network/ServerCommonPacketListenerImpl.java
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     public void send(Packet<?> packet, @Nullable PacketSendListener callbacks) {
 insert-after:
     if (packet instanceof net.minecraft.network.protocol.game.ClientboundSetDefaultSpawnPositionPacket shifuSpawn && this.player != null) {
         this.player.compassTarget = org.bukkit.craftbukkit.util.CraftLocation.toBukkit(
-                shifuSpawn.pos, this.player.level().getWorld());
+                shifuSpawn.getPos(), this.player.level.getWorld());
     }

@@ -14,7 +14,7 @@ insert-after:
 
 file: net/minecraft/world/entity/raid/Raid.java
 anchor:
-        this.groupsSpawned++;
+        ++this.groupsSpawned;
         this.updateBossbar();
         this.setDirty();
 insert-after:

@@ -1,17 +1,10 @@
 # 足したが誰も代入しない欄への配線。tools/make_wires.py が docs/backlog/null-fields.txt と
 # Paper のパッチから出す。手で直さない。
 
-# ServerPlayer.maxHealthCache(Paper が同じ位置で代入する)
-file: net/minecraft/server/level/ServerPlayer.java
-anchor:
-    this.object = null;
-insert-after:
-    this.maxHealthCache = this.getMaxHealth();
-
 # Creeper.entityIgniter(Paper が同じ位置で代入する)
 file: net/minecraft/world/entity/monster/Creeper.java
 anchor:
-    if (!this.level().isClientSide) {
+    if (!this.level.isClientSide) {
     this.ignite();
 insert:
     this.entityIgniter = player;
@@ -40,7 +33,7 @@ insert-after:
 # CartographyTableMenu.player(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/CartographyTableMenu.java
 anchor:
-    for (int k = 0; k < 9; k++) {
+    for(int k = 0; k < 9; ++k) {
     this.addSlot(new Slot(inventory, k, 8 + k * 18, 142));
     }
 insert-after:
@@ -63,7 +56,7 @@ insert-after:
 # GrindstoneMenu.player(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/GrindstoneMenu.java
 anchor:
-    for (int k = 0; k < 9; k++) {
+    for(int k = 0; k < 9; ++k) {
     this.addSlot(new Slot(playerInventory, k, 8 + k * 18, 142));
     }
 insert-after:
@@ -79,7 +72,7 @@ insert-after:
 # LoomMenu.player(Paper が同じ位置で代入する)
 file: net/minecraft/world/inventory/LoomMenu.java
 anchor:
-    this.patternGetter = playerInventory.player.registryAccess().lookupOrThrow(Registries.BANNER_PATTERN);
+    this.access = context;
 insert-after:
     this.player = (org.bukkit.entity.Player) playerInventory.player.getBukkitEntity();
 

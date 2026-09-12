@@ -3,7 +3,7 @@
 # EntityMoveEvent
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    if (!this.level().isClientSide && this.isSensitiveToWater() && this.isInWaterRainOrBubble()) {
+    if (!this.level.isClientSide && this.isSensitiveToWater() && this.isInWaterRainOrBubble()) {
 insert:
     // Paper start - Add EntityMoveEvent
     if (((ServerLevel) this.level()).hasEntityMoveEvent && !(this instanceof Player)) {

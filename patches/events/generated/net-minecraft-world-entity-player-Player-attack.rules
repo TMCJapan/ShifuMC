@@ -10,8 +10,8 @@ insert-after:
 
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-                g *= h;
-                this.resetAttackStrengthTicker();
+    g *= i;
+    this.resetAttackStrengthTicker();
 insert:
     if (dev.shifu.event.PlayerEvents.attackCooldownReset(this, target)) {
 insert-after:
