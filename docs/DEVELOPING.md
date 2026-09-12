@@ -39,6 +39,33 @@ classic(1.21.3 以前)は `setup.sh` ではなく `setup-classic.sh`。paperweig
 SHIFU_PAPER=/d/.pw194 JAVA_HOME="/c/Program Files/Java/jdk-17" sh tools/setup-classic.sh 100462074
 ```
 
+1.20 より前の paperweight は ForgeFlower で逆コンパイルするが、その出力はそのままでは
+通らないファイルが多い(変数名の重複、総称型の推論)。Vineflower 1.11.1 で作り直す。
+ライブラリは `.gradle/caches/paperweight/data/bundler/libraries.list` の座標を
+`~/.gradle/caches/modules-2/files-2.1/` から引く。**区切りは `/` に揃え、PowerShell から起動する。**
+`-e=` のパスが見つからないと `warn: missing ..., ignored` で黙って捨てられ、
+ライブラリ無しの出力(raw 型だらけ)になる。
+
+```
+java -Xmx4G -jar vineflower-1.11.1.jar -dgs=1 -hdc=0 -asc=1 -udv=0 -rsy=1 -aoa=1 -jvn=0 -bsm=1 -iec=1 -iib=1 -jpr=1 "-ind=    " \
+    -e=<ライブラリ.jar>... .gradle/caches/paperweight/taskCache/fixJar.jar <出力先>
+```
+
+* `-ind="    "` を付けないと 3 スペース字下げになり、shim の生成器が既存の宣言を見つけられず二重に足す
+* 出力は `@Override` を 2 行重ねて出すことがある(1955 ファイル)。`^(\s*)@Override\n(?=\s*@Override\n)` を消してから置く
+* 木の差し替えは `git reset --hard <前の基点>` → `com/` `net/` を消す → 写す → commit を
+  **1 本の PowerShell で**行う。MSYS の `cp -r` が途中で止まると古い(当てたあとの)ファイルが混ざる。
+  差分の件数がファイル総数(3538)にならなければ混ざっている
+
+classic のコンパイルループは `tools/closure.ps1`(MSYS を通らない)。
+
+```
+powershell -File tools\closure.ps1 -Paper D:\.pw194 -JavaHome "C:\Program Files\Java\jdk-17" -Rounds 10 -Report -TouchedOnly
+```
+
+`-TouchedOnly` は Shifu が触ったファイルだけを vanilla の木から写す。Paper が持つだけのファイルは
+Paper の版のまま組み、postcompile で公式のバイトコードに戻る。
+
 `tools/env.sh` は基点コミットをそのクローンの履歴から拾うので、`SHIFU_PAPER` を
 差し替えるだけでツールは全部そのバージョンを見る。
 

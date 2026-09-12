@@ -1,3 +1,49 @@
+# 現状(ver/1.19.4)
+
+このブランチは Minecraft 1.19.4。`ver/1.20.6` から切った。節ごとにどの版で測ったかを頭に書いてある。
+構成は [ARCHITECTURE.md](ARCHITECTURE.md)、開発の手順は [DEVELOPING.md](DEVELOPING.md)。
+
+## 1.19.4 の状態(2026-09-12)
+
+**まだコンパイルが通っていない。** ここまでで済んだこと、分かったこと、次の手。
+
+### 済んだこと
+
+| | |
+|---|---|
+| Paper 1.19.4 | `100462074`(1.20 へ移る直前)を `/d/.pw194` に展開。API 993 / 993、server 2899 / 2900 のパッチが入る(`tools/setup-classic.sh`) |
+| vanilla の木 | paperweight の ForgeFlower 出力は通らないファイルが多いので、Vineflower 1.11.1 でライブラリ付きに作り直した(`-ind="    "`、`@Override` の二重を畳む)。手順は `docs/DEVELOPING.md` |
+| 規則 | 273 件が全部当たる(`check_events.py`)。1.20.6 の形のアンカーに `.level()` → `.level` などの置き換えを掛けたものがそのまま当たる |
+| 1.19.4 に無いもの | SignText・DiscardedPayload・Bogged・Saturation・ブラシ・deflect・Paper の brigadier API と lifecycle event・ReloadableServerRegistries・LootDataType・Alternate Current・EntityRegionFileStorage。規則ごと外し、控えは `docs/backlog/*-dropped.txt` |
+| 手で足した宣言 | `ChatDecorator` の Result / LegacyResult / ModernResult / MessagePair / create、`MinecraftServer` の RollingAverage / TickTimes と TPS の定数(Paper 1.19.4 の内部クラスは生成器が写さない) |
+| 道具 | `tools/closure.ps1` / `tools/run-server.ps1`(MSYS を通らない版。`-TouchedOnly` で Shifu が触ったファイルだけを vanilla の木から写す) |
+
+### 分かったこと
+
+* **`cannot find symbol: class X` が宣言に出ているあいだ、javac は本体の検査に進まない。**
+  「残り 6 件」に見えても、直した途端に 1700 件出る。件数は本体の検査に進んでから読む。
+* 要求メンバーの一覧(`docs/backlog/required-members.txt`)は、名前だけで突き合わせるので
+  `Result` `set` のようなありふれた名前が入ると無関係の型にまで足して 3000 件に跳ねる。
+  そういう名前は一覧に入れず、`patches/hand` に手で書く。
+* Vineflower の出力は局所変数が raw 型(`Iterator iterator`、`Object object`)。1.19.4 の jar に
+  LVT が無いため。`Object cannot be converted to T` になる箇所は `patches/decompile` で
+  型を付け直す(命令列は変わらない)。
+
+### 次の手
+
+1. `closure.ps1 -TouchedOnly` を不動点まで回し、残った `cannot find symbol` を
+   「Paper 1.19.4 に無い」「名前がありふれていて一覧に入れられない」「raw 型」に分ける
+2. raw 型は `patches/decompile/locals.rules` に足す(`BlockGetter.traverseBlocks` の `Object object`、
+   `Level.tickBlockEntities` の `iterator.next()`、`Level.getEntities` の `filter.tryCast`、
+   `Block` の `StateDefinition.Builder`)
+3. Paper のチャンク系(`ChunkSystem`、`ChunkHolder`、`ChunkMap` の `playerGeneralAreaMap` など)は
+   1.20.6 と同じく vanilla のチャンク系へ繋ぎ直す(`patches/adapter`、`patches/hand`)
+4. 通ったら `tools/run-server.ps1` で起動 → `mods-and-plugins.sh` の後半(`scratchpad/run-mix21.ps1` の形)で bot
+
+---
+
+以下は `ver/1.20.6` で測ったもの。1.19.4 では測り直していない。
+
 # 現状(ver/1.20.6)
 
 このブランチは Minecraft 1.20.6。節ごとにどの版で測ったかを頭に書いてある。
