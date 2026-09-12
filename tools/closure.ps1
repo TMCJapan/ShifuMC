@@ -1,0 +1,135 @@
+﻿# closure.sh の PowerShell 版(classic の並べ方だけ)。
+#
+#     powershell -File tools\closure.ps1 -Paper D:\.pw194 -JavaHome "C:\Program Files\Java\jdk-17" [-Rounds 10] [-Report]
+#
+# MSYS の bash は fork が枯れると途中で止まる(sh が子を持たないまま残る)。
+# closure.sh は python と git の呼び出しが 1 周に数十回あって、そのたびに fork するので、
+# 止まりやすい。ここでは PowerShell から直に呼ぶ。やることは closure.sh と同じ順。
+# mache(1.21.4 以降)は closure.sh を使う。
+# このファイルは BOM 付き UTF-8 で保存する。PowerShell 5.1 は BOM 無しを ANSI として読み、
+# 日本語の注記の途中で引用符が壊れて parse error になる。
+param(
+    [Parameter(Mandatory = $true)][string] $Paper,
+    [Parameter(Mandatory = $true)][string] $JavaHome,
+    [int] $Rounds = 10,
+    [switch] $Report,
+    # Shifu が触ったファイルだけを vanilla の木から写す。Paper が持つだけのファイルは Paper のまま組む。
+    # 1.19.4 の decompileJar の出力は、そのままでは通らないファイルが多い(変数名の重複、総称型の推論)。
+    # 触っていないクラスは postcompile で公式のバイトコードに戻るので、組む元が Paper の版でも
+    # 配布物には入らない。
+    [switch] $TouchedOnly
+)
+
+$ErrorActionPreference = "Continue"
+$Shifu = Split-Path -Parent $PSScriptRoot
+$Tree = Join-Path $Paper "vanilla-src\minecraft\java"
+$Sources = Join-Path $Paper "sources"
+$PaperServer = Join-Path $Paper "Paper-Server"
+$Adapter = Join-Path $PaperServer "src\main\java"
+$Req = Join-Path $Shifu "docs\backlog\required-members.txt"
+$Gap = Join-Path $Shifu "docs\backlog\vanilla-gap.txt"
+
+$env:SHIFU_PAPER = $Paper
+$env:SHIFU_TREE = $Tree
+$env:SHIFU_SOURCES = $Sources
+$env:JAVA_HOME = $JavaHome
+$env:PYTHONIOENCODING = "utf-8"
+$flags = @()
+if ($Report) { $flags = @("--report") }
+
+function Base($repo, $subject) {
+    foreach ($line in (git -C $repo log --format='%H %s')) {
+        if ($line.EndsWith(" $subject")) { return $line.Split(" ")[0] }
+    }
+    throw "$repo に $subject が無い"
+}
+
+$base = Base $Tree "paper Imports"
+$basePaper = Base $PaperServer "Initial"
+New-Item -ItemType Directory -Force (Join-Path $Shifu "docs\backlog") | Out-Null
+if (-not (Test-Path $Req)) { New-Item -ItemType File $Req | Out-Null }
+
+function Py { param([string[]] $a) & python @a 2>&1 | ForEach-Object { "$_" } }
+
+$before = 999999
+
+for ($round = 1; $round -le $Rounds; $round++) {
+    Set-Location $Tree
+    git reset --hard $base -q
+    git clean -fdq
+
+    # Paper 側を素の状態に戻す(env.sh の shifu_reset_paper と同じ)
+    git -C $PaperServer clean -qfd -- src/main/java
+    git -C $PaperServer checkout -q -- src/main/java
+    if ((git -C $PaperServer ls-tree -d $basePaper -- src/main/resources/data/minecraft/worldgen) -ne $null) {
+        git -C $PaperServer checkout -q $basePaper -- src/main/resources/data/minecraft/worldgen
+    }
+    Remove-Item -Recurse -Force (Join-Path $Adapter "alternate") -ErrorAction SilentlyContinue
+
+    Py @("$Shifu\tools\add_new_files.py", $Sources, ".") | Out-Null
+    Remove-Item -Recurse -Force "$Shifu\tools\build\classic-shim" -ErrorAction SilentlyContinue
+    Py @("$Shifu\tools\make_classic_shim.py", $Adapter, ".", "$Shifu\tools\build\classic-shim", $Req, "--write") | Select-Object -Last 2
+    Py @("$Shifu\tools\apply_shim_adds.py", "$Shifu\tools\build\classic-shim", ".", "$Shifu\patches\hand", "$Shifu\patches\access") | Select-Object -Last 1
+    Py (@("$Shifu\tools\widen_access.py", "$Shifu\patches\access", ".") + $flags)
+    Py (@("$Shifu\tools\patch_adapter.py", "$Shifu\patches\narrow", ".") + $flags) | Select-Object -Last 1
+    Py @("$Shifu\tools\apply_shim_adds.py", "$Shifu\patches\shim", ".", "$Shifu\patches\hand", "$Shifu\patches\access") | Select-Object -Last 1
+    Py @("$Shifu\tools\apply_shim_adds.py", "$Shifu\patches\hand", ".") | Select-Object -Last 1
+    Py (@("$Shifu\tools\patch_adapter.py", "$Shifu\patches\adapter", $Adapter) + $flags)
+
+    New-Item -ItemType Directory -Force (Join-Path $Adapter "dev\shifu\event") | Out-Null
+    New-Item -ItemType Directory -Force (Join-Path $Adapter "dev\shifu\command") | Out-Null
+    Copy-Item "$Shifu\src\event\java\dev\shifu\event\*.java" (Join-Path $Adapter "dev\shifu\event") -Force
+    Copy-Item "$Shifu\src\event\java\dev\shifu\command\*.java" (Join-Path $Adapter "dev\shifu\command") -Force
+
+    Py (@("$Shifu\tools\apply_events.py", "$Shifu\patches\anon", ".", "anon") + $flags)
+    Py (@("$Shifu\tools\apply_events.py", "$Shifu\patches\wire", ".", "wire") + $flags)
+    Py (@("$Shifu\tools\apply_events.py", "$Shifu\patches\events", ".") + $flags)
+    Py (@("$Shifu\tools\patch_adapter.py", "$Shifu\patches\decompile", ".") + $flags) | Select-Object -Last 1
+    Py (@("$Shifu\tools\patch_adapter.py", "$Shifu\patches\expr", ".") + $flags) | Select-Object -Last 1
+
+    # 当て終わった木を、コンパイルするソースセットに写す(env.sh の shifu_stage_tree と同じ)
+    $rels = @()
+    if (-not $TouchedOnly) {
+        $rels += @(git -C $PaperServer ls-files -- src/main/java/net src/main/java/com src/main/java/ca | ForEach-Object { $_.Substring("src/main/java/".Length) })
+    }
+    $rels += @(git -C $Tree status --porcelain | ForEach-Object { $_.Substring(3).Trim() })
+    $staged = 0
+    foreach ($rel in ($rels | Sort-Object -Unique)) {
+        $from = Join-Path $Tree $rel
+        if (Test-Path $from -PathType Leaf) {
+            $to = Join-Path $Adapter $rel
+            New-Item -ItemType Directory -Force (Split-Path -Parent $to) | Out-Null
+            Copy-Item $from $to -Force
+            $staged++
+        }
+    }
+    "staged $staged files"
+
+    Set-Location $Paper
+    $init = Join-Path $Shifu "tools\maxerrs.gradle"
+    $prefix = ($PaperServer + "\src\")
+    # PowerShell 5.1 の Out-File -Encoding utf8 は BOM を付ける。python が読む文書は BOM 無しで書く
+    $utf8 = New-Object System.Text.UTF8Encoding($false)
+    $lines = & .\gradlew.bat --no-daemon -I $init ":paper-server:compileJava" "-Dorg.gradle.jvmargs=-Xmx6G -Duser.language=en -Duser.country=US" 2>&1 |
+        ForEach-Object { "$_".Replace($prefix, "").Replace($prefix.Replace("\", "/"), "") }
+    [System.IO.File]::WriteAllText($Gap, ($lines -join "`n") + "`n", $utf8)
+
+    $count = @(Select-String -Path $Gap -Pattern "error:").Count
+    "round ${round}: $count errors"
+
+    if ($count -eq 0) { "COMPILED"; break }
+
+    if ($count -ge $before) {
+        if (Test-Path "$Req.bak") { Move-Item "$Req.bak" $Req -Force; "要求を 1 つ前に戻した" }
+        "STALLED"
+        break
+    }
+
+    $before = $count
+    Set-Location $Shifu
+    Copy-Item $Req "$Req.bak" -Force
+    $more = Py @("$Shifu\tools\required_members.py", $Gap, $Tree, $Adapter)
+    [System.IO.File]::AppendAllText($Req, ($more -join "`n") + "`n", $utf8)
+    $now = @(Select-String -Path $Req -Pattern "^    (method|variable|class|access|abstract) ").Count
+    "round ${round}: required now $now"
+}
