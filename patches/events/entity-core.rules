@@ -158,6 +158,20 @@ insert-after:
 # EntityDamageEvent と ExplosionPrimeEvent。Paper と同じく、remove の前に出す。
 file: net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
 anchor:
+    this.remove(Entity.RemovalReason.KILLED);
+insert:
+    if (dev.shifu.event.EntityEvents.damageCancelled(this, source, amount, false, false)) {
+        return false;
+    }
+    final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = source.is(DamageTypeTags.IS_EXPLOSION)
+        ? null
+        : dev.shifu.event.EntityEvents.explosionPrime(this, 6.0F, false);
+    if (shifuPrime != null && shifuPrime.isCancelled()) {
+        return false;
+    }
+
+file: net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
+anchor:
     this.level.explode(this, damageSource, null, this.getX(), this.getY(), this.getZ(), 6.0F, false, Level.ExplosionInteraction.BLOCK);
 insert:
     if (shifuPrime == null) {
@@ -180,7 +194,9 @@ insert:
 # ExplosionPrimeEvent(出現時の爆発)
 file: net/minecraft/world/entity/decoration/ArmorStand.java
 anchor:
-    } else if (source.is(DamageTypeTags.IS_EXPLOSION)) {
+    this.kill();
+    return false;
+    } else if (this.isInvulnerableTo(source) || this.invisible || this.isMarker()) {
 insert:
     if (dev.shifu.event.EntityEvents.damageCancelled(this, source, amount, true, false)) {
         return false;
@@ -244,7 +260,7 @@ file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
     ItemEntity itemEntity = new ItemEntity(this.level, this.getX(), this.getY(), this.getZ(), itemStack);
 insert-after:
-    final org.bukkit.event.playerOwner.PlayerFishEvent shifuFish = dev.shifu.event.EntityEvents.fishCaught(this, playerOwner, itemEntity);
+    final org.bukkit.event.player.PlayerFishEvent shifuFish = dev.shifu.event.EntityEvents.fishCaught(this, playerOwner, itemEntity);
     if (shifuFish != null && shifuFish.isCancelled()) {
         return 0;
     }

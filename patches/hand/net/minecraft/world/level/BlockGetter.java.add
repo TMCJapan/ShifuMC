@@ -26,3 +26,10 @@
     default BlockHitResult clip(ClipContext context, java.util.function.Predicate<? super org.bukkit.block.Block> canCollide) {
         return this.clip(context);
     }
+
+// BlockGetter.getFluidIfLoaded
+    // Paper は読み込んでいないチャンクなら null を返す。vanilla の getFluidState へ渡す
+    // (呼んでいるのは Paper の DummyGeneratorAccess の上書きだけ)
+    default @Nullable FluidState getFluidIfLoaded(final BlockPos pos) {
+        return this.getFluidState(pos);
+    }

@@ -5,7 +5,7 @@ file: net/minecraft/world/level/block/TargetBlock.java
 anchor:
     int i = entity instanceof AbstractArrow ? 20 : 8;
 insert:
-    i = dev.shifu.event.BlockEvents.targetHit(world, hitResult, entity, i);
-    if (i < 0) {
+    redstoneStrength = dev.shifu.event.BlockEvents.targetHit(world, hitResult, entity, redstoneStrength);
+    if (redstoneStrength < 0) {
         return 0;
     }

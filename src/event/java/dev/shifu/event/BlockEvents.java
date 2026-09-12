@@ -1253,5 +1253,107 @@ public final class BlockEvents {
         fireGrow(level, pos, user instanceof ServerPlayer player ? player : null, true, true);
     }
 
+    /** 木の feature の鍵から Bukkit の TreeType を引く。無ければ null(苗木でない育ち)。 */
+    private static org.bukkit.TreeType treeTypeOf(
+            final net.minecraft.resources.ResourceKey<
+                    net.minecraft.world.level.levelgen.feature.ConfiguredFeature<?, ?>> key) {
+        if (key == null) {
+            return null;
+        }
 
+        if (key == net.minecraft.data.worldgen.features.TreeFeatures.OAK
+                || key == net.minecraft.data.worldgen.features.TreeFeatures.OAK_BEES_005) {
+            return org.bukkit.TreeType.TREE;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.HUGE_RED_MUSHROOM) {
+            return org.bukkit.TreeType.RED_MUSHROOM;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.HUGE_BROWN_MUSHROOM) {
+            return org.bukkit.TreeType.BROWN_MUSHROOM;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.JUNGLE_TREE) {
+            return org.bukkit.TreeType.COCOA_TREE;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.JUNGLE_TREE_NO_VINE) {
+            return org.bukkit.TreeType.SMALL_JUNGLE;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.PINE) {
+            return org.bukkit.TreeType.TALL_REDWOOD;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.SPRUCE) {
+            return org.bukkit.TreeType.REDWOOD;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.ACACIA) {
+            return org.bukkit.TreeType.ACACIA;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.BIRCH
+                || key == net.minecraft.data.worldgen.features.TreeFeatures.BIRCH_BEES_005) {
+            return org.bukkit.TreeType.BIRCH;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.SUPER_BIRCH_BEES_0002) {
+            return org.bukkit.TreeType.TALL_BIRCH;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.SWAMP_OAK) {
+            return org.bukkit.TreeType.SWAMP;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.FANCY_OAK
+                || key == net.minecraft.data.worldgen.features.TreeFeatures.FANCY_OAK_BEES_005) {
+            return org.bukkit.TreeType.BIG_TREE;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.JUNGLE_BUSH) {
+            return org.bukkit.TreeType.JUNGLE_BUSH;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.DARK_OAK) {
+            return org.bukkit.TreeType.DARK_OAK;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.MEGA_SPRUCE) {
+            return org.bukkit.TreeType.MEGA_REDWOOD;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.MEGA_JUNGLE_TREE) {
+            return org.bukkit.TreeType.JUNGLE;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.AZALEA_TREE) {
+            return org.bukkit.TreeType.AZALEA;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.MANGROVE) {
+            return org.bukkit.TreeType.MANGROVE;
+        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.TALL_MANGROVE) {
+            return org.bukkit.TreeType.TALL_MANGROVE;
+        }
+
+        return null;
+    }
+
+    /**
+     * 控えを閉じて発火する。通ったものだけ世界へ入れる。
+     *
+     * <p>読んだ位置(Paper 1.19.4):
+     *   Paper-Server src/main/java/net/minecraft/world/level/block/SaplingBlock.java(StructureGrowEvent)
+     *   Paper-Server src/main/java/net/minecraft/world/item/ItemStack.java(BlockFertilizeEvent)
+     */
+    private static void fireGrow(final Level level, final BlockPos pos, final ServerPlayer player,
+                                 final boolean bonemeal, final boolean fertilize) {
+        level.captureTreeGeneration = false;
+
+        final org.bukkit.TreeType type = net.minecraft.world.level.block.SaplingBlock.treeType;
+        net.minecraft.world.level.block.SaplingBlock.treeType = null;
+
+        if (level.capturedBlockStates.isEmpty()) {
+            return;
+        }
+
+        final List<org.bukkit.block.BlockState> blocks =
+                new ArrayList<>(level.capturedBlockStates.values());
+        level.capturedBlockStates.clear();
+
+        final org.bukkit.entity.Player who = player == null
+                ? null : (org.bukkit.entity.Player) player.getBukkitEntity();
+        org.bukkit.event.world.StructureGrowEvent grow = null;
+
+        if (type != null) {
+            grow = new org.bukkit.event.world.StructureGrowEvent(
+                    org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level.getWorld()),
+                    type, bonemeal, who, blocks);
+            grow.callEvent();
+        }
+
+        if (fertilize) {
+            final org.bukkit.event.block.BlockFertilizeEvent event =
+                    new org.bukkit.event.block.BlockFertilizeEvent(CraftBlock.at(level, pos), who, blocks);
+            event.setCancelled(grow != null && grow.isCancelled());
+
+            if (!event.callEvent()) {
+                return;
+            }
+        } else if (grow != null && grow.isCancelled()) {
+            return;
+        }
+
+        for (final org.bukkit.block.BlockState one : blocks) {
+            one.update(true);
+        }
+    }
 }

@@ -6,3 +6,9 @@
                                             final joptsimple.OptionSet options) {
         return this.reload(registryAccess, properties);
     }
+
+// DedicatedServerProperties.fromFile
+    // options はコマンド行の指定で上書きするためのもの。vanilla に経路が無いので渡さない
+    public static DedicatedServerProperties fromFile(final Path path, final joptsimple.OptionSet options) {
+        return fromFile(path);
+    }

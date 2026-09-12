@@ -12,3 +12,10 @@
             state.spawnAfterBreak(serverLevel, pos, tool, dropExperience);
         }
     }
+
+// Block.dropResources
+    // Paper は FlowingFluid から source(流れて来た位置)付きで呼ぶ。vanilla の 4 引数の版へ渡す
+    public static void dropResources(final BlockState state, final LevelAccessor world, final BlockPos pos,
+                                     final @Nullable BlockEntity blockEntity, final BlockPos source) {
+        dropResources(state, world, pos, blockEntity);
+    }

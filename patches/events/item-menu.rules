@@ -190,7 +190,7 @@ insert:
     final boolean shifuFireworkConsume;
     if (dev.shifu.event.ItemEvents.launchListening()) {
         final Boolean shifuLaunched = dev.shifu.event.ItemEvents.launchFirework(level, context.getPlayer(), context.getHand(),
-                itemStack, vec3, direction);
+                itemInHand, clickLocation, clickedFace);
         if (shifuLaunched == null) {
             return InteractionResult.PASS;
         }

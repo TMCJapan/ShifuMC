@@ -1,275 +1,6 @@
 # tools/make_access_rules.py が作ったもの。
 # 可視性が足りないというエラーから、宣言の行をそのまま写している。
 
-# getDependencyStatus(ChunkStatus,int)
-file: net/minecraft/server/level/ChunkMap.java
-line:
-    private ChunkStatus getDependencyStatus(ChunkStatus centerChunkTargetStatus, int distance) {
-
-# setServerViewDistance(int)
-file: net/minecraft/server/level/ChunkMap.java
-line:
-    protected void setServerViewDistance(int watchDistance) {
-
-# tickingGenerated
-file: net/minecraft/server/level/ChunkMap.java
-line:
-    private final AtomicInteger tickingGenerated = new AtomicInteger();
-
-# level
-file: net/minecraft/server/level/ServerPlayerGameMode.java
-line:
-    protected ServerLevel level;
-
-# sendChunk(ServerGamePacketListenerImpl,ServerLevel,LevelChunk)
-file: net/minecraft/server/network/PlayerChunkSender.java
-line:
-    private static void sendChunk(ServerGamePacketListenerImpl handler, ServerLevel world, LevelChunk chunk) {
-
-# verifyChatTrusted(PlayerChatMessage)
-file: net/minecraft/server/players/PlayerList.java
-line:
-    private boolean verifyChatTrusted(PlayerChatMessage message) {
-
-# name
-file: net/minecraft/world/entity/ai/attributes/AttributeModifier.java
-line:
-        private final String name;
-
-# setDirty(long)
-file: net/minecraft/world/entity/ai/village/poi/PoiManager.java
-line:
-    protected void setDirty(long pos) {
-
-# caravanTail
-file: net/minecraft/world/entity/animal/horse/Llama.java
-line:
-    private Llama caravanTail;
-
-# getCurrentSpell()
-file: net/minecraft/world/entity/monster/SpellcasterIllager.java
-line:
-    protected SpellcasterIllager.IllagerSpell getCurrentSpell() {
-
-# hurtDir
-file: net/minecraft/world/entity/player/Player.java
-line:
-    protected float hurtDir;
-
-# blockEntityTickers
-file: net/minecraft/world/level/Level.java
-line:
-    protected final List<TickingBlockEntity> blockEntityTickers = Lists.newArrayList();
-
-# name
-file: net/minecraft/world/level/block/entity/BannerBlockEntity.java
-line:
-    private Component name;
-
-# get(int)
-file: net/minecraft/world/level/chunk/PalettedContainer.java
-line:
-    protected T get(int index) {
-
-# readChunkPos(CompoundTag)
-file: net/minecraft/world/level/chunk/storage/EntityStorage.java
-line:
-    private static ChunkPos readChunkPos(CompoundTag chunkNbt) {
-
-# VERSIONS
-file: net/minecraft/world/level/chunk/storage/RegionFileVersion.java
-line:
-    private static final Int2ObjectMap<RegionFileVersion> VERSIONS = new Int2ObjectOpenHashMap<>();
-
-# get(long)
-file: net/minecraft/world/level/chunk/storage/SectionStorage.java
-line:
-    protected Optional<R> get(long pos) {
-
-# getOrLoad(long)
-file: net/minecraft/world/level/chunk/storage/SectionStorage.java
-line:
-    protected Optional<R> getOrLoad(long pos) {
-
-# registryAccess
-file: net/minecraft/world/level/chunk/storage/SectionStorage.java
-line:
-    private final RegistryAccess registryAccess;
-
-# SHAPE_CHECK_BLOCKS
-file: net/minecraft/world/level/levelgen/structure/StructurePiece.java
-line:
-    private static final Set<Block> SHAPE_CHECK_BLOCKS = ImmutableSet.<Block>builder()
-
-# storage
-file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
-line:
-    private final BitSet storage;
-
-# xMax
-file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
-line:
-    private int xMax;
-
-# xMin
-file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
-line:
-    private int xMin;
-
-# yMax
-file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
-line:
-    private int yMax;
-
-# yMin
-file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
-line:
-    private int yMin;
-
-# zMax
-file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
-line:
-    private int zMax;
-
-# zMin
-file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
-line:
-    private int zMin;
-
-# delegate
-file: net/minecraft/world/phys/shapes/OffsetDoubleList.java
-line:
-    private final DoubleList delegate;
-
-# offset
-file: net/minecraft/world/phys/shapes/OffsetDoubleList.java
-line:
-    private final double offset;
-
-# 1.19.4 のエラーから足したもの
-
-# mainThreadExecutor
-file: net/minecraft/server/level/ChunkMap.java
-line:
-    private final BlockableEventLoop<Runnable> mainThreadExecutor;
-
-# postLoadProtoChunk(ServerLevel,List<CompoundTag>)
-file: net/minecraft/server/level/ChunkMap.java
-line:
-    private static void postLoadProtoChunk(ServerLevel world, List<CompoundTag> nbt) {
-
-# structureTemplateManager
-file: net/minecraft/server/level/ChunkMap.java
-line:
-    private final StructureTemplateManager structureTemplateManager;
-
-# updateChunkTracking(ServerPlayer,ChunkPos,MutableObject<ClientboundLevelChunkWithLightPacket>,boolean,boolean)
-file: net/minecraft/server/level/ChunkMap.java
-line:
-    protected void updateChunkTracking(ServerPlayer player, ChunkPos pos, MutableObject<ClientboundLevelChunkWithLightPacket> packet, boolean oldWithinViewDistance, boolean newWithinViewDistance) {
-
-# connection
-file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
-line:
-    private final Connection connection;
-
-# isChatMessageIllegal(String)
-file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
-line:
-    private static boolean isChatMessageIllegal(String message) {
-
-# resources
-file: net/minecraft/server/packs/repository/Pack.java
-line:
-    private final Pack.ResourcesSupplier resources;
-
-# random
-file: net/minecraft/world/entity/Entity.java
-line:
-    protected final RandomSource random = RandomSource.create();
-
-# canDuplicate()
-file: net/minecraft/world/entity/animal/allay/Allay.java
-line:
-    private boolean canDuplicate() {
-
-# duplicationCooldown
-file: net/minecraft/world/entity/animal/allay/Allay.java
-line:
-    private long duplicationCooldown;
-
-# resetDuplicationCooldown()
-file: net/minecraft/world/entity/animal/allay/Allay.java
-line:
-    private void resetDuplicationCooldown() {
-
-# getExploredPositions()
-file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
-line:
-    private Stream<BlockPos> getExploredPositions() {
-
-# getState()
-file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
-line:
-    private Sniffer.State getState() {
-
-# storeExploredPosition(BlockPos)
-file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
-line:
-    private Sniffer storeExploredPosition(BlockPos pos) {
-
-# fallDamageMax
-file: net/minecraft/world/entity/item/FallingBlockEntity.java
-line:
-    private int fallDamageMax = 40;
-
-# fallDamagePerDistance
-file: net/minecraft/world/entity/item/FallingBlockEntity.java
-line:
-    private float fallDamagePerDistance;
-
-# teleport()
-file: net/minecraft/world/entity/monster/EnderMan.java
-line:
-    protected boolean teleport() {
-
-# resonating
-file: net/minecraft/world/level/block/entity/BellBlockEntity.java
-line:
-    private boolean resonating;
-
-# isPlaying
-file: net/minecraft/world/level/block/entity/JukeboxBlockEntity.java
-line:
-    private boolean isPlaying;
-
-# recordStartedTick
-file: net/minecraft/world/level/block/entity/JukeboxBlockEntity.java
-line:
-    private long recordStartedTick;
-
-# tickCount
-file: net/minecraft/world/level/block/entity/JukeboxBlockEntity.java
-line:
-    private long tickCount;
-
-# upgradeChunkTag(CompoundTag)
-file: net/minecraft/world/level/chunk/storage/EntityStorage.java
-line:
-    private CompoundTag upgradeChunkTag(CompoundTag chunkNbt) {
-
-# IllagerSpell(1.19.4 は protected。CraftSpellcaster と発火層が外から使う)
-file: net/minecraft/world/entity/monster/SpellcasterIllager.java
-line:
-    protected static enum IllagerSpell {
-
-# ChunkMap.TrackedEntity(1.19.4 はパッケージ内。Paper が Entity.tracker の型にする)
-file: net/minecraft/server/level/ChunkMap.java
-line:
-    class TrackedEntity {
-
-# 1.19.4(Vineflower の木)のエラーから
-
 # source
 file: net/minecraft/commands/CommandSourceStack.java
 line:
@@ -342,8 +73,13 @@ line:
 
 # settings
 file: net/minecraft/server/dedicated/DedicatedServer.java
-line:
+unfinal:
     private final DedicatedServerSettings settings;
+
+# properties
+file: net/minecraft/server/dedicated/Settings.java
+line:
+    protected final Properties properties;
 
 # broadcast(Packet<?>,boolean)
 file: net/minecraft/server/level/ChunkHolder.java
@@ -354,6 +90,11 @@ line:
 file: net/minecraft/server/level/ChunkHolder.java
 line:
     private final ChunkHolder.PlayerProvider playerProvider;
+
+# pos
+file: net/minecraft/server/level/ChunkHolder.java
+line:
+    final ChunkPos pos;
 
 # distanceManager
 file: net/minecraft/server/level/ChunkMap.java
@@ -370,6 +111,11 @@ file: net/minecraft/server/level/ChunkMap.java
 line:
     private ChunkGenerator generator;
 
+# getDependencyStatus(ChunkStatus,int)
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    private ChunkStatus getDependencyStatus(ChunkStatus centerChunkTargetStatus, int distance) {
+
 # getPoiManager()
 file: net/minecraft/server/level/ChunkMap.java
 line:
@@ -380,10 +126,25 @@ file: net/minecraft/server/level/ChunkMap.java
 line:
     protected ChunkHolder getVisibleChunkIfPresent(long pos) {
 
+# level
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    final ServerLevel level;
+
+# mainThreadExecutor
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    private final BlockableEventLoop<Runnable> mainThreadExecutor;
+
 # overworldDataStorage
 file: net/minecraft/server/level/ChunkMap.java
 line:
     private final Supplier<DimensionDataStorage> overworldDataStorage;
+
+# postLoadProtoChunk(ServerLevel,List<CompoundTag>)
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    private static void postLoadProtoChunk(ServerLevel world, List<CompoundTag> nbt) {
 
 # progressListener
 file: net/minecraft/server/level/ChunkMap.java
@@ -394,6 +155,16 @@ line:
 file: net/minecraft/server/level/ChunkMap.java
 line:
     protected void setViewDistance(int watchDistance) {
+
+# structureTemplateManager
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    private final StructureTemplateManager structureTemplateManager;
+
+# tickingGenerated
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    private final AtomicInteger tickingGenerated = new AtomicInteger();
 
 # visibleChunkMap
 file: net/minecraft/server/level/ChunkMap.java
@@ -414,11 +185,6 @@ line:
 file: net/minecraft/server/level/ServerChunkCache.java
 line:
     private boolean spawnFriendlies = true;
-
-# chunkSource
-file: net/minecraft/server/level/ServerLevel.java
-line:
-    private final ServerChunkCache chunkSource;
 
 # findLightningRod(BlockPos)
 file: net/minecraft/server/level/ServerLevel.java
@@ -475,10 +241,30 @@ file: net/minecraft/server/level/ServerPlayer.java
 line:
     private WardenSpawnTracker wardenSpawnTracker = new WardenSpawnTracker(0, 0, 0);
 
+# level
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+line:
+    protected ServerLevel level;
+
 # key
 file: net/minecraft/server/level/Ticket.java
 line:
     private final T key;
+
+# connection
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+line:
+    private final Connection connection;
+
+# isChatMessageIllegal(String)
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+line:
+    private static boolean isChatMessageIllegal(String message) {
+
+# resources
+file: net/minecraft/server/packs/repository/Pack.java
+line:
+    private final Pack.ResourcesSupplier resources;
 
 # playerIo
 file: net/minecraft/server/players/PlayerList.java
@@ -494,6 +280,11 @@ line:
 file: net/minecraft/server/players/PlayerList.java
 line:
     protected void updateEntireScoreboard(ServerScoreboard scoreboard, ServerPlayer player) {
+
+# verifyChatTrusted(PlayerChatMessage)
+file: net/minecraft/server/players/PlayerList.java
+line:
+    private boolean verifyChatTrusted(PlayerChatMessage message) {
 
 # container1
 file: net/minecraft/world/CompoundContainer.java
@@ -580,6 +371,11 @@ file: net/minecraft/world/entity/Entity.java
 line:
     private int portalCooldown;
 
+# random
+file: net/minecraft/world/entity/Entity.java
+line:
+    protected final RandomSource random = RandomSource.create();
+
 # remainingFireTicks
 file: net/minecraft/world/entity/Entity.java
 line:
@@ -662,7 +458,7 @@ line:
 
 # combatTracker
 file: net/minecraft/world/entity/LivingEntity.java
-line:
+unfinal:
     private final CombatTracker combatTracker = new CombatTracker(this);
 
 # detectEquipmentUpdates()
@@ -727,7 +523,7 @@ line:
 
 # goalSelector
 file: net/minecraft/world/entity/Mob.java
-line:
+unfinal:
     protected final GoalSelector goalSelector;
 
 # handDropChances
@@ -752,13 +548,23 @@ line:
 
 # targetSelector
 file: net/minecraft/world/entity/Mob.java
-line:
+unfinal:
     protected final GoalSelector targetSelector;
+
+# setDirty(long)
+file: net/minecraft/world/entity/ai/village/poi/PoiManager.java
+line:
+    protected void setDirty(long pos) {
 
 # targetPosition
 file: net/minecraft/world/entity/ambient/Bat.java
 line:
     private BlockPos targetPosition;
+
+# hivePos
+file: net/minecraft/world/entity/animal/Bee.java
+line:
+    BlockPos hivePos;
 
 # isRolling()
 file: net/minecraft/world/entity/animal/Bee.java
@@ -769,6 +575,11 @@ line:
 file: net/minecraft/world/entity/animal/Bee.java
 line:
     private int numCropsGrownSincePollination;
+
+# setHasNectar(boolean)
+file: net/minecraft/world/entity/animal/Bee.java
+line:
+    void setHasNectar(boolean hasNectar) {
 
 # setHasStung(boolean)
 file: net/minecraft/world/entity/animal/Bee.java
@@ -785,6 +596,41 @@ file: net/minecraft/world/entity/animal/Bee.java
 line:
     private int stayOutOfHiveCountdown;
 
+# ticksWithoutNectarSinceExitingHive
+file: net/minecraft/world/entity/animal/Bee.java
+line:
+    int ticksWithoutNectarSinceExitingHive;
+
+# DATA_TRUSTED_ID_0
+file: net/minecraft/world/entity/animal/Fox.java
+line:
+    private static final EntityDataAccessor<Optional<UUID>> DATA_TRUSTED_ID_0 = SynchedEntityData.defineId(Fox.class, EntityDataSerializers.OPTIONAL_UUID);
+
+# DATA_TRUSTED_ID_1
+file: net/minecraft/world/entity/animal/Fox.java
+line:
+    private static final EntityDataAccessor<Optional<UUID>> DATA_TRUSTED_ID_1 = SynchedEntityData.defineId(Fox.class, EntityDataSerializers.OPTIONAL_UUID);
+
+# isDefending()
+file: net/minecraft/world/entity/animal/Fox.java
+line:
+    boolean isDefending() {
+
+# setDefending(boolean)
+file: net/minecraft/world/entity/animal/Fox.java
+line:
+    void setDefending(boolean aggressive) {
+
+# setFaceplanted(boolean)
+file: net/minecraft/world/entity/animal/Fox.java
+line:
+    void setFaceplanted(boolean walking) {
+
+# setSleeping(boolean)
+file: net/minecraft/world/entity/animal/Fox.java
+line:
+    void setSleeping(boolean sleeping) {
+
 # effect
 file: net/minecraft/world/entity/animal/MushroomCow.java
 line:
@@ -794,6 +640,11 @@ line:
 file: net/minecraft/world/entity/animal/MushroomCow.java
 line:
     private int effectDuration;
+
+# isTrusting()
+file: net/minecraft/world/entity/animal/Ocelot.java
+line:
+    boolean isTrusting() {
 
 # setTrusting(boolean)
 file: net/minecraft/world/entity/animal/Ocelot.java
@@ -810,10 +661,25 @@ file: net/minecraft/world/entity/animal/Panda.java
 line:
     private void setEatCounter(int eatingTicks) {
 
+# canDuplicate()
+file: net/minecraft/world/entity/animal/allay/Allay.java
+line:
+    private boolean canDuplicate() {
+
+# duplicationCooldown
+file: net/minecraft/world/entity/animal/allay/Allay.java
+line:
+    private long duplicationCooldown;
+
 # jukeboxPos
 file: net/minecraft/world/entity/animal/allay/Allay.java
 line:
     private BlockPos jukeboxPos;
+
+# resetDuplicationCooldown()
+file: net/minecraft/world/entity/animal/allay/Allay.java
+line:
+    private void resetDuplicationCooldown() {
 
 # age
 file: net/minecraft/world/entity/animal/frog/Tadpole.java
@@ -840,10 +706,35 @@ file: net/minecraft/world/entity/animal/horse/AbstractHorse.java
 line:
     protected SimpleContainer inventory;
 
-# subEntities
-file: net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
+# caravanTail
+file: net/minecraft/world/entity/animal/horse/Llama.java
 line:
-    private final EnderDragonPart[] subEntities;
+    private Llama caravanTail;
+
+# calculateDigPosition()
+file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
+line:
+    Optional<BlockPos> calculateDigPosition() {
+
+# canDig()
+file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
+line:
+    boolean canDig() {
+
+# getExploredPositions()
+file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
+line:
+    private Stream<BlockPos> getExploredPositions() {
+
+# getState()
+file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
+line:
+    private Sniffer.State getState() {
+
+# storeExploredPosition(BlockPos)
+file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
+line:
+    private Sniffer storeExploredPosition(BlockPos pos) {
 
 # bossEvent
 file: net/minecraft/world/entity/boss/wither/WitherBoss.java
@@ -900,11 +791,6 @@ file: net/minecraft/world/entity/decoration/ArmorStand.java
 line:
     private void setSmall(boolean small) {
 
-# pos
-file: net/minecraft/world/entity/decoration/HangingEntity.java
-line:
-    protected BlockPos pos;
-
 # setDirection(Direction)
 file: net/minecraft/world/entity/decoration/HangingEntity.java
 line:
@@ -939,6 +825,16 @@ line:
 file: net/minecraft/world/entity/item/FallingBlockEntity.java
 line:
     private FallingBlockEntity(Level world, double x, double y, double z, BlockState block) {
+
+# fallDamageMax
+file: net/minecraft/world/entity/item/FallingBlockEntity.java
+line:
+    private int fallDamageMax = 40;
+
+# fallDamagePerDistance
+file: net/minecraft/world/entity/item/FallingBlockEntity.java
+line:
+    private float fallDamagePerDistance;
 
 # hurtEntities
 file: net/minecraft/world/entity/item/FallingBlockEntity.java
@@ -990,6 +886,16 @@ file: net/minecraft/world/entity/monster/Creeper.java
 line:
     private int swell;
 
+# teleport()
+file: net/minecraft/world/entity/monster/EnderMan.java
+line:
+    protected boolean teleport() {
+
+# anchorPoint
+file: net/minecraft/world/entity/monster/Phantom.java
+line:
+    BlockPos anchorPoint = BlockPos.ZERO;
+
 # attackTick
 file: net/minecraft/world/entity/monster/Ravager.java
 line:
@@ -1024,6 +930,11 @@ line:
 file: net/minecraft/world/entity/monster/Skeleton.java
 line:
     private void startFreezeConversion(int time) {
+
+# getCurrentSpell()
+file: net/minecraft/world/entity/monster/SpellcasterIllager.java
+line:
+    protected SpellcasterIllager.IllagerSpell getCurrentSpell() {
 
 # steering
 file: net/minecraft/world/entity/monster/Strider.java
@@ -1152,8 +1063,13 @@ line:
 
 # gameProfile
 file: net/minecraft/world/entity/player/Player.java
-line:
+unfinal:
     private final GameProfile gameProfile;
+
+# hurtDir
+file: net/minecraft/world/entity/player/Player.java
+line:
+    protected float hurtDir;
 
 # setShoulderEntityLeft(CompoundTag)
 file: net/minecraft/world/entity/player/Player.java
@@ -1295,11 +1211,6 @@ file: net/minecraft/world/entity/projectile/SpectralArrow.java
 line:
     private int duration = 200;
 
-# badOmenLevel
-file: net/minecraft/world/entity/raid/Raid.java
-line:
-    private int badOmenLevel;
-
 # heroesOfTheVillage
 file: net/minecraft/world/entity/raid/Raid.java
 line:
@@ -1325,6 +1236,11 @@ file: net/minecraft/world/entity/vehicle/AbstractMinecartContainer.java
 line:
     private long lootTableSeed;
 
+# DATA_ID_COMMAND_NAME
+file: net/minecraft/world/entity/vehicle/MinecartCommandBlock.java
+line:
+    static final EntityDataAccessor<String> DATA_ID_COMMAND_NAME = SynchedEntityData.defineId(MinecartCommandBlock.class, EntityDataSerializers.STRING);
+
 # exhaustionLevel
 file: net/minecraft/world/food/FoodData.java
 line:
@@ -1342,22 +1258,22 @@ line:
 
 # dataSlots
 file: net/minecraft/world/inventory/AbstractContainerMenu.java
-line:
+unfinal:
     private final List<DataSlot> dataSlots = Lists.newArrayList();
 
 # lastSlots
 file: net/minecraft/world/inventory/AbstractContainerMenu.java
-line:
+unfinal:
     private final NonNullList<ItemStack> lastSlots = NonNullList.create();
 
 # remoteDataSlots
 file: net/minecraft/world/inventory/AbstractContainerMenu.java
-line:
+unfinal:
     private final IntList remoteDataSlots = new IntArrayList();
 
 # remoteSlots
 file: net/minecraft/world/inventory/AbstractContainerMenu.java
-line:
+unfinal:
     private final NonNullList<ItemStack> remoteSlots = NonNullList.create();
 
 # cost
@@ -1425,11 +1341,6 @@ file: net/minecraft/world/level/BaseSpawner.java
 line:
     private int minSpawnDelay = 200;
 
-# nextSpawnData
-file: net/minecraft/world/level/BaseSpawner.java
-line:
-    private SpawnData nextSpawnData;
-
 # requiredPlayerRange
 file: net/minecraft/world/level/BaseSpawner.java
 line:
@@ -1455,6 +1366,11 @@ file: net/minecraft/world/level/BaseSpawner.java
 line:
     private int spawnRange = 4;
 
+# blockEntityTickers
+file: net/minecraft/world/level/Level.java
+line:
+    protected final List<TickingBlockEntity> blockEntityTickers = Lists.newArrayList();
+
 # levelData
 file: net/minecraft/world/level/Level.java
 line:
@@ -1464,6 +1380,16 @@ line:
 file: net/minecraft/world/level/Level.java
 line:
     private final Thread thread;
+
+# levelName
+file: net/minecraft/world/level/LevelSettings.java
+unfinal:
+    private final String levelName;
+
+# SPAWNING_CATEGORIES
+file: net/minecraft/world/level/NaturalSpawner.java
+line:
+    private static final MobCategory[] SPAWNING_CATEGORIES = Stream.of(MobCategory.values())
 
 # popExperience(ServerLevel,BlockPos,int)
 file: net/minecraft/world/level/block/Block.java
@@ -1480,6 +1406,26 @@ file: net/minecraft/world/level/block/DropperBlock.java
 line:
     protected void dispenseFrom(ServerLevel world, BlockPos pos) {
 
+# shouldSignal
+file: net/minecraft/world/level/block/RedStoneWireBlock.java
+line:
+    private boolean shouldSignal = true;
+
+# cookingProgress
+file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
+line:
+    int cookingProgress;
+
+# cookingTotalTime
+file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
+line:
+    int cookingTotalTime;
+
+# litTime
+file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
+line:
+    int litTime;
+
 # baseColor
 file: net/minecraft/world/level/block/entity/BannerBlockEntity.java
 line:
@@ -1490,25 +1436,80 @@ file: net/minecraft/world/level/block/entity/BannerBlockEntity.java
 line:
     private ListTag itemPatterns;
 
+# name
+file: net/minecraft/world/level/block/entity/BannerBlockEntity.java
+line:
+    private Component name;
+
 # openersCounter
 file: net/minecraft/world/level/block/entity/BarrelBlockEntity.java
 line:
     private final ContainerOpenersCounter openersCounter = new ContainerOpenersCounter() {
+
+# playSound(BlockState,SoundEvent)
+file: net/minecraft/world/level/block/entity/BarrelBlockEntity.java
+line:
+    void playSound(BlockState state, SoundEvent soundEvent) {
+
+# updateBlockState(BlockState,boolean)
+file: net/minecraft/world/level/block/entity/BarrelBlockEntity.java
+line:
+    void updateBlockState(BlockState state, boolean _open) {
 
 # lockKey
 file: net/minecraft/world/level/block/entity/BaseContainerBlockEntity.java
 line:
     private LockCode lockKey = LockCode.NO_LOCK;
 
+# name
+file: net/minecraft/world/level/block/entity/BaseContainerBlockEntity.java
+line:
+    private Component name;
+
+# levels
+file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
+line:
+    int levels;
+
 # lockKey
 file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
 line:
     private LockCode lockKey = LockCode.NO_LOCK;
 
+# name
+file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
+line:
+    private Component name;
+
+# primaryPower
+file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
+line:
+    MobEffect primaryPower;
+
+# secondaryPower
+file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
+line:
+    MobEffect secondaryPower;
+
 # savedFlowerPos
 file: net/minecraft/world/level/block/entity/BeehiveBlockEntity.java
 line:
     private BlockPos savedFlowerPos;
+
+# resonating
+file: net/minecraft/world/level/block/entity/BellBlockEntity.java
+line:
+    private boolean resonating;
+
+# brewTime
+file: net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
+line:
+    int brewTime;
+
+# fuel
+file: net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
+line:
+    int fuel;
 
 # openersCounter
 file: net/minecraft/world/level/block/entity/ChestBlockEntity.java
@@ -1520,10 +1521,30 @@ file: net/minecraft/world/level/block/entity/ChiseledBookShelfBlockEntity.java
 line:
     private int lastInteractedSlot = -1;
 
+# isPlaying
+file: net/minecraft/world/level/block/entity/JukeboxBlockEntity.java
+line:
+    private boolean isPlaying;
+
+# recordStartedTick
+file: net/minecraft/world/level/block/entity/JukeboxBlockEntity.java
+line:
+    private long recordStartedTick;
+
+# tickCount
+file: net/minecraft/world/level/block/entity/JukeboxBlockEntity.java
+line:
+    private long tickCount;
+
 # bookAccess
 file: net/minecraft/world/level/block/entity/LecternBlockEntity.java
 line:
     private final Container bookAccess = new Container() {
+
+# setPage(int)
+file: net/minecraft/world/level/block/entity/LecternBlockEntity.java
+line:
+    void setPage(int currentPage) {
 
 # isEditable
 file: net/minecraft/world/level/block/entity/SignBlockEntity.java
@@ -1536,9 +1557,49 @@ line:
     private final Component[] messages = new Component[]{CommonComponents.EMPTY, CommonComponents.EMPTY, CommonComponents.EMPTY, CommonComponents.EMPTY};
 
 # level
+file: net/minecraft/world/level/chunk/LevelChunk.java
+line:
+    final Level level;
+
+# get(int)
+file: net/minecraft/world/level/chunk/PalettedContainer.java
+line:
+    protected T get(int index) {
+
+# level
 file: net/minecraft/world/level/chunk/storage/EntityStorage.java
 line:
     private final ServerLevel level;
+
+# readChunkPos(CompoundTag)
+file: net/minecraft/world/level/chunk/storage/EntityStorage.java
+line:
+    private static ChunkPos readChunkPos(CompoundTag chunkNbt) {
+
+# upgradeChunkTag(CompoundTag)
+file: net/minecraft/world/level/chunk/storage/EntityStorage.java
+line:
+    private CompoundTag upgradeChunkTag(CompoundTag chunkNbt) {
+
+# VERSIONS
+file: net/minecraft/world/level/chunk/storage/RegionFileVersion.java
+line:
+    private static final Int2ObjectMap<RegionFileVersion> VERSIONS = new Int2ObjectOpenHashMap<>();
+
+# get(long)
+file: net/minecraft/world/level/chunk/storage/SectionStorage.java
+line:
+    protected Optional<R> get(long pos) {
+
+# getOrLoad(long)
+file: net/minecraft/world/level/chunk/storage/SectionStorage.java
+line:
+    protected Optional<R> getOrLoad(long pos) {
+
+# registryAccess
+file: net/minecraft/world/level/chunk/storage/SectionStorage.java
+line:
+    private final RegistryAccess registryAccess;
 
 # dragonEvent
 file: net/minecraft/world/level/dimension/end/EndDragonFight.java
@@ -1580,6 +1641,11 @@ file: net/minecraft/world/level/dimension/end/EndDragonFight.java
 line:
     private void spawnExitPortal(boolean previouslyKilled) {
 
+# SHAPE_CHECK_BLOCKS
+file: net/minecraft/world/level/levelgen/structure/StructurePiece.java
+line:
+    private static final Set<Block> SHAPE_CHECK_BLOCKS = ImmutableSet.<Block>builder()
+
 # setColorsDirty(int,int)
 file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
 line:
@@ -1587,10 +1653,55 @@ line:
 
 # trackingPosition
 file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
-line:
+unfinal:
     private final boolean trackingPosition;
 
 # unlimitedTracking
 file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
-line:
+unfinal:
     private final boolean unlimitedTracking;
+
+# storage
+file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
+line:
+    private final BitSet storage;
+
+# xMax
+file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
+line:
+    private int xMax;
+
+# xMin
+file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
+line:
+    private int xMin;
+
+# yMax
+file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
+line:
+    private int yMax;
+
+# yMin
+file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
+line:
+    private int yMin;
+
+# zMax
+file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
+line:
+    private int zMax;
+
+# zMin
+file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java
+line:
+    private int zMin;
+
+# delegate
+file: net/minecraft/world/phys/shapes/OffsetDoubleList.java
+line:
+    private final DoubleList delegate;
+
+# offset
+file: net/minecraft/world/phys/shapes/OffsetDoubleList.java
+line:
+    private final double offset;

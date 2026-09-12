@@ -5,3 +5,10 @@
     // Paper のパッチと同じ宣言だけを写す。vanilla の経路からは読み書きされない。
     // BlockState.java は org.bukkit を import していないので完全修飾で書く。
     org.bukkit.Material cachedMaterial;
+
+// BlockState.createCraftBlockData
+    // CraftBlockData.fromData と CraftLimitedRegion が呼ぶ。Paper は BlockStateBase に控えを持つが、
+    // Shifu は毎回作る(Bukkit 側の値なので vanilla の処理には関わらない)
+    public org.bukkit.craftbukkit.block.data.CraftBlockData createCraftBlockData() {
+        return org.bukkit.craftbukkit.block.data.CraftBlockData.createData(this);
+    }

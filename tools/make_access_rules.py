@@ -33,8 +33,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import paths
 
-ACCESS = re.compile(r"\b([A-Za-z_$][\w$]*)(\([^)]*\))? has (?:private|protected) access "
-                    r"in ([A-Za-z0-9_.$]+)")
+ACCESS = re.compile(r"\b([A-Za-z_$][\w$]*)(\([^)]*\))? (?:has (?:private|protected) access in"
+                    r"|is not public in) ([A-Za-z0-9_.$]+)")
 # 宣言らしい行。修飾子か型で始まり、名前がある
 DECL = re.compile(r"^\s{2,}(?:@[\w.]+\s+)*(?:public\s+|private\s+|protected\s+|static\s+|final\s+"
                   r"|abstract\s+|synchronized\s+|native\s+|transient\s+|volatile\s+|default\s+)*"

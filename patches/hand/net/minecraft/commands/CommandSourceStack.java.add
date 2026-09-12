@@ -14,3 +14,9 @@
     // 同じ source を何度包んでも同じオブジェクトになるように、ここに覚えておく。
     // 型を Object にしているのは、vanilla のクラスからアダプタ層の型を参照しないため。
     public Object shifuApiSource;
+
+// CommandSourceStack.getBukkitEntity
+    // BukkitBrigadierCommandSource の実装。Paper のパッチと同じ
+    public org.bukkit.entity.Entity getBukkitEntity() {
+        return this.getEntity() != null ? this.getEntity().getBukkitEntity() : null;
+    }

@@ -52,3 +52,39 @@ net/minecraft/world/level/Level.java Level.getWireHandler
 net/minecraft/server/level/ServerLevel.java ServerLevel.entityStorage
 net/minecraft/server/level/ServerLevel.java ServerLevel.writeEntityChunk
 net/minecraft/server/level/ServerLevel.java ServerLevel.readEntityChunk
+
+# vanilla の enum に定数は足さない(順序が変わる)。MobGoalHelper(patches/adapter)で null にする
+net/minecraft/world/entity/ai/goal/Goal.java Flag.UNKNOWN_BEHAVIOR
+
+# Paper の ItemStack(CompoundTag) 構築子の補助。vanilla の of(CompoundTag) を使うので要らない
+
+# Paper の PlayerList.respawn が使う。vanilla の respawn は新しい ServerPlayer を作るので要らない
+
+# record の成分(paperConfigurations)は足せない。vanilla の create(YggdrasilAuthenticationService, File) を使う
+net/minecraft/server/Services.java Services.Services
+net/minecraft/server/Services.java Services.create
+
+# 次元の鍵の型が違う。patches/hand の upgradeChunkTag が vanilla の版へ渡す
+net/minecraft/world/level/chunk/storage/ChunkStorage.java ChunkStorage.getLegacyStructureHandler
+
+# Paper の playerGeneralAreaMap(近くのプレイヤーの表)。vanilla は EntityGetter の版で探す
+net/minecraft/world/level/Level.java Level.getNearbyPlayers
+net/minecraft/server/level/ServerLevel.java ServerLevel.getNearbyPlayers
+
+# patches/hand に vanilla の版へ渡す形で書いた
+net/minecraft/server/MinecraftServer.java MinecraftServer.addLevel
+net/minecraft/server/MinecraftServer.java MinecraftServer.removeLevel
+net/minecraft/commands/Commands.java Commands.performPrefixedCommand
+net/minecraft/server/dedicated/DedicatedServerProperties.java DedicatedServerProperties.fromFile
+net/minecraft/world/entity/projectile/ThrownPotion.java ThrownPotion.splash
+net/minecraft/world/level/chunk/storage/ChunkStorage.java ChunkStorage.upgradeChunkTag
+
+# vanilla のまま使うファイルに、Paper の書き換えの残りが載らないようにする
+net/minecraft/world/entity/ai/goal/GoalSelector.java GoalSelector.inactiveTick
+net/minecraft/world/level/block/RedStoneWireBlock.java RedStoneWireBlock.calculateCurrentChanges
+net/minecraft/world/level/block/RedStoneWireBlock.java RedStoneWireBlock.getPower
+net/minecraft/world/level/block/RedStoneWireBlock.java RedStoneWireBlock.turbo
+net/minecraft/server/dedicated/DedicatedPlayerList.java DedicatedPlayerList.loadAndSaveFiles
+
+# Paper の entity activation range(inactiveTick)。GoalSelector は vanilla のまま
+net/minecraft/world/entity/Mob.java Mob.inactiveTick

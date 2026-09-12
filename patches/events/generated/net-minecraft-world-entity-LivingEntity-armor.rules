@@ -4,4 +4,4 @@ file: net/minecraft/world/entity/LivingEntity.java
 anchor:
     map.put(equipmentSlot, itemBySlot);
 insert-after:
-    dev.shifu.event.PlayerEvents.armorChange(this, equipmentSlot, itemStack, itemBySlot);
+    dev.shifu.event.PlayerEvents.armorChange(this, equipmentSlot, lastHandItem, itemBySlot);

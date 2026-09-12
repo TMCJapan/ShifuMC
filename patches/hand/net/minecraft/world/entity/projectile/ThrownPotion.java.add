@@ -1,0 +1,28 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// ThrownPotion.splash
+    // Paper は onHit の本体(super.onHit の後ろ全部)をこの名前で切り出している。
+    // onHit を呼ぶと super.onHit の当たり処理まで走ってしまうので、vanilla の onHit の
+    // 本体を写した。CraftThrownPotion は hitResult に null を渡す。
+    // 局所変数の名前は vanilla の onHit と変えてある(同じ行があると規則のアンカーが 2 箇所になる)。
+    public void splash(final @Nullable HitResult hitResult) {
+        if (!this.level.isClientSide) {
+            final ItemStack stack = this.getItem();
+            final Potion kind = PotionUtils.getPotion(stack);
+            final List<MobEffectInstance> effects = PotionUtils.getMobEffects(stack);
+            final boolean isWater = kind == Potions.WATER && effects.isEmpty();
+            dev.shifu.event.EntityEvents.splashHit(hitResult);
+            if (isWater) {
+                this.applyWater();
+            } else if (!effects.isEmpty()) {
+                if (this.isLingering()) {
+                    this.makeAreaOfEffectCloud(stack, kind);
+                } else {
+                    this.applySplash(effects, hitResult != null && hitResult.getType() == HitResult.Type.ENTITY ? ((EntityHitResult)hitResult).getEntity() : null);
+                }
+            }
+
+            this.level.levelEvent(kind.hasInstantEffects() ? 2007 : 2002, this.blockPosition(), PotionUtils.getColor(stack));
+            this.discard();
+        }
+    }

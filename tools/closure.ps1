@@ -98,6 +98,11 @@ for ($round = 1; $round -le $Rounds; $round++) {
         $rels += @(git -C $PaperServer ls-files -- src/main/java/net src/main/java/com src/main/java/ca | ForEach-Object { $_.Substring("src/main/java/".Length) })
     }
     $rels += @(git -C $Tree status --porcelain | ForEach-Object { $_.Substring(3).Trim() })
+    # Paper が書き換えているが vanilla のまま使うファイル。規則が触らなくても vanilla の木から写す
+    $vanillaList = Join-Path $Shifu "patches\vanilla-files.txt"
+    if (Test-Path $vanillaList) {
+        $rels += @(Get-Content $vanillaList | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith("#") })
+    }
     $staged = 0
     foreach ($rel in ($rels | Sort-Object -Unique)) {
         $from = Join-Path $Tree $rel
@@ -121,6 +126,15 @@ for ($round = 1; $round -le $Rounds; $round++) {
 
     $count = @(Select-String -Path $Gap -Pattern "error:").Count
     "round ${round}: $count errors"
+
+    # javac まで届かずに gradle が落ちると error: が 0 件になる。それは通ったのではない
+    $ran = Select-String -Path $Gap -Pattern "Task :paper-server:compileJava" -Quiet
+    $ok = Select-String -Path $Gap -Pattern "BUILD SUCCESSFUL" -Quiet
+    if (-not $ran -or (-not $ok -and $count -eq 0)) {
+        "GRADLE FAILED (javac は走っていない)"
+        Select-String -Path $Gap -Pattern "What went wrong" -Context 0,2 | ForEach-Object { $_.Context.PostContext }
+        break
+    }
 
     if ($count -eq 0) { "COMPILED"; break }
 

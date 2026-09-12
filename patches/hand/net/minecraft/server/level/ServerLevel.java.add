@@ -150,3 +150,19 @@
             throw new UnsupportedOperationException("Shifu は vanilla の EntityStorage で保存する");
         }
     };
+
+// ServerLevel.ServerLevel
+    // CraftServer.createWorld が呼ぶ 14 引数の版。Bukkit 側の 3 つを控えてから vanilla の 11 引数の版へ渡す。
+    // 主世界と地獄と果ての 3 つは vanilla の MinecraftServer.createLevels が 11 引数の版で作る。
+    public ServerLevel(final MinecraftServer server, final Executor workerExecutor,
+                       final LevelStorageSource.LevelStorageAccess session, final net.minecraft.world.level.storage.PrimaryLevelData properties,
+                       final ResourceKey<Level> worldKey, final LevelStem dimensionOptions,
+                       final ChunkProgressListener listener, final boolean debugWorld, final long seed,
+                       final List<CustomSpawner> spawners, final boolean shouldTickTime,
+                       final org.bukkit.World.Environment environment,
+                       final org.bukkit.generator.ChunkGenerator generator,
+                       final org.bukkit.generator.BiomeProvider biomeProvider) {
+        this(server, workerExecutor, session, properties, worldKey, dimensionOptions, listener, debugWorld, seed, spawners, shouldTickTime);
+        this.convertable = session;
+        this.generator = generator;
+    }

@@ -1,1 +1,14 @@
+# vanilla の中の無名クラスへの追加。型の名前が無いので hand では届かない。
 
+# CommandSource.NULL は CommandSource を実装するので、shim が interface に足した
+# getBukkitSender をここにも要る。Paper 1.19.4 と同じで、使われないので例外
+file: net/minecraft/commands/CommandSource.java
+anchor:
+    public boolean acceptsSuccess() {
+    return false;
+    }
+insert-after:
+        @Override
+        public org.bukkit.command.CommandSender getBukkitSender(CommandSourceStack wrapper) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }

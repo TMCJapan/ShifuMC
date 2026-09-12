@@ -5,5 +5,5 @@ anchor:
             blockEntity.brewTime = 400;
 insert-after:
     if (dev.shifu.event.BlockEvents.brewingStartListening()) {
-        blockEntity.brewTime = dev.shifu.event.BlockEvents.brewingStart(world, pos, itemStack2, blockEntity.brewTime);
+        blockEntity.brewTime = dev.shifu.event.BlockEvents.brewingStart(world, pos, itemStack1, blockEntity.brewTime);
     }

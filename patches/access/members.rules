@@ -114,3 +114,508 @@ line:
 file: net/minecraft/server/level/ServerChunkCache.java
 line:
     private CompletableFuture<ChunkResult<ChunkAccess>> getChunkFutureMainThread(int chunkX, int chunkZ, ChunkStatus leastStatus, boolean create) {
+
+# ---- 1.19.4 で Paper の書き換えに頼らずに閉じるための追加
+
+# ChunkSystem(patches/adapter)が main の上で呼ぶ
+file: net/minecraft/server/level/ServerChunkCache.java
+line:
+    private CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> getChunkFutureMainThread(
+
+# CraftEntity.getTrackedBy / CraftPlayer が読む(ChunkMap.TrackedEntity)
+file: net/minecraft/server/level/ChunkMap.java
+line:
+        private final Set<ServerPlayerConnection> seenBy = Sets.newIdentityHashSet();
+
+# SynchedEntityData(Paper の同期)が読む(ChunkMap.TrackedEntity)
+file: net/minecraft/server/level/ChunkMap.java
+line:
+        final ServerEntity serverEntity;
+
+# PaperConfigurations と CraftWorldInfo が読む(LevelStorageSource.LevelStorageAccess)
+file: net/minecraft/world/level/storage/LevelStorageSource.java
+line:
+        final LevelStorageSource.LevelDirectory levelDirectory;
+
+# ActivationRange と CraftLivingEntity が読む
+file: net/minecraft/world/entity/LivingEntity.java
+line:
+    private final Map<MobEffect, MobEffectInstance> activeEffects = Maps.newHashMap();
+
+# CraftMapRenderer が読む
+file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
+line:
+    final Map<String, MapDecoration> decorations = Maps.newLinkedHashMap();
+
+# CraftRaid が読み書きする
+file: net/minecraft/world/entity/raid/Raid.java
+line:
+    private int badOmenLevel;
+
+# CraftWorld.getRaids が読む
+file: net/minecraft/world/entity/raid/Raids.java
+line:
+    private final Map<Integer, Raid> raidMap = Maps.newHashMap();
+
+# CraftHanging が読む
+file: net/minecraft/world/entity/decoration/HangingEntity.java
+line:
+    protected BlockPos pos;
+
+# ChunkSystem(patches/adapter)と CraftWorld が読む
+file: net/minecraft/server/level/ServerLevel.java
+line:
+    private final ServerChunkCache chunkSource;
+
+# CraftServer.syncCommands が resources.managers() を読む
+file: net/minecraft/server/MinecraftServer.java
+line:
+    record ReloadableResources(CloseableResourceManager resourceManager, ReloadableServerResources managers) implements AutoCloseable {
+
+# CraftWorld と Paper のチャンク系が mainThreadProcessor を直に呼ぶ
+file: net/minecraft/server/level/ServerChunkCache.java
+line:
+    final class MainThreadExecutor extends BlockableEventLoop<Runnable> {
+
+# CraftFishHook が currentState.ordinal() を読む
+file: net/minecraft/world/entity/projectile/FishingHook.java
+line:
+    static enum FishHookState {
+
+# Paper は player を LivingEntity に替えている。Cat の内部クラスが Player として読むので vanilla のまま使う
+file: net/minecraft/world/entity/ai/goal/TemptGoal.java
+line:
+    protected Player player;
+
+# CraftWorld.setHardcore が settings.hardcore を書く
+file: net/minecraft/world/level/storage/PrimaryLevelData.java
+line:
+    private LevelSettings settings;
+
+# CraftWorld.setHardcore が書く
+file: net/minecraft/world/level/LevelSettings.java
+unfinal:
+    private final boolean hardcore;
+
+# CraftItemStack.setType が Paper の setItem(Item) で書く
+file: net/minecraft/world/item/ItemStack.java
+unfinal:
+    private final Item item;
+
+# CraftServer.setMaxPlayers が Paper の setMaxPlayers で書く
+file: net/minecraft/server/players/PlayerList.java
+unfinal:
+    protected final int maxPlayers;
+
+# CraftContainer が delegate の欄を写す
+file: net/minecraft/world/inventory/AbstractContainerMenu.java
+unfinal:
+    public final NonNullList<Slot> slots = NonNullList.create();
+
+# CraftMapView の setter が書く
+file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
+unfinal:
+    public final int centerX;
+
+# CraftMapView の setter が書く
+file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
+unfinal:
+    public final int centerZ;
+
+# CraftMapView の setter が書く
+file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
+unfinal:
+    public final ResourceKey<Level> dimension;
+
+# CraftMapView の setter が書く
+file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
+unfinal:
+    public final byte scale;
+
+# CraftMapView の setter が書く
+file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
+unfinal:
+    public final boolean locked;
+
+# CraftLivingEntity.setMaximumNoDamageTicks が書く
+file: net/minecraft/world/entity/LivingEntity.java
+unfinal:
+    public final int invulnerableDuration = 20;
+
+# Paper の brigadier API は CommandSourceStack を BukkitBrigadierCommandSource として扱う
+file: net/minecraft/commands/CommandSourceStack.java
+line:
+public class CommandSourceStack implements SharedSuggestionProvider {
+implements:
+    com.destroystokyo.paper.brigadier.BukkitBrigadierCommandSource
+
+# Paper は Component を Iterable<Component> にしている(iterator() の @Override)
+file: net/minecraft/network/chat/Component.java
+line:
+public interface Component extends Message, FormattedText {
+implements:
+    Iterable<Component>
+
+# CraftSpellcaster と発火層(AnimalEvents.spellCast)が外から使う。1.19.4 は protected
+file: net/minecraft/world/entity/monster/SpellcasterIllager.java
+line:
+    protected static enum IllagerSpell {
+
+# Entity.tracker(Paper の欄)の型。CraftEntity と SynchedEntityData が外から読む
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    class TrackedEntity {
+
+# ---- 163 件の残り(make_access_rules が 1 つに定められなかったもの)
+
+# CraftInventory が instanceof で見る
+file: net/minecraft/world/level/block/ComposterBlock.java
+line:
+    static class EmptyContainer extends SimpleContainer implements WorldlyContainer {
+
+# CraftInventory が instanceof で見る
+file: net/minecraft/world/level/block/ComposterBlock.java
+line:
+    static class InputContainer extends SimpleContainer implements WorldlyContainer {
+
+# CraftInventory が instanceof で見る
+file: net/minecraft/world/level/block/ComposterBlock.java
+line:
+    static class OutputContainer extends SimpleContainer implements WorldlyContainer {
+
+# CraftServer.createWorld が作る
+file: net/minecraft/server/dedicated/DedicatedServerProperties.java
+line:
+    record WorldDimensionData(JsonObject generatorSettings, String levelType) {
+
+# CraftChunk と CraftWorld が読む
+file: net/minecraft/world/level/chunk/ChunkAccess.java
+line:
+    protected final Map<BlockPos, BlockEntity> blockEntities = Maps.newHashMap();
+
+# CraftChunk が読む
+file: net/minecraft/world/level/chunk/ChunkAccess.java
+line:
+    protected final Map<Heightmap.Types, Heightmap> heightmaps = Maps.newEnumMap(Heightmap.Types.class);
+
+# CraftEnderDragon と Paper の Explosion / ChunkEntitySlices が読む
+file: net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
+line:
+    private final EnderDragonPart[] subEntities;
+
+# Paper は BlockableEventLoop.doRunTask を public にしている。上書きは弱くできない
+file: net/minecraft/server/MinecraftServer.java
+line:
+    protected void doRunTask(TickTask task) {
+
+# CraftBlock / CraftBlockState / CraftMagicNumbers が読む
+file: net/minecraft/world/level/block/state/BlockBehaviour.java
+line:
+    protected final boolean hasCollision;
+
+# CraftBoat が読む
+file: net/minecraft/world/entity/vehicle/Boat.java
+line:
+    private Boat.Status status;
+
+# CraftCreatureSpawner が読む
+file: net/minecraft/world/level/BaseSpawner.java
+line:
+    private SpawnData nextSpawnData;
+
+# CustomChunkGenerator が親の構築子へ渡す
+file: net/minecraft/world/level/chunk/ChunkGenerator.java
+line:
+    private final Function<Holder<Biome>, BiomeGenerationSettings> generationSettingsGetter;
+
+# Paper の PlayerChunkLoader が呼ぶ(呼ばれないが compile は通す)
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    protected void updateChunkTracking(
+
+# ---- 親を public にしたので、上書きしている子も public にする(1.19.4 の木から)
+
+# getFireImmuneTicks(): Paper が親を public にしている
+file: net/minecraft/world/entity/player/Player.java
+line:
+    protected int getFireImmuneTicks() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/player/Player.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# doRunTask(): Paper が親を public にしている
+file: net/minecraft/server/MinecraftServer.java
+line:
+    protected void doRunTask(TickTask task) {
+
+# getSoundVolume(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/horse/AbstractHorse.java
+line:
+    protected float getSoundVolume() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/allay/Allay.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getSoundVolume(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/allay/Allay.java
+line:
+    protected float getSoundVolume() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# canHitEntity(): Paper が親を public にしている
+file: net/minecraft/world/entity/projectile/AbstractArrow.java
+line:
+    protected boolean canHitEntity(Entity entity) {
+
+# getPickupItem(): Paper が親を public にしている
+file: net/minecraft/world/entity/projectile/Arrow.java
+line:
+    protected ItemStack getPickupItem() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/axolotl/Axolotl.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getSoundVolume(): Paper が親を public にしている
+file: net/minecraft/world/entity/ambient/Bat.java
+line:
+    protected float getSoundVolume() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/ambient/Bat.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/Bee.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getSoundVolume(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/Bee.java
+line:
+    protected float getSoundVolume() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/camel/Camel.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/Cat.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Spider.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/Cow.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getSoundVolume(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/Cow.java
+line:
+    protected float getSoundVolume() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Creeper.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/Dolphin.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Zombie.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getSoundVolume(): Paper が親を public にしている
+file: net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
+line:
+    protected float getSoundVolume() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/EnderMan.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/Fox.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/goat/Goat.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/hoglin/Hoglin.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# isSunSensitive(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Husk.java
+line:
+    protected boolean isSunSensitive() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Husk.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Illusioner.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/IronGolem.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/horse/Llama.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/Ocelot.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/Panda.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/Parrot.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Phantom.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getSoundVolume(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Phantom.java
+line:
+    protected float getSoundVolume() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/Pufferfish.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Ravager.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/Sheep.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# canHitEntity(): Paper が親を public にしている
+file: net/minecraft/world/entity/projectile/ShulkerBullet.java
+line:
+    protected boolean canHitEntity(Entity entity) {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Skeleton.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Slime.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getSoundVolume(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Slime.java
+line:
+    protected float getSoundVolume() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getPickupItem(): Paper が親を public にしている
+file: net/minecraft/world/entity/projectile/SpectralArrow.java
+line:
+    protected ItemStack getPickupItem() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Strider.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/frog/Tadpole.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Vex.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/npc/Villager.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Witch.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/boss/wither/WitherBoss.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/WitherSkeleton.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/Wolf.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getSoundVolume(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/Wolf.java
+line:
+    protected float getSoundVolume() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/ZombifiedPiglin.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# canHitEntity(): Paper が親を public にしている
+file: net/minecraft/world/entity/projectile/FishingHook.java
+line:
+    protected boolean canHitEntity(Entity entity) {

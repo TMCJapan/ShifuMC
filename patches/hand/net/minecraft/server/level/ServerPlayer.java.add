@@ -20,10 +20,12 @@
     // (発火は changeGameModeForPlayer の中)。message は Paper の /gamemode が使うもので、
     // vanilla のコマンドは読まないので捨てる。呼んでいるのは CraftPlayer.setGameMode の
     // 1 か所だけで返り値を使っていないので void。
-    public void setGameMode(final GameType mode, final org.bukkit.event.player.PlayerGameModeChangeEvent.Cause cause,
+    // 1.19.4 の Paper はイベントを返し、DefaultGameModeCommands が null なら進む。発火は vanilla の版の中なので null を返す
+    public org.bukkit.event.player.PlayerGameModeChangeEvent setGameMode(final GameType mode, final org.bukkit.event.player.PlayerGameModeChangeEvent.Cause cause,
                             final net.kyori.adventure.text.Component message) {
         dev.shifu.event.ShifuEvents.gameModeCause(this, cause);
         this.setGameMode(mode);
+        return null;
     }
 
 // ServerPlayer.shifuDeathEvent

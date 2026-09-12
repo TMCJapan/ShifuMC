@@ -1312,5 +1312,31 @@ public final class EntityEvents {
     }
 
 
+    /**
+     * ExplosionPrimeEvent。登録があれば発火して返す。呼ぶ側は null なら vanilla の explode を、
+     * そうでなければ取り消しを見て、イベントの半径と火で explode する。
+     * 1.19.4 の CraftEventFactory には組み立てる関数が無いので、Paper の EndCrystal と同じ形で組む。
+     */
+    public static ExplosionPrimeEvent explosionPrime(final Entity entity, final float radius, final boolean fire) {
+        if (!listening(ExplosionPrimeEvent.getHandlerList())) {
+            return null;
+        }
 
+        final ExplosionPrimeEvent event = new ExplosionPrimeEvent(
+                (org.bukkit.entity.Explosive) entity.getBukkitEntity(), radius, fire);
+        event.callEvent();
+
+        return event;
+    }
+
+    /** EntityCombustEvent の秒数が vanilla と違えばその秒数で燃やし、false を返す(vanilla の行は飛ばす)。 */
+    private static boolean ignite(final Entity entity, final float duration, final float vanilla) {
+        if (duration != vanilla) {
+            entity.setRemainingFireTicks(Mth.floor(duration * 20.0F));
+
+            return false;
+        }
+
+        return true;
+    }
 }

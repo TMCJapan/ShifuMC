@@ -1,0 +1,13 @@
+# アダプタ層の書き換え。vanilla の行ではない(Paper が持つ vanilla のファイル)。
+
+file: net/minecraft/world/level/chunk/ChunkStatus.java
+replace:
+            if (worldserver.serverLevelData.worldGenOptions().generateStructures()) { // CraftBukkit
+with:
+            if (((net.minecraft.world.level.storage.PrimaryLevelData) worldserver.serverLevelData).worldGenOptions().generateStructures()) { // CraftBukkit
+
+file: net/minecraft/server/commands/ScheduleCommand.java
+replace:
+            TimerQueue<MinecraftServer> customfunctioncallbacktimerqueue = source.getLevel().serverLevelData.overworldData().getScheduledEvents(); // CraftBukkit - SPIGOT-6667: Use world specific function timer
+with:
+            TimerQueue<MinecraftServer> customfunctioncallbacktimerqueue = ((net.minecraft.world.level.storage.PrimaryLevelData) source.getLevel().serverLevelData).overworldData().getScheduledEvents(); // CraftBukkit - SPIGOT-6667: Use world specific function timer

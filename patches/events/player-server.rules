@@ -81,6 +81,23 @@ insert-after:
 # 読んだ位置: Paper-Server src/main/java/net/minecraft/world/level/Level.java(BlockDestroyEvent)
 file: net/minecraft/world/level/Level.java
 anchor:
+    if (!(blockState.getBlock() instanceof BaseFireBlock)) {
+    this.levelEvent(2001, pos, Block.getId(blockState));
+    }
+insert:
+    final com.destroystokyo.paper.event.block.BlockDestroyEvent shifuDestroy =
+            dev.shifu.event.PlayerEvents.blockDestroy(this, pos, blockState, fluidState, drop);
+    if (shifuDestroy != null && shifuDestroy.isCancelled()) {
+        return false;
+    }
+    if (shifuDestroy == null) {
+insert-after:
+    } else {
+        dev.shifu.event.PlayerEvents.destroyEffect(this, pos, blockState, shifuDestroy);
+    }
+
+file: net/minecraft/world/level/Level.java
+anchor:
     if (drop) {
     BlockEntity blockEntity = blockState.hasBlockEntity() ? this.getBlockEntity(pos) : null;
     Block.dropResources(blockState, this, pos, blockEntity, breakingEntity, ItemStack.EMPTY);

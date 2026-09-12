@@ -1,0 +1,14 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+# Paper のレッドストーン最適化(turbo)。RedStoneWireBlock は vanilla のままなので呼ばれない。
+# Paper が RedStoneWireBlock に足した calculateCurrentChanges は無いので、compile が通る形にだけしておく
+
+file: com/destroystokyo/paper/util/RedstoneWireTurbo.java
+replace:
+                newState = wire.calculateCurrentChanges(worldIn, pos, pos, oldState);
+with:
+                newState = oldState; // Shifu - vanilla の RedStoneWireBlock に calculateCurrentChanges は無い
+
+replace:
+        final BlockState newState = wire.calculateCurrentChanges(worldIn, pos, pos, state);
+with:
+        final BlockState newState = state; // Shifu - vanilla の RedStoneWireBlock に calculateCurrentChanges は無い

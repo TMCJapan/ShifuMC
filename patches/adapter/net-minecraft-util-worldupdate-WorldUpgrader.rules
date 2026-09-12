@@ -1,0 +1,13 @@
+# アダプタ層の書き換え。vanilla の行ではない(Paper が持つ vanilla のファイル)。
+# Paper の ChunkStorage は read/write が IOException を投げる形。vanilla の版は投げないので、
+# その catch が「投げられない」で止まる。触っていないクラスは postcompile で公式に戻るので、compile が通ればよい
+
+file: net/minecraft/util/worldupdate/WorldUpgrader.java
+replace:
+                        } catch (IOException e) {
+                            WorldUpgrader.LOGGER.error("Error upgrading chunk {}", chunkcoordintpair, e);
+                        }
+with:
+                        } catch (Exception e) { // Shifu - vanilla の ChunkStorage は IOException を投げない
+                            WorldUpgrader.LOGGER.error("Error upgrading chunk {}", chunkcoordintpair, e);
+                        }

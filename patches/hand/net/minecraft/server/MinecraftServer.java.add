@@ -128,3 +128,14 @@
 
 // MinecraftServer.SEC_IN_NANO
     public static final long SEC_IN_NANO = 1000000000;
+
+// MinecraftServer.addLevel
+    // CraftServer.createWorld が呼ぶ。vanilla の levels は LinkedHashMap なので、そのまま入れる
+    public void addLevel(final ServerLevel level) {
+        this.levels.put(level.dimension(), level);
+    }
+
+// MinecraftServer.removeLevel
+    public void removeLevel(final ServerLevel level) {
+        this.levels.remove(level.dimension());
+    }

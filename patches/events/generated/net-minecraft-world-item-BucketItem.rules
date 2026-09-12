@@ -4,6 +4,6 @@ file: net/minecraft/world/item/BucketItem.java
 anchor:
     if (this.emptyContents(user, world, blockPos2, playerPovHitResult)) {
 insert:
-    if (!dev.shifu.event.PlayerEvents.bucketEmpty(user, world, blockPos2, playerPovHitResult, itemStack, hand)) {
-        return InteractionResultHolder.fail(itemStack);
+    if (!dev.shifu.event.PlayerEvents.bucketEmpty(user, world, blockPos2, playerPovHitResult, itemInHand, hand)) {
+        return InteractionResultHolder.fail(itemInHand);
     }

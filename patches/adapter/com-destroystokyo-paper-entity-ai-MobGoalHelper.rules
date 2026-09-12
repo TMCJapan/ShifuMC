@@ -2,6 +2,31 @@
 
 file: com/destroystokyo/paper/entity/ai/MobGoalHelper.java
 
+# vanilla の Goal.getFlags() は EnumSet
+replace:
+    public static EnumSet<GoalType> vanillaToPaper(OptimizedSmallEnumSet<Goal.Flag> types) {
+with:
+    public static EnumSet<GoalType> vanillaToPaper(EnumSet<Goal.Flag> types) {
+
+replace:
+            if (types.hasElement(paperToVanilla(type))) {
+with:
+            if (types.contains(paperToVanilla(type))) {
+
+# vanilla の Flag に UNKNOWN_BEHAVIOR は無い
+replace:
+            case UNKNOWN_BEHAVIOR:
+                return GoalType.UNKNOWN_BEHAVIOR;
+with:
+            // Shifu - vanilla の Flag に UNKNOWN_BEHAVIOR は無い
+
+replace:
+            case UNKNOWN_BEHAVIOR:
+                return Goal.Flag.UNKNOWN_BEHAVIOR;
+with:
+            case UNKNOWN_BEHAVIOR:
+                return null; // Shifu - vanilla の Flag に UNKNOWN_BEHAVIOR は無い
+
 # 原案どおり
 replace:
             for (GoalType type : types) {

@@ -1,0 +1,8 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// RegionFile.RegionFile
+    // Paper は壊れたヘッダを作り直せる版のときだけ旗を立てる。vanilla は作り直さないので、
+    // 旗を受け取って捨てる。呼ぶのは Paper の RegionFileStorage だけ
+    public RegionFile(final Path file, final Path directory, final boolean dsync, final boolean canRecalcHeader) throws IOException {
+        this(file, directory, dsync);
+    }

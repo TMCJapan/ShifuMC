@@ -722,10 +722,8 @@ public final class ItemEvents {
      */
     public static boolean changeBeaconEffect(final net.minecraft.world.inventory.BeaconMenu menu,
                                              final net.minecraft.world.entity.player.Player player,
-                                             final java.util.Optional<net.minecraft.core.Holder<
-                                                     net.minecraft.world.effect.MobEffect>> primary,
-                                             final java.util.Optional<net.minecraft.core.Holder<
-                                                     net.minecraft.world.effect.MobEffect>> secondary) {
+                                             final java.util.Optional<net.minecraft.world.effect.MobEffect> primary,
+                                             final java.util.Optional<net.minecraft.world.effect.MobEffect> secondary) {
         if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)
                 || !ShifuEvents.listening(
                         io.papermc.paper.event.player.PlayerChangeBeaconEffectEvent.getHandlerList())) {
@@ -838,4 +836,10 @@ public final class ItemEvents {
                 holder).callEvent();
     }
 
+    /** 1.19.4 のビーコンは MobEffect を Optional で持つ。Bukkit の型へ。 */
+    private static org.bukkit.potion.PotionEffectType convert(
+            final java.util.Optional<net.minecraft.world.effect.MobEffect> effect) {
+        return effect.map(one -> org.bukkit.potion.PotionEffectType.getById(net.minecraft.world.effect.MobEffect.getId(one)))
+                .orElse(null);
+    }
 }

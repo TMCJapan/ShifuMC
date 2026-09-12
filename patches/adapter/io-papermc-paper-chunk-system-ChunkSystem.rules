@@ -73,7 +73,7 @@ private static void shifuScheduleLoad(final ServerLevel level, final int chunkX,
                                       final boolean gen, final ChunkStatus toStatus, final boolean addTicket,
                                       final Consumer<ChunkAccess> onComplete) {
     level.getServer().execute(() -> {
-        final CompletableFuture<net.minecraft.server.level.ChunkResult<ChunkAccess>> future =
+        final CompletableFuture<com.mojang.datafixers.util.Either<ChunkAccess, net.minecraft.server.level.ChunkHolder.ChunkLoadingFailure>> future =
                 level.chunkSource.getChunkFutureMainThread(chunkX, chunkZ, toStatus, gen || addTicket);
 
         future.whenComplete((result, throwable) -> level.getServer().execute(() -> {
@@ -84,7 +84,7 @@ private static void shifuScheduleLoad(final ServerLevel level, final int chunkX,
                 return;
             }
 
-            onComplete.accept(result == null ? null : result.orElse(null));
+            onComplete.accept(result == null ? null : result.left().orElse(null));
         }));
     });
 }

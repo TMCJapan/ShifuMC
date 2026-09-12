@@ -51,7 +51,7 @@ insert:
             && dev.shifu.event.BlockEvents.armTreeGrow(context.getLevel(), true);
 insert-after:
     if (shifuFertilize) {
-        dev.shifu.event.BlockEvents.fertilize(context.getLevel(), blockPos, player);
+        dev.shifu.event.BlockEvents.fertilize(context.getLevel(), clickedPos, player);
     }
 
 # 骨粉。ディスペンサーが撒いたとき

@@ -6,15 +6,15 @@ anchor:
     blockEntity.cookingProgress++;
 insert:
     // CraftBukkit start
-    if (recipeHolder != null && blockEntity.cookingProgress == 0) {
+    if (recipe != null && blockEntity.cookingProgress == 0) {
         org.bukkit.craftbukkit.inventory.CraftItemStack source = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(blockEntity.items.get(0));
-        org.bukkit.inventory.CookingRecipe<?> recipe = (org.bukkit.inventory.CookingRecipe<?>) recipeHolder.toBukkitRecipe();
+        org.bukkit.inventory.CookingRecipe<?> shifuRecipe = (org.bukkit.inventory.CookingRecipe<?>) recipe.toBukkitRecipe();
 
         org.bukkit.event.inventory.FurnaceStartSmeltEvent event = new org.bukkit.event.inventory.FurnaceStartSmeltEvent(
             org.bukkit.craftbukkit.block.CraftBlock.at(world, pos),
             source,
-            recipe,
-            getTotalCookTime(world, blockEntity.recipeType, blockEntity, blockEntity.cookSpeedMultiplier) // Paper - cook speed multiplier API
+            shifuRecipe,
+            getTotalCookTime(world, blockEntity)
         );
         event.callEvent();
 

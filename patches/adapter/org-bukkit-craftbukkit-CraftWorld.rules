@@ -12,15 +12,15 @@ with:
 # 狭めているので、worldGenOptions と settings は素の型では見えない。呼ぶ側で戻す。
 count: 1
 replace:
-    this.world.serverLevelData.worldGenOptions()
+    world.serverLevelData.worldGenOptions()
 with:
-    ((net.minecraft.world.level.storage.PrimaryLevelData) this.world.serverLevelData).worldGenOptions()
+    ((net.minecraft.world.level.storage.PrimaryLevelData) world.serverLevelData).worldGenOptions()
 
 # 同上。1.21.11 の vanilla は LevelSettings.hardcore が public な欄なので、そのまま書ける
 replace:
-    this.world.serverLevelData.settings.hardcore = hardcore;
+    world.serverLevelData.settings.hardcore = hardcore;
 with:
-    ((net.minecraft.world.level.storage.PrimaryLevelData) this.world.serverLevelData).settings.hardcore = hardcore;
+    ((net.minecraft.world.level.storage.PrimaryLevelData) world.serverLevelData).settings.hardcore = hardcore;
 
 # vanilla の PrimaryLevelData は 3 つの次元で 1 つなので、getLevelName() は 3 つとも同じ。
 # Bukkit の世界は名前で引くので、次元ごとに分けた名前を返す(ServerLevel.bukkitName)。

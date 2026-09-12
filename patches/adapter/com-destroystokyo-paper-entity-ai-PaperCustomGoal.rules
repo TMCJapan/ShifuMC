@@ -1,0 +1,8 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+# vanilla の Goal.Flag に UNKNOWN_BEHAVIOR は無い(enum に定数は足さない)。旗が無い goal はそのまま
+
+file: com/destroystokyo/paper/entity/ai/PaperCustomGoal.java
+replace:
+            this.getFlags().addUnchecked(Flag.UNKNOWN_BEHAVIOR);
+with:
+            // Shifu - vanilla の Flag に UNKNOWN_BEHAVIOR は無い

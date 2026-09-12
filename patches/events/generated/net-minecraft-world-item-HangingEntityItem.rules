@@ -4,7 +4,7 @@ file: net/minecraft/world/item/HangingEntityItem.java
 anchor:
                     hangingEntity.playPlacementSound();
 insert:
-    if (!dev.shifu.event.EntityEvents.hangingPlace(hangingEntity, player, blockPos, direction,
-            context.getHand(), itemStack)) {
+    if (!dev.shifu.event.EntityEvents.hangingPlace(hangingEntity, player, blockPos, clickedFace,
+            context.getHand(), itemInHand)) {
         return InteractionResult.CONSUME;
     }

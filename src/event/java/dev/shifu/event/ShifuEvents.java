@@ -1412,4 +1412,26 @@ public final class ShifuEvents {
         return future;
     }
 
+    /** 死亡の画面。Paper の PlayerDeathEvent と同じで、文言が長すぎるときは短い版に差し替える。 */
+    private static void sendCombatKill(final ServerPlayer player, final boolean display, final Component message) {
+        if (!display || message == net.minecraft.network.chat.CommonComponents.EMPTY) {
+            player.connection.send(new net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket(
+                    player.getCombatTracker(), net.minecraft.network.chat.CommonComponents.EMPTY));
+
+            return;
+        }
+
+        player.connection.send(
+                new net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket(player.getCombatTracker(), message),
+                net.minecraft.network.PacketSendListener.exceptionallySend(() -> {
+                    final String cut = message.getString(256);
+                    final Component tooLong = Component.translatable("death.attack.message_too_long",
+                            Component.literal(cut).withStyle(net.minecraft.ChatFormatting.YELLOW));
+                    final Component fallback = Component.translatable("death.attack.even_more_magic", player.getDisplayName())
+                            .withStyle(style -> style.withHoverEvent(new net.minecraft.network.chat.HoverEvent(
+                                    net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT, tooLong)));
+
+                    return new net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket(player.getCombatTracker(), fallback);
+                }));
+    }
 }

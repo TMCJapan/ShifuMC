@@ -13,3 +13,9 @@
 
         return null;
     }
+
+// Value.onChanged
+    // CraftBukkit は世界ごとに gamerule を持つ。vanilla は server を受けるので、そこへ渡す
+    public void onChanged(@Nullable net.minecraft.server.level.ServerLevel level) {
+        this.onChanged(level == null ? null : level.getServer());
+    }

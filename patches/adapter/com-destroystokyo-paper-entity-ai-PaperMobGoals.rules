@@ -1,0 +1,9 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+# vanilla の Goal.getFlags() は EnumSet。Paper の OptimizedSmallEnumSet は使わない
+
+file: com/destroystokyo/paper/entity/ai/PaperMobGoals.java
+count: 4
+replace:
+getFlags().hasElement(
+with:
+getFlags().contains(

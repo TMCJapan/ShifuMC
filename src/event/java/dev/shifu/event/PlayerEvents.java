@@ -1447,4 +1447,31 @@ public final class PlayerEvents {
         return org.bukkit.craftbukkit.inventory.CraftMerchantRecipe.fromBukkit(event.getTrade()).toMinecraft();
     }
 
+
+    /**
+     * BlockDestroyEvent。壊す効果の前。登録が無ければ null を返し、呼ぶ側は vanilla のまま進む。
+     * 1.19.4 の API は (block, newState, willDrop) の 3 引数。
+     */
+    public static com.destroystokyo.paper.event.block.BlockDestroyEvent blockDestroy(
+            final Level level, final BlockPos pos, final BlockState state, final FluidState fluid, final boolean drop) {
+        if (!listening(com.destroystokyo.paper.event.block.BlockDestroyEvent.getHandlerList())) {
+            return null;
+        }
+
+        final com.destroystokyo.paper.event.block.BlockDestroyEvent event = new com.destroystokyo.paper.event.block.BlockDestroyEvent(
+                CraftBlock.at(level, pos), org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(fluid.createLegacyBlock()), drop);
+        event.callEvent();
+
+        return event;
+    }
+
+    /** 壊す効果を、イベントの値で出す(vanilla の行の代わり)。 */
+    public static void destroyEffect(final Level level, final BlockPos pos, final BlockState state,
+                                     final com.destroystokyo.paper.event.block.BlockDestroyEvent event) {
+        if (!event.playEffect() || state.getBlock() instanceof net.minecraft.world.level.block.BaseFireBlock) {
+            return;
+        }
+
+        level.levelEvent(2001, pos, net.minecraft.world.level.block.Block.getId(state));
+    }
 }

@@ -23,3 +23,12 @@
     public LevelChunk getFullChunkNowUnchecked() {
         return this.getAvailableChunkNow() instanceof LevelChunk chunk ? chunk : null;
     }
+
+// ChunkHolder.ChunkHolder
+    // Paper のチャンク系(NewChunkHolder)が作る版。vanilla は読み込み段階を int で持つので、
+    // 何も読めていない値(MAX_CHUNK_DISTANCE + 1)で渡す。newChunkHolder は使わない
+    public ChunkHolder(final ChunkPos pos, final LevelHeightAccessor world, final LevelLightEngine lightingProvider,
+                       final ChunkHolder.PlayerProvider playersWatchingChunkProvider,
+                       final io.papermc.paper.chunk.system.scheduling.NewChunkHolder newChunkHolder) {
+        this(pos, ChunkMap.MAX_CHUNK_DISTANCE + 1, world, lightingProvider, null, playersWatchingChunkProvider);
+    }

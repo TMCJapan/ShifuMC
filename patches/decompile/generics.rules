@@ -41,21 +41,21 @@ with:
 # 箱に入れるのは元から起きていること(List<T> に入れている)なので、結果は変わらない
 file: net/minecraft/nbt/TagParser.java
 replace:
-                list.add((T)((NumericTag)tag).getAsByte());
+                list.add((T)((NumericTag)value).getAsByte());
 with:
-                list.add((T)(Object)((NumericTag)tag).getAsByte());
+                list.add((T)(Object)((NumericTag)value).getAsByte());
 
 file: net/minecraft/nbt/TagParser.java
 replace:
-                list.add((T)((NumericTag)tag).getAsLong());
+                list.add((T)((NumericTag)value).getAsLong());
 with:
-                list.add((T)(Object)((NumericTag)tag).getAsLong());
+                list.add((T)(Object)((NumericTag)value).getAsLong());
 
 file: net/minecraft/nbt/TagParser.java
 replace:
-                list.add((T)((NumericTag)tag).getAsInt());
+                list.add((T)((NumericTag)value).getAsInt());
 with:
-                list.add((T)(Object)((NumericTag)tag).getAsInt());
+                list.add((T)(Object)((NumericTag)value).getAsInt());
 
 # 逆コンパイラが型引数を落としている。private の構築子はダイヤモンドで推論できない
 file: net/minecraft/util/SortedArraySet.java
@@ -149,9 +149,9 @@ with:
 # ResourceKey<? extends Registry<T>> から ResourceKey<WritableRegistry<?>> へは 1 段では届かない
 file: net/minecraft/core/registries/BuiltInRegistries.java
 replace:
-        WRITABLE_REGISTRY.register((ResourceKey<WritableRegistry<?>>)key, registry, RegistrationInfo.BUILT_IN);
+        WRITABLE_REGISTRY.register((ResourceKey<WritableRegistry<?>>)key, registry, lifecycle);
 with:
-        WRITABLE_REGISTRY.register((ResourceKey<WritableRegistry<?>>)(ResourceKey<?>)key, registry, RegistrationInfo.BUILT_IN);
+        WRITABLE_REGISTRY.register((ResourceKey<WritableRegistry<?>>)(ResourceKey<?>)key, registry, lifecycle);
 
 # Paper が addEffect(MobEffectInstance, Cause) を足したので、null が両方に当たる
 file: net/minecraft/world/entity/LivingEntity.java
@@ -217,3 +217,27 @@ replace:
                         File file = new File(file, fileName + ".dat");
 with:
                         File file = new File(playerDataFolder, fileName + ".dat");
+
+# instanceof のパターンに実引数付きの型を書くと、javac 17 は「安全に cast できない」で止める。
+# 型引数無しで判定してから cast する(cast は同じクラス間なので命令列は変わらない)
+file: net/minecraft/commands/Commands.java
+replace:
+                if (argumentBuilder instanceof RequiredArgumentBuilder<SharedSuggestionProvider, ?> requiredArgumentBuilder
+                    && requiredArgumentBuilder.getSuggestionsProvider() != null) {
+                    requiredArgumentBuilder.suggests(SuggestionProviders.safelySwap(requiredArgumentBuilder.getSuggestionsProvider()));
+with:
+                if (argumentBuilder instanceof RequiredArgumentBuilder<?, ?> requiredArgumentBuilder0
+                    && requiredArgumentBuilder0.getSuggestionsProvider() != null) {
+                    RequiredArgumentBuilder<SharedSuggestionProvider, ?> requiredArgumentBuilder = (RequiredArgumentBuilder<SharedSuggestionProvider, ?>)requiredArgumentBuilder0;
+                    requiredArgumentBuilder.suggests(SuggestionProviders.safelySwap(requiredArgumentBuilder.getSuggestionsProvider()));
+
+# Either.left の右の型引数が決まらず、exceptionallyAsync のラムダの返り値と合わない
+file: net/minecraft/server/level/ChunkMap.java
+replace:
+                return Either.left(chunkAccess);
+            } else {
+                return Either.left(this.createEmptyChunk(pos));
+with:
+                return Either.<ChunkAccess, ChunkHolder.ChunkLoadingFailure>left(chunkAccess);
+            } else {
+                return Either.<ChunkAccess, ChunkHolder.ChunkLoadingFailure>left(this.createEmptyChunk(pos));

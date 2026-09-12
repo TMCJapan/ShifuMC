@@ -3,7 +3,7 @@
 file: org/bukkit/craftbukkit/CraftServer.java
 
 replace:
-    new DedicatedServerSettings(this.console.options)
+    new DedicatedServerSettings(console.options)
 with:
     new DedicatedServerSettings(java.nio.file.Paths.get("server.properties")) /* Shifu - vanilla の Main と同じ場所を読む */
 

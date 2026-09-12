@@ -5,7 +5,7 @@ anchor:
                 this.level.levelEvent(2006, this.blockPosition(), this.isSilent() ? -1 : 1);
                 this.level.addFreshEntity(areaEffectCloud);
 insert:
-    if (dev.shifu.event.EntityEvents.dragonFireballHit(this, list, areaEffectCloud)) {
+    if (dev.shifu.event.EntityEvents.dragonFireballHit(this, entitiesOfClass, areaEffectCloud)) {
 insert-after:
     } else {
         areaEffectCloud.discard();

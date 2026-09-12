@@ -1,0 +1,16 @@
+
+
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// Main.convertWorldButItWorks
+    // CraftServer.createWorld(--forceUpgrade)が呼ぶ。Paper の ThreadedWorldUpgrader へ渡す(Paper のパッチと同じ本体)
+    public static void convertWorldButItWorks(final net.minecraft.resources.ResourceKey<net.minecraft.world.level.dimension.LevelStem> dimensionType,
+                                              final net.minecraft.world.level.storage.LevelStorageSource.LevelStorageAccess worldSession,
+                                              final DataFixer dataFixer,
+                                              final Optional<net.minecraft.resources.ResourceKey<com.mojang.serialization.Codec<? extends net.minecraft.world.level.chunk.ChunkGenerator>>> generatorKey,
+                                              final boolean removeCaches) {
+        final int threads = Runtime.getRuntime().availableProcessors() * 3 / 8;
+        final io.papermc.paper.world.ThreadedWorldUpgrader worldUpgrader = new io.papermc.paper.world.ThreadedWorldUpgrader(
+                dimensionType, worldSession.getLevelId(), worldSession.levelDirectory.path().toFile(), threads, dataFixer, generatorKey, removeCaches);
+        worldUpgrader.convert();
+    }

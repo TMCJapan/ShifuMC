@@ -4,3 +4,13 @@
     // vanilla の LevelChunk.level は Level 型。Paper はこれを ServerLevel 型に書き換えているが、
     // 型の変更は許可されていないので何も足さない。shim が入れると level が 2 つになり、
     // 併せて constructor の this.level = level(Level → ServerLevel)も通らなくなる。
+
+// LevelChunk.onNeighbourChange
+    // Paper のチャンク系(隣のチャンクの読み込み状態の控え)。Shifu は vanilla のチャンク系のままなので何もしない
+    private void onNeighbourChange(final long bitsetBefore, final long bitsetAfter) {
+    }
+
+// LevelChunk.updateGeneralAreaCache
+    // Paper の近くのプレイヤーの表。vanilla は持たないので何もしない
+    public void updateGeneralAreaCache() {
+    }

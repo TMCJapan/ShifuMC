@@ -22,13 +22,13 @@ anchor:
 insert:
     if (dev.shifu.event.EntityEvents.naturallySpawnCreaturesListening()) {
         if (this.level.isNaturalSpawningAllowed(pos) && this.chunkMap.shifuAnyPlayerCloseEnoughForSpawningReduced(pos)) {
-            levelChunk2.incrementInhabitedTime(m);
-            if (bl && (this.spawnEnemies || this.spawnFriendlies) && this.level.getWorldBorder().isWithinBounds(pos)) {
-                NaturalSpawner.spawnForChunk(this.level, levelChunk2, spawnState, this.spawnFriendlies, this.spawnEnemies, bl2);
+            levelChunk.incrementInhabitedTime(l);
+            if (_boolean && (this.spawnEnemies || this.spawnFriendlies) && this.level.getWorldBorder().isWithinBounds(pos)) {
+                NaturalSpawner.spawnForChunk(this.level, levelChunk, spawnState, this.spawnFriendlies, this.spawnEnemies, flag);
             }
 
             if (this.level.shouldTickBlocksAt(pos.toLong())) {
-                this.level.tickChunk(levelChunk2, j);
+                this.level.tickChunk(levelChunk, _int);
             }
         }
     } else

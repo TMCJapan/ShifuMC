@@ -38,7 +38,7 @@ insert:
                     shifuLevel, player, blockPlaceContext.getHand(), shifuReplaced,
                     blockPlaceContext.getClickedPos())) {
         dev.shifu.event.ShifuEvents.revertPlace(shifuLevel);
-        shifuLevel.setBlock(blockPos, ((org.bukkit.craftbukkit.block.CraftBlockState) shifuReplaced).getHandle(),
+        shifuLevel.setBlock(clickedPos, ((org.bukkit.craftbukkit.block.CraftBlockState) shifuReplaced).getHandle(),
                 net.minecraft.world.level.block.Block.UPDATE_ALL);
         return InteractionResult.FAIL;
     }

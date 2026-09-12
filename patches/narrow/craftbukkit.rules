@@ -15,9 +15,9 @@
 file: net/minecraft/world/level/chunk/LevelChunk.java
 count: 2
 replace:
-        net.minecraft.server.level.ServerChunkCache chunkProvider = this.level.getChunkSource();
+        ServerChunkCache chunkProvider = this.level.getChunkSource();
 with:
-        net.minecraft.server.level.ServerChunkCache chunkProvider = ((net.minecraft.server.level.ServerLevel) this.level).getChunkSource();
+        ServerChunkCache chunkProvider = ((net.minecraft.server.level.ServerLevel) this.level).getChunkSource();
 
 file: net/minecraft/world/level/chunk/LevelChunk.java
 replace:

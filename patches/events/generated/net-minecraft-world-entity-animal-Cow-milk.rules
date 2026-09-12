@@ -4,7 +4,7 @@ file: net/minecraft/world/entity/animal/Cow.java
 anchor:
             player.playSound(SoundEvents.COW_MILK, 1.0F, 1.0F);
 insert:
-    if (!dev.shifu.event.PlayerEvents.bucketFill(player, this, itemStack, Items.MILK_BUCKET, hand)) {
+    if (!dev.shifu.event.PlayerEvents.bucketFill(player, this, itemInHand, Items.MILK_BUCKET, hand)) {
         return InteractionResult.PASS;
     }
 
@@ -12,6 +12,6 @@ file: net/minecraft/world/entity/animal/goat/Goat.java
 anchor:
             player.playSound(this.getMilkingSound(), 1.0F, 1.0F);
 insert:
-    if (!dev.shifu.event.PlayerEvents.bucketFill(player, this, itemStack, Items.MILK_BUCKET, hand)) {
+    if (!dev.shifu.event.PlayerEvents.bucketFill(player, this, itemInHand, Items.MILK_BUCKET, hand)) {
         return InteractionResult.PASS;
     }

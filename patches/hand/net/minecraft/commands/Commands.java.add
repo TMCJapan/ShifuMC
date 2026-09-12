@@ -20,3 +20,8 @@
         this.performCommand(command, commandString);
     }
 
+// Commands.performPrefixedCommand
+    // label は Paper がイベントに渡す元の文字列。vanilla の 2 引数の版へ渡す
+    public int performPrefixedCommand(final CommandSourceStack source, final String command, final String label) {
+        return this.performPrefixedCommand(source, command);
+    }

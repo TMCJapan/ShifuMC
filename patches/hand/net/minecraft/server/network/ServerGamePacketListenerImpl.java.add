@@ -109,3 +109,18 @@
         return new org.bukkit.Location(this.player.level.getWorld(),
                 this.lastPosX, this.lastPosY, this.lastPosZ, this.lastYRot, this.lastXRot);
     }
+
+// ServerGamePacketListenerImpl.disconnect
+    // Paper は String の版も持つ(CraftPlayer.kickPlayer、RestartCommand)。legacy の書式で読む
+    public void disconnect(final String reason, final org.bukkit.event.player.PlayerKickEvent.Cause cause) {
+        this.disconnect(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(reason), cause);
+    }
+
+// ServerGamePacketListenerImpl.shifuPerformUnsignedChatCommand
+    // PlayerCommandPreprocessEvent で文が差し替えられたとき、差し替えた文を vanilla の
+    // 私有メソッドへ通す(発火層からは private を呼べない)。1.19.4 は署名無しの経路が無いので、
+    // performChatCommand と同じ 2 行(解析 -> 実行)で走らせる
+    public void shifuPerformUnsignedChatCommand(final String command) {
+        final ParseResults<CommandSourceStack> parseResults = this.parseCommand(command);
+        this.server.getCommands().performCommand(parseResults, command);
+    }
