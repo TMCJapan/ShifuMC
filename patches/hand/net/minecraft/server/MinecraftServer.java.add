@@ -46,3 +46,85 @@
     // ServerTickEndEvent が 1 tick の長さを出すのに要る。tick の頭で入れる(patches/events)
     public long currentTickStart;
 
+
+// MinecraftServer.RollingAverage
+    // Paper 1.19.4 の TPS の移動平均(Bukkit.getTPS() が読む)。Paper の内部クラスは
+    // 生成器が写さないので、Paper-Server の MinecraftServer から写した。
+    public static class RollingAverage {
+        private final int size;
+        private long time;
+        private java.math.BigDecimal total;
+        private int index = 0;
+        private final java.math.BigDecimal[] samples;
+        private final long[] times;
+
+        RollingAverage(int size) {
+            this.size = size;
+            this.time = size * SEC_IN_NANO;
+            this.total = dec(TPS).multiply(dec(SEC_IN_NANO)).multiply(dec(size));
+            this.samples = new java.math.BigDecimal[size];
+            this.times = new long[size];
+            for (int i = 0; i < size; i++) {
+                this.samples[i] = dec(TPS);
+                this.times[i] = SEC_IN_NANO;
+            }
+        }
+
+        private static java.math.BigDecimal dec(long t) {
+            return new java.math.BigDecimal(t);
+        }
+        public void add(java.math.BigDecimal x, long t) {
+            time -= times[index];
+            total = total.subtract(samples[index].multiply(dec(times[index])));
+            samples[index] = x;
+            times[index] = t;
+            time += t;
+            total = total.add(x.multiply(dec(t)));
+            if (++index == size) {
+                index = 0;
+            }
+        }
+
+        public double getAverage() {
+            return total.divide(dec(time), 30, java.math.RoundingMode.HALF_UP).doubleValue();
+        }
+    }
+
+// MinecraftServer.TickTimes
+    // Paper 1.19.4 の tick 時間の記録(Bukkit.getTickTimes() が読む)。同上。
+    public static class TickTimes {
+        private final long[] times;
+
+        public TickTimes(int length) {
+            times = new long[length];
+        }
+
+        void add(int index, long time) {
+            times[index % times.length] = time;
+        }
+
+        public long[] getTimes() {
+            return times.clone();
+        }
+
+        public double getAverage() {
+            long total = 0L;
+            for (long value : times) {
+                total += value;
+            }
+            return ((double) total / (double) times.length) * 1.0E-6D;
+        }
+    }
+
+// MinecraftServer.TPS
+    // Spigot の TPS 計測が使う定数。RollingAverage が読む
+    public static final int TPS = 20;
+
+// MinecraftServer.TICK_TIME
+    public static final int TICK_TIME = 1000000000 / TPS;
+
+// MinecraftServer.SAMPLE_INTERVAL
+    private static final int SAMPLE_INTERVAL = 20;
+
+// MinecraftServer.SEC_IN_NANO
+    public static final long SEC_IN_NANO = 1000000000;

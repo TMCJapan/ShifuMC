@@ -15,7 +15,7 @@
 file: net/minecraft/world/level/block/DispenserBlock.java
 anchor:
     world.levelEvent(1001, pos, 0);
-    world.gameEvent((Entity)null, GameEvent.DISPENSE_FAIL, pos);
+    world.gameEvent(null, GameEvent.DISPENSE_FAIL, pos);
 insert:
     if (dev.shifu.event.BlockEvents.failedDispense(world, pos)) {
 insert-after:
@@ -80,7 +80,7 @@ insert:
 
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    Consumer<ArmorStand> consumer = EntityType.appendDefaultStackConfig((armorStandx) -> {
+    Consumer consumer = EntityType.appendDefaultStackConfig(armorStand -> armorStand.setYRot(direction.toYRot()), serverLevel, stack, null);
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(pointer, stack)) {
         return stack;
@@ -89,7 +89,7 @@ insert:
 # BlockDispenseArmorEvent(荷馬にチェスト)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    PrimedTnt primedTnt = new PrimedTnt(level, (double)blockPos.getX() + 0.5D, (double)blockPos.getY(), (double)blockPos.getZ() + 0.5D, (LivingEntity)null);
+    level.setBlockAndUpdate(blockPos, optional.get());
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, blockPos)) {
         return stack;
@@ -98,7 +98,7 @@ insert:
 # BlockDispenseEvent(ウィザースケルトンの頭)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (level.isEmptyBlock(blockPos) && WitherSkullBlock.canSpawnMob(level, blockPos, stack)) {
+    level.setBlockAndUpdate(blockPos, optional.get());
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, blockPos)) {
         this.setSuccess(false);
@@ -108,7 +108,7 @@ insert:
 # BlockDispenseEvent(くり抜かれたカボチャ)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (level.isEmptyBlock(blockPos) && carvedPumpkinBlock.canSpawnGolem(level, blockPos)) {
+    level.setBlockAndUpdate(blockPos, optional.get());
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, blockPos)) {
         this.setSuccess(false);
@@ -118,9 +118,7 @@ insert:
 # BlockDispenseEvent(ガラス瓶で蜂の巣)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    if (blockState.is(BlockTags.BEEHIVES, (state) -> {
-    return state.hasProperty(BeehiveBlock.HONEY_LEVEL) && state.getBlock() instanceof BeehiveBlock;
-    }) && blockState.getValue(BeehiveBlock.HONEY_LEVEL) >= 5) {
+    level.setBlockAndUpdate(blockPos, optional.get());
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, blockPos)) {
         return stack;
@@ -129,7 +127,7 @@ insert:
 # BlockDispenseEvent(グロウストーンでリスポーンアンカー)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    RespawnAnchorBlock.charge((Entity)null, level, blockPos, blockState);
+    level.setBlockAndUpdate(blockPos, optional.get());
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, blockPos)) {
         this.setSuccess(false);
@@ -265,7 +263,7 @@ insert:
 # SpongeAbsorbEvent
 file: net/minecraft/world/level/block/SpongeBlock.java
 anchor:
-    while(!queue.isEmpty()) {
+    while (!queue.isEmpty()) {
 insert:
     dev.shifu.event.BlockEvents.spongeBegin();
 
@@ -377,7 +375,7 @@ insert:
 
 file: net/minecraft/world/level/block/MushroomBlock.java
 anchor:
-    for(int k = 0; k < 4; ++k) {
+    for (int k = 0; k < 4; k++) {
 insert:
     final BlockPos shifuMushroomSource = pos;
 
@@ -411,13 +409,13 @@ insert:
 # Paper は createDripstone に source を足して渡す。Shifu は呼ぶ直前に置く。
 file: net/minecraft/world/level/block/PointedDripstoneBlock.java
 anchor:
-    createDripstone(world, blockPos, direction, DripstoneThickness.TIP);
+    createDripstone(world, blockPos, Direction.UP, DripstoneThickness.TIP_MERGE);
 insert:
     dev.shifu.event.BlockEvents.spreadSource(pos);
 
 file: net/minecraft/world/level/block/PointedDripstoneBlock.java
 anchor:
-    createDripstone(world, blockPos2, Direction.DOWN, DripstoneThickness.TIP_MERGE);
+    createDripstone(world, blockPos, Direction.UP, DripstoneThickness.TIP_MERGE);
 insert:
     dev.shifu.event.BlockEvents.spreadSource(pos);
 
@@ -459,7 +457,7 @@ insert-after:
 # (取り消しても葉の付け替えは済んでいる)。
 file: net/minecraft/world/level/block/BambooStalkBlock.java
 anchor:
-    world.setBlock(pos.above(), this.defaultBlockState().setValue(AGE, Integer.valueOf(i)).setValue(LEAVES, bambooLeaves).setValue(STAGE, Integer.valueOf(j)), 3);
+    world.setBlock(pos.above(), this.defaultBlockState().setValue(AGE, i).setValue(LEAVES, bambooLeaves).setValue(STAGE, j), 3);
 insert:
     if (dev.shifu.event.BlockEvents.silentSpread()
             || dev.shifu.event.BlockEvents.spreadTo(world, pos, pos.above(), this.defaultBlockState().setValue(AGE, i).setValue(LEAVES, bambooLeaves).setValue(STAGE, j))) {
@@ -472,8 +470,8 @@ insert-after:
 # Shifu は vanilla の中身をそのままにして、呼ぶ側を囲む。
 file: net/minecraft/world/level/block/ChorusFlowerBlock.java
 anchor:
-    world.setBlock(pos, this.plant.getStateForPlacement(world, pos), 2);
-    this.placeGrownFlower(world, blockPos, i);
+    this.placeGrownFlower(world, blockPos2, i + 1);
+    bl3 = true;
 insert:
     if (dev.shifu.event.BlockEvents.silentSpread()
             || dev.shifu.event.BlockEvents.spreadTo(world, pos, blockPos, this.defaultBlockState().setValue(AGE, i))) {

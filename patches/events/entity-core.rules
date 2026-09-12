@@ -10,11 +10,15 @@ insert:
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
     if (this.followingPlayer != null) {
-    Vec3 vec3 = new Vec3(this.followingPlayer.getX() - this.getX(), this.followingPlayer.getY() + (double)this.followingPlayer.getEyeHeight() / 2.0D - this.getY(), this.followingPlayer.getZ() - this.getZ());
+    Vec3 vec3 = new Vec3(
+    this.followingPlayer.getX() - this.getX(),
+    this.followingPlayer.getY() + this.followingPlayer.getEyeHeight() / 2.0 - this.getY(),
+    this.followingPlayer.getZ() - this.getZ()
+    );
     double d = vec3.lengthSqr();
-    if (d < 64.0D) {
-    double e = 1.0D - Math.sqrt(d) / 8.0D;
-    this.setDeltaMovement(this.getDeltaMovement().add(vec3.normalize().scale(e * e * 0.1D)));
+    if (d < 64.0) {
+    double e = 1.0 - Math.sqrt(d) / 8.0;
+    this.setDeltaMovement(this.getDeltaMovement().add(vec3.normalize().scale(e * e * 0.1)));
     }
     }
 insert:
@@ -38,13 +42,13 @@ insert-after:
 # 残す指定があれば、消したあとに戻す。
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    Iterator<MobEffectInstance> iterator = this.activeEffects.values().iterator();
+    Iterator iterator = this.activeEffects.values().iterator();
 insert:
     final java.util.List<MobEffectInstance> shifuKept = dev.shifu.event.EntityEvents.clearEffects(this, this.activeEffects.values());
 
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    for(bl = false; iterator.hasNext(); bl = true) {
+    for (bl = false; iterator.hasNext(); bl = true) {
     this.onEffectRemoved(iterator.next());
     iterator.remove();
     }
@@ -114,7 +118,7 @@ file: net/minecraft/world/entity/ambient/Bat.java
 anchor:
     this.setResting(false);
     if (!bl) {
-    this.level.levelEvent((Player)null, 1025, blockPos, 0);
+    this.level.levelEvent(null, 1025, blockPos, 0);
     }
 count: 2
 insert:
@@ -154,7 +158,7 @@ insert-after:
 # EntityDamageEvent と ExplosionPrimeEvent。Paper と同じく、remove の前に出す。
 file: net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
 anchor:
-    this.level.explode(this, damageSource, (ExplosionDamageCalculator)null, this.getX(), this.getY(), this.getZ(), 6.0F, false, Level.ExplosionInteraction.BLOCK);
+    this.level.explode(this, damageSource, null, this.getX(), this.getY(), this.getZ(), 6.0F, false, Level.ExplosionInteraction.BLOCK);
 insert:
     if (shifuPrime == null) {
 insert-after:
@@ -167,7 +171,7 @@ insert-after:
 # EntityRegainHealthEvent(ENDER_CRYSTAL)
 file: net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
 anchor:
-    entity.push(f / h * 4.0D, (double)0.2F, g / h * 4.0D);
+    entity.push(f / h * 4.0, 0.2F, g / h * 4.0);
 insert:
     dev.shifu.event.EntityEvents.pushedBy(this, entity);
 
@@ -176,9 +180,7 @@ insert:
 # ExplosionPrimeEvent(出現時の爆発)
 file: net/minecraft/world/entity/decoration/ArmorStand.java
 anchor:
-    this.kill();
-    return false;
-    } else if (!this.isInvulnerableTo(source) && !this.invisible && !this.isMarker()) {
+    } else if (source.is(DamageTypeTags.IS_EXPLOSION)) {
 insert:
     if (dev.shifu.event.EntityEvents.damageCancelled(this, source, amount, true, false)) {
         return false;
@@ -188,7 +190,7 @@ insert:
 # EntityDamageEvent(爆発)
 file: net/minecraft/world/entity/decoration/ArmorStand.java
 anchor:
-    if (source.is(DamageTypeTags.IS_EXPLOSION)) {
+    } else if (source.is(DamageTypeTags.IS_EXPLOSION)) {
 insert-after:
     if (dev.shifu.event.EntityEvents.damageCancelled(this, source, amount, true, false)) {
         return false;
@@ -216,7 +218,11 @@ insert:
 # PlayerAttackEntityCooldownResetEvent
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-    target.push((double)(-Mth.sin(this.getYRot() * ((float)Math.PI / 180F)) * (float)j * 0.5F), 0.1D, (double)(Mth.cos(this.getYRot() * ((float)Math.PI / 180F)) * (float)j * 0.5F));
+    target.push(
+    -Mth.sin(this.getYRot() * (float) (Math.PI / 180.0)) * j * 0.5F,
+    0.1,
+    Mth.cos(this.getYRot() * (float) (Math.PI / 180.0)) * j * 0.5F
+    );
 insert:
     dev.shifu.event.EntityEvents.pushedBy(this, target);
 
@@ -245,7 +251,8 @@ insert-after:
 
 file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
-    player.level.addFreshEntity(new ExperienceOrb(player.level, player.getX(), player.getY() + 0.5D, player.getZ() + 0.5D, this.random.nextInt(6) + 1));
+    player.level
+    .addFreshEntity(new ExperienceOrb(player.level, player.getX(), player.getY() + 0.5, player.getZ() + 0.5, this.random.nextInt(6) + 1));
     if (itemStack.is(ItemTags.FISHES)) {
     player.awardStat(Stats.FISH_CAUGHT, 1);
     }
@@ -259,7 +266,7 @@ insert-after:
 # PlayerFishEvent(IN_GROUND / REEL_IN)
 file: net/minecraft/world/entity/projectile/AbstractArrow.java
 anchor:
-    livingEntity.push(vec3.x, 0.1D, vec3.z);
+    livingEntity.push(vec3.x, 0.1, vec3.z);
 insert:
     dev.shifu.event.EntityEvents.pushedBy(this, livingEntity);
 
@@ -289,7 +296,7 @@ insert:
 file: net/minecraft/world/entity/Entity.java
 anchor:
     vec3 = vec3.add(vec32);
-    ++o;
+    o++;
     }
 insert-after:
     dev.shifu.event.EntityEvents.lavaContact(this, fluidState, mutableBlockPos);

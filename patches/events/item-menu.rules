@@ -13,7 +13,7 @@
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/AbstractContainerMenu.java.patch(InventoryDragEvent)
 file: net/minecraft/world/inventory/AbstractContainerMenu.java
 anchor:
-    for(Slot slot2 : this.quickcraftSlots) {
+    for (Slot slot2 : this.quickcraftSlots) {
 insert:
     dev.shifu.event.ItemEvents.dragBefore(this.quickcraftSlots, this);
 
@@ -61,7 +61,16 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/CrossbowItem.java.patch
 file: net/minecraft/world/item/SnowballItem.java
 anchor:
-    world.playSound((Player)null, user.getX(), user.getY(), user.getZ(), SoundEvents.SNOWBALL_THROW, SoundSource.NEUTRAL, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F));
+    world.playSound(
+    null,
+    user.getX(),
+    user.getY(),
+    user.getZ(),
+    SoundEvents.SNOWBALL_THROW,
+    SoundSource.NEUTRAL,
+    0.5F,
+    0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F)
+    );
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -80,7 +89,9 @@ insert-after:
 
 file: net/minecraft/world/item/EggItem.java
 anchor:
-    world.playSound((Player)null, user.getX(), user.getY(), user.getZ(), SoundEvents.EGG_THROW, SoundSource.PLAYERS, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F));
+    world.playSound(
+    null, user.getX(), user.getY(), user.getZ(), SoundEvents.EGG_THROW, SoundSource.PLAYERS, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F)
+    );
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -99,7 +110,16 @@ insert-after:
 
 file: net/minecraft/world/item/EnderpearlItem.java
 anchor:
-    world.playSound((Player)null, user.getX(), user.getY(), user.getZ(), SoundEvents.ENDER_PEARL_THROW, SoundSource.NEUTRAL, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F));
+    world.playSound(
+    null,
+    user.getX(),
+    user.getY(),
+    user.getZ(),
+    SoundEvents.ENDER_PEARL_THROW,
+    SoundSource.NEUTRAL,
+    0.5F,
+    0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F)
+    );
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -118,7 +138,16 @@ insert-after:
 
 file: net/minecraft/world/item/ExperienceBottleItem.java
 anchor:
-    world.playSound((Player)null, user.getX(), user.getY(), user.getZ(), SoundEvents.EXPERIENCE_BOTTLE_THROW, SoundSource.NEUTRAL, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F));
+    world.playSound(
+    null,
+    user.getX(),
+    user.getY(),
+    user.getZ(),
+    SoundEvents.EXPERIENCE_BOTTLE_THROW,
+    SoundSource.NEUTRAL,
+    0.5F,
+    0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F)
+    );
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -157,7 +186,6 @@ insert-after:
 file: net/minecraft/world/item/FireworkRocketItem.java
 anchor:
     level.addFreshEntity(fireworkRocketEntity);
-    itemStack.shrink(1);
 insert:
     final boolean shifuFireworkConsume;
     if (dev.shifu.event.ItemEvents.launchListening()) {
@@ -180,7 +208,16 @@ insert-after:
 # 飛行中に使う: PlayerElytraBoostEvent。登録があれば ItemEvents.elytraBoost が vanilla と同じ順で行う。
 file: net/minecraft/world/item/FishingRodItem.java
 anchor:
-    world.playSound((Player)null, user.getX(), user.getY(), user.getZ(), SoundEvents.FISHING_BOBBER_THROW, SoundSource.NEUTRAL, 0.5F, 0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F));
+    world.playSound(
+    null,
+    user.getX(),
+    user.getY(),
+    user.getZ(),
+    SoundEvents.FISHING_BOBBER_THROW,
+    SoundSource.NEUTRAL,
+    0.5F,
+    0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F)
+    );
 insert:
     if (!dev.shifu.event.ItemEvents.fishListening()) {
 insert-after:

@@ -55,12 +55,17 @@ $before = 999999
 
 for ($round = 1; $round -le $Rounds; $round++) {
     Set-Location $Tree
+    # git の起動が「アクセスが拒否されました」で落ちることがある。戻せていない木に当て直すと
+    # 追加が二重になって @Override が 4000 件重なるので、戻せたことを確かめてから進む。
     git reset --hard $base -q
+    if ($LASTEXITCODE -ne 0) { throw "git reset が失敗した(round $round)" }
     git clean -fdq
+    if (@(git status --porcelain).Count -ne 0) { throw "木が素に戻っていない(round $round)" }
 
     # Paper 側を素の状態に戻す(env.sh の shifu_reset_paper と同じ)
     git -C $PaperServer clean -qfd -- src/main/java
     git -C $PaperServer checkout -q -- src/main/java
+    if ($LASTEXITCODE -ne 0) { throw "Paper-Server を戻せなかった(round $round)" }
     if ((git -C $PaperServer ls-tree -d $basePaper -- src/main/resources/data/minecraft/worldgen) -ne $null) {
         git -C $PaperServer checkout -q $basePaper -- src/main/resources/data/minecraft/worldgen
     }

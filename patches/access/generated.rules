@@ -257,3 +257,13 @@ line:
 file: net/minecraft/world/level/chunk/storage/EntityStorage.java
 line:
     private CompoundTag upgradeChunkTag(CompoundTag chunkNbt) {
+
+# IllagerSpell(1.19.4 は protected。CraftSpellcaster と発火層が外から使う)
+file: net/minecraft/world/entity/monster/SpellcasterIllager.java
+line:
+    protected static enum IllagerSpell {
+
+# ChunkMap.TrackedEntity(1.19.4 はパッケージ内。Paper が Entity.tracker の型にする)
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    class TrackedEntity {

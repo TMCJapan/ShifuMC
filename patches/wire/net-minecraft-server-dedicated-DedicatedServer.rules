@@ -12,7 +12,7 @@ insert-after:
 # 起動が終わったことを watchdog に伝える。ここまでは長くかかっても落とさない
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
-    LOGGER.info("Done ({})! For help, type \"help\"", (Object)string);
+    LOGGER.info("Done ({})! For help, type \"help\"", string);
 insert-after:
     org.spigotmc.WatchdogThread.tick();
     org.spigotmc.WatchdogThread.hasStarted = true;

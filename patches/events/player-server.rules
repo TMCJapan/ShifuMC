@@ -33,7 +33,7 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/MinecraftServer.java.patch(WorldDifficultyChangeEvent)
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
-    return serverPropertiesHandler.whiteList.update(this.registryAccess(), useWhitelist);
+    this.settings.update(serverPropertiesHandler -> serverPropertiesHandler.whiteList.update(this.registryAccess(), useWhitelist));
 insert:
     dev.shifu.event.PlayerEvents.whitelistToggle(useWhitelist);
 
@@ -42,7 +42,7 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/dedicated/DedicatedServer.java.patch(RemoteServerCommandEvent)
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
-    this.getCommands().performPrefixedCommand(this.rconConsoleSource.createCommandSourceStack(), command);
+    this.executeBlocking(() -> this.getCommands().performPrefixedCommand(this.rconConsoleSource.createCommandSourceStack(), command));
 insert:
     if (dev.shifu.event.PlayerEvents.remoteCommand(this, this.rconConsoleSource, command)) {
 insert-after:

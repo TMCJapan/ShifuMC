@@ -4,9 +4,9 @@
     // Paper は persistentDataContainer をコンストラクタで必ず作る。ブロックエンティティ 1 つ
     // ごとに 1 つ増えるので、Shifu は要るときに作る。読み書きするのは
     // PublicBukkitValues が付いているときと、プラグインが触ったときだけ。
-    public CraftPersistentDataContainer shifuPersistentData() {
+    public org.bukkit.craftbukkit.persistence.CraftPersistentDataContainer shifuPersistentData() {
         if (this.persistentDataContainer == null) {
-            this.persistentDataContainer = new CraftPersistentDataContainer(DATA_TYPE_REGISTRY);
+            this.persistentDataContainer = new org.bukkit.craftbukkit.persistence.CraftPersistentDataContainer(DATA_TYPE_REGISTRY);
         }
 
         return this.persistentDataContainer;

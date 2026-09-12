@@ -41,3 +41,14 @@ net/minecraft/server/network/ServerGamePacketListenerImpl.java ServerGamePacketL
 # Paper は hurtAndBreak の 3 つめを LivingEntity に替えている。vanilla は ServerPlayer なので、
 # 同じ本体のうち渡す実体だけを変えた版を patches/hand に置いた
 net/minecraft/world/item/ItemStack.java ItemStack.hurtAndBreakWithoutChecks
+
+# Paper 1.19.4 が同梱する Alternate Current の入口。Shifu はその実装ごと外す(env.sh)ので、
+# 参照先の alternate.current.wire が無い
+net/minecraft/server/level/ServerLevel.java ServerLevel.getWireHandler
+net/minecraft/world/level/Level.java Level.getWireHandler
+
+# Paper 1.19.4 のエンティティ保存(EntityRegionFileStorage)。patches/hand の entityDataControllerNew が
+# 止める形で置き換えるので、それが使う 3 つは足さない
+net/minecraft/server/level/ServerLevel.java ServerLevel.entityStorage
+net/minecraft/server/level/ServerLevel.java ServerLevel.writeEntityChunk
+net/minecraft/server/level/ServerLevel.java ServerLevel.readEntityChunk

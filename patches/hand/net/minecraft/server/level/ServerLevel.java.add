@@ -126,3 +126,27 @@
     public void addWorldGenChunkEntities(final Stream<Entity> entities, final ChunkPos forChunk) {
         this.addLegacyChunkEntities(entities);
     }
+
+// ServerLevel.entityDataControllerNew
+    // Paper のチャンク系(RegionFileIOThread)がエンティティの保存に使う入口。Paper 1.19.4 は
+    // EntityRegionFileStorage(Paper が足したクラス)を挟むが、Shifu は vanilla のチャンク系で
+    // 保存するので、この入口は通らない。写すと entityStorage / readEntityChunk / writeEntityChunk
+    // まで引きずるので、通ったら分かる形で止める。
+    public final io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController entityDataControllerNew
+        = new io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController(io.papermc.paper.chunk.system.io.RegionFileIOThread.RegionFileType.ENTITY_DATA) {
+
+        @Override
+        public net.minecraft.world.level.chunk.storage.RegionFileStorage getCache() {
+            throw new UnsupportedOperationException("Shifu は vanilla の EntityStorage で保存する");
+        }
+
+        @Override
+        public void writeData(int chunkX, int chunkZ, net.minecraft.nbt.CompoundTag compound) {
+            throw new UnsupportedOperationException("Shifu は vanilla の EntityStorage で保存する");
+        }
+
+        @Override
+        public net.minecraft.nbt.CompoundTag readData(int chunkX, int chunkZ) {
+            throw new UnsupportedOperationException("Shifu は vanilla の EntityStorage で保存する");
+        }
+    };
