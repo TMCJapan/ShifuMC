@@ -21,7 +21,10 @@ Minecraft の更新で宣言が変わったら、黙って通さずに止める�
     line:
         protected final Connection connection;
 
-    python tools/widen_access.py <patches/access> <src/minecraft/java>
+    python tools/widen_access.py <patches/access> <src/minecraft/java> [--report]
+
+`--report` は当たらなかった規則で止まらずに、全部を並べてから続ける。
+版を移すときに、1 件ずつ潰すのではなく直す量を先に見るために使う。
 
 型の宣言に interface を 1 つ足す規則もここに置く(`implements:`)。
 これも可視性と同じくコンパイル時の性質だけで、vanilla のメソッドの命令列は変わらない。
@@ -191,6 +194,8 @@ def widen(lines, rule):
 
 def main():
     rule_root, tree = sys.argv[1:3]
+    report = "--report" in sys.argv
+    missed = []
     rules = []
 
     for base, _, names in sorted(os.walk(rule_root)):
@@ -212,18 +217,35 @@ def main():
         path = os.path.join(tree, target.replace("/", os.sep))
 
         if not os.path.exists(path):
-            raise SystemExit(f"{group[0].where}: 元のファイルが無い: {target}")
+            if not report:
+                raise SystemExit(f"{group[0].where}: 元のファイルが無い: {target}")
+
+            missed.append(f"{group[0].where}: 元のファイルが無い: {target}")
+            continue
 
         with open(path, encoding="utf-8") as handle:
             lines = handle.read().split("\n")
 
         for rule in group:
-            lines = widen(lines, rule)
+            if not report:
+                lines = widen(lines, rule)
+                continue
+
+            try:
+                lines = widen(lines, rule)
+            except SystemExit as stop:
+                missed.append(str(stop))
 
         with open(path, "w", encoding="utf-8", newline="\n") as handle:
             handle.write("\n".join(lines))
 
-    print(f"広げた可視性: {len(rules)} 件 / {len(by_file)} ファイル")
+    print(f"広げた可視性: {len(rules) - len(missed)} 件 / {len(by_file)} ファイル")
+
+    if missed:
+        print(f"当たらなかった規則: {len(missed)} 件", file=sys.stderr)
+
+        for line in missed:
+            print(f"  {line}", file=sys.stderr)
 
 
 if __name__ == "__main__":

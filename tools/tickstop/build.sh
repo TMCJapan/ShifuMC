@@ -14,7 +14,8 @@ ASM=$(ls "$HOME"/.gradle/caches/modules-2/files-2.1/org.ow2.asm/asm/9.9.1/*/asm-
 rm -rf "$OUT"
 mkdir -p "$OUT/classes"
 
-"$JAVA_HOME/bin/javac" -encoding UTF-8 -nowarn -proc:none \
+# サーバーが動く JDK に合わせる。JDK 25 で組んだ agent は 1.20.6(JDK 21)に載らない
+"$JAVA_HOME/bin/javac" -encoding UTF-8 -nowarn -proc:none --release "$JDK_MIN" \
     -cp "$(cygpath -w "$ASM")" -d "$(cygpath -w "$OUT/classes")" \
     "$SHIFU/tools/tickstop/src/dev/shifu/tickstop/TickStop.java"
 

@@ -241,8 +241,12 @@ anchor:
     Map<Holder<MobEffect>, MobEffectInstance> map = Maps.newHashMap(this.activeEffects);
     this.activeEffects.clear();
 insert-after:
-    shifuKept.forEach(shifuEffect -> map.remove(shifuEffect.getEffect()));
-    shifuKept.forEach(shifuEffect -> this.activeEffects.put(shifuEffect.getEffect(), shifuEffect));
+    // ラムダを使うと LivingEntity の合成メソッドの番号がずれて、
+    // fabric-entity-events の isSleepingInBed のラムダを狙う mixin が当たらない。for 文で書く。
+    for (final MobEffectInstance shifuEffect : shifuKept) {
+        map.remove(shifuEffect.getEffect());
+        this.activeEffects.put(shifuEffect.getEffect(), shifuEffect);
+    }
 
 # 全部取り消されたら false(Paper の !toRemove.isEmpty())
 file: net/minecraft/world/entity/LivingEntity.java

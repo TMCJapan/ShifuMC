@@ -330,3 +330,51 @@ replace:
 with:
     net.minecraft.nbt.Tag lightweightData = readLightweightData(path);
     if (lightweightData instanceof CompoundTag compoundTag) {
+
+# 無名クラスが捕まえた変数の名前。逆コンパイラは map と付けるが公式は tags で、
+# 合成の欄が val$tags になる。fabric-tag-api の @Accessor がこの欄を狙う
+# (field_53694 -> val$tags)。名前だけで、命令列は変わらない。
+file: net/minecraft/core/MappedRegistry.java
+replace:
+    static <T> MappedRegistry.TagSet<T> fromMap(final Map<TagKey<T>, HolderSet.Named<T>> map) {
+with:
+    static <T> MappedRegistry.TagSet<T> fromMap(final Map<TagKey<T>, HolderSet.Named<T>> tags) {
+
+file: net/minecraft/core/MappedRegistry.java
+replace:
+    return Optional.ofNullable(map.get(key));
+with:
+    return Optional.ofNullable(tags.get(key));
+
+file: net/minecraft/core/MappedRegistry.java
+replace:
+    map.forEach(action);
+with:
+    tags.forEach(action);
+
+file: net/minecraft/core/MappedRegistry.java
+replace:
+    return map.values().stream();
+with:
+    return tags.values().stream();
+
+# GameRuleCommand.register の無名クラスが捕まえる局所変数。公式は base で、
+# 合成の欄が val$base になる。fabric-game-rule-api の @Shadow がこれを狙う
+# (field_64600 -> val$base)。名前だけで、命令列は変わらない。
+file: net/minecraft/server/commands/GameRuleCommand.java
+replace:
+    final LiteralArgumentBuilder<CommandSourceStack> literalArgumentBuilder = Commands.literal("gamerule")
+with:
+    final LiteralArgumentBuilder<CommandSourceStack> base = Commands.literal("gamerule")
+
+file: net/minecraft/server/commands/GameRuleCommand.java
+replace:
+    literalArgumentBuilder.then(GameRuleCommand.buildRuleArguments(rule, literalArgumentBuilder1))
+with:
+    base.then(GameRuleCommand.buildRuleArguments(rule, literalArgumentBuilder1))
+
+file: net/minecraft/server/commands/GameRuleCommand.java
+replace:
+    dispatcher.register(literalArgumentBuilder);
+with:
+    dispatcher.register(base);

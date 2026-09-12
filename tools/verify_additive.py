@@ -120,6 +120,8 @@ def looped(old, new, nearby):
 
 
 TAIL = re.compile(r"^(?P<head>.*) && dev\.shifu\.event\.[\w.]+\(.*\);$")
+# 判定の式そのものに足す形。`if (…) {` の中身の末尾に付く。
+TAIL_IF = re.compile(r"^(?P<head>.*) && dev\.shifu\.event\.[\w.]+\(.*\)\) \{$")
 
 
 def tailFired(old, new):
@@ -131,7 +133,51 @@ def tailFired(old, new):
     """
     found = TAIL.match(new)
 
-    return found is not None and found.group("head").strip() + ";" == old.strip()
+    if found is not None and found.group("head").strip() + ";" == old.strip():
+        return True
+
+    found = TAIL_IF.match(new)
+
+    if found is not None and found.group("head").strip() + ") {" == old.strip():
+        return True
+
+    return unwrapped(new) == old.strip()
+
+
+CALL = re.compile(r"dev\.shifu\.event\.[\w.]+\(")
+
+
+def unwrapped(new):
+    """`dev.shifu.event.X(E, ...)` を第 1 引数 E に戻した行(patches/expr)。
+
+    Paper が vanilla の式の一部を差し替えているところ。vanilla の式をその場で
+    第 1 引数として渡す形にすれば、評価の位置も回数も順も変わらない。
+    登録が無ければ第 1 引数をそのまま返すので、増えるのは static 呼び出し 1 つ。
+    """
+    found = CALL.search(new)
+
+    if found is None:
+        return None
+
+    depth = 0
+    first = None
+
+    for at in range(found.end() - 1, len(new)):
+        letter = new[at]
+
+        if letter in "([":
+            depth += 1
+        elif letter in ")]":
+            depth -= 1
+
+            if depth == 0:
+                return (new[:found.start()]
+                        + new[found.end():first if first is not None else at]
+                        + new[at + 1:]).strip()
+        elif letter == "," and depth == 1 and first is None:
+            first = at
+
+    return None
 
 
 def hoisted(old, new, nearby):

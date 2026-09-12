@@ -18,11 +18,11 @@ anchor:
     advancement.value().rewards().grant(this.player);
 insert:
     // Paper start - Add Adventure message to PlayerAdvancementDoneEvent
-    final net.kyori.adventure.text.Component message = advancement.value().display().flatMap(info -> {
-        return java.util.Optional.ofNullable(
-            info.shouldAnnounceChat() ? io.papermc.paper.adventure.PaperAdventure.asAdventure(info.getType().createAnnouncement(advancement, this.player)) : null
-        );
-    }).orElse(null);
+    // ラムダを使うと PlayerAdvancements の合成メソッドの番号がずれて、styledchat の
+    // 告知の文を狙う @ModifyArg が当たらない。Optional の中身を取り出して分岐で書く。
+    final net.minecraft.advancements.DisplayInfo shifuInfo = advancement.value().display().orElse(null);
+    final net.kyori.adventure.text.Component message = shifuInfo != null && shifuInfo.shouldAnnounceChat()
+            ? io.papermc.paper.adventure.PaperAdventure.asAdventure(shifuInfo.getType().createAnnouncement(advancement, this.player)) : null;
     final org.bukkit.event.player.PlayerAdvancementDoneEvent event = new org.bukkit.event.player.PlayerAdvancementDoneEvent(this.player.getBukkitEntity(), advancement.toBukkit(), message);
     this.player.level().getCraftServer().getPluginManager().callEvent(event); // CraftBukkit
     // Paper end

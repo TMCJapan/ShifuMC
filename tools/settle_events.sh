@@ -14,6 +14,8 @@ GAP=$SHIFU/docs/backlog/vanilla-gap.txt
 GEN=$SHIFU/patches/events/generated
 NOTE=$SHIFU/docs/backlog/events-dropped.txt
 export EVENTS_FLAGS=--report
+# 版を移した直後は可視性の規則も当たらない。止めずに数を見る。
+export ACCESS_FLAGS=${ACCESS_FLAGS:-}
 
 # ツールの出力先。リポジトリには入っていないので作る。
 # 要求リストが無い状態から始めると、closure.sh が不動点まで回して組み直す。

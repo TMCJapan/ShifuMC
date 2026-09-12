@@ -1,6 +1,6 @@
 # 現状(ver/1.21.11)
 
-2026-09-08 時点。このブランチは Minecraft 1.21.11。26.2 の分は `main` の同じファイル。
+2026-09-12 時点。このブランチは Minecraft 1.21.11。26.2 の分は `main` の同じファイル。
 構成は [ARCHITECTURE.md](ARCHITECTURE.md)、開発の手順は [DEVELOPING.md](DEVELOPING.md)。
 
 ## 1.21.11 で通っているところ
@@ -14,9 +14,24 @@
 | Bukkit の世界 | 3 つ(`world` / `world_nether` / `world_the_end`)。環境と UUID は別々 |
 | スケジューラ | 毎 tick 走る。`MinecraftServer.currentTick` も進む |
 | 停止 | `Bukkit.shutdown()` で JVM まで落ちる |
+| 起動(MOD 込み、2026-09-12) | MOD 125・プラグイン 24 で `Done (1.499s)`。mixin エラー 0、例外 3(starlight の class 探し 2、AuthMe の GeoLite 取得 1。どれも Shifu の外) |
+| プレイヤー(2026-09-12) | bot が参加 → AuthMe 登録 → sethome / home → gamemode → WorldEdit `//set`(27 / 27) `//undo` → 落ちた物の拾い上げ(2 件)→ ブロック破壊(BlockBreakEvent)→ TNT(EntityExplodeEvent、blocks=14)→ インベントリ操作(InventoryClickEvent)→ ドア設置(BlockPlaceEvent)まで通る |
 
-まだ見ていないもの: プレイヤーを繋いだ経路、実際のプラグイン、Fabric MOD、
-vanilla との tick 一致(`compare-ticks.sh` / `compare-worldgen.sh`)。
+まだ見ていないもの: vanilla との tick 一致(`compare-ticks.sh` / `compare-worldgen.sh`)。
+出ていないイベント: BlockMultiPlaceEvent(ドア)、BlockDropItemEvent(松明)。
+どちらも 1.20.6 で足した規則(`7f493a8`)がこの枝には無い。
+
+### 1.20.6 のツールを持ち込んで直したもの(2026-09-12)
+
+| 何が起きたか | 原因 | 直し方 |
+|---|---|---|
+| fabric-entity-events の `isSleepingInBed` のラムダを狙う mixin が当たらない | `LivingEntity.removeAllEffects` の差し込みが `forEach` のラムダを 2 つ足していて、合成メソッドの番号がずれる | for 文で書く(1.20.6 と同じ) |
+| fabric-tag-api の `@Accessor` が `MappedRegistry$TagSet$2` の `field_53694` を見つけない | 逆コンパイラが局所変数を `map` と付け、合成の欄が `val$map` になる。公式は `val$tags` | `patches/decompile/locals.rules` で名前だけ直す |
+| fabric-game-rule-api の `@Shadow` が `GameRuleCommand$1` の `field_64600` を見つけない | 同じく `val$literalArgumentBuilder`。公式は `val$base` | 同上 |
+| styledchat の `@ModifyArg` が `PlayerAdvancements` の告知のラムダを見つけない | PlayerAdvancementDoneEvent の差し込みが `flatMap` のラムダを足していた | Optional を取り出して分岐で書く |
+| bot が参加 2 秒後に切れる(サーバー側は `Disconnected` だけ) | codebook が名前を戻した公式 jar の `BundlerInfo$1$1` が JVM に読めない(`ClassFormatError: Illegal field name`)。`keep_vanilla_classes.py` がそれを写していた。サーバーは使わないクラスなので起動は通る | 公式へ戻したクラスを JVM に読ませ(`tools/lvtmatch` の `ClassCheck`)、落ちたら同じソースのクラスをまとめて Shifu のものに戻す(4 件) |
+| bot が 1.21.11 の packet で組めない | `tools/bot` は版ごとに packet の署名が違う | この枝の bot に 1.20.6 の追加(break / slot、`OUT`、カンマ区切り)だけを移した |
+| bot の切れた理由が出ない | `Connection.tick()` を回していないと `onDisconnect` が届かない | 1 秒ごとに `tick()` する |
 
 ### 数(1.21.11)
 

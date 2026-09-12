@@ -201,14 +201,34 @@ def main():
     if "--min" in sys.argv:
         floor = float(sys.argv[sys.argv.index("--min") + 1])
 
+    # 局所変数の名前だけでは説明が付かない差(引数の増減、メソッドの改名)でも、
+    # ここに書いた近さ以上ならアンカーだけ木の行に合わせる。**本体は触らない。**
+    # 本体が古い名前を参照していれば、次のコンパイルでエラーとして出る。
+    accept = float(sys.argv[sys.argv.index("--accept") + 1]) if "--accept" in sys.argv else None
+
+    # 目で見て決めた分だけを当てる。`<規則のファイル名>:<行>` を 1 行ずつ書いた
+    # ファイルを渡す。近さで一括に決めると、意味の違う行に当ててしまうものが混ざる。
+    only = None
+
+    if "--only" in sys.argv:
+        only = {line.split("#")[0].strip()
+                for line in io.open(sys.argv[sys.argv.index("--only") + 1], encoding="utf-8")
+                if line.split("#")[0].strip()}
+
     by_file = {}
+    # 規則の置き場は入れ子になっている(patches/events/generated など)。
+    # rule.where はファイル名しか持たないので、書き戻す先をここで覚えておく。
+    sources = collections.defaultdict(set)
 
     for base, _, files in os.walk(rules_root):
         for name in sorted(files):
             if not name.endswith(".rules"):
                 continue
 
-            with io.open(os.path.join(base, name), encoding="utf-8") as handle:
+            path = os.path.join(base, name)
+            sources[name].add(path)
+
+            with io.open(path, encoding="utf-8") as handle:
                 for rule in parse(handle.read(), name):
                     by_file.setdefault(rule.target, []).append(rule)
 
@@ -256,11 +276,25 @@ def main():
             names = rename_map(rule.anchor, found)
             mark = ""
 
+            if only is not None and rule.where not in only:
+                print(f"{rule.where}: {ratio:.2f} {target}:{start + 1} (--only の外)")
+                proposed += 1
+                continue
+
+            forced = names is None and accept is not None and ratio >= accept
+
+            if forced:
+                names = {}
+
             if write and names is not None:
                 name, _, no = rule.where.rpartition(":")
+                paths = sources.get(name, set())
 
-                if rewrite(os.path.join(rules_root, name), int(no), len(rule.anchor), found, names):
-                    detail = ", ".join(f"{k}->{v}" for k, v in names.items()) or "final のみ"
+                if len(paths) != 1:
+                    print(f"{rule.where}: 同じ名前の規則が {len(paths)} 箇所にあるので書き換えない")
+                elif rewrite(next(iter(paths)), int(no), len(rule.anchor), found, names):
+                    detail = (", ".join(f"{k}->{v}" for k, v in names.items())
+                              or ("本体は触っていない" if forced else "final のみ"))
                     mark = f" [書き換えた {detail}]"
                     written += 1
 

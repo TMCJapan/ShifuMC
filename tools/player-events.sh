@@ -36,7 +36,7 @@ cp "$SHIFU/tools/probe/plugin.yml" "$OUT/probe/"
 cp "$OUT/ShifuPlayerProbe.jar" "$RUN/plugins/"
 
 # 2. bot
-"$JAVAC" -encoding UTF-8 --release 25 -cp "$CP" -d "$OUT/bot" "$SHIFU"/tools/bot/src/dev/shifu/bot/*.java
+"$JAVAC" -encoding UTF-8 --release "$JDK_MIN" -cp "$CP" -d "$OUT/bot" "$SHIFU"/tools/bot/src/dev/shifu/bot/*.java
 
 # 3. サーバー
 cd "$RUN"

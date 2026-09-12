@@ -171,6 +171,9 @@ def apply(lines, rule):
 
 def main():
     rule_root, tree = sys.argv[1:3]
+    # 版を移した直後は当たらない規則が並ぶ。止めずに全部を並べる
+    report = "--report" in sys.argv
+    missed = []
     rules = []
 
     if os.path.isdir(rule_root):
@@ -193,18 +196,35 @@ def main():
         path = os.path.join(tree, target.replace("/", os.sep))
 
         if not os.path.exists(path):
-            raise SystemExit(f"{group[0].where}: 元のファイルが無い: {target}")
+            if not report:
+                raise SystemExit(f"{group[0].where}: 元のファイルが無い: {target}")
+
+            missed.append(f"{group[0].where}: 元のファイルが無い: {target}")
+            continue
 
         with open(path, encoding="utf-8") as handle:
             lines = handle.read().split("\n")
 
         for rule in group:
-            lines = apply(lines, rule)
+            if not report:
+                lines = apply(lines, rule)
+                continue
+
+            try:
+                lines = apply(lines, rule)
+            except SystemExit as stop:
+                missed.append(str(stop))
 
         with open(path, "w", encoding="utf-8", newline="\n") as handle:
             handle.write("\n".join(lines))
 
-    print(f"直したアダプタ層: {len(rules)} 件 / {len(by_file)} ファイル")
+    print(f"直したアダプタ層: {len(rules) - len(missed)} 件 / {len(by_file)} ファイル")
+
+    if missed:
+        print(f"当たらなかった規則: {len(missed)} 件", file=sys.stderr)
+
+        for line in missed:
+            print(f"  {line}", file=sys.stderr)
 
 
 if __name__ == "__main__":

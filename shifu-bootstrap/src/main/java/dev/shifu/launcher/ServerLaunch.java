@@ -3,6 +3,7 @@ package dev.shifu.launcher;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +24,7 @@ final class ServerLaunch {
 	}
 
 	static int run(Path serverDir, LauncherConfig config, PaperArtifacts paper, FabricArtifacts fabric,
-			Path shifuJar, List<String> serverArgs) throws IOException, InterruptedException {
+			Namespace namespace, Path shifuJar, List<String> serverArgs) throws IOException, InterruptedException {
 		// 起動クラスパスに載せるのは Shifu 自身と fabric-loader 一式だけ。
 		// Paper のライブラリは ShifuGameProvider が Knot 側に足す。
 		// 両方に載せると、同じ jar が親と Knot の双方から見えてクラスローダが分断される。
@@ -37,8 +38,18 @@ final class ServerLaunch {
 		command.add("-Dfabric.skipMcProvider=true");
 		command.add("-Dshifu.paperJar=" + paper.serverJar().toAbsolutePath());
 		command.add("-Dshifu.librariesDir=" + paper.librariesDir().toAbsolutePath());
+
+		// bundler が宣言している分だけを載せる。無ければ librariesDir を全部さらう
+		if (Files.isRegularFile(paper.librariesList())) {
+			command.add("-Dshifu.librariesList=" + paper.librariesList().toAbsolutePath());
+		}
 		command.add("-Dshifu.vanillaJar=" + paper.vanillaJar().toAbsolutePath());
 		command.add("-Dshifu.vanillaParity=" + config.vanillaParity());
+
+		if (namespace != null) {
+			command.addAll(namespace.jvmArgs());
+		}
+
 		command.add("-cp");
 		command.add(String.join(File.pathSeparator, classPath));
 		command.add(fabric.mainClass());

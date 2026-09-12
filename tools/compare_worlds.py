@@ -7,15 +7,24 @@ region ファイルは書き込み時刻と詰め方が実行のたびに変わ�
 
 それでも原点まわりの数十チャンクは実行のたびに変わる。起動から停止までに
 tick される範囲で、mob の湧きも乱数の消費も走った時間で決まるため。
-**vanilla を 2 回走らせて、そのばらつきを差し引く。**
+**vanilla を何回か走らせて、そのばらつきを差し引く。**
 
     # ばらつきを差し引かない(全部出る)
     python tools/compare_worlds.py <vanilla の world> <Shifu の world>
 
-    # vanilla をもう 1 回走らせた世界を渡すと、実行のたびに変わる分を除く
-    python tools/compare_worlds.py <vanilla の world> <Shifu の world> <vanilla の world 2>
+    # vanilla をもう何回か走らせた世界を渡すと、実行のたびに変わる分を除く
+    python tools/compare_worlds.py <vanilla の world> <Shifu の world> <vanilla の world 2> ...
 
-3 つめを渡した形で差が 0 なら、tick されない範囲では vanilla と一致している。
+    # Shifu 側のばらつきも除く(--right-control のあとが右のもう 1 回)
+    python tools/compare_worlds.py <vanilla> <Shifu> <vanilla 2> --right-control <Shifu 2>
+
+**片側だけ差し引くと、もう片側のばらつきが実差に見える。** 1.20.6 の 1200 tick では
+vanilla を 4 回引いても 1 チャンク残り、Shifu をもう 1 度走らせると別のチャンクが残った。
+
+3 つめ以降を渡した形で差が 0 なら、tick されない範囲では vanilla と一致している。
+
+**2 回では足りない。**「たまたま揃ったチャンク」がばらつきに数えられず、
+Shifu 側の実差のように見える。1.20.6 では 2 回で 5 件、3 回で 3 件、4 回で 0 件になった。
 """
 
 import os
@@ -24,6 +33,27 @@ import sys
 import zlib
 
 SECTOR = 4096
+
+
+# 保存した時点のワールド tick。生成した中身ではないので比べない。
+# 起動から stop までの tick 数は走らせるたびに数 tick ずれる。ここを見ると
+# **全チャンクが「違う」になり**、差し引きに使う vanilla 同士のばらつきが 100% になって、
+# 比べられるチャンクが 0 件になる(1.20.6 で踏んだ。26.2 ではたまたま揃っていた)。
+#
+# 中身は TAG_Long(0x04)+ 名前の長さ(0x000A)+ "LastUpdate" + 8 バイト。
+LAST_UPDATE = b"\x04\x00\x0aLastUpdate"
+
+
+def settle(body):
+    """走らせるたびに変わる欄を潰す。生成した中身の比較だけを残す。"""
+    at = body.find(LAST_UPDATE)
+
+    while at >= 0:
+        value = at + len(LAST_UPDATE)
+        body = body[:value] + bytes(8) + body[value + 8:]
+        at = body.find(LAST_UPDATE, value + 8)
+
+    return body
 
 
 def chunks(path):
@@ -65,7 +95,7 @@ def chunks(path):
             except zlib.error as problem:
                 body = b"<decompress failed: " + str(problem).encode() + b">"
 
-            out[(index % 32, index // 32)] = body
+            out[(index % 32, index // 32)] = settle(body)
 
     return out
 
@@ -103,13 +133,31 @@ def unstable_between(left, right):
 
 def main():
     left, right = sys.argv[1:3]
-    control = sys.argv[3] if len(sys.argv) > 3 else None
+    rest = sys.argv[3:]
+
+    if "--right-control" in rest:
+        cut = rest.index("--right-control")
+        controls, right_controls = rest[:cut], rest[cut + 1:]
+    else:
+        controls, right_controls = rest, []
 
     skip = set()
 
-    if control:
-        skip = unstable_between(left, control)
-        print("vanilla を 2 回走らせて変わるチャンク: %d(この分は除く)" % len(skip))
+    for control in controls:
+        skip |= unstable_between(left, control)
+
+    if controls:
+        print("左を %d 回走らせて変わるチャンク: %d(この分は除く)"
+              % (len(controls) + 1, len(skip)))
+
+    if right_controls:
+        before = len(skip)
+
+        for control in right_controls:
+            skip |= unstable_between(right, control)
+
+        print("右を %d 回走らせて変わるチャンク: %d(この分は除く)"
+              % (len(right_controls) + 1, len(skip) - before))
 
     a, b = world_chunks(left), world_chunks(right)
     shared = (set(a) & set(b)) - skip

@@ -11,6 +11,7 @@
 #    行き先が食い違うものは、slot ごとでは直せない)。
 # 2. 合成メソッド(lambda)の形を公式に合わせる(tools/lvtmatch の LambdaMatch)
 # 3. 触っていないクラスは公式のバイトコードに戻す(tools/keep_vanilla_classes.py)
+# 4. 公式と命令列が違うメソッドを数える(tools/lvtmatch の CodeDiff)
 #
 # gradle は出力の変化を見て作り直すので、このあと jar を作るときは
 # -x ":paper-server:compileJava" で再コンパイルを飛ばす。
@@ -22,6 +23,12 @@ CLASSES=$PW/paper-server/build/classes/java/main
 # 26.1 より前の公式 jar は難読化されていてクラス名が当たらない。paperweight が
 # codebook で名前を戻したものを使う(バイトコードは公式のまま)。
 MOJANG=$(cygpath -m "$PW/paper-server/.gradle/caches/paperweight/taskCache/codebook-minecraft.jar")
+
+# classic(1.21.3 以前)は codebook を使わない。キャッシュはクローンの直下にあって、
+# mojmap に戻したものは minecraft.jar(decompileJar.jar はソースの jar なので当たらない)。
+if [ ! -f "$PW/paper-server/.gradle/caches/paperweight/taskCache/codebook-minecraft.jar" ]; then
+    MOJANG=$(cygpath -m "$PW/.gradle/caches/paperweight/taskCache/minecraft.jar")
+fi
 
 [ -f "$SHIFU/tools/build/lvtmatch/asm.cp" ] || sh "$SHIFU/tools/lvtmatch/build.sh"
 
@@ -47,3 +54,16 @@ python tools/check_lambdas.py "$CLASSES_M" "$MOJANG" --list || true
     "$(cygpath -m "$SHIFU/tools/build/lambda-differs.txt")"
 
 python tools/keep_vanilla_classes.py "$CLASSES_M" "$MOJANG"
+
+# 無名クラスが捕まえた欄の名前が公式と違うと、そこを @Shadow している MOD の
+# mixin が当たらずにサーバーが起動しない(理由は tools/check_synthetic_names.py)。
+# 外側に 1 行足しただけでも起きるので、数を出しておく。
+python tools/check_synthetic_names.py "$CLASSES_M" "$MOJANG" | tail -1 || true
+
+# 公式と命令列が違うメソッドを数える(tools/lvtmatch の CodeDiff)。
+# 差し込みで意図して増える分だけのはずなので、増えたら何かが余計に触っている。
+# **同じ道具に組み上がった jar を渡して、同じ数になることも確かめること。**
+# paperweight の fixJarForReobf は field の所有クラスを書き換えるので、
+# class の側だけ見ていると 1844 件の食い違いを見落とす(tools/keepfields.gradle)。
+"$JAVA_HOME/bin/java" -cp "$CP" dev.shifu.lvtmatch.CodeDiff "$CLASSES_M" "$MOJANG" \
+    "$(cygpath -m "$SHIFU/tools/build/code-differs.txt")"
