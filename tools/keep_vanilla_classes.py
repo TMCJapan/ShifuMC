@@ -118,6 +118,50 @@ def mojang_classes(jar):
     return out
 
 
+def restore_unreadable(classes_dir, swapped):
+    """公式へ戻したクラスを JVM に読ませて、落ちるものは Shifu のものに戻す。
+
+    codebook が名前を戻した公式 jar には、javap では正常に見えるのに JVM が
+    `ClassFormatError: Illegal field name` で弾くクラスが混ざる(1.21.11 の
+    BundlerInfo$1$1)。サーバーはそのクラスを使わないので起動は通るが、
+    同じ jar を使う bot(クライアント側)が bundle を受けた瞬間に切れる。
+    """
+    if not swapped:
+        return 0
+
+    tools = os.path.dirname(os.path.abspath(__file__))
+    lvtmatch = os.path.join(tools, "build", "lvtmatch")
+    listing = os.path.join(tools, "build", "kept-classes.txt")
+    io.open(listing, "w", encoding="utf-8", newline="\n").write("\n".join(sorted(swapped)) + "\n")
+    java = os.path.join(os.environ.get("JAVA_HOME", ""), "bin", "java")
+    done = subprocess.run([java, "-cp", lvtmatch, "dev.shifu.lvtmatch.ClassCheck", classes_dir, listing],
+                          capture_output=True, text=True, encoding="utf-8", errors="replace")
+
+    if done.returncode != 0:
+        raise SystemExit("ClassCheck: %s%s" % (done.stdout, done.stderr))
+
+    restored = set()
+
+    for line in done.stdout.split("\n"):
+        if not line.startswith("FAIL "):
+            continue
+
+        rel = line.split(" ", 2)[1]
+        print("  公式が読めない: %s" % line[len("FAIL "):])
+        # 内部クラスは外側と合成の欄(val$...)で結び付いている。1 つだけ Shifu のものに
+        # 戻すと、公式の外側に無い欄を探しに行って NoSuchFieldError になる
+        # (BundlerInfo$1$1 が val$bundler を、公式の $1 は val$constructor を持つ)。
+        # 同じソースから出たクラスはまとめて戻す。
+        owner = owner_of(rel)
+
+        for sibling in swapped:
+            if owner_of(sibling) == owner and sibling not in restored:
+                io.open(os.path.join(classes_dir, sibling.replace("/", os.sep)), "wb").write(swapped[sibling])
+                restored.add(sibling)
+
+    return len(restored)
+
+
 def main():
     classes_dir = sys.argv[1]
     jar = sys.argv[2]
@@ -130,6 +174,8 @@ def main():
     replaced = 0
     kept_ours = 0
     missing = 0
+    # 公式へ戻したクラスと、戻す前の Shifu のバイト列。JVM に読めなかったら戻す
+    swapped = {}
 
     for base, _, files in os.walk(classes_dir):
         for name in files:
@@ -152,10 +198,13 @@ def main():
                 missing += 1
                 continue
 
+            swapped[rel] = io.open(path, "rb").read()
             io.open(path, "wb").write(data)
             replaced += 1
 
-    print("公式のバイトコードに戻した: %d" % replaced)
+    unreadable = restore_unreadable(classes_dir, swapped)
+    print("公式のバイトコードに戻した: %d" % (replaced - unreadable))
+    print("公式が JVM に読めないので Shifu のものを残した: %d" % unreadable)
     print("Shifu が触ったので残した  : %d" % kept_ours)
     print("公式 jar に無い           : %d" % missing)
 
