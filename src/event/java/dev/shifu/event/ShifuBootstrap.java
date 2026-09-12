@@ -58,27 +58,6 @@ public final class ShifuBootstrap {
     }
 
 
-    /**
-     * stop のあと JVM を終える。Bukkit のスケジューラ({@code CraftAsyncScheduler})の
-     * 管理スレッドが非デーモンなので、vanilla のように放っておくと JVM が残る。
-     * Paper は {@code DedicatedServer.stopServer} の末尾で {@code System.exit} するが、
-     * それはサーバースレッドの上で、vanilla の shutdown hook({@code halt(true)})が
-     * サーバースレッドを待つので待ち合いになる(Paper は hook を外している)。
-     * Shifu はサーバースレッドが終わるのを別のスレッドで待ってから exit する。
-     * 他に非デーモンのスレッドが無ければ、その前に vanilla と同じく自然に終わる。
-     */
-    /**
-     * Paper の設定(paper-global.yml と paper-world-defaults.yml)を読む。
-     * {@code GlobalConfiguration.get()} はこれが済むまで null を返す。
-     */
-    public static void initializeConfigurations(final net.minecraft.server.MinecraftServer server) {
-        try {
-            server.paperConfigurations.initializeGlobalConfiguration(server.registryAccess());
-            server.paperConfigurations.initializeWorldDefaultsConfiguration(server.registryAccess());
-        } catch (final org.spongepowered.configurate.ConfigurateException e) {
-            throw new IllegalStateException("Paper の設定を読めない", e);
-        }
-    }
 
     /**
      * プラグインのログ(java.util.logging)を log4j に流し、System.out と System.err も向ける。

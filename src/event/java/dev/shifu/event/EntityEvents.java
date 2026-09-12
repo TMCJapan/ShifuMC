@@ -34,14 +34,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.FishingHook;
 import net.minecraft.world.entity.projectile.FireworkRocketEntity;
 import net.minecraft.world.entity.projectile.AbstractArrow;
-import net.minecraft.world.entity.vehicle.VehicleEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 
 import org.bukkit.craftbukkit.CraftEquipmentSlot;
-import org.bukkit.craftbukkit.damage.CraftDamageSource;
 import org.bukkit.craftbukkit.entity.CraftLivingEntity;
 import org.bukkit.craftbukkit.event.CraftEventFactory;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
@@ -59,7 +57,6 @@ import org.bukkit.event.entity.EntityExhaustionEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
-import org.bukkit.event.entity.EntityRemoveEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.EntityTransformEvent;
@@ -194,15 +191,6 @@ public final class EntityEvents {
         return ignite(entity, event.getDuration(), seconds);
     }
 
-    private static boolean ignite(final Entity entity, final float duration, final float vanilla) {
-        if (duration != vanilla) {
-            entity.igniteForTicks(Mth.floor(duration * 20.0F));
-
-            return false;
-        }
-
-        return true;
-    }
 
     /**
      * EntityCombustByBlockEvent(溶岩)。{@code Entity.lavaIgnite} の {@code igniteForSeconds(15.0F)} を囲む。
@@ -295,12 +283,7 @@ public final class EntityEvents {
     private static boolean settingAir;
 
 
-    private static EntityRemoveEvent.Cause removeCause;
 
-    /** 次の {@code setRemoved} の理由を置く。アダプタ層(hand の {@code discard(cause)} など)から。 */
-    public static void removeCause(final EntityRemoveEvent.Cause cause) {
-        removeCause = cause;
-    }
 
 
     // ------------------------------------------------------------ 経験値オーブ
@@ -651,17 +634,6 @@ public final class EntityEvents {
         return CraftEventFactory.handleNonLivingEntityDamageEvent(entity, source, damage, cancelOnZeroDamage, cancelled);
     }
 
-    /**
-     * ExplosionPrimeEvent。登録があれば発火して返す。呼ぶ側は null なら vanilla の explode を、
-     * そうでなければ取り消しを見て、イベントの半径と火で explode する。
-     */
-    public static ExplosionPrimeEvent explosionPrime(final Entity entity, final float radius, final boolean fire) {
-        if (!listening(ExplosionPrimeEvent.getHandlerList())) {
-            return null;
-        }
-
-        return CraftEventFactory.callExplosionPrimeEvent(entity, radius, fire);
-    }
 
 
 
@@ -792,17 +764,6 @@ public final class EntityEvents {
         return fishingHand == null ? null : CraftEquipmentSlot.getHand(fishingHand);
     }
 
-    /** PlayerFishEvent(LURED)。かかるまでの間合いを決めた直後。 */
-    public static boolean fishLured(final FishingHook hook) {
-        final net.minecraft.world.entity.player.Player owner = hook.getPlayerOwner();
-
-        if (owner == null || !listening(PlayerFishEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new PlayerFishEvent((org.bukkit.entity.Player) owner.getBukkitEntity(), null,
-                (org.bukkit.entity.FishHook) hook.getBukkitEntity(), PlayerFishEvent.State.LURED).callEvent();
-    }
 
     /**
      * PlayerFishEvent(CAUGHT_FISH)。{@code retrieve} で釣った物を作った直後。
@@ -887,7 +848,7 @@ public final class EntityEvents {
     public static void vehicleMoveBefore(final net.minecraft.world.entity.vehicle.AbstractMinecart cart) {
         cart.shifuLastLocation = vehicleMoveListening()
                 ? org.bukkit.craftbukkit.util.CraftLocation.toBukkit(
-                        cart.position(), cart.level().getWorld(), cart.getYRot(), cart.getXRot())
+                        cart.position(), cart.level.getWorld(), cart.getYRot(), cart.getXRot())
                 : null;
     }
 
@@ -907,7 +868,7 @@ public final class EntityEvents {
         cart.shifuLastLocation = null;
 
         final org.bukkit.Location to = org.bukkit.craftbukkit.util.CraftLocation.toBukkit(
-                cart.position(), cart.level().getWorld(), cart.getYRot(), cart.getXRot());
+                cart.position(), cart.level.getWorld(), cart.getYRot(), cart.getXRot());
         final org.bukkit.entity.Vehicle vehicle = (org.bukkit.entity.Vehicle) cart.getBukkitEntity();
 
         new org.bukkit.event.vehicle.VehicleUpdateEvent(vehicle).callEvent();
@@ -967,21 +928,6 @@ public final class EntityEvents {
         return !CraftEventFactory.callFireworkExplodeEvent(firework).isCancelled();
     }
 
-    /**
-     * EntityPortalEnterEvent。ネザーポータルの中に入った。
-     *
-     * @return 続けてよいか
-     */
-    public static boolean portalEnter(final Entity entity, final net.minecraft.world.level.Level level,
-                                      final net.minecraft.core.BlockPos pos) {
-        if (!listening(org.bukkit.event.entity.EntityPortalEnterEvent.getHandlerList())) {
-            return true;
-        }
-
-        // 1.20.6 の構築子は PortalType を取らない(26.2 の追加)
-        return new org.bukkit.event.entity.EntityPortalEnterEvent(entity.getBukkitEntity(),
-                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level)).callEvent();
-    }
 
 
     /**
@@ -1054,61 +1000,8 @@ public final class EntityEvents {
     }
 
 
-    /**
-     * VehicleDamageEvent。乗り物が傷つく直前。
-     *
-     * <p>Paper はプラグインが直した傷の量を使う。vanilla の
-     * {@code setDamage} の引数は変えられないので、<b>渡しているのは取り消しだけ。</b>
-     */
-    public static boolean vehicleDamage(final net.minecraft.world.entity.vehicle.VehicleEntity vehicle,
-                                        final net.minecraft.world.damagesource.DamageSource source,
-                                        final float amount) {
-        if (!listening(org.bukkit.event.vehicle.VehicleDamageEvent.getHandlerList())) {
-            return true;
-        }
 
-        return new org.bukkit.event.vehicle.VehicleDamageEvent(
-                (org.bukkit.entity.Vehicle) vehicle.getBukkitEntity(),
-                source.getEntity() == null ? null : source.getEntity().getBukkitEntity(),
-                (double) amount).callEvent();
-    }
 
-    /** VehicleDestroyEvent。乗り物が壊れる直前。 */
-    public static boolean vehicleDestroy(final net.minecraft.world.entity.vehicle.VehicleEntity vehicle,
-                                         final net.minecraft.world.damagesource.DamageSource source) {
-        if (!listening(org.bukkit.event.vehicle.VehicleDestroyEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new org.bukkit.event.vehicle.VehicleDestroyEvent(
-                (org.bukkit.entity.Vehicle) vehicle.getBukkitEntity(),
-                source.getEntity() == null ? null : source.getEntity().getBukkitEntity()).callEvent();
-    }
-
-    /**
-     * VehicleEnterEvent と EntityMountEvent。乗る直前。
-     *
-     * <p>世界生成の途中では出さない(Paper と同じ)。
-     */
-    public static boolean mount(final Entity passenger, final Entity vehicle) {
-        if (!passenger.valid) {
-            return true;
-        }
-
-        if (vehicle.getBukkitEntity() instanceof org.bukkit.entity.Vehicle bukkitVehicle
-                && listening(org.bukkit.event.vehicle.VehicleEnterEvent.getHandlerList())
-                && !new org.bukkit.event.vehicle.VehicleEnterEvent(
-                        bukkitVehicle, passenger.getBukkitEntity()).callEvent()) {
-            return false;
-        }
-
-        if (!listening(org.bukkit.event.entity.EntityMountEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new org.bukkit.event.entity.EntityMountEvent(
-                passenger.getBukkitEntity(), vehicle.getBukkitEntity()).callEvent();
-    }
 
 
     /** EntityToggleSwimEvent。泳ぐ・やめるの切り替え直前。 */
@@ -1180,7 +1073,7 @@ public final class EntityEvents {
                 (org.bukkit.entity.Hanging) hanging.getBukkitEntity(),
                 player instanceof net.minecraft.server.level.ServerPlayer serverPlayer
                         ? serverPlayer.getBukkitEntity() : null,
-                org.bukkit.craftbukkit.block.CraftBlock.at(hanging.level(), clicked),
+                org.bukkit.craftbukkit.block.CraftBlock.at(hanging.level, clicked),
                 org.bukkit.craftbukkit.block.CraftBlock.notchToBlockFace(face),
                 org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand),
                 org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack)).callEvent();
@@ -1193,7 +1086,7 @@ public final class EntityEvents {
         }
 
         final org.bukkit.event.hanging.HangingBreakEvent.RemoveCause cause =
-                hanging.level().getBlockState(hanging.blockPosition()).isAir()
+                hanging.level.getBlockState(hanging.blockPosition()).isAir()
                         ? org.bukkit.event.hanging.HangingBreakEvent.RemoveCause.PHYSICS
                         : org.bukkit.event.hanging.HangingBreakEvent.RemoveCause.OBSTRUCTION;
 
@@ -1317,7 +1210,7 @@ public final class EntityEvents {
             return;
         }
 
-        org.bukkit.block.Block block = entity.level().getWorld().getBlockAt(
+        org.bukkit.block.Block block = entity.level.getWorld().getBlockAt(
                 net.minecraft.util.Mth.floor(entity.getX()),
                 net.minecraft.util.Mth.floor(entity.getY()),
                 net.minecraft.util.Mth.floor(entity.getZ()));
@@ -1341,39 +1234,8 @@ public final class EntityEvents {
     }
 
 
-    /**
-     * PhantomPreSpawnEvent。ファントムを 1 匹作る直前。
-     *
-     * <p>{@code shouldAbortSpawn} は「その群れを打ち切る」印。vanilla の
-     * ループを外から止められないので、<b>1 匹ずつ飛ばすだけにしている。</b>
-     */
-    public static boolean phantomPreSpawn(final ServerLevel level, final net.minecraft.core.BlockPos pos,
-                                          final net.minecraft.server.level.ServerPlayer player) {
-        if (!listening(com.destroystokyo.paper.event.entity.PhantomPreSpawnEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new com.destroystokyo.paper.event.entity.PhantomPreSpawnEvent(
-                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level),
-                player.getBukkitEntity(),
-                org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL).callEvent();
-    }
 
 
-    /** PreSpawnerSpawnEvent。スポナーが中身を作る直前。 */
-    public static boolean preSpawnerSpawn(final net.minecraft.world.level.Level level,
-                                          final net.minecraft.world.entity.EntityType<?> type,
-                                          final double x, final double y, final double z,
-                                          final net.minecraft.core.BlockPos spawner) {
-        if (!listening(com.destroystokyo.paper.event.entity.PreSpawnerSpawnEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new com.destroystokyo.paper.event.entity.PreSpawnerSpawnEvent(
-                new org.bukkit.Location(level.getWorld(), x, y, z),
-                org.bukkit.craftbukkit.entity.CraftEntityType.minecraftToBukkit(type),
-                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(spawner, level)).callEvent();
-    }
 
 
     /** HangingBreakByEntityEvent。雷が額縁や絵に当たったとき。 */
@@ -1429,22 +1291,6 @@ public final class EntityEvents {
     }
 
 
-    /**
-     * EntityPathfindEvent。道を引く直前。
-     *
-     * @return 引いてよいか
-     */
-    public static boolean pathfind(final net.minecraft.world.entity.Mob mob,
-                                   final net.minecraft.core.BlockPos target,
-                                   final Entity targetEntity) {
-        if (!listening(com.destroystokyo.paper.event.entity.EntityPathfindEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new com.destroystokyo.paper.event.entity.EntityPathfindEvent(mob.getBukkitEntity(),
-                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(target, mob.level()),
-                targetEntity == null ? null : targetEntity.getBukkitEntity()).callEvent();
-    }
 
     /**
      * PlayerTradeEvent。取引が成立した直後。
@@ -1466,25 +1312,5 @@ public final class EntityEvents {
     }
 
 
-    /**
-     * 持ち主のいないウィザースカルの EntityDamageByEntityEvent。
-     *
-     * <p>vanilla は {@code magic()} をそのまま渡すので、催しの「殴った者」が
-     * 空になる。Paper は {@code customEventDamager} でスカル自身を入れる。
-     * 聞き手がいなければ渡された damage source をそのまま返すので、
-     * 増えるのは static 呼び出しが 1 つ。
-     *
-     * <p>読んだ位置(Paper 1.20.6):
-     *   Paper-Server src/main/java/net/minecraft/world/entity/projectile/WitherSkull.java:75
-     */
-    public static net.minecraft.world.damagesource.DamageSource unownedSkull(
-            final net.minecraft.world.damagesource.DamageSource source,
-            final net.minecraft.world.entity.Entity skull) {
-        if (!listening(org.bukkit.event.entity.EntityDamageByEntityEvent.getHandlerList())) {
-            return source;
-        }
-
-        return source.customEventDamager(skull);
-    }
 
 }

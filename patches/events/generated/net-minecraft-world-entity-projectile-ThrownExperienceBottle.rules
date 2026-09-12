@@ -1,11 +1,1 @@
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
-# callExpBottleEvent
-file: net/minecraft/world/entity/projectile/ThrownExperienceBottle.java
-anchor:
-    ExperienceOrb.award((ServerLevel)this.level, this.position(), i);
-insert:
-    // Paper start - exp bottle event
-    org.bukkit.event.entity.ExpBottleEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callExpBottleEvent(this, hitResult, i);
-    i = event.getExperience();
-    // Paper end - exp bottle event

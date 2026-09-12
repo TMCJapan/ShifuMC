@@ -1,29 +1,4 @@
-# WorldBorderBoundsChangeEvent と WorldBorderCenterChangeEvent。
 
-file: net/minecraft/world/level/border/WorldBorder.java
-anchor:
-        this.extent = new WorldBorder.StaticBorderExtent(size);
-insert:
-    if (!dev.shifu.event.BlockEvents.borderBounds(this.world, this.getSize(), size, 0L)) {
-        return;
-    }
-
-file: net/minecraft/world/level/border/WorldBorder.java
-anchor:
-        this.extent = (WorldBorder.BorderExtent)(fromSize == toSize
-insert:
-    if (!dev.shifu.event.BlockEvents.borderBounds(this.world, fromSize, toSize, time)) {
-        return;
-    }
-
-file: net/minecraft/world/level/border/WorldBorder.java
-anchor:
-        this.centerX = x;
-        this.centerZ = z;
-insert:
-    if (!dev.shifu.event.BlockEvents.borderCenter(this.world, this.centerX, this.centerZ, x, z)) {
-        return;
-    }
 
 # WorldBorderBoundsChangeFinishEvent。移動が終わった直後。
 file: net/minecraft/world/level/border/WorldBorder.java

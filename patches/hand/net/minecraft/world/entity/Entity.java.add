@@ -1,13 +1,5 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
 
-// Entity.discard
-    // Bukkit の削除理由を発火層に置いてから、vanilla の discard へ渡す。
-    // 削除の経路は vanilla のまま。EntityRemoveEvent は setRemoved の中で出る。
-    public final void discard(final org.bukkit.event.entity.EntityRemoveEvent.Cause cause) {
-        dev.shifu.event.EntityEvents.removeCause(cause);
-        this.discard();
-    }
-
 // Entity.getEncodeId
     // Paper の Raw entity serialization API 用。includeNonSaveable=true のとき
     // canSerialize() の検査を飛ばす。vanilla の getEncodeId は状態を変えないので、

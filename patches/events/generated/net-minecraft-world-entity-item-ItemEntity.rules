@@ -1,13 +1,1 @@
-# main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
-# 局所変数の名前が違う(orgCount -> i)ほかは同じ。
 
-# ItemMergeEvent
-file: net/minecraft/world/entity/item/ItemEntity.java
-anchor:
-    merge(targetEntity, targetStack, sourceStack);
-insert:
-    // CraftBukkit start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callItemMergeEvent(sourceEntity, targetEntity)) {
-        return;
-    }
-    // CraftBukkit end

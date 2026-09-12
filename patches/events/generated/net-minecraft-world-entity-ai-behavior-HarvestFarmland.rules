@@ -1,10 +1,1 @@
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
-# callEntityChangeBlockEvent
-file: net/minecraft/world/entity/ai/behavior/HarvestFarmland.java
-anchor:
-    world.destroyBlock(this.aboveFarmlandPos, true, entity);
-insert:
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(entity, this.aboveFarmlandPos, blockState.getFluidState().createLegacyBlock())) { // CraftBukkit // Paper - fix wrong block state
-insert-after:
-    } // CraftBukkit

@@ -138,21 +138,6 @@ public final class AnimalEvents {
                 animal.getRandom().nextInt(7) + 1).isCancelled();
     }
 
-    /**
-     * EntityFertilizeEggEvent。{@code Frog.spawnChildFromBreeding} と {@code Turtle.TurtleBreedGoal.breed}
-     * の先頭。取り消されたら両親の love を戻す(CraftEventFactory がやる)。
-     *
-     * <p>効かないもの: {@code setExperience}。登録があると、この動物の乱数を 1 回余分に引く。
-     *
-     * @return 続けてよいか
-     */
-    public static boolean fertilizeEgg(final Animal breeding, final Animal partner) {
-        if (!listening(io.papermc.paper.event.entity.EntityFertilizeEggEvent.getHandlerList())) {
-            return true;
-        }
-
-        return !CraftEventFactory.callEntityFertilizeEggEvent(breeding, partner).isCancelled();
-    }
 
     /**
      * EntityEnterLoveModeEvent。{@code Animal.setInLove} の先頭。
@@ -229,22 +214,6 @@ public final class AnimalEvents {
 
     // ------------------------------------------------------------ 刈る・拾う・落とす
 
-    /**
-     * PlayerShearEntityEvent。{@code mobInteract} で {@code shear} を呼ぶ直前
-     * (Sheep / MushroomCow / SnowGolem / Bogged)。
-     *
-     * <p>効かないもの: {@code getDrops()} の中身と差し替え。落とし物は vanilla の {@code shear} が
-     * ルートテーブルから自分で引くので、空のリストを載せる。
-     *
-     * @return 刈ってよいか
-     */
-    public static boolean shear(final Player player, final Entity sheared, final ItemStack shears, final InteractionHand hand) {
-        if (!listening(org.bukkit.event.player.PlayerShearEntityEvent.getHandlerList())) {
-            return true;
-        }
-
-        return !CraftEventFactory.handlePlayerShearEntityEvent(player, sheared, shears, hand, new ArrayList<>()).isCancelled();
-    }
 
     /** EntityPickupItemEvent に登録が無いか。{@code Fox.pickUpItem} が拾う物を読み直すかどうかに使う。 */
     public static boolean silentPickup() {
@@ -565,17 +534,6 @@ public final class AnimalEvents {
         return event.callEvent() ? event.getNewYaw() : null;
     }
 
-    /** ShulkerDuplicateEvent。弾を受けて増えるとき、世界に置く直前。 */
-    public static boolean shulkerDuplicate(final net.minecraft.world.entity.monster.Shulker child,
-                                           final net.minecraft.world.entity.monster.Shulker parent) {
-        if (!listening(io.papermc.paper.event.entity.ShulkerDuplicateEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new io.papermc.paper.event.entity.ShulkerDuplicateEvent(
-                (org.bukkit.entity.Shulker) child.getBukkitEntity(),
-                (org.bukkit.entity.Shulker) parent.getBukkitEntity()).callEvent();
-    }
 
 
     /** TurtleGoHomeEvent。canUse() の式の末尾から。 */
@@ -628,7 +586,7 @@ public final class AnimalEvents {
     public static Integer pigZombieAnger(final net.minecraft.world.entity.monster.ZombifiedPiglin piglin,
                                          final int anger) {
         final net.minecraft.world.entity.Entity target =
-                ((net.minecraft.server.level.ServerLevel) piglin.level()).getEntity(piglin.getPersistentAngerTarget());
+                ((net.minecraft.server.level.ServerLevel) piglin.level).getEntity(piglin.getPersistentAngerTarget());
         final org.bukkit.event.entity.PigZombieAngerEvent event = new org.bukkit.event.entity.PigZombieAngerEvent(
                 (org.bukkit.entity.PigZombie) piglin.getBukkitEntity(),
                 target == null ? null : target.getBukkitEntity(), anger);
@@ -647,34 +605,7 @@ public final class AnimalEvents {
     }
 
 
-    /** TurtleStartDiggingEvent。穴を掘り始めた直後。取り消されたら掘るのをやめる。 */
-    public static boolean turtleStartDigging(final net.minecraft.world.entity.animal.Turtle turtle,
-                                             final net.minecraft.core.BlockPos pos) {
-        if (!listening(com.destroystokyo.paper.event.entity.TurtleStartDiggingEvent.getHandlerList())) {
-            return true;
-        }
 
-        return new com.destroystokyo.paper.event.entity.TurtleStartDiggingEvent(
-                (org.bukkit.entity.Turtle) turtle.getBukkitEntity(),
-                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, turtle.level())).callEvent();
-    }
-
-    /**
-     * TurtleLayEggEvent。卵を置く直前。
-     *
-     * <p>個数は vanilla が置く行の中で乱数から決めるので、
-     * <b>{@code getEggCount} は使っていない。</b>渡すのも取り消しだけ。
-     */
-    public static boolean turtleLayEgg(final net.minecraft.world.entity.animal.Turtle turtle,
-                                       final net.minecraft.core.BlockPos pos) {
-        if (!listening(com.destroystokyo.paper.event.entity.TurtleLayEggEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new com.destroystokyo.paper.event.entity.TurtleLayEggEvent(
-                (org.bukkit.entity.Turtle) turtle.getBukkitEntity(),
-                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, turtle.level()), 1).callEvent();
-    }
 
     /**
      * VillagerAcquireTradeEvent。取引を 1 つ覚える直前。
@@ -754,17 +685,5 @@ public final class AnimalEvents {
                 ? io.papermc.paper.adventure.PaperAdventure.asVanilla(event.deathMessage()) : null;
     }
 
-    /** VillagerCareerChangeEvent。職に就く・失う直前。 */
-    public static boolean villagerCareerChange(final net.minecraft.world.entity.npc.Villager villager,
-                                               final net.minecraft.world.entity.npc.VillagerProfession profession,
-                                               final org.bukkit.event.entity.VillagerCareerChangeEvent.ChangeReason reason) {
-        if (!listening(org.bukkit.event.entity.VillagerCareerChangeEvent.getHandlerList())) {
-            return true;
-        }
-
-        return !org.bukkit.craftbukkit.event.CraftEventFactory.callVillagerCareerChangeEvent(villager,
-                org.bukkit.craftbukkit.entity.CraftVillager.CraftProfession.minecraftToBukkit(profession),
-                reason).isCancelled();
-    }
 
 }

@@ -11,7 +11,7 @@
         final HitResult hit = hitResult != null
             ? hitResult
             : BlockHitResult.miss(this.position(), Direction.DOWN, this.blockPosition());
-        if (this.level() instanceof ServerLevel level) {
+        if (this.level instanceof ServerLevel level) {
             ItemStack potionItemStack = this.getItem();
             PotionContents potion = potionItemStack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY);
             if (potion.is(Potions.WATER)) {

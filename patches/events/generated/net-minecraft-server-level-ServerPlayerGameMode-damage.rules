@@ -3,23 +3,6 @@
 # BlockDamageEvent。attack が済んで壊す速さが決まったあと(Paper と同じ位置)
 file: net/minecraft/server/level/ServerPlayerGameMode.java
 anchor:
-                if (!blockState.isAir() && f >= 1.0F) {
-insert:
-    org.bukkit.event.block.BlockDamageEvent shifuDamage =
-            dev.shifu.event.PlayerEvents.blockDamage(this.player, pos, direction, f >= 1.0F);
-    if (shifuDamage != null) {
-        if (shifuDamage.isCancelled()) {
-            return;
-        }
-
-        if (shifuDamage.getInstaBreak()) {
-            f = 2.0F;
-        }
-    }
-
-# BlockDamageAbortEvent。壊すのをやめたとき
-file: net/minecraft/server/level/ServerPlayerGameMode.java
-anchor:
                 this.debugLogging(pos, true, sequence, "aborted destroying");
 insert-after:
     dev.shifu.event.PlayerEvents.blockDamageAbort(this.player, pos);

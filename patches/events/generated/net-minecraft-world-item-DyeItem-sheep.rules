@@ -13,5 +13,5 @@ insert:
     if (shifuDye != this.dyeColor) {
         sheep.setColor(shifuDye);
         stack.shrink(1);
-        return InteractionResult.sidedSuccess(user.level().isClientSide);
+        return InteractionResult.sidedSuccess(user.level.isClientSide);
     }

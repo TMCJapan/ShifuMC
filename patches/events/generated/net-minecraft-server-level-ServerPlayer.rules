@@ -1,3 +1,4 @@
+
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # callPlayerLevelChangeEvent
@@ -18,38 +19,5 @@ insert:
 
     if (this.getBukkitEntity().hasClientWorldBorder()) {
         ((org.bukkit.craftbukkit.CraftWorldBorder) this.getBukkitEntity().getWorldBorder()).getHandle().tick();
-    }
-    // CraftBukkit end
-
-# callInventoryOpenEventWithTitle
-file: net/minecraft/server/level/ServerPlayer.java
-anchor:
-    if (abstractContainerMenu == null) {
-insert:
-    Component title = null; // Paper - Add titleOverride to InventoryOpenEvent
-    // CraftBukkit start - Inventory open hook
-    if (abstractContainerMenu != null) {
-        abstractContainerMenu.setTitle(factory.getDisplayName());
-
-        boolean cancelled = false;
-        // Paper start - Add titleOverride to InventoryOpenEvent
-        final com.mojang.datafixers.util.Pair<net.kyori.adventure.text.Component, AbstractContainerMenu> result = org.bukkit.craftbukkit.event.CraftEventFactory.callInventoryOpenEventWithTitle(this, abstractContainerMenu, cancelled);
-        abstractContainerMenu = result.getSecond();
-        title = io.papermc.paper.adventure.PaperAdventure.asVanilla(result.getFirst());
-        // Paper end - Add titleOverride to InventoryOpenEvent
-        if (abstractContainerMenu == null && !cancelled) { // Let pre-cancelled events fall through
-            // SPIGOT-5263 - close chest if cancelled
-            if (factory instanceof Container container) {
-                container.stopOpen(this);
-            } else if (factory instanceof net.minecraft.world.level.block.ChestBlock.DoubleInventory doubleInventory) {
-                // SPIGOT-5355 - double chests too :(
-                doubleInventory.inventorylargechest.stopOpen(this);
-                // Paper start - Fix InventoryOpenEvent cancellation
-            } else if (!this.enderChestInventory.isActiveChest(null)) {
-                this.enderChestInventory.stopOpen(this);
-                // Paper end - Fix InventoryOpenEvent cancellation
-            }
-            return OptionalInt.empty();
-        }
     }
     // CraftBukkit end

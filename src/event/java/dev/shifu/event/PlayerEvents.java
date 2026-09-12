@@ -16,7 +16,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.network.ServerConfigurationPacketListenerImpl;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.server.players.PlayerList;
 import net.minecraft.server.rcon.RconConsoleSource;
@@ -35,7 +34,6 @@ import net.minecraft.world.level.dimension.end.EndDragonFight;
 import net.minecraft.world.level.levelgen.feature.EndPodiumFeature;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.FluidState;
-import net.minecraft.world.level.saveddata.maps.MapId;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import net.minecraft.world.level.storage.LevelData;
 import net.minecraft.world.phys.Vec3;
@@ -125,7 +123,6 @@ public final class PlayerEvents {
     }
 
 
-    private static io.papermc.paper.command.brigadier.CommandSourceStack difficultySource;
 
 
     /**
@@ -146,7 +143,7 @@ public final class PlayerEvents {
         final org.bukkit.event.player.PlayerCommandPreprocessEvent event =
                 new org.bukkit.event.player.PlayerCommandPreprocessEvent(
                         connection.player.getBukkitEntity(), "/" + command,
-                        new org.bukkit.craftbukkit.util.LazyPlayerSet(connection.player.level().getServer()));
+                        new org.bukkit.craftbukkit.util.LazyPlayerSet(connection.player.level.getServer()));
 
         if (!event.callEvent()) {
             return false;
@@ -284,57 +281,9 @@ public final class PlayerEvents {
 
 
 
-    private static final java.util.Set<MapId> initializedMaps = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
-    /**
-     * BlockDestroyEvent。壊す効果の前。登録が無ければ null を返し、呼ぶ側は vanilla のまま進む。
-     */
-    public static com.destroystokyo.paper.event.block.BlockDestroyEvent blockDestroy(
-            final Level level, final BlockPos pos, final BlockState state, final FluidState fluid, final boolean drop) {
-        if (!listening(com.destroystokyo.paper.event.block.BlockDestroyEvent.getHandlerList())) {
-            return null;
-        }
 
-        final int xp = state.getBlock().getExpDrop(state, (ServerLevel) level, pos, ItemStack.EMPTY, true);
-        final com.destroystokyo.paper.event.block.BlockDestroyEvent event = new com.destroystokyo.paper.event.block.BlockDestroyEvent(
-                CraftBlock.at(level, pos), org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(fluid.createLegacyBlock()), org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(state), xp, drop);
-        event.callEvent();
 
-        return event;
-    }
-
-    /** 壊す効果を、イベントの値で出す(vanilla の行の代わり)。 */
-    public static void destroyEffect(final Level level, final BlockPos pos, final BlockState state,
-                                     final com.destroystokyo.paper.event.block.BlockDestroyEvent event) {
-        if (!event.playEffect() || state.getBlock() instanceof net.minecraft.world.level.block.BaseFireBlock) {
-            return;
-        }
-
-        final BlockState effect = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getEffectBlock()).getState();
-        level.levelEvent(net.minecraft.world.level.block.LevelEvent.PARTICLES_DESTROY_BLOCK, pos,
-                net.minecraft.world.level.block.Block.getId(effect));
-    }
-
-    /**
-     * PreCreatureSpawnEvent(自然湧き)。位置の判定の前。取り消しはこの位置を諦める。
-     * {@code shouldAbortSpawn} は控えて、判定のあとで {@link #takeSpawnAbort} が読む。
-     */
-    public static boolean preCreatureSpawn(final ServerLevel level, final BlockPos pos, final EntityType<?> type) {
-        spawnAbort = false;
-
-        if (!listening(com.destroystokyo.paper.event.entity.PreCreatureSpawnEvent.getHandlerList())) {
-            return true;
-        }
-
-        final com.destroystokyo.paper.event.entity.PreCreatureSpawnEvent event = new com.destroystokyo.paper.event.entity.PreCreatureSpawnEvent(
-                CraftLocation.toBukkit(pos, level),
-                org.bukkit.craftbukkit.entity.CraftEntityType.minecraftToBukkit(type),
-                org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL);
-        final boolean allowed = event.callEvent();
-        spawnAbort = event.shouldAbortSpawn();
-
-        return allowed;
-    }
 
     private static boolean spawnAbort;
 
@@ -468,45 +417,9 @@ public final class PlayerEvents {
         return false;
     }
 
-    /**
-     * FoodLevelChangeEvent(食べ物を食べ終えたとき)。vanilla が満腹度を足す直前。
-     * 値が差し替えられていたら、その差と元の saturation でここで足して false。
-     *
-     * 読んだ位置: paper-server patches/sources/net/minecraft/world/food/FoodProperties.java.patch
-     */
-    public static boolean eatFood(final net.minecraft.world.entity.player.Player player,
-                                  final net.minecraft.world.food.FoodProperties properties, final ItemStack stack) {
-        if (!listening(org.bukkit.event.entity.FoodLevelChangeEvent.getHandlerList())) {
-            return true;
-        }
-
-        final int old = player.getFoodData().getFoodLevel();
-        final org.bukkit.event.entity.FoodLevelChangeEvent event = CraftEventFactory.callFoodLevelChangeEvent(
-                player, properties.nutrition() + old, stack);
-
-        if (event.isCancelled()) {
-            return false;
-        }
-
-        if (event.getFoodLevel() == properties.nutrition() + old) {
-            return true;
-        }
-
-        player.getFoodData().shifuAdd(event.getFoodLevel() - old, properties.saturation());
-
-        return false;
-    }
 
     private static LivingEntity shieldAttacker;
 
-    /** 盾を無効にする攻撃者を置く({@code Player.blockUsingItem} から)。 */
-    public static void shieldAttacker(final LivingEntity attacker) {
-        if (!listening(io.papermc.paper.event.player.PlayerShieldDisableEvent.getHandlerList())) {
-            return;
-        }
-
-        shieldAttacker = attacker;
-    }
 
 
     // EntityLungeEvent は 26.x で入った Paper のイベントで、1.21.11 の API には無い。
@@ -659,37 +572,8 @@ public final class PlayerEvents {
         new org.bukkit.event.world.SpawnChangeEvent(level.getWorld(), previous).callEvent();
     }
 
-    /**
-     * MapInitializeEvent。{@code setMapData} で置く前。
-     * 1.20.6 の {@code MapItemSavedData.mapView} は欄の初期化子で作られるので、ここでは作らない。
-     */
-    public static void mapInitialize(final net.minecraft.world.level.saveddata.maps.MapId id,
-                                     final net.minecraft.world.level.saveddata.maps.MapItemSavedData data) {
-        if (!listening(org.bukkit.event.server.MapInitializeEvent.getHandlerList())
-                || !initializedMaps.add(id)) {
-            return;
-        }
-
-        data.id = id;
-        new org.bukkit.event.server.MapInitializeEvent(data.mapView).callEvent();
-    }
 
 
-    /**
-     * BlockDamageEvent。壊し始めの判定が済んだあと。
-     *
-     * @return 壊し始めてよいか。即時破壊にされたら vanilla の insta mine へ回す
-     */
-    public static org.bukkit.event.block.BlockDamageEvent blockDamage(
-            final ServerPlayer player, final net.minecraft.core.BlockPos pos,
-            final net.minecraft.core.Direction face, final boolean insta) {
-        if (!listening(org.bukkit.event.block.BlockDamageEvent.getHandlerList())) {
-            return null;
-        }
-
-        return org.bukkit.craftbukkit.event.CraftEventFactory.callBlockDamageEvent(
-                player, pos, face, player.getInventory().getSelected(), insta);
-    }
 
     /** BlockDamageAbortEvent。壊すのをやめたとき。 */
     public static void blockDamageAbort(final ServerPlayer player, final net.minecraft.core.BlockPos pos) {
@@ -713,52 +597,13 @@ public final class PlayerEvents {
         }
 
         final org.bukkit.block.Block bed = player.getSleepingPos()
-                .<org.bukkit.block.Block>map(pos -> org.bukkit.craftbukkit.block.CraftBlock.at(player.level(), pos))
+                .<org.bukkit.block.Block>map(pos -> org.bukkit.craftbukkit.block.CraftBlock.at(player.level, pos))
                 .orElseGet(() -> player.getBukkitEntity().getLocation().getBlock());
 
         return new org.bukkit.event.player.PlayerBedLeaveEvent(
                 player.getBukkitEntity(), bed, true).callEvent();
     }
 
-    /**
-     * PlayerChangedMainHandEvent と PlayerLocaleChangeEvent(Bukkit と Paper の両方)。
-     * {@code updateOptions} が値を書き換える前。
-     *
-     */
-    public static void clientOptions(final ServerPlayer player, final String oldLanguage,
-                                     final net.minecraft.server.level.ClientInformation options) {
-        if (ShifuEvents.listening(
-                com.destroystokyo.paper.event.player.PlayerClientOptionsChangeEvent.getHandlerList())) {
-            new com.destroystokyo.paper.event.player.PlayerClientOptionsChangeEvent(player.getBukkitEntity(),
-                    options.language(), options.viewDistance(),
-                    com.destroystokyo.paper.ClientOption.ChatVisibility.valueOf(options.chatVisibility().name()),
-                    options.chatColors(),
-                    new com.destroystokyo.paper.PaperSkinParts(options.modelCustomisation()),
-                    options.mainHand() == net.minecraft.world.entity.HumanoidArm.LEFT
-                            ? org.bukkit.inventory.MainHand.LEFT : org.bukkit.inventory.MainHand.RIGHT).callEvent();
-        }
-
-        if (player.getMainArm() != options.mainHand()
-                && ShifuEvents.listening(org.bukkit.event.player.PlayerChangedMainHandEvent.getHandlerList())) {
-            new org.bukkit.event.player.PlayerChangedMainHandEvent(player.getBukkitEntity(),
-                    player.getMainArm() == net.minecraft.world.entity.HumanoidArm.LEFT
-                            ? org.bukkit.inventory.MainHand.LEFT : org.bukkit.inventory.MainHand.RIGHT).callEvent();
-        }
-
-        if (oldLanguage != null && oldLanguage.equals(options.language())) {
-            return;
-        }
-
-        if (ShifuEvents.listening(org.bukkit.event.player.PlayerLocaleChangeEvent.getHandlerList())) {
-            new org.bukkit.event.player.PlayerLocaleChangeEvent(
-                    player.getBukkitEntity(), options.language()).callEvent();
-        }
-
-        if (ShifuEvents.listening(com.destroystokyo.paper.event.player.PlayerLocaleChangeEvent.getHandlerList())) {
-            new com.destroystokyo.paper.event.player.PlayerLocaleChangeEvent(
-                    player.getBukkitEntity(), oldLanguage, options.language()).callEvent();
-        }
-    }
 
     /**
      * PlayerStartSpectatingEntityEvent と PlayerStopSpectatingEntityEvent。
@@ -902,24 +747,6 @@ public final class PlayerEvents {
     }
 
 
-    /**
-     * PlayerItemCooldownEvent。クールダウンを入れる直前。
-     *
-     * @return 入れる長さ。取り消されたら null
-     */
-    public static Integer itemCooldown(final net.minecraft.world.item.ItemCooldowns cooldowns,
-                                       final net.minecraft.world.item.Item item, final int duration) {
-        if (!(cooldowns instanceof net.minecraft.world.item.ServerItemCooldowns server)
-                || !ShifuEvents.listening(io.papermc.paper.event.player.PlayerItemCooldownEvent.getHandlerList())) {
-            return duration;
-        }
-
-        final io.papermc.paper.event.player.PlayerItemCooldownEvent event =
-                new io.papermc.paper.event.player.PlayerItemCooldownEvent(server.player.getBukkitEntity(),
-                        org.bukkit.craftbukkit.inventory.CraftItemType.minecraftToBukkit(item), duration);
-
-        return event.callEvent() ? event.getCooldown() : null;
-    }
 
     /**
      * PlayerNameEntityEvent。名札で名前を付ける直前。
@@ -939,22 +766,6 @@ public final class PlayerEvents {
                 entity.getBukkitLivingEntity(), PaperAdventure.asAdventure(name), true).callEvent();
     }
 
-    /** PlayerElytraBoostEvent。エリトラ中に花火を使う直前。 */
-    public static boolean elytraBoost(final net.minecraft.world.entity.player.Player user,
-                                      final net.minecraft.world.item.ItemStack stack,
-                                      final net.minecraft.world.entity.projectile.FireworkRocketEntity firework,
-                                      final net.minecraft.world.InteractionHand hand) {
-        if (!ShifuEvents.listening(
-                com.destroystokyo.paper.event.player.PlayerElytraBoostEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new com.destroystokyo.paper.event.player.PlayerElytraBoostEvent(
-                (org.bukkit.entity.Player) user.getBukkitEntity(),
-                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack),
-                (org.bukkit.entity.Firework) firework.getBukkitEntity(),
-                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand)).callEvent();
-    }
 
     /** PlayerStopUsingItemEvent。使うのをやめた直後。 */
     public static void stopUsingItem(final net.minecraft.world.entity.LivingEntity entity) {
@@ -991,28 +802,7 @@ public final class PlayerEvents {
     }
 
 
-    /** PlayerResourcePackStatusEvent。リソースパックの結果を受け取った直後。 */
-    public static void resourcePackStatus(final ServerPlayer player, final java.util.UUID id, final int action) {
-        if (!ShifuEvents.listening(org.bukkit.event.player.PlayerResourcePackStatusEvent.getHandlerList())) {
-            return;
-        }
 
-        new org.bukkit.event.player.PlayerResourcePackStatusEvent(player.getBukkitEntity(), id,
-                org.bukkit.event.player.PlayerResourcePackStatusEvent.Status.values()[action]).callEvent();
-    }
-
-    /** PlayerAdvancementCriterionGrantEvent。進捗の条件が 1 つ埋まった直後。 */
-    public static boolean advancementCriterion(final ServerPlayer player,
-                                               final net.minecraft.advancements.AdvancementHolder advancement,
-                                               final String criterionName) {
-        if (!ShifuEvents.listening(
-                com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent(
-                player.getBukkitEntity(), advancement.toBukkit(), criterionName).callEvent();
-    }
 
     /**
      * PlayerInventorySlotChangeEvent。持ち物の 1 枠が変わった直後。
@@ -1180,48 +970,9 @@ public final class PlayerEvents {
         return event.isWhitelisted();
     }
 
-    /**
-     * PlayerOpenSignEvent と PlayerSignOpenEvent。看板を開く直前。
-     *
-     * @return 開いてよいか
-     */
-    public static boolean signOpen(final net.minecraft.world.entity.player.Player player,
-                                   final net.minecraft.world.level.block.entity.SignBlockEntity sign,
-                                   final boolean front) {
-        if (!(player instanceof ServerPlayer)
-                || (!ShifuEvents.listening(io.papermc.paper.event.player.PlayerOpenSignEvent.getHandlerList())
-                        && !ShifuEvents.listening(org.bukkit.event.player.PlayerSignOpenEvent.getHandlerList()))) {
-            return true;
-        }
-
-        return org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerSignOpenEvent(player, sign, front,
-                org.bukkit.event.player.PlayerSignOpenEvent.Cause.INTERACT);
-    }
 
 
-    /** PlayerRecipeBookSettingsChangeEvent。レシピ本の設定を変える直前。 */
-    public static boolean recipeBookSettings(final ServerPlayer player,
-                                             final net.minecraft.world.inventory.RecipeBookType type,
-                                             final boolean open, final boolean filtering) {
-        if (!ShifuEvents.listening(
-                org.bukkit.event.player.PlayerRecipeBookSettingsChangeEvent.getHandlerList())) {
-            return true;
-        }
 
-        return new org.bukkit.event.player.PlayerRecipeBookSettingsChangeEvent(player.getBukkitEntity(),
-                org.bukkit.event.player.PlayerRecipeBookSettingsChangeEvent.RecipeBookType.values()[type.ordinal()],
-                open, filtering).callEvent();
-    }
-
-    /** PlayerPickItemEvent。持ち替え(ピック)の直前。 */
-    public static boolean pickItem(final ServerPlayer player, final int sourceSlot) {
-        if (!ShifuEvents.listening(io.papermc.paper.event.player.PlayerPickItemEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new io.papermc.paper.event.player.PlayerPickItemEvent(player.getBukkitEntity(),
-                player.getInventory().selected, sourceSlot).callEvent();
-    }
 
     /** PlayerEditBookEvent に登録があるか。書き換える前の本を控えるかの判断に使う。 */
     public static org.bukkit.inventory.meta.BookMeta bookMeta(final net.minecraft.world.item.ItemStack stack) {
@@ -1361,7 +1112,7 @@ public final class PlayerEvents {
         }
 
         return !org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerBucketFillEvent(
-                (net.minecraft.server.level.ServerLevel) player.level(), player, target.blockPosition(),
+                (net.minecraft.server.level.ServerLevel) player.level, player, target.blockPosition(),
                 target.blockPosition(), null, bucket, filled, hand).isCancelled();
     }
 
@@ -1389,29 +1140,6 @@ public final class PlayerEvents {
     }
 
 
-    /**
-     * PlayerSignCommandPreprocessEvent。看板のコマンドを走らせる直前。
-     *
-     * <p>差し替えた文({@code setMessage})と差し替えた本人({@code setPlayer})は
-     * vanilla の行が持つので使っていない。
-     */
-    public static boolean signCommand(final net.minecraft.world.entity.player.Player player,
-                                      final net.minecraft.world.level.block.entity.SignBlockEntity sign,
-                                      final String command, final boolean front) {
-        if (!(player instanceof ServerPlayer serverPlayer)
-                || !ShifuEvents.listening(
-                        io.papermc.paper.event.player.PlayerSignCommandPreprocessEvent.getHandlerList())) {
-            return true;
-        }
-
-        final String text = command.startsWith("/") ? command : "/" + command;
-
-        return new io.papermc.paper.event.player.PlayerSignCommandPreprocessEvent(serverPlayer.getBukkitEntity(),
-                text, new org.bukkit.craftbukkit.util.LazyPlayerSet(serverPlayer.getServer()),
-                (org.bukkit.block.Sign) org.bukkit.craftbukkit.block.CraftBlock.at(
-                        sign.getLevel(), sign.getBlockPos()).getState(),
-                front ? org.bukkit.block.sign.Side.FRONT : org.bukkit.block.sign.Side.BACK).callEvent();
-    }
 
 
     /**
@@ -1487,20 +1215,6 @@ public final class PlayerEvents {
     }
 
 
-    /** PlayerUseUnknownEntityEvent。相手が見つからないまま触ったとき。 */
-    public static void useUnknownEntity(final ServerPlayer player,
-                                        final net.minecraft.network.protocol.game.ServerboundInteractPacket packet,
-                                        final net.minecraft.world.InteractionHand hand) {
-        if (!ShifuEvents.listening(
-                com.destroystokyo.paper.event.player.PlayerUseUnknownEntityEvent.getHandlerList())) {
-            return;
-        }
-
-        new com.destroystokyo.paper.event.player.PlayerUseUnknownEntityEvent(player.getBukkitEntity(),
-                packet.getEntityId(), packet.isAttack(),
-                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand),
-                new org.bukkit.util.Vector()).callEvent();
-    }
 
 
     /**
@@ -1603,31 +1317,6 @@ public final class PlayerEvents {
     }
 
 
-    /**
-     * PlayerFailMoveEvent。移動の packet をはねる直前。
-     *
-     * <p>1.20.6 の vanilla に理由の種類は無いので、Paper の
-     * {@code MOVED_TOO_QUICKLY} と {@code MOVED_WRONGLY} だけを渡す。
-     *
-     * @return はねてよいか。取り消されたらそのまま通す
-     */
-    public static boolean failMove(final ServerPlayer player,
-                                   final io.papermc.paper.event.player.PlayerFailMoveEvent.FailReason reason,
-                                   final double toX, final double toY, final double toZ,
-                                   final float toYaw, final float toPitch) {
-        if (!ShifuEvents.listening(io.papermc.paper.event.player.PlayerFailMoveEvent.getHandlerList())) {
-            return true;
-        }
-
-        final org.bukkit.entity.Player bukkit = player.getBukkitEntity();
-        final org.bukkit.Location from = bukkit.getLocation();
-        final org.bukkit.Location to = new org.bukkit.Location(bukkit.getWorld(), toX, toY, toZ, toYaw, toPitch);
-        final io.papermc.paper.event.player.PlayerFailMoveEvent event =
-                new io.papermc.paper.event.player.PlayerFailMoveEvent(bukkit, reason, false, true, from, to);
-        event.callEvent();
-
-        return !event.isAllowed();
-    }
 
 
     /** PlayerTrackEntityEvent。相手が見えるようになる直前。 */

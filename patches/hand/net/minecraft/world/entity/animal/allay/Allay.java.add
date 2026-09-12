@@ -7,13 +7,13 @@
     // vanilla の版は AI(Allay.java:286)から呼ばれるので触らない。
     // 二重に生まれるので、ここから vanilla の duplicateAllay は呼ばない。
     public Allay shifuDuplicateAllay() {
-        Allay allay = EntityType.ALLAY.create(this.level());
+        Allay allay = EntityType.ALLAY.create(this.level);
         if (allay != null) {
             allay.moveTo(this.position());
             allay.setPersistenceRequired();
             allay.resetDuplicationCooldown();
             this.resetDuplicationCooldown();
-            this.level().addFreshEntity(allay);
+            this.level.addFreshEntity(allay);
         }
 
         return allay;

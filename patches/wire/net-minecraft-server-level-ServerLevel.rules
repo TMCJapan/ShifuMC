@@ -1,3 +1,4 @@
+
 # Paper が vanilla のメソッドの中で行う代入。既存の行は変えていない。
 
 # Paper が ServerLevel の構築子で入れる欄(patches/server/Paper-config-files.patch:5011)と、
@@ -22,29 +23,12 @@ insert-after:
 
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    entity.updateDynamicGameEventListener(DynamicGameEventListener::add);
-insert-after:
-    entity.inWorld = true;
-    entity.valid = true;
-
-file: net/minecraft/server/level/ServerLevel.java
-anchor:
     entity.updateDynamicGameEventListener(DynamicGameEventListener::remove);
 insert-after:
     entity.valid = false;
 
 # 死亡の落とし物と経験値オーブを控えに移す。控えている最中でなければ何もしないので、
 # プラグインを入れていないときに増える仕事は参照 1 つの比較。
-file: net/minecraft/server/level/ServerLevel.java
-anchor:
-    private boolean addEntity(Entity entity) {
-insert-after:
-    if (dev.shifu.event.ShifuEvents.catchDrop(entity)) {
-        return true;
-    }
-
-# WorldBorder.world。WorldBorderBoundsChangeEvent などが読む。
-# Paper は ServerLevel の構築子で入れている。
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
         this.gameEventDispatcher = new GameEventDispatcher(this);

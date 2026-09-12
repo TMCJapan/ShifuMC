@@ -5,5 +5,5 @@ anchor:
             ItemStack itemStack3 = ItemUtils.createFilledResult(itemStack, player, itemStack2, false);
 insert:
     if (!dev.shifu.event.PlayerEvents.bucketEntity(entity, player, itemStack, itemStack2, hand)) {
-        return Optional.of(InteractionResult.sidedSuccess(entity.level().isClientSide));
+        return Optional.of(InteractionResult.sidedSuccess(entity.level.isClientSide));
     }

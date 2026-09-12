@@ -1,12 +1,4 @@
-# PlayerTrackEntityEvent と PlayerUntrackEntityEvent。
 
-file: net/minecraft/server/level/ChunkMap.java
-anchor:
-                        this.serverEntity.addPairing(player);
-insert:
-    if (!dev.shifu.event.PlayerEvents.trackEntity(player, this.entity)) {
-        return;
-    }
 
 # 見えなくなる 2 箇所(視界から外れたときと、退出したとき)
 file: net/minecraft/server/level/ChunkMap.java

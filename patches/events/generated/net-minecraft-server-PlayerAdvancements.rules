@@ -23,5 +23,5 @@ insert:
         }
     }
     final org.bukkit.event.player.PlayerAdvancementDoneEvent event = new org.bukkit.event.player.PlayerAdvancementDoneEvent(this.player.getBukkitEntity(), advancement.toBukkit(), message);
-    this.player.level().getCraftServer().getPluginManager().callEvent(event); // CraftBukkit
+    this.player.level.getCraftServer().getPluginManager().callEvent(event); // CraftBukkit
     // Paper end

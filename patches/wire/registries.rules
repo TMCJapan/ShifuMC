@@ -1,18 +1,4 @@
-# Paper の API レジストリの初期化。Paper は vanilla のレジストリを作る場所で
-# PaperRegistryAccess に登録する。これが無いと CraftServer の構築子が
-# org.bukkit.Registry を初期化する時点で
-# 「RegistryKeyImpl[key=minecraft:attribute] points to a registry that is not available yet」
-# で落ちる。
-#
-# vanilla の行は 1 文字も変えていない。間に 1 行入れているだけ。
 
-# 組み込みのレジストリ(patches/sources/.../BuiltInRegistries.java.patch @@ -392)
-file: net/minecraft/core/registries/BuiltInRegistries.java
-anchor:
-    ResourceLocation resourceLocation = key.location();
-    LOADERS.put(resourceLocation, () -> {
-insert:
-    io.papermc.paper.registry.PaperRegistryAccess.instance().registerRegistry(registry.key(), registry);
 
 # 中身を作る前に org.bukkit.Registry を読み込ませる(同 @@ -399)。
 # Paper の注記のとおり、CraftRegistry の実体はここで作られる。あとの
@@ -26,14 +12,3 @@ insert-after:
     } catch (final ClassNotFoundException e) {
         throw new RuntimeException(e);
     }
-
-# 1.20.6 の PaperRegistryAccess に lockReferenceHolders は無い。
-# 参照の凍結は 1.21 で入ったので、この版では何も入れない。
-
-# データパックから読むレジストリ(patches/sources/.../RegistryDataLoader.java.patch @@ -393, -316)
-file: net/minecraft/resources/RegistryDataLoader.java
-anchor:
-    WritableRegistry<T> writableRegistry = new MappedRegistry<>(this.key, lifecycle);
-insert-after:
-    io.papermc.paper.registry.PaperRegistryAccess.instance().registerRegistry(this.key, writableRegistry);
-

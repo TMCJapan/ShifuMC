@@ -22,13 +22,6 @@
         return this.removeAllEffects();
     }
 
-// LivingEntity.removeEffect
-    public boolean removeEffect(final Holder<MobEffect> effect,
-                                final org.bukkit.event.entity.EntityPotionEffectEvent.Cause cause) {
-        dev.shifu.event.EntityEvents.effectCause(cause);
-        return this.removeEffect(effect);
-    }
-
 // LivingEntity.setItemSlot
     // silent は装備音を出さないための旗。vanilla の setItemSlot は音を出さないので渡さない。
     public void setItemSlot(final EquipmentSlot slot, final ItemStack itemStack, final boolean silent) {
