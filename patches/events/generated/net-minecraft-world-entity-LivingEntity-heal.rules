@@ -5,7 +5,7 @@
 # 登録が無ければ null が返り、vanilla の行がそのまま走る。
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    this.setHealth(f + amount);
+    this.setHealth(health + amount);
 insert:
     final org.bukkit.event.entity.EntityRegainHealthEvent shifuRegain =
             dev.shifu.event.ShifuEvents.entityRegainHealth(this, amount);

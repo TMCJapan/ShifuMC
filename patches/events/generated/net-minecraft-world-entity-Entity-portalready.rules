@@ -3,13 +3,13 @@
 
 file: net/minecraft/world/entity/Entity.java
 anchor:
-                    this.level.getProfiler().push("portal");
-                    this.portalTime = i;
-                    this.setPortalCooldown();
-                    this.changeDimension(serverLevel2);
-                    this.level.getProfiler().pop();
+    this.level.getProfiler().push("portal");
+    this.portalTime = portalWaitTime;
+    this.setPortalCooldown();
+    this.changeDimension(level);
+    this.level.getProfiler().pop();
 insert:
-    if (!dev.shifu.event.EntityEvents.portalReady(this, serverLevel2)) {
+    if (!dev.shifu.event.EntityEvents.portalReady(this, level)) {
         this.portalTime = 0;
     } else {
 insert-after:

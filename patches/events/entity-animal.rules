@@ -19,9 +19,9 @@ insert:
 
 file: net/minecraft/world/entity/ai/behavior/VillagerMakeLove.java
 anchor:
-    world.addFreshEntityWithPassengers(villager);
+    world.addFreshEntityWithPassengers(breedOffspring);
 insert:
-    if (!dev.shifu.event.AnimalEvents.villagerBreed(villager, parent, partner)) {
+    if (!dev.shifu.event.AnimalEvents.villagerBreed(breedOffspring, parent, partner)) {
         parent.setAge(shifuSourceAge);
         partner.setAge(shifuTargetAge);
         return Optional.empty();
@@ -86,9 +86,9 @@ insert-after:
 # 吐き出す(spitOutItem)と落とす(dropItemStack)の 2 か所。どちらも同じ形
 file: net/minecraft/world/entity/monster/Strider.java
 anchor:
-    this.setSuffocating(!bl || bl2);
+    this.setSuffocating(!flag || flag1);
 insert:
-    final boolean shifuSuffocating = !bl || bl2;
+    final boolean shifuSuffocating = !flag || flag1;
     if (shifuSuffocating == this.isSuffocating() || dev.shifu.event.AnimalEvents.striderTemperature(this, shifuSuffocating)) {
 insert-after:
     }
@@ -114,7 +114,7 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/raid/Raids.java.patch(callRaidTriggerEvent)
 file: net/minecraft/world/entity/raid/Raids.java
 anchor:
-    Raid raid = this.getOrCreateRaid(player.getLevel(), blockPos3);
+    Raid raid = this.getOrCreateRaid(player.getLevel(), blockPos1);
 insert-after:
     final boolean shifuNewRaid = dev.shifu.event.AnimalEvents.raidTriggerListening()
             && !raid.isStarted() && !this.raidMap.containsValue(raid);
@@ -127,7 +127,7 @@ insert:
 
 file: net/minecraft/world/entity/monster/Slime.java
 anchor:
-    slime.moveTo(this.getX() + g, this.getY() + 0.5, this.getZ() + h, this.random.nextFloat() * 360.0F, 0.0F);
+    slime.moveTo(this.getX() + f1, this.getY() + 0.5, this.getZ() + f2, this.random.nextFloat() * 360.0F, 0.0F);
 insert-after:
     dev.shifu.event.AnimalEvents.splitCube(this, slime);
 
@@ -249,7 +249,7 @@ insert:
 
 file: net/minecraft/world/entity/ai/goal/target/TargetGoal.java
 anchor:
-    this.mob.setTarget(livingEntity);
+    this.mob.setTarget(target);
     return true;
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.CLOSEST_ENTITY);
@@ -307,7 +307,7 @@ insert:
 
 file: net/minecraft/world/entity/monster/Zombie.java
 anchor:
-    zombie.setTarget(livingEntity);
+    zombie.setTarget(target);
 insert:
     dev.shifu.event.EntityEvents.targetReason(org.bukkit.event.entity.EntityTargetEvent.TargetReason.REINFORCEMENT_TARGET);
 
@@ -315,7 +315,7 @@ insert:
 file: net/minecraft/world/entity/monster/ZombifiedPiglin.java
 anchor:
     this.level
-    .getEntitiesOfClass(ZombifiedPiglin.class, aABB, EntitySelector.NO_SPECTATORS)
+    .getEntitiesOfClass(ZombifiedPiglin.class, aabb, EntitySelector.NO_SPECTATORS)
     .stream()
     .filter(zombifiedPiglin -> zombifiedPiglin != this)
     .filter(zombifiedPiglin -> zombifiedPiglin.getTarget() == null)
@@ -338,7 +338,7 @@ anchor:
     for (Raider raider : this.mob
     .level
     .getNearbyEntities(Raider.class, this.shoutTargeting, this.mob, this.mob.getBoundingBox().inflate(8.0, 8.0, 8.0))) {
-    raider.setTarget(livingEntity);
+    raider.setTarget(target);
     raider.setAggressive(true);
 insert:
     dev.shifu.event.EntityEvents.targetReasonUntilDone(org.bukkit.event.entity.EntityTargetEvent.TargetReason.FOLLOW_LEADER);
@@ -350,7 +350,7 @@ anchor:
     for (Raider raider : this.mob
     .level
     .getNearbyEntities(Raider.class, this.shoutTargeting, this.mob, this.mob.getBoundingBox().inflate(8.0, 8.0, 8.0))) {
-    raider.setTarget(livingEntity);
+    raider.setTarget(target);
     raider.setAggressive(true);
 insert:
     dev.shifu.event.EntityEvents.targetReasonUntilDone(org.bukkit.event.entity.EntityTargetEvent.TargetReason.FOLLOW_LEADER);
@@ -387,13 +387,13 @@ insert:
 # フグ
 file: net/minecraft/world/entity/animal/Pufferfish.java
 anchor:
-    mob.addEffect(new MobEffectInstance(MobEffects.POISON, 60 * i, 0), this);
+    mob.addEffect(new MobEffectInstance(MobEffects.POISON, 60 * puffState, 0), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
 file: net/minecraft/world/entity/animal/Pufferfish.java
 anchor:
-    mob.addEffect(new MobEffectInstance(MobEffects.POISON, 60 * i, 0), this);
+    mob.addEffect(new MobEffectInstance(MobEffects.POISON, 60 * puffState, 0), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
@@ -421,14 +421,14 @@ insert:
 # スプラッシュポーション。1.20.6 は ThrownPotion が splash と lingering の両方を持つ
 file: net/minecraft/world/entity/projectile/ThrownPotion.java
 anchor:
-    livingEntity.addEffect(mobEffectInstance2, entity2);
+    livingEntity.addEffect(mobEffectInstance1, effectSource);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.POTION_SPLASH);
 
 # シュルカーの弾
 file: net/minecraft/world/entity/projectile/ShulkerBullet.java
 anchor:
-    livingEntity2.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 200), MoreObjects.firstNonNull(entity2, this));
+    livingEntity1.addEffect(new MobEffectInstance(MobEffects.LEVITATION, 200), MoreObjects.firstNonNull(owner, this));
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
@@ -442,8 +442,8 @@ insert:
 # 効果付きの矢。1 本に効果が複数あるので、文の間だけ置く
 file: net/minecraft/world/entity/projectile/Arrow.java
 anchor:
-    for (MobEffectInstance mobEffectInstance2 : this.effects) {
-    target.addEffect(mobEffectInstance2, entity);
+    for (MobEffectInstance mobEffectInstance : this.effects) {
+    target.addEffect(mobEffectInstance, effectSource);
     }
 insert:
     dev.shifu.event.EntityEvents.effectCauseUntilDone(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ARROW);
@@ -467,14 +467,14 @@ insert:
 # ハスク
 file: net/minecraft/world/entity/monster/Husk.java
 anchor:
-    ((LivingEntity)target).addEffect(new MobEffectInstance(MobEffects.HUNGER, 140 * (int)f), this);
+    ((LivingEntity)target).addEffect(new MobEffectInstance(MobEffects.HUNGER, 140 * (int)effectiveDifficulty), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
 # ウィッチがポーションを飲む。1 本に効果が複数あるので、文の間だけ置く
 file: net/minecraft/world/entity/monster/Witch.java
 anchor:
-    for (MobEffectInstance mobEffectInstance : list) {
+    for (MobEffectInstance mobEffectInstance : mobEffects) {
     this.addEffect(new MobEffectInstance(mobEffectInstance));
     }
 insert:
@@ -506,7 +506,7 @@ insert:
 # ウィザーの頭
 file: net/minecraft/world/entity/projectile/WitherSkull.java
 anchor:
-    livingEntity2.addEffect(new MobEffectInstance(MobEffects.WITHER, 20 * i, 1), this.getEffectSource());
+    livingEntityx.addEffect(new MobEffectInstance(MobEffects.WITHER, 20 * i, 1), this.getEffectSource());
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.ATTACK);
 
@@ -526,7 +526,7 @@ insert:
 # エリアの効果雲
 file: net/minecraft/world/entity/AreaEffectCloud.java
 anchor:
-    livingEntity.addEffect(new MobEffectInstance(mobEffectInstance2), this);
+    livingEntity.addEffect(new MobEffectInstance(mobEffectInstance1), this);
 insert:
     dev.shifu.event.EntityEvents.effectCause(org.bukkit.event.entity.EntityPotionEffectEvent.Cause.AREA_EFFECT_CLOUD);
 
@@ -548,6 +548,6 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/monster/Ravager.java.patch
 file: net/minecraft/world/entity/monster/Ravager.java
 anchor:
-    entity.push(d / f * 4.0, 0.2, e / f * 4.0);
+    entity.push(d / max * 4.0, 0.2, d1 / max * 4.0);
 insert:
     dev.shifu.event.EntityEvents.pushedBy(this, entity);

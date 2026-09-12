@@ -2,8 +2,8 @@
 
 file: net/minecraft/world/entity/animal/Bucketable.java
 anchor:
-            ItemStack itemStack3 = ItemUtils.createFilledResult(itemStack, player, itemStack2, false);
+    ItemStack itemStack = ItemUtils.createFilledResult(itemInHand, player, bucketItemStack, false);
 insert:
-    if (!dev.shifu.event.PlayerEvents.bucketEntity(entity, player, itemStack, itemStack2, hand)) {
+    if (!dev.shifu.event.PlayerEvents.bucketEntity(entity, player, itemInHand, bucketItemStack, hand)) {
         return Optional.of(InteractionResult.sidedSuccess(entity.level.isClientSide));
     }

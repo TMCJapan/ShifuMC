@@ -17,7 +17,7 @@ insert-after:
 file: net/minecraft/world/entity/vehicle/AbstractMinecart.java
 anchor:
     this.setRot(this.getYRot(), this.getXRot());
-    if (this.getMinecartType() == AbstractMinecart.Type.RIDEABLE && this.getDeltaMovement().horizontalDistanceSqr() > 0.01D) {
+    if (this.getMinecartType() == AbstractMinecart.Type.RIDEABLE && this.getDeltaMovement().horizontalDistanceSqr() > 0.01) {
 insert:
     dev.shifu.event.EntityEvents.vehicleMoveAfter(this);
 
@@ -43,8 +43,8 @@ insert:
 # VehicleEntityCollisionEvent(トロッコどうし)
 file: net/minecraft/world/entity/vehicle/AbstractMinecart.java
 anchor:
-    entity2.push(this);
+    entity.push(this);
 insert:
-    if (dev.shifu.event.EntityEvents.vehicleCollisionCancelled(this, entity2)) {
+    if (dev.shifu.event.EntityEvents.vehicleCollisionCancelled(this, entity)) {
         continue;
     }

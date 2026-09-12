@@ -267,3 +267,1330 @@ line:
 file: net/minecraft/server/level/ChunkMap.java
 line:
     class TrackedEntity {
+
+# 1.19.4(Vineflower の木)のエラーから
+
+# source
+file: net/minecraft/commands/CommandSourceStack.java
+line:
+    private final CommandSource source;
+
+# readArrayTag()
+file: net/minecraft/nbt/TagParser.java
+line:
+    private Tag readArrayTag() throws CommandSyntaxException {
+
+# type(String)
+file: net/minecraft/nbt/TagParser.java
+line:
+    private Tag type(String input) {
+
+# address
+file: net/minecraft/network/Connection.java
+line:
+    private SocketAddress address;
+
+# channel
+file: net/minecraft/network/Connection.java
+line:
+    private Channel channel;
+
+# LOGGER
+file: net/minecraft/server/MinecraftServer.java
+line:
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+# executor
+file: net/minecraft/server/MinecraftServer.java
+line:
+    private final Executor executor;
+
+# fixerUpper
+file: net/minecraft/server/MinecraftServer.java
+line:
+    private final DataFixer fixerUpper;
+
+# playerDataStorage
+file: net/minecraft/server/MinecraftServer.java
+line:
+    protected final PlayerDataStorage playerDataStorage;
+
+# progressListenerFactory
+file: net/minecraft/server/MinecraftServer.java
+line:
+    private final ChunkProgressListenerFactory progressListenerFactory;
+
+# resources
+file: net/minecraft/server/MinecraftServer.java
+line:
+    private MinecraftServer.ReloadableResources resources;
+
+# serverThread
+file: net/minecraft/server/MinecraftServer.java
+line:
+    private final Thread serverThread;
+
+# storageSource
+file: net/minecraft/server/MinecraftServer.java
+line:
+    protected final LevelStorageSource.LevelStorageAccess storageSource;
+
+# rconConsoleSource
+file: net/minecraft/server/dedicated/DedicatedServer.java
+line:
+    private final RconConsoleSource rconConsoleSource;
+
+# settings
+file: net/minecraft/server/dedicated/DedicatedServer.java
+line:
+    private final DedicatedServerSettings settings;
+
+# broadcast(Packet<?>,boolean)
+file: net/minecraft/server/level/ChunkHolder.java
+line:
+    private void broadcast(Packet<?> packet, boolean onlyOnWatchDistanceEdge) {
+
+# playerProvider
+file: net/minecraft/server/level/ChunkHolder.java
+line:
+    private final ChunkHolder.PlayerProvider playerProvider;
+
+# distanceManager
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    private final ChunkMap.DistanceManager distanceManager;
+
+# entityMap
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    private final Int2ObjectMap<ChunkMap.TrackedEntity> entityMap = new Int2ObjectOpenHashMap<>();
+
+# generator
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    private ChunkGenerator generator;
+
+# getPoiManager()
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    protected PoiManager getPoiManager() {
+
+# getVisibleChunkIfPresent(long)
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    protected ChunkHolder getVisibleChunkIfPresent(long pos) {
+
+# overworldDataStorage
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    private final Supplier<DimensionDataStorage> overworldDataStorage;
+
+# progressListener
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    private final ChunkProgressListener progressListener;
+
+# setViewDistance(int)
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    protected void setViewDistance(int watchDistance) {
+
+# visibleChunkMap
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    private volatile Long2ObjectLinkedOpenHashMap<ChunkHolder> visibleChunkMap = this.updatingChunkMap.clone();
+
+# mainThreadProcessor
+file: net/minecraft/server/level/ServerChunkCache.java
+line:
+    private final ServerChunkCache.MainThreadExecutor mainThreadProcessor;
+
+# spawnEnemies
+file: net/minecraft/server/level/ServerChunkCache.java
+line:
+    private boolean spawnEnemies = true;
+
+# spawnFriendlies
+file: net/minecraft/server/level/ServerChunkCache.java
+line:
+    private boolean spawnFriendlies = true;
+
+# chunkSource
+file: net/minecraft/server/level/ServerLevel.java
+line:
+    private final ServerChunkCache chunkSource;
+
+# findLightningRod(BlockPos)
+file: net/minecraft/server/level/ServerLevel.java
+line:
+    private Optional<BlockPos> findLightningRod(BlockPos pos) {
+
+# getEntities()
+file: net/minecraft/server/level/ServerLevel.java
+line:
+    protected LevelEntityGetter<Entity> getEntities() {
+
+# serverLevelData
+file: net/minecraft/server/level/ServerLevel.java
+line:
+    private final ServerLevelData serverLevelData;
+
+# containerSynchronizer
+file: net/minecraft/server/level/ServerPlayer.java
+line:
+    private final ContainerSynchronizer containerSynchronizer = new ContainerSynchronizer() {
+
+# initMenu(AbstractContainerMenu)
+file: net/minecraft/server/level/ServerPlayer.java
+line:
+    private void initMenu(AbstractContainerMenu screenHandler) {
+
+# lastSentExp
+file: net/minecraft/server/level/ServerPlayer.java
+line:
+    private int lastSentExp = -99999999;
+
+# nextContainerCounter()
+file: net/minecraft/server/level/ServerPlayer.java
+line:
+    private void nextContainerCounter() {
+
+# seenCredits
+file: net/minecraft/server/level/ServerPlayer.java
+line:
+    private boolean seenCredits;
+
+# spawnInvulnerableTime
+file: net/minecraft/server/level/ServerPlayer.java
+line:
+    private int spawnInvulnerableTime = 60;
+
+# triggerDimensionChangeTriggers(ServerLevel)
+file: net/minecraft/server/level/ServerPlayer.java
+line:
+    private void triggerDimensionChangeTriggers(ServerLevel origin) {
+
+# wardenSpawnTracker
+file: net/minecraft/server/level/ServerPlayer.java
+line:
+    private WardenSpawnTracker wardenSpawnTracker = new WardenSpawnTracker(0, 0, 0);
+
+# key
+file: net/minecraft/server/level/Ticket.java
+line:
+    private final T key;
+
+# playerIo
+file: net/minecraft/server/players/PlayerList.java
+line:
+    private final PlayerDataStorage playerIo;
+
+# players
+file: net/minecraft/server/players/PlayerList.java
+line:
+    private final List<ServerPlayer> players = Lists.newArrayList();
+
+# updateEntireScoreboard(ServerScoreboard,ServerPlayer)
+file: net/minecraft/server/players/PlayerList.java
+line:
+    protected void updateEntireScoreboard(ServerScoreboard scoreboard, ServerPlayer player) {
+
+# container1
+file: net/minecraft/world/CompoundContainer.java
+line:
+    private final Container container1;
+
+# container2
+file: net/minecraft/world/CompoundContainer.java
+line:
+    private final Container container2;
+
+# durationOnUse
+file: net/minecraft/world/entity/AreaEffectCloud.java
+line:
+    private int durationOnUse;
+
+# effects
+file: net/minecraft/world/entity/AreaEffectCloud.java
+line:
+    private final List<MobEffectInstance> effects = Lists.newArrayList();
+
+# radiusOnUse
+file: net/minecraft/world/entity/AreaEffectCloud.java
+line:
+    private float radiusOnUse;
+
+# radiusPerTick
+file: net/minecraft/world/entity/AreaEffectCloud.java
+line:
+    private float radiusPerTick;
+
+# reapplicationDelay
+file: net/minecraft/world/entity/AreaEffectCloud.java
+line:
+    private int reapplicationDelay = 20;
+
+# waitTime
+file: net/minecraft/world/entity/AreaEffectCloud.java
+line:
+    private int waitTime = 20;
+
+# getEncodeId()
+file: net/minecraft/world/entity/Entity.java
+line:
+    protected final String getEncodeId() {
+
+# getFireImmuneTicks()
+file: net/minecraft/world/entity/Entity.java
+line:
+    protected int getFireImmuneTicks() {
+
+# getSharedFlag(int)
+file: net/minecraft/world/entity/Entity.java
+line:
+    protected boolean getSharedFlag(int index) {
+
+# hasVisualFire
+file: net/minecraft/world/entity/Entity.java
+line:
+    private boolean hasVisualFire;
+
+# isInBubbleColumn()
+file: net/minecraft/world/entity/Entity.java
+line:
+    private boolean isInBubbleColumn() {
+
+# isInRain()
+file: net/minecraft/world/entity/Entity.java
+line:
+    private boolean isInRain() {
+
+# isInsidePortal
+file: net/minecraft/world/entity/Entity.java
+line:
+    protected boolean isInsidePortal;
+
+# passengers
+file: net/minecraft/world/entity/Entity.java
+line:
+    private ImmutableList<Entity> passengers = ImmutableList.of();
+
+# portalCooldown
+file: net/minecraft/world/entity/Entity.java
+line:
+    private int portalCooldown;
+
+# remainingFireTicks
+file: net/minecraft/world/entity/Entity.java
+line:
+    private int remainingFireTicks = -this.getFireImmuneTicks();
+
+# setRot(float,float)
+file: net/minecraft/world/entity/Entity.java
+line:
+    protected void setRot(float yaw, float pitch) {
+
+# setSharedFlag(int,boolean)
+file: net/minecraft/world/entity/Entity.java
+line:
+    protected void setSharedFlag(int index, boolean value) {
+
+# unsetRemoved()
+file: net/minecraft/world/entity/Entity.java
+line:
+    protected void unsetRemoved() {
+
+# wasTouchingWater
+file: net/minecraft/world/entity/Entity.java
+line:
+    protected boolean wasTouchingWater;
+
+# durabilityToXp(int)
+file: net/minecraft/world/entity/ExperienceOrb.java
+line:
+    private int durabilityToXp(int repairAmount) {
+
+# value
+file: net/minecraft/world/entity/ExperienceOrb.java
+line:
+    private int value;
+
+# xpToDurability(int)
+file: net/minecraft/world/entity/ExperienceOrb.java
+line:
+    private int xpToDurability(int experienceAmount) {
+
+# boostTime
+file: net/minecraft/world/entity/ItemBasedSteering.java
+line:
+    private int boostTime;
+
+# boostTimeTotal()
+file: net/minecraft/world/entity/ItemBasedSteering.java
+line:
+    private int boostTimeTotal() {
+
+# boosting
+file: net/minecraft/world/entity/ItemBasedSteering.java
+line:
+    private boolean boosting;
+
+# flashes
+file: net/minecraft/world/entity/LightningBolt.java
+line:
+    private int flashes;
+
+# life
+file: net/minecraft/world/entity/LightningBolt.java
+line:
+    private int life;
+
+# visualOnly
+file: net/minecraft/world/entity/LightningBolt.java
+line:
+    private boolean visualOnly;
+
+# DATA_ARROW_COUNT_ID
+file: net/minecraft/world/entity/LivingEntity.java
+line:
+    private static final EntityDataAccessor<Integer> DATA_ARROW_COUNT_ID = SynchedEntityData.defineId(LivingEntity.class, EntityDataSerializers.INT);
+
+# DATA_HEALTH_ID
+file: net/minecraft/world/entity/LivingEntity.java
+line:
+    private static final EntityDataAccessor<Float> DATA_HEALTH_ID = SynchedEntityData.defineId(LivingEntity.class, EntityDataSerializers.FLOAT);
+
+# combatTracker
+file: net/minecraft/world/entity/LivingEntity.java
+line:
+    private final CombatTracker combatTracker = new CombatTracker(this);
+
+# detectEquipmentUpdates()
+file: net/minecraft/world/entity/LivingEntity.java
+line:
+    private void detectEquipmentUpdates() {
+
+# effectsDirty
+file: net/minecraft/world/entity/LivingEntity.java
+line:
+    private boolean effectsDirty = true;
+
+# entityEventForEquipmentBreak(EquipmentSlot)
+file: net/minecraft/world/entity/LivingEntity.java
+line:
+    private static byte entityEventForEquipmentBreak(EquipmentSlot slot) {
+
+# getDeathSound()
+file: net/minecraft/world/entity/LivingEntity.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getSoundVolume()
+file: net/minecraft/world/entity/LivingEntity.java
+line:
+    protected float getSoundVolume() {
+
+# jumping
+file: net/minecraft/world/entity/LivingEntity.java
+line:
+    protected boolean jumping;
+
+# lastHurt
+file: net/minecraft/world/entity/LivingEntity.java
+line:
+    protected float lastHurt;
+
+# lastHurtByMob
+file: net/minecraft/world/entity/LivingEntity.java
+line:
+    private LivingEntity lastHurtByMob;
+
+# lastHurtByMobTimestamp
+file: net/minecraft/world/entity/LivingEntity.java
+line:
+    private int lastHurtByMobTimestamp;
+
+# lastHurtByPlayer
+file: net/minecraft/world/entity/LivingEntity.java
+line:
+    protected Player lastHurtByPlayer;
+
+# lastHurtByPlayerTime
+file: net/minecraft/world/entity/LivingEntity.java
+line:
+    protected int lastHurtByPlayerTime;
+
+# armorDropChances
+file: net/minecraft/world/entity/Mob.java
+line:
+    protected final float[] armorDropChances = new float[4];
+
+# goalSelector
+file: net/minecraft/world/entity/Mob.java
+line:
+    protected final GoalSelector goalSelector;
+
+# handDropChances
+file: net/minecraft/world/entity/Mob.java
+line:
+    protected final float[] handDropChances = new float[2];
+
+# isSunBurnTick()
+file: net/minecraft/world/entity/Mob.java
+line:
+    protected boolean isSunBurnTick() {
+
+# lootTable
+file: net/minecraft/world/entity/Mob.java
+line:
+    private ResourceLocation lootTable;
+
+# lootTableSeed
+file: net/minecraft/world/entity/Mob.java
+line:
+    private long lootTableSeed;
+
+# targetSelector
+file: net/minecraft/world/entity/Mob.java
+line:
+    protected final GoalSelector targetSelector;
+
+# targetPosition
+file: net/minecraft/world/entity/ambient/Bat.java
+line:
+    private BlockPos targetPosition;
+
+# isRolling()
+file: net/minecraft/world/entity/animal/Bee.java
+line:
+    private boolean isRolling() {
+
+# numCropsGrownSincePollination
+file: net/minecraft/world/entity/animal/Bee.java
+line:
+    private int numCropsGrownSincePollination;
+
+# setHasStung(boolean)
+file: net/minecraft/world/entity/animal/Bee.java
+line:
+    private void setHasStung(boolean hasStung) {
+
+# setRolling(boolean)
+file: net/minecraft/world/entity/animal/Bee.java
+line:
+    private void setRolling(boolean nearTarget) {
+
+# stayOutOfHiveCountdown
+file: net/minecraft/world/entity/animal/Bee.java
+line:
+    private int stayOutOfHiveCountdown;
+
+# effect
+file: net/minecraft/world/entity/animal/MushroomCow.java
+line:
+    private MobEffect effect;
+
+# effectDuration
+file: net/minecraft/world/entity/animal/MushroomCow.java
+line:
+    private int effectDuration;
+
+# setTrusting(boolean)
+file: net/minecraft/world/entity/animal/Ocelot.java
+line:
+    private void setTrusting(boolean trusting) {
+
+# getEatCounter()
+file: net/minecraft/world/entity/animal/Panda.java
+line:
+    private int getEatCounter() {
+
+# setEatCounter(int)
+file: net/minecraft/world/entity/animal/Panda.java
+line:
+    private void setEatCounter(int eatingTicks) {
+
+# jukeboxPos
+file: net/minecraft/world/entity/animal/allay/Allay.java
+line:
+    private BlockPos jukeboxPos;
+
+# age
+file: net/minecraft/world/entity/animal/frog/Tadpole.java
+line:
+    private int age;
+
+# DATA_HAS_LEFT_HORN
+file: net/minecraft/world/entity/animal/goat/Goat.java
+line:
+    private static final EntityDataAccessor<Boolean> DATA_HAS_LEFT_HORN = SynchedEntityData.defineId(Goat.class, EntityDataSerializers.BOOLEAN);
+
+# DATA_HAS_RIGHT_HORN
+file: net/minecraft/world/entity/animal/goat/Goat.java
+line:
+    private static final EntityDataAccessor<Boolean> DATA_HAS_RIGHT_HORN = SynchedEntityData.defineId(Goat.class, EntityDataSerializers.BOOLEAN);
+
+# createInventory()
+file: net/minecraft/world/entity/animal/horse/AbstractHorse.java
+line:
+    protected void createInventory() {
+
+# inventory
+file: net/minecraft/world/entity/animal/horse/AbstractHorse.java
+line:
+    protected SimpleContainer inventory;
+
+# subEntities
+file: net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
+line:
+    private final EnderDragonPart[] subEntities;
+
+# bossEvent
+file: net/minecraft/world/entity/boss/wither/WitherBoss.java
+line:
+    private final ServerBossEvent bossEvent = (ServerBossEvent)new ServerBossEvent(
+
+# bodyPose
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+line:
+    private Rotations bodyPose = DEFAULT_BODY_POSE;
+
+# disabledSlots
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+line:
+    private int disabledSlots;
+
+# headPose
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+line:
+    private Rotations headPose = DEFAULT_HEAD_POSE;
+
+# isDisabled(EquipmentSlot)
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+line:
+    private boolean isDisabled(EquipmentSlot slot) {
+
+# leftArmPose
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+line:
+    private Rotations leftArmPose = DEFAULT_LEFT_ARM_POSE;
+
+# leftLegPose
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+line:
+    private Rotations leftLegPose = DEFAULT_LEFT_LEG_POSE;
+
+# rightArmPose
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+line:
+    private Rotations rightArmPose = DEFAULT_RIGHT_ARM_POSE;
+
+# rightLegPose
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+line:
+    private Rotations rightLegPose = DEFAULT_RIGHT_LEG_POSE;
+
+# setMarker(boolean)
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+line:
+    private void setMarker(boolean marker) {
+
+# setSmall(boolean)
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+line:
+    private void setSmall(boolean small) {
+
+# pos
+file: net/minecraft/world/entity/decoration/HangingEntity.java
+line:
+    protected BlockPos pos;
+
+# setDirection(Direction)
+file: net/minecraft/world/entity/decoration/HangingEntity.java
+line:
+    protected void setDirection(Direction facing) {
+
+# DATA_ITEM
+file: net/minecraft/world/entity/decoration/ItemFrame.java
+line:
+    private static final EntityDataAccessor<ItemStack> DATA_ITEM = SynchedEntityData.defineId(ItemFrame.class, EntityDataSerializers.ITEM_STACK);
+
+# DATA_ROTATION
+file: net/minecraft/world/entity/decoration/ItemFrame.java
+line:
+    private static final EntityDataAccessor<Integer> DATA_ROTATION = SynchedEntityData.defineId(ItemFrame.class, EntityDataSerializers.INT);
+
+# dropChance
+file: net/minecraft/world/entity/decoration/ItemFrame.java
+line:
+    private float dropChance = 1.0F;
+
+# fixed
+file: net/minecraft/world/entity/decoration/ItemFrame.java
+line:
+    private boolean fixed;
+
+# setDirection(Direction)
+file: net/minecraft/world/entity/decoration/ItemFrame.java
+line:
+    protected void setDirection(Direction facing) {
+
+# FallingBlockEntity(Level,double,double,double,BlockState)
+file: net/minecraft/world/entity/item/FallingBlockEntity.java
+line:
+    private FallingBlockEntity(Level world, double x, double y, double z, BlockState block) {
+
+# hurtEntities
+file: net/minecraft/world/entity/item/FallingBlockEntity.java
+line:
+    private boolean hurtEntities;
+
+# age
+file: net/minecraft/world/entity/item/ItemEntity.java
+line:
+    private int age;
+
+# health
+file: net/minecraft/world/entity/item/ItemEntity.java
+line:
+    private int health = 5;
+
+# pickupDelay
+file: net/minecraft/world/entity/item/ItemEntity.java
+line:
+    private int pickupDelay;
+
+# target
+file: net/minecraft/world/entity/item/ItemEntity.java
+line:
+    private UUID target;
+
+# thrower
+file: net/minecraft/world/entity/item/ItemEntity.java
+line:
+    private UUID thrower;
+
+# explodeCreeper()
+file: net/minecraft/world/entity/monster/Creeper.java
+line:
+    private void explodeCreeper() {
+
+# explosionRadius
+file: net/minecraft/world/entity/monster/Creeper.java
+line:
+    private int explosionRadius = 3;
+
+# maxSwell
+file: net/minecraft/world/entity/monster/Creeper.java
+line:
+    private int maxSwell = 30;
+
+# swell
+file: net/minecraft/world/entity/monster/Creeper.java
+line:
+    private int swell;
+
+# attackTick
+file: net/minecraft/world/entity/monster/Ravager.java
+line:
+    private int attackTick;
+
+# roarTick
+file: net/minecraft/world/entity/monster/Ravager.java
+line:
+    private int roarTick;
+
+# stunnedTick
+file: net/minecraft/world/entity/monster/Ravager.java
+line:
+    private int stunnedTick;
+
+# DATA_STRAY_CONVERSION_ID
+file: net/minecraft/world/entity/monster/Skeleton.java
+line:
+    private static final EntityDataAccessor<Boolean> DATA_STRAY_CONVERSION_ID = SynchedEntityData.defineId(Skeleton.class, EntityDataSerializers.BOOLEAN);
+
+# conversionTime
+file: net/minecraft/world/entity/monster/Skeleton.java
+line:
+    private int conversionTime;
+
+# inPowderSnowTime
+file: net/minecraft/world/entity/monster/Skeleton.java
+line:
+    private int inPowderSnowTime;
+
+# startFreezeConversion(int)
+file: net/minecraft/world/entity/monster/Skeleton.java
+line:
+    private void startFreezeConversion(int time) {
+
+# steering
+file: net/minecraft/world/entity/monster/Strider.java
+line:
+    private final ItemBasedSteering steering = new ItemBasedSteering(this.entityData, DATA_BOOST_TIME, DATA_SADDLE_ID);
+
+# hasLimitedLife
+file: net/minecraft/world/entity/monster/Vex.java
+line:
+    private boolean hasLimitedLife;
+
+# limitedLifeTicks
+file: net/minecraft/world/entity/monster/Vex.java
+line:
+    private int limitedLifeTicks;
+
+# usingTime
+file: net/minecraft/world/entity/monster/Witch.java
+line:
+    private int usingTime;
+
+# DATA_DROWNED_CONVERSION_ID
+file: net/minecraft/world/entity/monster/Zombie.java
+line:
+    private static final EntityDataAccessor<Boolean> DATA_DROWNED_CONVERSION_ID = SynchedEntityData.defineId(Zombie.class, EntityDataSerializers.BOOLEAN);
+
+# DOOR_BREAKING_PREDICATE
+file: net/minecraft/world/entity/monster/Zombie.java
+line:
+    private static final Predicate<Difficulty> DOOR_BREAKING_PREDICATE = difficulty -> difficulty == Difficulty.HARD;
+
+# conversionTime
+file: net/minecraft/world/entity/monster/Zombie.java
+line:
+    private int conversionTime;
+
+# isSunSensitive()
+file: net/minecraft/world/entity/monster/Zombie.java
+line:
+    protected boolean isSunSensitive() {
+
+# startUnderWaterConversion(int)
+file: net/minecraft/world/entity/monster/Zombie.java
+line:
+    private void startUnderWaterConversion(int ticksUntilWaterConversion) {
+
+# supportsBreakDoorGoal()
+file: net/minecraft/world/entity/monster/Zombie.java
+line:
+    protected boolean supportsBreakDoorGoal() {
+
+# DATA_CONVERTING_ID
+file: net/minecraft/world/entity/monster/ZombieVillager.java
+line:
+    private static final EntityDataAccessor<Boolean> DATA_CONVERTING_ID = SynchedEntityData.defineId(ZombieVillager.class, EntityDataSerializers.BOOLEAN);
+
+# conversionStarter
+file: net/minecraft/world/entity/monster/ZombieVillager.java
+line:
+    private UUID conversionStarter;
+
+# villagerConversionTime
+file: net/minecraft/world/entity/monster/ZombieVillager.java
+line:
+    private int villagerConversionTime;
+
+# cannotBeHunted
+file: net/minecraft/world/entity/monster/hoglin/Hoglin.java
+line:
+    private boolean cannotBeHunted;
+
+# isImmuneToZombification()
+file: net/minecraft/world/entity/monster/hoglin/Hoglin.java
+line:
+    private boolean isImmuneToZombification() {
+
+# timeInOverworld
+file: net/minecraft/world/entity/monster/hoglin/Hoglin.java
+line:
+    private int timeInOverworld;
+
+# isImmuneToZombification()
+file: net/minecraft/world/entity/monster/piglin/AbstractPiglin.java
+line:
+    protected boolean isImmuneToZombification() {
+
+# timeInOverworld
+file: net/minecraft/world/entity/monster/piglin/AbstractPiglin.java
+line:
+    protected int timeInOverworld;
+
+# increaseMerchantCareer()
+file: net/minecraft/world/entity/npc/Villager.java
+line:
+    private void increaseMerchantCareer() {
+
+# numberOfRestocksToday
+file: net/minecraft/world/entity/npc/Villager.java
+line:
+    private int numberOfRestocksToday;
+
+# releaseAllPois()
+file: net/minecraft/world/entity/npc/Villager.java
+line:
+    private void releaseAllPois() {
+
+# setUnhappy()
+file: net/minecraft/world/entity/npc/Villager.java
+line:
+    private void setUnhappy() {
+
+# compartments
+file: net/minecraft/world/entity/player/Inventory.java
+line:
+    private final List<NonNullList<ItemStack>> compartments = ImmutableList.of(this.items, this.armor, this.offhand);
+
+# DATA_PLAYER_MODE_CUSTOMISATION
+file: net/minecraft/world/entity/player/Player.java
+line:
+    protected static final EntityDataAccessor<Byte> DATA_PLAYER_MODE_CUSTOMISATION = SynchedEntityData.defineId(Player.class, EntityDataSerializers.BYTE);
+
+# enchantmentSeed
+file: net/minecraft/world/entity/player/Player.java
+line:
+    protected int enchantmentSeed;
+
+# gameProfile
+file: net/minecraft/world/entity/player/Player.java
+line:
+    private final GameProfile gameProfile;
+
+# setShoulderEntityLeft(CompoundTag)
+file: net/minecraft/world/entity/player/Player.java
+line:
+    protected void setShoulderEntityLeft(CompoundTag entityNbt) {
+
+# setShoulderEntityRight(CompoundTag)
+file: net/minecraft/world/entity/player/Player.java
+line:
+    protected void setShoulderEntityRight(CompoundTag entityNbt) {
+
+# sleepCounter
+file: net/minecraft/world/entity/player/Player.java
+line:
+    private int sleepCounter;
+
+# getPickupItem()
+file: net/minecraft/world/entity/projectile/AbstractArrow.java
+line:
+    protected abstract ItemStack getPickupItem();
+
+# inGround
+file: net/minecraft/world/entity/projectile/AbstractArrow.java
+line:
+    protected boolean inGround;
+
+# knockback
+file: net/minecraft/world/entity/projectile/AbstractArrow.java
+line:
+    private int knockback;
+
+# life
+file: net/minecraft/world/entity/projectile/AbstractArrow.java
+line:
+    private int life;
+
+# soundEvent
+file: net/minecraft/world/entity/projectile/AbstractArrow.java
+line:
+    private SoundEvent soundEvent = this.getDefaultHitGroundSoundEvent();
+
+# effects
+file: net/minecraft/world/entity/projectile/Arrow.java
+line:
+    private final Set<MobEffectInstance> effects = Sets.newHashSet();
+
+# setFixedColor(int)
+file: net/minecraft/world/entity/projectile/Arrow.java
+line:
+    private void setFixedColor(int color) {
+
+# DATA_ID_FIREWORKS_ITEM
+file: net/minecraft/world/entity/projectile/FireworkRocketEntity.java
+line:
+    private static final EntityDataAccessor<ItemStack> DATA_ID_FIREWORKS_ITEM = SynchedEntityData.defineId(
+
+# DATA_SHOT_AT_ANGLE
+file: net/minecraft/world/entity/projectile/FireworkRocketEntity.java
+line:
+    private static final EntityDataAccessor<Boolean> DATA_SHOT_AT_ANGLE = SynchedEntityData.defineId(FireworkRocketEntity.class, EntityDataSerializers.BOOLEAN);
+
+# attachedToEntity
+file: net/minecraft/world/entity/projectile/FireworkRocketEntity.java
+line:
+    private LivingEntity attachedToEntity;
+
+# life
+file: net/minecraft/world/entity/projectile/FireworkRocketEntity.java
+line:
+    private int life;
+
+# lifetime
+file: net/minecraft/world/entity/projectile/FireworkRocketEntity.java
+line:
+    private int lifetime;
+
+# DATA_HOOKED_ENTITY
+file: net/minecraft/world/entity/projectile/FishingHook.java
+line:
+    private static final EntityDataAccessor<Integer> DATA_HOOKED_ENTITY = SynchedEntityData.defineId(FishingHook.class, EntityDataSerializers.INT);
+
+# calculateOpenWater(BlockPos)
+file: net/minecraft/world/entity/projectile/FishingHook.java
+line:
+    private boolean calculateOpenWater(BlockPos pos) {
+
+# currentState
+file: net/minecraft/world/entity/projectile/FishingHook.java
+line:
+    private FishingHook.FishHookState currentState = FishingHook.FishHookState.FLYING;
+
+# hookedIn
+file: net/minecraft/world/entity/projectile/FishingHook.java
+line:
+    private Entity hookedIn;
+
+# outOfWaterTime
+file: net/minecraft/world/entity/projectile/FishingHook.java
+line:
+    private int outOfWaterTime;
+
+# pullEntity(Entity)
+file: net/minecraft/world/entity/projectile/FishingHook.java
+line:
+    protected void pullEntity(Entity entity) {
+
+# timeUntilLured
+file: net/minecraft/world/entity/projectile/FishingHook.java
+line:
+    private int timeUntilLured;
+
+# currentMoveDirection
+file: net/minecraft/world/entity/projectile/ShulkerBullet.java
+line:
+    private Direction currentMoveDirection;
+
+# flightSteps
+file: net/minecraft/world/entity/projectile/ShulkerBullet.java
+line:
+    private int flightSteps;
+
+# targetDeltaX
+file: net/minecraft/world/entity/projectile/ShulkerBullet.java
+line:
+    private double targetDeltaX;
+
+# targetDeltaY
+file: net/minecraft/world/entity/projectile/ShulkerBullet.java
+line:
+    private double targetDeltaY;
+
+# targetDeltaZ
+file: net/minecraft/world/entity/projectile/ShulkerBullet.java
+line:
+    private double targetDeltaZ;
+
+# duration
+file: net/minecraft/world/entity/projectile/SpectralArrow.java
+line:
+    private int duration = 200;
+
+# badOmenLevel
+file: net/minecraft/world/entity/raid/Raid.java
+line:
+    private int badOmenLevel;
+
+# heroesOfTheVillage
+file: net/minecraft/world/entity/raid/Raid.java
+line:
+    private final Set<UUID> heroesOfTheVillage = Sets.newHashSet();
+
+# numGroups
+file: net/minecraft/world/entity/raid/Raid.java
+line:
+    private final int numGroups;
+
+# ticksActive
+file: net/minecraft/world/entity/raid/Raid.java
+line:
+    private long ticksActive;
+
+# lootTable
+file: net/minecraft/world/entity/vehicle/AbstractMinecartContainer.java
+line:
+    private ResourceLocation lootTable;
+
+# lootTableSeed
+file: net/minecraft/world/entity/vehicle/AbstractMinecartContainer.java
+line:
+    private long lootTableSeed;
+
+# exhaustionLevel
+file: net/minecraft/world/food/FoodData.java
+line:
+    private float exhaustionLevel;
+
+# foodLevel
+file: net/minecraft/world/food/FoodData.java
+line:
+    private int foodLevel = 20;
+
+# saturationLevel
+file: net/minecraft/world/food/FoodData.java
+line:
+    private float saturationLevel;
+
+# dataSlots
+file: net/minecraft/world/inventory/AbstractContainerMenu.java
+line:
+    private final List<DataSlot> dataSlots = Lists.newArrayList();
+
+# lastSlots
+file: net/minecraft/world/inventory/AbstractContainerMenu.java
+line:
+    private final NonNullList<ItemStack> lastSlots = NonNullList.create();
+
+# remoteDataSlots
+file: net/minecraft/world/inventory/AbstractContainerMenu.java
+line:
+    private final IntList remoteDataSlots = new IntArrayList();
+
+# remoteSlots
+file: net/minecraft/world/inventory/AbstractContainerMenu.java
+line:
+    private final NonNullList<ItemStack> remoteSlots = NonNullList.create();
+
+# cost
+file: net/minecraft/world/inventory/AnvilMenu.java
+line:
+    private final DataSlot cost = DataSlot.standalone();
+
+# itemName
+file: net/minecraft/world/inventory/AnvilMenu.java
+line:
+    private String itemName;
+
+# repairItemCountCost
+file: net/minecraft/world/inventory/AnvilMenu.java
+line:
+    private int repairItemCountCost;
+
+# access
+file: net/minecraft/world/inventory/CraftingMenu.java
+line:
+    private final ContainerLevelAccess access;
+
+# craftSlots
+file: net/minecraft/world/inventory/CraftingMenu.java
+line:
+    private final CraftingContainer craftSlots = new CraftingContainer(this, 3, 3);
+
+# resultSlots
+file: net/minecraft/world/inventory/CraftingMenu.java
+line:
+    private final ResultContainer resultSlots = new ResultContainer();
+
+# selectionHint
+file: net/minecraft/world/inventory/MerchantContainer.java
+line:
+    private int selectionHint;
+
+# UseOnContext(Level,Player,InteractionHand,ItemStack,BlockHitResult)
+file: net/minecraft/world/item/context/UseOnContext.java
+line:
+    protected UseOnContext(Level world, @Nullable Player player, InteractionHand hand, ItemStack stack, BlockHitResult hit) {
+
+# delay(Level,BlockPos)
+file: net/minecraft/world/level/BaseSpawner.java
+line:
+    private void delay(Level world, BlockPos pos) {
+
+# isNearPlayer(Level,BlockPos)
+file: net/minecraft/world/level/BaseSpawner.java
+line:
+    private boolean isNearPlayer(Level world, BlockPos pos) {
+
+# maxNearbyEntities
+file: net/minecraft/world/level/BaseSpawner.java
+line:
+    private int maxNearbyEntities = 6;
+
+# maxSpawnDelay
+file: net/minecraft/world/level/BaseSpawner.java
+line:
+    private int maxSpawnDelay = 800;
+
+# minSpawnDelay
+file: net/minecraft/world/level/BaseSpawner.java
+line:
+    private int minSpawnDelay = 200;
+
+# nextSpawnData
+file: net/minecraft/world/level/BaseSpawner.java
+line:
+    private SpawnData nextSpawnData;
+
+# requiredPlayerRange
+file: net/minecraft/world/level/BaseSpawner.java
+line:
+    private int requiredPlayerRange = 16;
+
+# setNextSpawnData(Level,BlockPos,SpawnData)
+file: net/minecraft/world/level/BaseSpawner.java
+line:
+    protected void setNextSpawnData(@Nullable Level world, BlockPos pos, SpawnData spawnEntry) {
+
+# spawnCount
+file: net/minecraft/world/level/BaseSpawner.java
+line:
+    private int spawnCount = 4;
+
+# spawnDelay
+file: net/minecraft/world/level/BaseSpawner.java
+line:
+    private int spawnDelay = 20;
+
+# spawnRange
+file: net/minecraft/world/level/BaseSpawner.java
+line:
+    private int spawnRange = 4;
+
+# levelData
+file: net/minecraft/world/level/Level.java
+line:
+    protected final WritableLevelData levelData;
+
+# thread
+file: net/minecraft/world/level/Level.java
+line:
+    private final Thread thread;
+
+# popExperience(ServerLevel,BlockPos,int)
+file: net/minecraft/world/level/block/Block.java
+line:
+    protected void popExperience(ServerLevel world, BlockPos pos, int size) {
+
+# dispenseFrom(ServerLevel,BlockPos)
+file: net/minecraft/world/level/block/DispenserBlock.java
+line:
+    protected void dispenseFrom(ServerLevel world, BlockPos pos) {
+
+# dispenseFrom(ServerLevel,BlockPos)
+file: net/minecraft/world/level/block/DropperBlock.java
+line:
+    protected void dispenseFrom(ServerLevel world, BlockPos pos) {
+
+# baseColor
+file: net/minecraft/world/level/block/entity/BannerBlockEntity.java
+line:
+    private DyeColor baseColor;
+
+# itemPatterns
+file: net/minecraft/world/level/block/entity/BannerBlockEntity.java
+line:
+    private ListTag itemPatterns;
+
+# openersCounter
+file: net/minecraft/world/level/block/entity/BarrelBlockEntity.java
+line:
+    private final ContainerOpenersCounter openersCounter = new ContainerOpenersCounter() {
+
+# lockKey
+file: net/minecraft/world/level/block/entity/BaseContainerBlockEntity.java
+line:
+    private LockCode lockKey = LockCode.NO_LOCK;
+
+# lockKey
+file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
+line:
+    private LockCode lockKey = LockCode.NO_LOCK;
+
+# savedFlowerPos
+file: net/minecraft/world/level/block/entity/BeehiveBlockEntity.java
+line:
+    private BlockPos savedFlowerPos;
+
+# openersCounter
+file: net/minecraft/world/level/block/entity/ChestBlockEntity.java
+line:
+    private final ContainerOpenersCounter openersCounter = new ContainerOpenersCounter() {
+
+# lastInteractedSlot
+file: net/minecraft/world/level/block/entity/ChiseledBookShelfBlockEntity.java
+line:
+    private int lastInteractedSlot = -1;
+
+# bookAccess
+file: net/minecraft/world/level/block/entity/LecternBlockEntity.java
+line:
+    private final Container bookAccess = new Container() {
+
+# isEditable
+file: net/minecraft/world/level/block/entity/SignBlockEntity.java
+line:
+    private boolean isEditable = true;
+
+# messages
+file: net/minecraft/world/level/block/entity/SignBlockEntity.java
+line:
+    private final Component[] messages = new Component[]{CommonComponents.EMPTY, CommonComponents.EMPTY, CommonComponents.EMPTY, CommonComponents.EMPTY};
+
+# level
+file: net/minecraft/world/level/chunk/storage/EntityStorage.java
+line:
+    private final ServerLevel level;
+
+# dragonEvent
+file: net/minecraft/world/level/dimension/end/EndDragonFight.java
+line:
+    private final ServerBossEvent dragonEvent = (ServerBossEvent)new ServerBossEvent(
+
+# dragonUUID
+file: net/minecraft/world/level/dimension/end/EndDragonFight.java
+line:
+    private UUID dragonUUID;
+
+# findExitPortal()
+file: net/minecraft/world/level/dimension/end/EndDragonFight.java
+line:
+    private BlockPattern.BlockPatternMatch findExitPortal() {
+
+# level
+file: net/minecraft/world/level/dimension/end/EndDragonFight.java
+line:
+    private final ServerLevel level;
+
+# portalLocation
+file: net/minecraft/world/level/dimension/end/EndDragonFight.java
+line:
+    private BlockPos portalLocation;
+
+# respawnStage
+file: net/minecraft/world/level/dimension/end/EndDragonFight.java
+line:
+    private DragonRespawnAnimation respawnStage;
+
+# setRespawnStage(DragonRespawnAnimation)
+file: net/minecraft/world/level/dimension/end/EndDragonFight.java
+line:
+    protected void setRespawnStage(DragonRespawnAnimation spawnState) {
+
+# spawnExitPortal(boolean)
+file: net/minecraft/world/level/dimension/end/EndDragonFight.java
+line:
+    private void spawnExitPortal(boolean previouslyKilled) {
+
+# setColorsDirty(int,int)
+file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
+line:
+    private void setColorsDirty(int x, int z) {
+
+# trackingPosition
+file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
+line:
+    private final boolean trackingPosition;
+
+# unlimitedTracking
+file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
+line:
+    private final boolean unlimitedTracking;

@@ -5,7 +5,7 @@
 file: net/minecraft/server/players/PlayerList.java
 anchor:
     GameProfile gameProfile = player.getGameProfile();
-    GameProfileCache gameProfileCache = this.server.getProfileCache();
+    GameProfileCache profileCache = this.server.getProfileCache();
 insert:
     player.loginTime = System.currentTimeMillis();
 

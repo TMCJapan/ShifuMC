@@ -17,8 +17,8 @@ anchor:
     );
     double d = vec3.lengthSqr();
     if (d < 64.0) {
-    double e = 1.0 - Math.sqrt(d) / 8.0;
-    this.setDeltaMovement(this.getDeltaMovement().add(vec3.normalize().scale(e * e * 0.1)));
+    double d1 = 1.0 - Math.sqrt(d) / 8.0;
+    this.setDeltaMovement(this.getDeltaMovement().add(vec3.normalize().scale(d1 * d1 * 0.1)));
     }
     }
 insert:
@@ -42,13 +42,13 @@ insert-after:
 # 残す指定があれば、消したあとに戻す。
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    Iterator iterator = this.activeEffects.values().iterator();
+    Iterator<MobEffectInstance> iterator = this.activeEffects.values().iterator();
 insert:
     final java.util.List<MobEffectInstance> shifuKept = dev.shifu.event.EntityEvents.clearEffects(this, this.activeEffects.values());
 
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    for (bl = false; iterator.hasNext(); bl = true) {
+    for (flag = false; iterator.hasNext(); flag = true) {
     this.onEffectRemoved(iterator.next());
     iterator.remove();
     }
@@ -117,7 +117,7 @@ insert:
 file: net/minecraft/world/entity/ambient/Bat.java
 anchor:
     this.setResting(false);
-    if (!bl) {
+    if (!isSilent) {
     this.level.levelEvent(null, 1025, blockPos, 0);
     }
 count: 2
@@ -130,7 +130,7 @@ insert-after:
 # 閉じ `}` を先に足し、開き `if (...) {` をあとで足す(先に開きを足すと 3 行のアンカーが崩れる)。
 file: net/minecraft/world/entity/ambient/Bat.java
 anchor:
-    if (this.random.nextInt(100) == 0 && this.level.getBlockState(blockPos2).isRedstoneConductor(this.level, blockPos2)) {
+    if (this.random.nextInt(100) == 0 && this.level.getBlockState(blockPos1).isRedstoneConductor(this.level, blockPos1)) {
     this.setResting(true);
     }
 insert-after:
@@ -138,7 +138,7 @@ insert-after:
 
 file: net/minecraft/world/entity/ambient/Bat.java
 anchor:
-    if (this.random.nextInt(100) == 0 && this.level.getBlockState(blockPos2).isRedstoneConductor(this.level, blockPos2)) {
+    if (this.random.nextInt(100) == 0 && this.level.getBlockState(blockPos1).isRedstoneConductor(this.level, blockPos1)) {
 insert-after:
     if (dev.shifu.event.EntityEvents.batToggleSleep(this, false)) {
 
@@ -171,7 +171,7 @@ insert-after:
 # EntityRegainHealthEvent(ENDER_CRYSTAL)
 file: net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
 anchor:
-    entity.push(f / h * 4.0, 0.2F, g / h * 4.0);
+    entity.push(d2 / max * 4.0, 0.2F, d3 / max * 4.0);
 insert:
     dev.shifu.event.EntityEvents.pushedBy(this, entity);
 
@@ -210,7 +210,7 @@ insert:
 # PrePlayerAttackEntityEvent(attack)
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-    g *= i;
+    damageBonus *= attackStrengthScale;
     this.resetAttackStrengthTicker();
 insert:
     dev.shifu.event.EntityEvents.attacking(target, this.damageSources().playerAttack(this), f);
@@ -219,9 +219,9 @@ insert:
 file: net/minecraft/world/entity/player/Player.java
 anchor:
     target.push(
-    -Mth.sin(this.getYRot() * (float) (Math.PI / 180.0)) * j * 0.5F,
+    -Mth.sin(this.getYRot() * (float) (Math.PI / 180.0)) * i * 0.5F,
     0.1,
-    Mth.cos(this.getYRot() * (float) (Math.PI / 180.0)) * j * 0.5F
+    Mth.cos(this.getYRot() * (float) (Math.PI / 180.0)) * i * 0.5F
     );
 insert:
     dev.shifu.event.EntityEvents.pushedBy(this, target);
@@ -244,23 +244,27 @@ file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
     ItemEntity itemEntity = new ItemEntity(this.level, this.getX(), this.getY(), this.getZ(), itemStack);
 insert-after:
-    final org.bukkit.event.player.PlayerFishEvent shifuFish = dev.shifu.event.EntityEvents.fishCaught(this, player, itemEntity);
+    final org.bukkit.event.playerOwner.PlayerFishEvent shifuFish = dev.shifu.event.EntityEvents.fishCaught(this, playerOwner, itemEntity);
     if (shifuFish != null && shifuFish.isCancelled()) {
         return 0;
     }
 
 file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
-    player.level
-    .addFreshEntity(new ExperienceOrb(player.level, player.getX(), player.getY() + 0.5, player.getZ() + 0.5, this.random.nextInt(6) + 1));
+    playerOwner.level
+    .addFreshEntity(
+    new ExperienceOrb(
+    playerOwner.level, playerOwner.getX(), playerOwner.getY() + 0.5, playerOwner.getZ() + 0.5, this.random.nextInt(6) + 1
+    )
+    );
     if (itemStack.is(ItemTags.FISHES)) {
-    player.awardStat(Stats.FISH_CAUGHT, 1);
+    playerOwner.awardStat(Stats.FISH_CAUGHT, 1);
     }
 insert:
     if (shifuFish == null) {
 insert-after:
     } else if (shifuFish.getExpToDrop() > 0) {
-        player.level.addFreshEntity(new ExperienceOrb(player.level, player.getX(), player.getY() + 0.5, player.getZ() + 0.5, shifuFish.getExpToDrop()));
+        playerOwner.level.addFreshEntity(new ExperienceOrb(playerOwner.level, playerOwner.getX(), playerOwner.getY() + 0.5, playerOwner.getZ() + 0.5, shifuFish.getExpToDrop()));
     }
 
 # PlayerFishEvent(IN_GROUND / REEL_IN)
@@ -285,7 +289,7 @@ insert-after:
 # WaterBottleSplashEvent。割れた位置を置いてから、水の飛沫の本体を囲む。
 file: net/minecraft/world/entity/projectile/ThrownPotion.java
 anchor:
-    if (bl) {
+    if (flag) {
     this.applyWater();
 insert:
     dev.shifu.event.EntityEvents.splashHit(hitResult);
@@ -295,8 +299,8 @@ insert:
 # VehicleDamageEvent と VehicleDestroyEvent
 file: net/minecraft/world/entity/Entity.java
 anchor:
-    vec3 = vec3.add(vec32);
-    o++;
+    vec3 = vec3.add(flow);
+    i++;
     }
 insert-after:
     dev.shifu.event.EntityEvents.lavaContact(this, fluidState, mutableBlockPos);

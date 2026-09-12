@@ -5,7 +5,7 @@
 file: net/minecraft/world/entity/Mob.java
 anchor:
     this.setLeashedTo(player, true);
-    itemStack.shrink(1);
+    itemInHand.shrink(1);
 insert:
     // CraftBukkit start - fire PlayerLeashEntityEvent
     if (org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerLeashEntityEvent(this, player, player, hand).isCancelled()) {

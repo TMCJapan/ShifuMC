@@ -3,7 +3,8 @@
 # 毎 tick のスケジューラ実行
 file: net/minecraft/server/MinecraftServer.java
 anchor:
-    this.profiler.push("commandFunctions");
+                this.statusIcon = this.loadStatusIcon().orElse(null);
+                this.status = this.buildServerStatus();
 insert:
     this.server.getScheduler().mainThreadHeartbeat(this.tickCount);
 
@@ -68,7 +69,7 @@ insert-after:
 # Bukkit のスコアボード。主世界のデータを読んだ直後に作る
 file: net/minecraft/server/MinecraftServer.java
 anchor:
-    this.readScoreboard(dimensionDataStorage);
+    this.readScoreboard(dataStorage);
 insert-after:
     this.server.scoreboardManager = new org.bukkit.craftbukkit.scoreboard.CraftScoreboardManager(this, serverLevel.getScoreboard());
 

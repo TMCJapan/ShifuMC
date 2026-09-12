@@ -2,7 +2,7 @@
 
 file: net/minecraft/world/item/ArmorItem.java
 anchor:
-            LivingEntity livingEntity = list.get(0);
+    LivingEntity livingEntity = entitiesOfClass.get(0);
 insert-after:
     if (!dev.shifu.event.BlockEvents.dispenseArmor(pointer, armor, livingEntity)) {
         return false;

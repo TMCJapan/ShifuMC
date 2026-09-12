@@ -2,8 +2,8 @@
 
 file: net/minecraft/world/entity/AreaEffectCloud.java
 anchor:
-                        for (LivingEntity livingEntity : list2) {
+    for (LivingEntity livingEntity : entitiesOfClass) {
 insert:
-    if (!dev.shifu.event.EntityEvents.areaEffectCloudApply(this, list2)) {
-        list2.clear();
+    if (!dev.shifu.event.EntityEvents.areaEffectCloudApply(this, entitiesOfClass)) {
+        entitiesOfClass.clear();
     }

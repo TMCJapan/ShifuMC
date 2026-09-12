@@ -57,7 +57,7 @@ insert-after:
 # 3 つ後ろの slot に入る(boolean 1 + long 2)。
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    if (this.sleepStatus.areEnoughSleeping(i) && this.sleepStatus.areEnoughDeepSleeping(i, this.players)) {
+    if (this.sleepStatus.areEnoughSleeping(_int) && this.sleepStatus.areEnoughDeepSleeping(_int, this.players)) {
 insert-after:
     dev.shifu.event.PlayerEvents.nightBefore(this);
 
@@ -105,9 +105,9 @@ insert:
 # WorldDifficultyChangeEvent の送り主。/difficulty が呼ぶ直前に置く
 file: net/minecraft/server/rcon/thread/QueryThreadGs4.java
 anchor:
-    String[] strings = this.serverInterface.getPlayerNames();
+    String[] playerNames = this.serverInterface.getPlayerNames();
 insert-after:
-    strings = dev.shifu.event.PlayerEvents.queryPlayers(strings);
+    playerNames = dev.shifu.event.PlayerEvents.queryPlayers(playerNames);
 
 # ============================================================ プレイヤー
 

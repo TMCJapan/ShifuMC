@@ -2,8 +2,8 @@
 
 file: net/minecraft/world/entity/npc/AbstractVillager.java
 anchor:
-                recipeList.add(merchantOffer);
+    recipeList.add(offer);
 insert:
-    if (dev.shifu.event.AnimalEvents.villagerAcquireTrade(this, merchantOffer)) {
+    if (dev.shifu.event.AnimalEvents.villagerAcquireTrade(this, offer)) {
 insert-after:
     }

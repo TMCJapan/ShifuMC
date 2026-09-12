@@ -2,8 +2,8 @@
 
 file: net/minecraft/world/inventory/LecternMenu.java
 anchor:
-                    int k = this.lecternData.get(0);
-                    this.setData(0, k - 1);
+    int i = this.lecternData.get(0);
+    this.setData(0, i - 1);
 insert:
     if (!dev.shifu.event.ItemEvents.lecternPage(player, this.lectern,
             this.lecternData.get(0), this.lecternData.get(0) - 1)) {
@@ -12,8 +12,8 @@ insert:
 
 file: net/minecraft/world/inventory/LecternMenu.java
 anchor:
-                    int j = this.lecternData.get(0);
-                    this.setData(0, j + 1);
+    int i = this.lecternData.get(0);
+    this.setData(0, i + 1);
 insert:
     if (!dev.shifu.event.ItemEvents.lecternPage(player, this.lectern,
             this.lecternData.get(0), this.lecternData.get(0) + 1)) {

@@ -3,6 +3,6 @@
 # SlimeSplitEvent。分裂する数が決まった直後
 file: net/minecraft/world/entity/monster/Slime.java
 anchor:
-    int k = 2 + this.random.nextInt(3);
+    int i1 = 2 + this.random.nextInt(3);
 insert-after:
-    k = dev.shifu.event.AnimalEvents.slimeSplit(this, k);
+    i1 = dev.shifu.event.AnimalEvents.slimeSplit(this, i1);

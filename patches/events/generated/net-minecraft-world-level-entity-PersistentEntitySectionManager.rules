@@ -14,7 +14,7 @@ insert-after:
 
 file: net/minecraft/world/level/entity/PersistentEntitySectionManager.java
 anchor:
-        boolean bl = this.storeChunkSections(chunkPos, entity -> entity.getPassengersAndSelf().forEach(this::unloadEntity));
+    boolean flag = this.storeChunkSections(chunkPos, entity -> entity.getPassengersAndSelf().forEach(this::unloadEntity));
 insert:
     dev.shifu.event.ShifuEvents.armEntitiesUnload(true);
 insert-after:
