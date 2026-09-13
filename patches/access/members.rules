@@ -931,3 +931,35 @@ line:
 file: net/minecraft/server/level/ServerLevel.java
 line:
     final List<ServerPlayer> players = Lists.newArrayList();
+
+# SpigotConfig.attributeMaxes が書く(Paper は AT で final を外している)。触っていないクラスは公式の
+# バイトコードに戻るので、final のままだと起動時に IllegalAccessError になる
+file: net/minecraft/world/entity/ai/attributes/RangedAttribute.java
+unfinal:
+    private final double maxValue;
+
+# CraftSkeletonHorse が読み書きする。触っていないクラスは公式のバイトコードに戻るので、
+# private のままだと起動時に届かない
+file: net/minecraft/world/entity/animal/horse/SkeletonHorse.java
+line:
+    private int trapTime;
+
+# CraftVindicator が読み書きする。修飾子が無い宣言も同じで、アダプタ層からは見えない
+file: net/minecraft/world/entity/monster/Vindicator.java
+line:
+    boolean isJohnny;
+
+# 上の 2 つで vanilla の木から写すようになった。同じファイルの中で Paper が AT で広げている
+# 宣言も広げないと、親(Paper の版)の public を狭めたことになる
+file: net/minecraft/world/entity/animal/horse/SkeletonHorse.java
+line:
+    protected SoundEvent getDeathSound() {
+
+file: net/minecraft/world/entity/monster/Vindicator.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# PaperWorldConfig.setupEntityBreakingDoors が読む
+file: net/minecraft/world/entity/monster/Vindicator.java
+line:
+    static final Predicate<Difficulty> DOOR_BREAKING_PREDICATE = difficulty -> difficulty == Difficulty.NORMAL || difficulty == Difficulty.HARD;
