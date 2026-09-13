@@ -54,8 +54,11 @@ FINAL = re.compile(r"\bfinal\b\s*")
 class Rule:
     """1 つの宣言。"""
 
-    def __init__(self, target, line, source, number, interface=None):
+    def __init__(self, target, line, source, number, interface=None, unfinal=False):
         self.target = target
+        # `unfinal:` で書いた宣言。final を外してから public にする(欄を代入し直す Paper の
+        # 本体をそのまま写すため)
+        self.unfinal = unfinal
         self.line = line
         self.where = f"{source}:{number}"
         # 入っていれば「可視性を広げる」ではなく「interface を 1 つ足す」
@@ -68,6 +71,7 @@ def parse(text, source="<rules>"):
     target = None
     pending = False
     pending_interface = False
+    pending_unfinal = False
 
     for number, raw in enumerate(text.split("\n"), 1):
         stripped = raw.strip()
@@ -76,8 +80,9 @@ def parse(text, source="<rules>"):
             if not stripped:
                 continue
 
-            rules.append(Rule(target, raw.rstrip(), source, number))
+            rules.append(Rule(target, raw.rstrip(), source, number, unfinal=pending_unfinal))
             pending = False
+            pending_unfinal = False
             continue
 
         if pending_interface:
@@ -100,6 +105,14 @@ def parse(text, source="<rules>"):
                 raise SystemExit(f"{source}:{number}: file: が先に要る")
 
             pending = True
+            continue
+
+        if stripped == "unfinal:":
+            if target is None:
+                raise SystemExit(f"{source}:{number}: file: が先に要る")
+
+            pending = True
+            pending_unfinal = True
             continue
 
         if stripped == "implements:":
@@ -152,7 +165,10 @@ def implement(lines, rule):
         raise SystemExit(f"{rule.where}: 型の宣言ではない: {rule.line.strip()}")
 
     head = line[:-1].rstrip()
-    joint = ", " if " implements " in head else " implements "
+    if re.search(r"\binterface\b", head.split("(")[0]):
+        joint = ", " if " extends " in head else " extends "
+    else:
+        joint = ", " if " implements " in head else " implements "
     lines[number] = head + joint + rule.interface + " {"
 
     return lines
@@ -170,6 +186,15 @@ def widen(lines, rule):
             f"{rule.where}: {rule.target} で {len(hits)} 件見つかった: {rule.line.strip()}")
 
     number = hits[0]
+
+    if rule.unfinal:
+        if not re.search(r"\bfinal\s+", lines[number]):
+            raise SystemExit(f"{rule.where}: final が無い: {rule.line.strip()}")
+
+        lines[number] = re.sub(r"\bfinal\s+", "", lines[number], count=1)
+
+        if PUBLIC.match(lines[number]):
+            return lines
 
     if NARROW.match(lines[number]):
         lines[number] = NARROW.sub(r"\1public\3", lines[number], count=1)

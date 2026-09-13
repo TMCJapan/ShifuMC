@@ -51,16 +51,21 @@ if (-not (Test-Path $Req)) { New-Item -ItemType File $Req | Out-Null }
 
 function Py { param([string[]] $a) & python @a 2>&1 | ForEach-Object { "$_" } }
 
-$before = 999999
+$before = ""
 
 for ($round = 1; $round -le $Rounds; $round++) {
     Set-Location $Tree
+    # git の起動が「アクセスが拒否されました」で落ちることがある。戻せていない木に当て直すと
+    # 追加が二重になって @Override が 4000 件重なるので、戻せたことを確かめてから進む。
     git reset --hard $base -q
+    if ($LASTEXITCODE -ne 0) { throw "git reset が失敗した(round $round)" }
     git clean -fdq
+    if (@(git status --porcelain).Count -ne 0) { throw "木が素に戻っていない(round $round)" }
 
     # Paper 側を素の状態に戻す(env.sh の shifu_reset_paper と同じ)
     git -C $PaperServer clean -qfd -- src/main/java
     git -C $PaperServer checkout -q -- src/main/java
+    if ($LASTEXITCODE -ne 0) { throw "Paper-Server を戻せなかった(round $round)" }
     if ((git -C $PaperServer ls-tree -d $basePaper -- src/main/resources/data/minecraft/worldgen) -ne $null) {
         git -C $PaperServer checkout -q $basePaper -- src/main/resources/data/minecraft/worldgen
     }
@@ -93,6 +98,11 @@ for ($round = 1; $round -le $Rounds; $round++) {
         $rels += @(git -C $PaperServer ls-files -- src/main/java/net src/main/java/com src/main/java/ca | ForEach-Object { $_.Substring("src/main/java/".Length) })
     }
     $rels += @(git -C $Tree status --porcelain | ForEach-Object { $_.Substring(3).Trim() })
+    # Paper が書き換えているが vanilla のまま使うファイル。規則が触らなくても vanilla の木から写す
+    $vanillaList = Join-Path $Shifu "patches\vanilla-files.txt"
+    if (Test-Path $vanillaList) {
+        $rels += @(Get-Content $vanillaList | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith("#") })
+    }
     $staged = 0
     foreach ($rel in ($rels | Sort-Object -Unique)) {
         $from = Join-Path $Tree $rel
@@ -117,15 +127,27 @@ for ($round = 1; $round -le $Rounds; $round++) {
     $count = @(Select-String -Path $Gap -Pattern "error:").Count
     "round ${round}: $count errors"
 
+    # javac まで届かずに gradle が落ちると error: が 0 件になる。それは通ったのではない
+    $ran = Select-String -Path $Gap -Pattern "Task :paper-server:compileJava" -Quiet
+    $ok = Select-String -Path $Gap -Pattern "BUILD SUCCESSFUL" -Quiet
+    if (-not $ran -or (-not $ok -and $count -eq 0)) {
+        "GRADLE FAILED (javac は走っていない)"
+        Select-String -Path $Gap -Pattern "What went wrong" -Context 0,2 | ForEach-Object { $_.Context.PostContext }
+        break
+    }
+
     if ($count -eq 0) { "COMPILED"; break }
 
-    if ($count -ge $before) {
+    # 数ではなく中身で見る。宣言レベルの誤り(cannot find symbol: class)が 1 つあると javac は
+    # 後ろの検査をしないので、それを直した次の周は数が跳ね上がる。同じ誤りの集合が 2 周続いたら止める
+    $errorSet = (Select-String -Path $Gap -Pattern "error:" | ForEach-Object { $_.Line } | Sort-Object -Unique) -join "`n"
+    if ($errorSet -eq $before) {
         if (Test-Path "$Req.bak") { Move-Item "$Req.bak" $Req -Force; "要求を 1 つ前に戻した" }
         "STALLED"
         break
     }
 
-    $before = $count
+    $before = $errorSet
     Set-Location $Shifu
     Copy-Item $Req "$Req.bak" -Force
     $more = Py @("$Shifu\tools\required_members.py", $Gap, $Tree, $Adapter)
