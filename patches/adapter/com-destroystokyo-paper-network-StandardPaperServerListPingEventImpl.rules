@@ -1,0 +1,9 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+# Paper は MOTD を AdventureComponent(遅延の包み)のまま ServerStatus に入れ、Paper が書き換えた
+# Component.Serializer がそれを JSON にする。Shifu の Serializer は vanilla なので、vanilla の Component に変換して入れる
+
+file: com/destroystokyo/paper/network/StandardPaperServerListPingEventImpl.java
+replace:
+        ping.setDescription(new AdventureComponent(event.motd()));
+with:
+        ping.setDescription(io.papermc.paper.adventure.PaperAdventure.asVanilla(event.motd()));
