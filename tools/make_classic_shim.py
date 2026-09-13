@@ -513,7 +513,9 @@ def main():
                 if re.fullmatch(r"[a-z]", member):
                     continue
 
-                if re.search(r"record\s+" + re.escape(owner) + r"", old) and "{" not in "".join(block):
+                _old_text = "\n".join(old) if isinstance(old, list) else old
+
+                if re.search(r"\brecord\s+" + re.escape(owner) + r"\b", _old_text) and "{" not in "".join(block):
                     continue
 
                 blocks.append((owner, member, ms.unfinal(block)))

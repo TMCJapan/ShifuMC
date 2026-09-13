@@ -1,75 +1,8 @@
 # アダプタ層の書き換え。vanilla の行ではない。
-# Paper-Server の Commodore は、パッチの当て直し(tools/apply_classic_by_file.py)で
+#
+# 1.19.4 では、パッチの当て直し(tools/apply_classic_by_file.py)で
 # 「Paper start - Rewrite plugins」の visitMethodInsn 向けの 3 つの書き換えが
-# visitFieldInsn の中に入っている(itf が無いので compile が通らない)。
-# visitFieldInsn からは外し、visitMethodInsn の TextAligment の直後(Paper と同じ位置)へ置く
-
-file: org/bukkit/craftbukkit/util/Commodore.java
-replace:
-                        if ((owner.equals("org/bukkit/OfflinePlayer") || owner.equals("org/bukkit/entity/Player")) && name.equals("getPlayerProfile") && desc.equals("()Lorg/bukkit/profile/PlayerProfile;")) {
-                            super.visitMethodInsn(opcode, owner, name, "()Lcom/destroystokyo/paper/profile/PlayerProfile;", itf);
-                            return;
-                        }
-                        if (owner.equals("org/bukkit/advancement/Advancement") && name.equals("getDisplay") && desc.endsWith(")Lorg/bukkit/advancement/AdvancementDisplay;")) {
-                            super.visitTypeInsn(Opcodes.CHECKCAST, CB_PACKAGE + "/advancement/CraftAdvancement");
-                            super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, CB_PACKAGE + "/advancement/CraftAdvancement", "getDisplay0", desc, false);
-                            return;
-                        }
-                        if (owner.equals("org/bukkit/WorldCreator") && name.equals("keepSpawnLoaded") && desc.equals("(Lnet/kyori/adventure/util/TriState;)V")) {
-                            super.visitMethodInsn(opcode, owner, name, "(Lnet/kyori/adventure/util/TriState;)Lorg/bukkit/WorldCreator;", itf);
-                            // new method has a return, so, make sure we pop it
-                            super.visitInsn(Opcodes.POP);
-                            return;
-                        }
-                        // Paper end
-                        if ( modern )
-                        {
-                            if ( owner.equals( "org/bukkit/Material" ) )
-                            {
-                                switch ( name )
-                                {
-                                    case "CACTUS_GREEN":
-with:
-                        // Paper end
-                        if ( modern )
-                        {
-                            if ( owner.equals( "org/bukkit/Material" ) )
-                            {
-                                switch ( name )
-                                {
-                                    case "CACTUS_GREEN":
-
-replace:
-                        if ( desc.equals( "()Lorg/bukkit/entity/TextDisplay$TextAligment;" ) )
-                        {
-                            super.visitMethodInsn( opcode, owner, name, "()Lorg/bukkit/entity/TextDisplay$TextAlignment;", itf );
-                            return;
-                        }
-with:
-                        if ( desc.equals( "()Lorg/bukkit/entity/TextDisplay$TextAligment;" ) )
-                        {
-                            super.visitMethodInsn( opcode, owner, name, "()Lorg/bukkit/entity/TextDisplay$TextAlignment;", itf );
-                            return;
-                        }
-                        // Paper start - Rewrite plugins (Shifu: visitFieldInsn から移した)
-                        owner = getOriginalOrRewrite( owner) ;
-                        if (desc != null)
-                        {
-                            desc = getOriginalOrRewrite(desc);
-                        }
-                        if ((owner.equals("org/bukkit/OfflinePlayer") || owner.equals("org/bukkit/entity/Player")) && name.equals("getPlayerProfile") && desc.equals("()Lorg/bukkit/profile/PlayerProfile;")) {
-                            super.visitMethodInsn(opcode, owner, name, "()Lcom/destroystokyo/paper/profile/PlayerProfile;", itf);
-                            return;
-                        }
-                        if (owner.equals("org/bukkit/advancement/Advancement") && name.equals("getDisplay") && desc.endsWith(")Lorg/bukkit/advancement/AdvancementDisplay;")) {
-                            super.visitTypeInsn(Opcodes.CHECKCAST, CB_PACKAGE + "/advancement/CraftAdvancement");
-                            super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, CB_PACKAGE + "/advancement/CraftAdvancement", "getDisplay0", desc, false);
-                            return;
-                        }
-                        if (owner.equals("org/bukkit/WorldCreator") && name.equals("keepSpawnLoaded") && desc.equals("(Lnet/kyori/adventure/util/TriState;)V")) {
-                            super.visitMethodInsn(opcode, owner, name, "(Lnet/kyori/adventure/util/TriState;)Lorg/bukkit/WorldCreator;", itf);
-                            // new method has a return, so, make sure we pop it
-                            super.visitInsn(Opcodes.POP);
-                            return;
-                        }
-                        // Paper end
+# visitFieldInsn の中に入ってしまうので、置き直していた。
+# 1.18.2 の Commodore にその 3 つ(getPlayerProfile・Advancement#getDisplay・
+# WorldCreator#keepSpawnLoaded)は無く、visitFieldInsn / visitMethodInsn の
+# どちらも Paper のままで通る。

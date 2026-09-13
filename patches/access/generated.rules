@@ -56,6 +56,11 @@ file: net/minecraft/server/MinecraftServer.java
 line:
     private final ChunkProgressListenerFactory progressListenerFactory;
 
+# registryHolder
+file: net/minecraft/server/MinecraftServer.java
+line:
+    private final RegistryAccess.Frozen registryHolder;
+
 # resources
 file: net/minecraft/server/MinecraftServer.java
 line:
@@ -86,6 +91,11 @@ file: net/minecraft/server/level/ChunkHolder.java
 line:
     private void broadcast(Packet<?> packet, boolean onlyOnWatchDistanceEdge) {
 
+# chunkToSave
+file: net/minecraft/server/level/ChunkHolder.java
+line:
+    private CompletableFuture<ChunkAccess> chunkToSave = CompletableFuture.completedFuture(null);
+
 # playerProvider
 file: net/minecraft/server/level/ChunkHolder.java
 line:
@@ -96,10 +106,20 @@ file: net/minecraft/server/level/ChunkHolder.java
 line:
     final ChunkPos pos;
 
+# queueLevel
+file: net/minecraft/server/level/ChunkHolder.java
+line:
+    private int queueLevel;
+
 # distanceManager
 file: net/minecraft/server/level/ChunkMap.java
 line:
     private final ChunkMap.DistanceManager distanceManager;
+
+# entitiesInLevel
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    private final LongSet entitiesInLevel = new LongOpenHashSet();
 
 # entityMap
 file: net/minecraft/server/level/ChunkMap.java
@@ -156,20 +176,25 @@ file: net/minecraft/server/level/ChunkMap.java
 line:
     protected void setViewDistance(int watchDistance) {
 
-# structureTemplateManager
-file: net/minecraft/server/level/ChunkMap.java
-line:
-    private final StructureTemplateManager structureTemplateManager;
-
 # tickingGenerated
 file: net/minecraft/server/level/ChunkMap.java
 line:
     private final AtomicInteger tickingGenerated = new AtomicInteger();
 
+# toDrop
+file: net/minecraft/server/level/ChunkMap.java
+line:
+    final LongSet toDrop = new LongOpenHashSet();
+
 # visibleChunkMap
 file: net/minecraft/server/level/ChunkMap.java
 line:
     private volatile Long2ObjectLinkedOpenHashMap<ChunkHolder> visibleChunkMap = this.updatingChunkMap.clone();
+
+# CHUNK_STATUSES
+file: net/minecraft/server/level/ServerChunkCache.java
+line:
+    private static final List<ChunkStatus> CHUNK_STATUSES = ChunkStatus.getStatusList();
 
 # mainThreadProcessor
 file: net/minecraft/server/level/ServerChunkCache.java
@@ -185,6 +210,11 @@ line:
 file: net/minecraft/server/level/ServerChunkCache.java
 line:
     private boolean spawnFriendlies = true;
+
+# entityManager
+file: net/minecraft/server/level/ServerLevel.java
+line:
+    private final PersistentEntitySectionManager<Entity> entityManager;
 
 # findLightningRod(BlockPos)
 file: net/minecraft/server/level/ServerLevel.java
@@ -236,15 +266,15 @@ file: net/minecraft/server/level/ServerPlayer.java
 line:
     private void triggerDimensionChangeTriggers(ServerLevel origin) {
 
-# wardenSpawnTracker
-file: net/minecraft/server/level/ServerPlayer.java
-line:
-    private WardenSpawnTracker wardenSpawnTracker = new WardenSpawnTracker(0, 0, 0);
-
 # level
 file: net/minecraft/server/level/ServerPlayerGameMode.java
 line:
     protected ServerLevel level;
+
+# createdTick
+file: net/minecraft/server/level/Ticket.java
+line:
+    private long createdTick;
 
 # key
 file: net/minecraft/server/level/Ticket.java
@@ -254,17 +284,7 @@ line:
 # connection
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 line:
-    private final Connection connection;
-
-# isChatMessageIllegal(String)
-file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
-line:
-    private static boolean isChatMessageIllegal(String message) {
-
-# resources
-file: net/minecraft/server/packs/repository/Pack.java
-line:
-    private final Pack.ResourcesSupplier resources;
+    public final Connection connection;
 
 # playerIo
 file: net/minecraft/server/players/PlayerList.java
@@ -280,11 +300,6 @@ line:
 file: net/minecraft/server/players/PlayerList.java
 line:
     protected void updateEntireScoreboard(ServerScoreboard scoreboard, ServerPlayer player) {
-
-# verifyChatTrusted(PlayerChatMessage)
-file: net/minecraft/server/players/PlayerList.java
-line:
-    private boolean verifyChatTrusted(PlayerChatMessage message) {
 
 # container1
 file: net/minecraft/world/CompoundContainer.java
@@ -374,7 +389,7 @@ line:
 # random
 file: net/minecraft/world/entity/Entity.java
 line:
-    protected final RandomSource random = RandomSource.create();
+    protected final Random random = new Random();
 
 # remainingFireTicks
 file: net/minecraft/world/entity/Entity.java
@@ -401,6 +416,11 @@ file: net/minecraft/world/entity/Entity.java
 line:
     protected boolean wasTouchingWater;
 
+# yRot
+file: net/minecraft/world/entity/Entity.java
+line:
+    private float yRot;
+
 # durabilityToXp(int)
 file: net/minecraft/world/entity/ExperienceOrb.java
 line:
@@ -419,17 +439,12 @@ line:
 # boostTime
 file: net/minecraft/world/entity/ItemBasedSteering.java
 line:
-    private int boostTime;
-
-# boostTimeTotal()
-file: net/minecraft/world/entity/ItemBasedSteering.java
-line:
-    private int boostTimeTotal() {
+    public int boostTime;
 
 # boosting
 file: net/minecraft/world/entity/ItemBasedSteering.java
 line:
-    private boolean boosting;
+    public boolean boosting;
 
 # flashes
 file: net/minecraft/world/entity/LightningBolt.java
@@ -526,6 +541,11 @@ file: net/minecraft/world/entity/Mob.java
 line:
     protected boolean isSunBurnTick() {
 
+# leashHolder
+file: net/minecraft/world/entity/Mob.java
+line:
+    private Entity leashHolder;
+
 # lootTable
 file: net/minecraft/world/entity/Mob.java
 line:
@@ -535,6 +555,11 @@ line:
 file: net/minecraft/world/entity/Mob.java
 line:
     private long lootTableSeed;
+
+# availableGoals
+file: net/minecraft/world/entity/ai/goal/GoalSelector.java
+line:
+    private final Set<WrappedGoal> availableGoals = Sets.newLinkedHashSet();
 
 # EntityGossips
 file: net/minecraft/world/entity/ai/gossip/GossipContainer.java
@@ -626,6 +651,11 @@ file: net/minecraft/world/entity/animal/Fox.java
 line:
     void setFaceplanted(boolean walking) {
 
+# setFoxType(Type)
+file: net/minecraft/world/entity/animal/Fox.java
+line:
+    private void setFoxType(Fox.Type type) {
+
 # setSleeping(boolean)
 file: net/minecraft/world/entity/animal/Fox.java
 line:
@@ -640,6 +670,11 @@ line:
 file: net/minecraft/world/entity/animal/MushroomCow.java
 line:
     private int effectDuration;
+
+# setMushroomType(MushroomType)
+file: net/minecraft/world/entity/animal/MushroomCow.java
+line:
+    private void setMushroomType(MushroomCow.MushroomType type) {
 
 # isTrusting()
 file: net/minecraft/world/entity/animal/Ocelot.java
@@ -691,40 +726,10 @@ file: net/minecraft/world/entity/animal/Turtle.java
 line:
     void setHasEgg(boolean hasEgg) {
 
-# canDuplicate()
-file: net/minecraft/world/entity/animal/allay/Allay.java
+# setVariant(Variant)
+file: net/minecraft/world/entity/animal/axolotl/Axolotl.java
 line:
-    private boolean canDuplicate() {
-
-# duplicationCooldown
-file: net/minecraft/world/entity/animal/allay/Allay.java
-line:
-    private long duplicationCooldown;
-
-# jukeboxPos
-file: net/minecraft/world/entity/animal/allay/Allay.java
-line:
-    private BlockPos jukeboxPos;
-
-# resetDuplicationCooldown()
-file: net/minecraft/world/entity/animal/allay/Allay.java
-line:
-    private void resetDuplicationCooldown() {
-
-# age
-file: net/minecraft/world/entity/animal/frog/Tadpole.java
-line:
-    private int age;
-
-# DATA_HAS_LEFT_HORN
-file: net/minecraft/world/entity/animal/goat/Goat.java
-line:
-    private static final EntityDataAccessor<Boolean> DATA_HAS_LEFT_HORN = SynchedEntityData.defineId(Goat.class, EntityDataSerializers.BOOLEAN);
-
-# DATA_HAS_RIGHT_HORN
-file: net/minecraft/world/entity/animal/goat/Goat.java
-line:
-    private static final EntityDataAccessor<Boolean> DATA_HAS_RIGHT_HORN = SynchedEntityData.defineId(Goat.class, EntityDataSerializers.BOOLEAN);
+    private void setVariant(Axolotl.Variant variant) {
 
 # createInventory()
 file: net/minecraft/world/entity/animal/horse/AbstractHorse.java
@@ -740,31 +745,6 @@ line:
 file: net/minecraft/world/entity/animal/horse/Llama.java
 line:
     private Llama caravanTail;
-
-# calculateDigPosition()
-file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
-line:
-    Optional<BlockPos> calculateDigPosition() {
-
-# canDig()
-file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
-line:
-    boolean canDig() {
-
-# getExploredPositions()
-file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
-line:
-    private Stream<BlockPos> getExploredPositions() {
-
-# getState()
-file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
-line:
-    private Sniffer.State getState() {
-
-# storeExploredPosition(BlockPos)
-file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
-line:
-    private Sniffer storeExploredPosition(BlockPos pos) {
 
 # bossEvent
 file: net/minecraft/world/entity/boss/wither/WitherBoss.java
@@ -815,6 +795,16 @@ line:
 file: net/minecraft/world/entity/decoration/ArmorStand.java
 line:
     private void setMarker(boolean marker) {
+
+# setNoBasePlate(boolean)
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+line:
+    private void setNoBasePlate(boolean hideBasePlate) {
+
+# setShowArms(boolean)
+file: net/minecraft/world/entity/decoration/ArmorStand.java
+line:
+    private void setShowArms(boolean showArms) {
 
 # setSmall(boolean)
 file: net/minecraft/world/entity/decoration/ArmorStand.java
@@ -885,11 +875,6 @@ line:
 file: net/minecraft/world/entity/item/ItemEntity.java
 line:
     private int pickupDelay;
-
-# target
-file: net/minecraft/world/entity/item/ItemEntity.java
-line:
-    private UUID target;
 
 # thrower
 file: net/minecraft/world/entity/item/ItemEntity.java
@@ -991,6 +976,11 @@ file: net/minecraft/world/entity/monster/Skeleton.java
 line:
     private void startFreezeConversion(int time) {
 
+# setSize(int,boolean)
+file: net/minecraft/world/entity/monster/Slime.java
+line:
+    protected void setSize(int size, boolean heal) {
+
 # getCurrentSpell()
 file: net/minecraft/world/entity/monster/SpellcasterIllager.java
 line:
@@ -1055,6 +1045,11 @@ line:
 file: net/minecraft/world/entity/monster/ZombieVillager.java
 line:
     private UUID conversionStarter;
+
+# startConverting(UUID,int)
+file: net/minecraft/world/entity/monster/ZombieVillager.java
+line:
+    private void startConverting(@Nullable UUID uuid, int delay) {
 
 # villagerConversionTime
 file: net/minecraft/world/entity/monster/ZombieVillager.java
@@ -1140,11 +1135,6 @@ line:
 file: net/minecraft/world/entity/player/Player.java
 line:
     protected int enchantmentSeed;
-
-# hurtDir
-file: net/minecraft/world/entity/player/Player.java
-line:
-    protected float hurtDir;
 
 # setShoulderEntityLeft(CompoundTag)
 file: net/minecraft/world/entity/player/Player.java
@@ -1366,11 +1356,6 @@ file: net/minecraft/world/entity/raid/Raid.java
 line:
     private long ticksActive;
 
-# lootTable
-file: net/minecraft/world/entity/vehicle/AbstractMinecartContainer.java
-line:
-    private ResourceLocation lootTable;
-
 # lootTableSeed
 file: net/minecraft/world/entity/vehicle/AbstractMinecartContainer.java
 line:
@@ -1380,11 +1365,6 @@ line:
 file: net/minecraft/world/entity/vehicle/MinecartCommandBlock.java
 line:
     static final EntityDataAccessor<String> DATA_ID_COMMAND_NAME = SynchedEntityData.defineId(MinecartCommandBlock.class, EntityDataSerializers.STRING);
-
-# universe
-file: net/minecraft/world/flag/FeatureFlag.java
-line:
-    final FeatureFlagUniverse universe;
 
 # exhaustionLevel
 file: net/minecraft/world/food/FoodData.java
@@ -1511,6 +1491,11 @@ file: net/minecraft/world/level/BaseSpawner.java
 line:
     private int minSpawnDelay = 200;
 
+# nextSpawnData
+file: net/minecraft/world/level/BaseSpawner.java
+line:
+    private SpawnData nextSpawnData = new SpawnData();
+
 # requiredPlayerRange
 file: net/minecraft/world/level/BaseSpawner.java
 line:
@@ -1519,7 +1504,7 @@ line:
 # setNextSpawnData(Level,BlockPos,SpawnData)
 file: net/minecraft/world/level/BaseSpawner.java
 line:
-    protected void setNextSpawnData(@Nullable Level world, BlockPos pos, SpawnData spawnEntry) {
+    public void setNextSpawnData(@Nullable Level world, BlockPos pos, SpawnData spawnEntry) {
 
 # spawnCount
 file: net/minecraft/world/level/BaseSpawner.java
@@ -1619,7 +1604,7 @@ line:
 # openersCounter
 file: net/minecraft/world/level/block/entity/BarrelBlockEntity.java
 line:
-    private final ContainerOpenersCounter openersCounter = new ContainerOpenersCounter() {
+    private ContainerOpenersCounter openersCounter = new ContainerOpenersCounter() {
 
 # playSound(BlockState,SoundEvent)
 file: net/minecraft/world/level/block/entity/BarrelBlockEntity.java
@@ -1701,25 +1686,10 @@ file: net/minecraft/world/level/block/entity/ChestBlockEntity.java
 line:
     private final ContainerOpenersCounter openersCounter = new ContainerOpenersCounter() {
 
-# lastInteractedSlot
-file: net/minecraft/world/level/block/entity/ChiseledBookShelfBlockEntity.java
+# playSound(Level,BlockPos,BlockState,SoundEvent)
+file: net/minecraft/world/level/block/entity/ChestBlockEntity.java
 line:
-    private int lastInteractedSlot = -1;
-
-# isPlaying
-file: net/minecraft/world/level/block/entity/JukeboxBlockEntity.java
-line:
-    private boolean isPlaying;
-
-# recordStartedTick
-file: net/minecraft/world/level/block/entity/JukeboxBlockEntity.java
-line:
-    private long recordStartedTick;
-
-# tickCount
-file: net/minecraft/world/level/block/entity/JukeboxBlockEntity.java
-line:
-    private long tickCount;
+    static void playSound(Level world, BlockPos pos, BlockState state, SoundEvent soundEvent) {
 
 # bookAccess
 file: net/minecraft/world/level/block/entity/LecternBlockEntity.java
@@ -1744,7 +1714,7 @@ line:
 # messages
 file: net/minecraft/world/level/block/entity/SignBlockEntity.java
 line:
-    private final Component[] messages = new Component[]{CommonComponents.EMPTY, CommonComponents.EMPTY, CommonComponents.EMPTY, CommonComponents.EMPTY};
+    private final Component[] messages = new Component[]{TextComponent.EMPTY, TextComponent.EMPTY, TextComponent.EMPTY, TextComponent.EMPTY};
 
 # age
 file: net/minecraft/world/level/block/entity/TheEndGatewayBlockEntity.java
@@ -1760,16 +1730,6 @@ line:
 file: net/minecraft/world/level/block/entity/TheEndGatewayBlockEntity.java
 line:
     private BlockPos exitPortal;
-
-# max
-file: net/minecraft/world/level/block/state/properties/IntegerProperty.java
-line:
-    private final int max;
-
-# min
-file: net/minecraft/world/level/block/state/properties/IntegerProperty.java
-line:
-    private final int min;
 
 # level
 file: net/minecraft/world/level/chunk/LevelChunk.java
@@ -1816,11 +1776,6 @@ file: net/minecraft/world/level/chunk/storage/SectionStorage.java
 line:
     protected Optional<R> getOrLoad(long pos) {
 
-# registryAccess
-file: net/minecraft/world/level/chunk/storage/SectionStorage.java
-line:
-    private final RegistryAccess registryAccess;
-
 # dragonEvent
 file: net/minecraft/world/level/dimension/end/EndDragonFight.java
 line:
@@ -1834,7 +1789,7 @@ line:
 # findExitPortal()
 file: net/minecraft/world/level/dimension/end/EndDragonFight.java
 line:
-    private BlockPattern.BlockPatternMatch findExitPortal() {
+    public BlockPattern.BlockPatternMatch findExitPortal() {
 
 # level
 file: net/minecraft/world/level/dimension/end/EndDragonFight.java

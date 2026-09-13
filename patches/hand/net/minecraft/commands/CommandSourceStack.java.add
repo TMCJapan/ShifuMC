@@ -1,19 +1,16 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
 //
-// patches/access/implements.rules で PaperCommandSourceStack(API の CommandSourceStack)を
-// 実装させている。その interface が要求するもののうち、default が無い 2 つをここに置く。
-
-// CommandSourceStack.getHandle
-    // PaperCommandSourceStack の実装。Paper のパッチと同じで、自分を返す。
-    public CommandSourceStack getHandle() {
-        return this;
-    }
-
-// CommandSourceStack.shifuApiSource
-    // Paper の brigadier API に渡すときに包んだもの(dev.shifu.command.ApiSource)。
-    // 同じ source を何度包んでも同じオブジェクトになるように、ここに覚えておく。
-    // 型を Object にしているのは、vanilla のクラスからアダプタ層の型を参照しないため。
-    public Object shifuApiSource;
+// patches/access/members.rules で BukkitBrigadierCommandSource(Paper-MojangAPI)を
+// 実装させている。要求は getBukkitEntity / getBukkitWorld / getBukkitLocation /
+// getBukkitSender の 4 つで、Paper 1.18.2 はどれも本体が自分で閉じた形で持っているので
+// 生成器が写せる。ここに書くのは 1 つだけ。
+//
+// 1.19.4 から消した塊:
+//   getHandle      — io.papermc.paper.command.brigadier.PaperCommandSourceStack は
+//                    1.18.2 に無い。1.18.2 の Paper は CommandSourceStack を
+//                    com.destroystokyo.paper.brigadier.BukkitBrigadierCommandSource として扱う。
+//   shifuApiSource — Paper の brigadier API へ渡すときの包み(dev.shifu.command.ApiSource)を
+//                    覚える欄。1.18.2 にその API は無く、src/event/java/dev/shifu/command も空。
 
 // CommandSourceStack.getBukkitEntity
     // BukkitBrigadierCommandSource の実装。Paper のパッチと同じ

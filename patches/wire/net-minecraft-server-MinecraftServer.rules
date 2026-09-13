@@ -48,12 +48,7 @@ insert-after:
 # (patches/sources/net/minecraft/server/Services.java.patch:38, MinecraftServer.java.patch:252)。
 # アダプタ層(CraftWorld, ChatProcessor)が paperConfig() と GlobalConfiguration.get() を読む。
 # 引数は PlayerList の配線と同じ static から取る(順序に依らない)。
-file: net/minecraft/server/MinecraftServer.java
-anchor:
-    this.serverThread = serverThread;
-    this.executor = Util.backgroundExecutor();
-insert:
-    this.paperConfigurations = dev.shifu.event.ShifuBootstrap.paperConfigurations(dev.shifu.event.ShifuBootstrap.options);
+# (1.18.2 は PaperConfig.init を DedicatedServer の配線で呼ぶ。paperConfigurations の欄は無い)
 
 
 # MinecraftServer.getServer() が返す先。これが入っていないと null が返り、

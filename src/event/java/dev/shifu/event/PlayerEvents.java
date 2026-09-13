@@ -43,7 +43,6 @@ import org.bukkit.craftbukkit.block.CraftBlockState;
 import org.bukkit.craftbukkit.block.CraftBlockStates;
 import org.bukkit.craftbukkit.event.CraftEventFactory;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.util.CraftLocation;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.world.TimeSkipEvent;
 
@@ -302,7 +301,7 @@ public final class PlayerEvents {
         }
 
         final com.destroystokyo.paper.event.entity.PreCreatureSpawnEvent event = new com.destroystokyo.paper.event.entity.PreCreatureSpawnEvent(
-                CraftLocation.toBukkit(pos, level.getWorld()),
+                new org.bukkit.Location(level.getWorld(), pos.getX(), pos.getY(), pos.getZ()),
                 bukkitType,
                 org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL);
         final boolean allowed = event.callEvent();
@@ -402,8 +401,8 @@ public final class PlayerEvents {
 
     /** 次の {@code setRespawnPosition} の理由を置く。 */
     public static void spawnCause(final ServerPlayer player, final com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause cause) {
-        if (!listening(com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.getHandlerList())
-                && !listening(org.bukkit.event.player.PlayerSpawnChangeEvent.getHandlerList())) {
+        // Bukkit の PlayerSpawnChangeEvent は 1.18.2 の API に無い
+        if (!listening(com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.getHandlerList())) {
             return;
         }
 
@@ -476,7 +475,7 @@ public final class PlayerEvents {
 
     /** 盾を無効にする攻撃者を置く({@code Player.blockUsingItem} から)。 */
     public static void shieldAttacker(final LivingEntity attacker) {
-        // PlayerShieldDisableEvent は 1.19.4 の Paper API に無い。
+        // PlayerShieldDisableEvent は Paper-API 1.18.2 に無い。
     }
 
     // EntityLungeEvent は 26.x で入った Paper のイベントで、1.21.11 の API には無い。
@@ -772,7 +771,7 @@ public final class PlayerEvents {
         }
 
         return new io.papermc.paper.event.player.PlayerArmSwingEvent(player.getBukkitEntity(),
-                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand)).callEvent();
+                ShifuEvents.hand(hand)).callEvent();
     }
 
     /**
@@ -825,8 +824,9 @@ public final class PlayerEvents {
             return true;
         }
 
+        // 1.18.2 の callPlayerHarvestBlockEvent は手を取らない
         return !org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerHarvestBlockEvent(
-                level, pos, player, hand, drops).isCancelled();
+                level, pos, player, drops).isCancelled();
     }
 
     /**
@@ -851,7 +851,7 @@ public final class PlayerEvents {
                 (org.bukkit.entity.Player) player.getBukkitEntity(),
                 org.bukkit.craftbukkit.block.CraftBlock.at(level, pos),
                 org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(tool),
-                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand), drops).callEvent();
+                ShifuEvents.hand(hand), drops).callEvent();
     }
 
     /**
@@ -868,8 +868,9 @@ public final class PlayerEvents {
             return true;
         }
 
+        // 1.18.2 の callPlayerFishBucketEvent は手を取らない
         return !org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerFishBucketEvent(
-                entity, player, bucket, filled, hand).isCancelled();
+                entity, player, bucket, filled).isCancelled();
     }
 
 
@@ -996,43 +997,25 @@ public final class PlayerEvents {
     /**
      * PlayerInventorySlotChangeEvent。持ち物の 1 枠が変わった直後。
      *
+     * <p>Paper-API 1.18.2 に PlayerInventorySlotChangeEvent が無いので何もしない。
+     *
      * @return 進捗の判定を回してよいか
      */
     public static boolean inventorySlotChange(final ServerPlayer player, final int slot,
                                               final net.minecraft.world.item.ItemStack from,
                                               final net.minecraft.world.item.ItemStack to) {
-        if (!ShifuEvents.listening(
-                io.papermc.paper.event.player.PlayerInventorySlotChangeEvent.getHandlerList())) {
-            return true;
-        }
-
-        final io.papermc.paper.event.player.PlayerInventorySlotChangeEvent event =
-                new io.papermc.paper.event.player.PlayerInventorySlotChangeEvent(player.getBukkitEntity(), slot,
-                        org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(from),
-                        org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(to));
-        event.callEvent();
-
-        return event.shouldTriggerAdvancements();
+        return true;
     }
 
 
     /**
      * PrePlayerAttackEntityEvent。殴る直前。
      *
-     * <p>Paper は「殴れない相手」でも出す。vanilla は
-     * {@code isAttackable} と {@code skipAttackInteraction} を先に通すので、
-     * <b>出しているのは殴れるときだけ。</b>
+     * <p>Paper-API 1.18.2 に PrePlayerAttackEntityEvent が無いので何もしない。
      */
     public static boolean prePlayerAttack(final net.minecraft.world.entity.player.Player player,
                                           final net.minecraft.world.entity.Entity target) {
-        if (!(player instanceof ServerPlayer serverPlayer)
-                || !ShifuEvents.listening(
-                        io.papermc.paper.event.player.PrePlayerAttackEntityEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new io.papermc.paper.event.player.PrePlayerAttackEntityEvent(serverPlayer.getBukkitEntity(),
-                target.getBukkitEntity(), true).callEvent();
+        return true;
     }
 
     /** PlayerAttackEntityCooldownResetEvent。殴ったあと攻撃力の溜めを戻す直前。 */
@@ -1097,12 +1080,12 @@ public final class PlayerEvents {
             return true;
         }
 
+        // 1.18.2 の構築子は使った手を取らない
         return new org.bukkit.event.player.PlayerArmorStandManipulateEvent(serverPlayer.getBukkitEntity(),
                 (org.bukkit.entity.ArmorStand) stand.getBukkitEntity(),
                 org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(held),
                 org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stand.getItemBySlot(slot)),
-                org.bukkit.craftbukkit.CraftEquipmentSlot.getSlot(slot),
-                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand)).callEvent();
+                org.bukkit.craftbukkit.CraftEquipmentSlot.getSlot(slot)).callEvent();
     }
 
 
@@ -1111,17 +1094,13 @@ public final class PlayerEvents {
      * コマンドの一覧を送る直前。
      *
      * <p>Paper は消された名前を根から抜く。抜く口({@code removeCommand})が
-     * 1.20.6 の木に無いので、<b>出しているだけで反映はしていない。</b>
+     * 1.18.2 の木に無いので、<b>出しているだけで反映はしていない。</b>
+     *
+     * <p>AsyncPlayerSendCommandsEvent は Paper-API 1.18.2 に無いので出さない。
      */
     public static void commandSend(final ServerPlayer player,
                                    final com.mojang.brigadier.tree.RootCommandNode<
                                            net.minecraft.commands.SharedSuggestionProvider> root) {
-        if (ShifuEvents.listening(
-                com.destroystokyo.paper.event.brigadier.AsyncPlayerSendCommandsEvent.getHandlerList())) {
-            new com.destroystokyo.paper.event.brigadier.AsyncPlayerSendCommandsEvent<>(
-                    player.getBukkitEntity(), (com.mojang.brigadier.tree.RootCommandNode) root, false).callEvent();
-        }
-
         if (!ShifuEvents.listening(org.bukkit.event.player.PlayerCommandSendEvent.getHandlerList())) {
             return;
         }
@@ -1152,7 +1131,7 @@ public final class PlayerEvents {
 
         final com.destroystokyo.paper.event.profile.ProfileWhitelistVerifyEvent event =
                 new com.destroystokyo.paper.event.profile.ProfileWhitelistVerifyEvent(
-                        io.papermc.paper.util.MCUtil.toBukkit(profile), enforcing, whitelisted, op,
+                        net.minecraft.server.MCUtil.toBukkit(profile), enforcing, whitelisted, op,
                         org.spigotmc.SpigotConfig.whitelistMessage);
         event.callEvent();
 
@@ -1167,7 +1146,7 @@ public final class PlayerEvents {
     public static boolean signOpen(final net.minecraft.world.entity.player.Player player,
                                    final net.minecraft.world.level.block.entity.SignBlockEntity sign,
                                    final boolean front) {
-        // PlayerOpenSignEvent も PlayerSignOpenEvent も 1.19.4 の Paper API に無い。
+        // PlayerOpenSignEvent も PlayerSignOpenEvent も Paper-API 1.18.2 に無い。
         return true;
     }
 
@@ -1176,13 +1155,13 @@ public final class PlayerEvents {
     public static boolean recipeBookSettings(final ServerPlayer player,
                                              final net.minecraft.world.inventory.RecipeBookType type,
                                              final boolean open, final boolean filtering) {
-        // PlayerRecipeBookSettingsChangeEvent は 1.19.4 の Bukkit API に無い。
+        // PlayerRecipeBookSettingsChangeEvent は Paper-API 1.18.2 に無い。
         return true;
     }
 
     /** PlayerPickItemEvent。持ち替え(ピック)の直前。 */
     public static boolean pickItem(final ServerPlayer player, final int sourceSlot) {
-        // PlayerPickItemEvent は 1.19.4 の Paper API に無い。
+        // PlayerPickItemEvent は Paper-API 1.18.2 に無い。
         return true;
     }
 
@@ -1242,7 +1221,7 @@ public final class PlayerEvents {
         }
 
         final org.bukkit.inventory.EquipmentSlot slot =
-                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand);
+                ShifuEvents.hand(hand);
 
         if (at == null) {
             return new org.bukkit.event.player.PlayerInteractEntityEvent(player.getBukkitEntity(),
@@ -1273,8 +1252,12 @@ public final class PlayerEvents {
                 connection.getRemoteAddress() instanceof java.net.InetSocketAddress socket
                         && socket.getAddress() != null
                         ? socket.getAddress() : java.net.InetAddress.getLoopbackAddress();
+        // 1.18.2 の hostname は Connection ではなく ServerLoginPacketListenerImpl が持つ
+        // (Paper-Server src/main/java/net/minecraft/server/network/ServerLoginPacketListenerImpl.java:62)
+        final String hostname = connection.getPacketListener()
+                instanceof net.minecraft.server.network.ServerLoginPacketListenerImpl login ? login.hostname : "";
         final org.bukkit.event.player.PlayerLoginEvent event = new org.bukkit.event.player.PlayerLoginEvent(
-                player.getBukkitEntity(), connection.hostname, address, address);
+                player.getBukkitEntity(), hostname, address, address);
         event.callEvent();
 
         if (event.getResult() == org.bukkit.event.player.PlayerLoginEvent.Result.ALLOWED) {
@@ -1408,7 +1391,7 @@ public final class PlayerEvents {
 
         if (profile != null && !profile.isComplete()) {
             profile = new com.mojang.authlib.GameProfile(
-                    net.minecraft.core.UUIDUtil.createOfflinePlayerUUID(profile.getName()), profile.getName());
+                    net.minecraft.world.entity.player.Player.createPlayerUUID(profile.getName()), profile.getName());
         }
 
         final com.mojang.authlib.GameProfile fired = profile;
@@ -1517,7 +1500,7 @@ public final class PlayerEvents {
 
         new com.destroystokyo.paper.event.player.PlayerUseUnknownEntityEvent(player.getBukkitEntity(),
                 packet.getEntityId(), packet.isAttack(),
-                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand)).callEvent();
+                ShifuEvents.hand(hand)).callEvent();
     }
 
 
@@ -1568,8 +1551,12 @@ public final class PlayerEvents {
      * PlayerHandshakeEvent。最初の挨拶を受けたとき。
      *
      * <p>既定では取り消し済みで出る(プロキシの処理を Shifu は持たないため)。
-     * プラグインが取り消しを外して受け持ったときだけ、失敗の扱いと
-     * 名前の書き換えを反映する。<b>UUID とプロパティの書き換えは通していない。</b>
+     * プラグインが取り消しを外して受け持ったときだけ、失敗の扱いを反映する。
+     * <b>UUID とプロパティの書き換えは通していない。</b>
+     *
+     * <p>効かないもの: {@code setServerHostname}。1.18.2 の hostname は
+     * {@code ServerLoginPacketListenerImpl} が持ち、その listener は
+     * この差し込みより後(handleIntention の LOGIN の枝)で作られる。
      *
      * @return 続けてよいか
      */
@@ -1595,10 +1582,6 @@ public final class PlayerEvents {
             connection.disconnect(PaperAdventure.asVanilla(event.failMessage()));
 
             return false;
-        }
-
-        if (event.getServerHostname() != null) {
-            connection.hostname = event.getServerHostname();
         }
 
         return true;
@@ -1629,29 +1612,26 @@ public final class PlayerEvents {
     public static boolean failMove(final ServerPlayer player, final String reason,
                                    final double toX, final double toY, final double toZ,
                                    final float toYaw, final float toPitch) {
-        // PlayerFailMoveEvent は 1.19.4 の Paper API に無い。
+        // PlayerFailMoveEvent は Paper-API 1.18.2 に無い。
         return true;
     }
 
 
-    /** PlayerTrackEntityEvent。相手が見えるようになる直前。 */
+    /**
+     * PlayerTrackEntityEvent。相手が見えるようになる直前。
+     *
+     * <p>Paper-API 1.18.2 に PlayerTrackEntityEvent が無いので何もしない。
+     */
     public static boolean trackEntity(final ServerPlayer player, final net.minecraft.world.entity.Entity entity) {
-        if (!ShifuEvents.listening(io.papermc.paper.event.player.PlayerTrackEntityEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new io.papermc.paper.event.player.PlayerTrackEntityEvent(player.getBukkitEntity(),
-                entity.getBukkitEntity()).callEvent();
+        return true;
     }
 
-    /** PlayerUntrackEntityEvent。相手が見えなくなった直後。取り消しは無い。 */
+    /**
+     * PlayerUntrackEntityEvent。相手が見えなくなった直後。
+     *
+     * <p>Paper-API 1.18.2 に PlayerUntrackEntityEvent が無いので何もしない。
+     */
     public static void untrackEntity(final ServerPlayer player, final net.minecraft.world.entity.Entity entity) {
-        if (!ShifuEvents.listening(io.papermc.paper.event.player.PlayerUntrackEntityEvent.getHandlerList())) {
-            return;
-        }
-
-        new io.papermc.paper.event.player.PlayerUntrackEntityEvent(player.getBukkitEntity(),
-                entity.getBukkitEntity()).callEvent();
     }
 
 

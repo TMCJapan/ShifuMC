@@ -1,36 +1,13 @@
-# tools/apply_classic_by_file.py がハンクを 1 つ違う位置に当てた。
-# `--server-name` の受け口は無名の OptionParser の中に要るのに、
-# preloadClasses の末尾に入っている(そこでは acceptsAll が見えない)。
-# 正しい位置へ移す。行の中身は Paper のまま。
-
-file: org/bukkit/craftbukkit/Main.java
-replace:
-                this.acceptsAll(Main.asList("nogui"), "Disables the graphical console");
-with:
-                // Paper start
-                this.acceptsAll(Main.asList("server-name"), "Name of the server")
-                        .withRequiredArg()
-                        .ofType(String.class)
-                        .defaultsTo("Unknown Server")
-                        .describedAs("Name");
-                // Paper end
-
-                this.acceptsAll(Main.asList("nogui"), "Disables the graphical console");
-
-file: org/bukkit/craftbukkit/Main.java
-replace:
-                // Paper start
-                acceptsAll(asList("server-name"), "Name of the server")
-                        .withRequiredArg()
-                        .ofType(String.class)
-                        .defaultsTo("Unknown Server")
-                        .describedAs("Name");
-                // Paper end
-with:
+# アダプタ層の書き換え。vanilla の行ではない。
+#
+# 1.19.4 では tools/apply_classic_by_file.py が `--server-name` の受け口を
+# preloadClasses の末尾へ当ててしまうので、無名の OptionParser の中へ移していた。
+# 1.18.2 ではそのハンクが正しい位置(OptionParser の中、Main.java:157)に当たっているので
+# 移す 2 規則は消した。**消さずに残すと、消す側の規則だけが当たって
+# `--server-name` の受け口が丸ごと落ちる。**
 
 # vanilla の Main は String[] を自分で解析する。Bukkit の Main が解析済みの
-# OptionSet から、vanilla が受け付ける名前だけを引数列へ戻す(1.21.11 の
-# PaperBootstrap と同じ扱い)。
+# OptionSet から、vanilla が受け付ける名前だけを引数列へ戻す。
 file: org/bukkit/craftbukkit/Main.java
 replace:
                 net.minecraft.server.Main.main(options);

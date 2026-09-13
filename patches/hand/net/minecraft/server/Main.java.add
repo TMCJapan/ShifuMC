@@ -3,7 +3,12 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
 
 // Main.convertWorldButItWorks
-    // CraftServer.createWorld(--forceUpgrade)が呼ぶ。Paper の ThreadedWorldUpgrader へ渡す(Paper のパッチと同じ本体)
+    // CraftServer.createWorld(--forceUpgrade)と MinecraftServer が呼ぶ。
+    // Paper の ThreadedWorldUpgrader へ渡す(Paper 1.18.2 の Main.java:321 と同じ本体)。
+    // 世界のフォルダは Paper では worldSession.levelPath。この欄は
+    // net.minecraft.world.level.storage の外から見えないので、同じものを返す public な
+    // getDimensionPath(Level.OVERWORLD) で取る(DimensionType.getStorageFolder は
+    // OVERWORLD のとき worldDirectory をそのまま返す)。
     public static void convertWorldButItWorks(final net.minecraft.resources.ResourceKey<net.minecraft.world.level.dimension.LevelStem> dimensionType,
                                               final net.minecraft.world.level.storage.LevelStorageSource.LevelStorageAccess worldSession,
                                               final DataFixer dataFixer,
@@ -11,6 +16,8 @@
                                               final boolean removeCaches) {
         final int threads = Runtime.getRuntime().availableProcessors() * 3 / 8;
         final io.papermc.paper.world.ThreadedWorldUpgrader worldUpgrader = new io.papermc.paper.world.ThreadedWorldUpgrader(
-                dimensionType, worldSession.getLevelId(), worldSession.levelDirectory.path().toFile(), threads, dataFixer, generatorKey, removeCaches);
+                dimensionType, worldSession.getLevelId(),
+                worldSession.getDimensionPath(net.minecraft.world.level.Level.OVERWORLD).toFile(),
+                threads, dataFixer, generatorKey, removeCaches);
         worldUpgrader.convert();
     }

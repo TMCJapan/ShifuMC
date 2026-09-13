@@ -1,4 +1,12 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+//
+// 1.19.4 から消した塊:
+//   removePlayerFromWorld — 1.19.4 の Paper は onDisconnect の中身を
+//                           ServerCommonPacketListenerImpl.removePlayerFromWorld に切り出していた。
+//                           Paper 1.18.2 にその名前は無く、代わりに
+//                           onDisconnect(Component, kyori Component) を足している。
+//                           呼ぶのは Paper 自身の disconnect だけで、Shifu の発火層からは
+//                           呼ばないので何も置かない。chatMessageChain も 1.19 からのもの。
 
 // ServerGamePacketListenerImpl.handleContainerClose
     public void handleContainerClose(final ServerboundContainerClosePacket packet,
@@ -19,6 +27,8 @@
 // ServerGamePacketListenerImpl.hasMoved
     // Paper が PlayerMoveEvent のために持つ欄。直前に発火した to を控え、次の from にする。
     // 生成した規則(PlayerJumpEvent)もここを読む。
+    // Paper 1.18.2 は lastYaw / lastPitch という名前だが、読むのはこのファイルと発火層だけなので
+    // 1.19.4 の Shifu と同じ名前のままにしてある。
     private boolean hasMoved = false;
 
 // ServerGamePacketListenerImpl.lastPosX
@@ -58,35 +68,22 @@
         return teleported;
     }
 
-// ServerGamePacketListenerImpl.removePlayerFromWorld
-    // Paper は文言が無いときだけ remove(ServerPlayer) を呼んで戻り値を使う。
-    // vanilla のその版は void なので、いつも 2 引数の版へ渡す(中で null を見ている)。
-    private void removePlayerFromWorld(@Nullable net.kyori.adventure.text.Component quitMessage) {
-        this.chatMessageChain.close();
-        // CraftBukkit start - Replace vanilla quit message handling with our own.
-        this.player.disconnect();
-        quitMessage = this.server.getPlayerList().remove(this.player, quitMessage);
-        if ((quitMessage != null) && !quitMessage.equals(net.kyori.adventure.text.Component.empty())) {
-            this.server.getPlayerList().broadcastSystemMessage(io.papermc.paper.adventure.PaperAdventure.asVanilla(quitMessage), false);
-        }
-        // CraftBukkit end
-        this.player.getTextFilter().leave();
-    }
-
 // ServerGamePacketListenerImpl.internalTeleport
     // Paper は vanilla の teleport を internalTeleport に改名して、teleport の側に
     // PlayerTeleportEvent を入れている。Shifu は vanilla の teleport をそのまま残し、
     // その中に発火を差し込んでいるので、発火しない印を付けてから vanilla の版へ渡す。
     // justTeleported は PlayerMoveEvent の中でプラグインがテレポートさせたかの判定に使う。
+    // 1.18.2 の相対移動の旗は ClientboundPlayerPositionPacket.RelativeArgument
+    // (net.minecraft.world.entity.RelativeMovement は 1.19.4 から)。
     public void internalTeleport(final double x, final double y, final double z,
                                  final float yRot, final float xRot,
-                                 final java.util.Set<net.minecraft.world.entity.RelativeMovement> relatives) {
+                                 final java.util.Set<ClientboundPlayerPositionPacket.RelativeArgument> relatives) {
         dev.shifu.event.ShifuEvents.silentTeleport(this);
         this.justTeleported = true;
         this.teleport(x, y, z, yRot, xRot, relatives);
     }
 
-    // アダプタ層が呼ぶ短縮形。同じ目印の下に置く(別々に書くと後の方だけが残る)。
+    // アダプタ層と発火層が呼ぶ短縮形。同じ目印の下に置く(別々に書くと後の方だけが残る)。
     public void internalTeleport(final org.bukkit.Location dest) {
         this.internalTeleport(dest.getX(), dest.getY(), dest.getZ(), dest.getYaw(), dest.getPitch(),
                 java.util.Collections.emptySet());
@@ -118,9 +115,9 @@
 
 // ServerGamePacketListenerImpl.shifuPerformUnsignedChatCommand
     // PlayerCommandPreprocessEvent で文が差し替えられたとき、差し替えた文を vanilla の
-    // 私有メソッドへ通す(発火層からは private を呼べない)。1.19.4 は署名無しの経路が無いので、
-    // performChatCommand と同じ 2 行(解析 -> 実行)で走らせる
+    // 私有メソッドへ通す(発火層からは private を呼べない)。1.18.2 の handleCommand(String) は
+    // Commands.performCommand(CommandSourceStack, String) を呼ぶだけなので、同じ 1 行で走らせる。
+    // 渡る文に先頭の「/」は無いが、vanilla の performCommand は有っても無くても同じに読む。
     public void shifuPerformUnsignedChatCommand(final String command) {
-        final ParseResults<CommandSourceStack> parseResults = this.parseCommand(command);
-        this.server.getCommands().performCommand(parseResults, command);
+        this.server.getCommands().performCommand(this.player.createCommandSourceStack(), command);
     }

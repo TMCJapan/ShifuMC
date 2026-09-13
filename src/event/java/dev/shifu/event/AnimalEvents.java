@@ -47,7 +47,6 @@ import org.bukkit.craftbukkit.entity.CraftLivingEntity;
 import org.bukkit.craftbukkit.entity.CraftVillager;
 import org.bukkit.craftbukkit.event.CraftEventFactory;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.util.CraftLocation;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.EntityUnleashEvent;
 import org.bukkit.event.entity.VillagerCareerChangeEvent;
@@ -561,7 +560,7 @@ public final class AnimalEvents {
     /** ShulkerDuplicateEvent。弾を受けて増えるとき、世界に置く直前。 */
     public static boolean shulkerDuplicate(final net.minecraft.world.entity.monster.Shulker child,
                                            final net.minecraft.world.entity.monster.Shulker parent) {
-        // ShulkerDuplicateEvent は 1.19.4 の Paper API に無い。
+        // ShulkerDuplicateEvent は Paper-API 1.18.2 に無い。
         return true;
     }
 
@@ -642,7 +641,7 @@ public final class AnimalEvents {
 
         return new com.destroystokyo.paper.event.entity.TurtleStartDiggingEvent(
                 (org.bukkit.entity.Turtle) turtle.getBukkitEntity(),
-                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, turtle.level.getWorld())).callEvent();
+                new org.bukkit.Location(turtle.level.getWorld(), pos.getX(), pos.getY(), pos.getZ())).callEvent();
     }
 
     /**
@@ -659,7 +658,7 @@ public final class AnimalEvents {
 
         return new com.destroystokyo.paper.event.entity.TurtleLayEggEvent(
                 (org.bukkit.entity.Turtle) turtle.getBukkitEntity(),
-                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, turtle.level.getWorld()), 1).callEvent();
+                new org.bukkit.Location(turtle.level.getWorld(), pos.getX(), pos.getY(), pos.getZ()), 1).callEvent();
     }
 
     /**

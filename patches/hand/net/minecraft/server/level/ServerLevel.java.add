@@ -1,8 +1,20 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
-
-// ServerLevel.explode0
-    // vanilla の explode(13 引数) は void。ServerExplosion を返す形と wasCanceled は Paper の追加なので、
-    // ここには何も足さない。呼び出し元は CraftWorld.createExplosion だけで、そちらを vanilla の explode へ向けた。
+//
+// 1.19.4 から消した塊:
+//   explode0            — 1.18.2 の CraftWorld.createExplosion は vanilla の
+//                         explode(Entity, double, double, double, float, boolean, BlockInteraction)
+//                         をそのまま呼んで、返った Explosion の wasCanceled(Paper の欄)を読む。
+//                         別の入口が要らない。
+//   typeKey             — getTypeKey は convertable.dimensionType から答えるので、この欄は
+//                         1.19.4 でも読まれていなかった。
+//   levelStorageAccess  — Paper 1.18.2 にこの名前の欄は無い。CraftWorld と CraftServer は
+//                         convertable を読む。
+//   poiDataControllerNew / entityDataControllerNew
+//                       — io.papermc.paper.chunk.system.io.RegionFileIOThread は Paper 1.19 の
+//                         書き直したチャンク系のもの。Paper 1.18.2 は vanilla の IOWorker と
+//                         EntityStorage のままで、この入口を持たない。
+//   addWorldGenChunkEntities(Stream, ChunkPos)
+//                       — Paper 1.18.2 の版は vanilla と同じ 1 引数。
 
 // ServerLevel.findLightningTargetAround
     // returnNullWhenNoTarget は Paper の World.findLightningTarget 用。落雷点が無いときに null を返す旗だが、
@@ -12,73 +24,41 @@
     }
 
 // ServerLevel.getTypeKey
-    // Paper は世界ごとの LevelStorageAccess に次元を持たせ、getTypeKey はそれを返す。
-    // 入れるのは CraftServer.createWorld の validateAndCreateAccess(名前, 次元)だけで、
+    // Paper は世界ごとの LevelStorageAccess に次元を持たせ(createAccess(名前, 次元))、
+    // getTypeKey はそれを返す。入れるのは CraftServer.createWorld だけで、
     // vanilla の Main は次元を渡さない版を呼ぶ。主世界と地獄と果ての 3 つはそちらから
     // 作られるので null になる。vanilla の MinecraftServer.createLevels は LevelStem の
     // 鍵と同じ location から ResourceKey<Level> を作るので、そこから戻せる。
-    // Entity(果てへ移るか)と CraftDimensionUtil が読む。
-    @Override
-    public ResourceKey<LevelStem> getTypeKey() {
+    // 1.18.2 の鍵は net.minecraft.core.Registry.LEVEL_STEM_REGISTRY
+    // (net.minecraft.core.registries.Registries は 1.19.3 から)。
+    // ServerPlayer(果てへ移るか)と Entity と ChunkMap と CraftDimensionUtil が読む。
+    public ResourceKey<net.minecraft.world.level.dimension.LevelStem> getTypeKey() {
         return this.convertable.dimensionType != null
                 ? this.convertable.dimensionType
-                : ResourceKey.create(net.minecraft.core.registries.Registries.LEVEL_STEM, this.dimension().location());
+                : ResourceKey.create(Registry.LEVEL_STEM_REGISTRY, this.dimension().location());
     }
-
-// ServerLevel.typeKey
-    // 16 引数の構築子は this(...) で vanilla の版へ渡してから入れるので、final にできない。
-    // vanilla の 10 引数の版から作られた世界では null のまま。
-    private ResourceKey<LevelStem> typeKey;
 
 // ServerLevel.uuid
     // Paper は世界ごとに別のフォルダを持つので uid.dat から作る。vanilla は 3 つの次元で
-    // 1 つのフォルダを使うので、主世界の uid.dat から次元ごとに導く(配線で入れる)。
+    // 1 つのフォルダを使うので、次元ごとのフォルダから導く(配線で入れる)。
     // CraftWorld.getUID() が直に読む。
     public UUID uuid;
 
 // ServerLevel.bukkitName
     // Bukkit から見た世界の名前。vanilla の PrimaryLevelData は 3 つの次元で 1 つなので、
     // getLevelName() は 3 つとも同じ。CraftBukkit と同じ規則(<名前>_nether など)で分ける。
-    // CraftWorld.getName() が読む(patches/adapter)。
+    // CraftWorld.getName() が読む(patches/adapter)。入れるのは patches/wire。
     public String bukkitName;
 
-// ServerLevel.levelStorageAccess
-    // Paper が構築子で入れる。CraftWorld と CraftServer が直に読む。
-    public LevelStorageSource.LevelStorageAccess levelStorageAccess;
-
-// ServerLevel.poiDataControllerNew
-    // Paper のチャンク系は POI を自前の IO 糸で読み書きする。vanilla の SectionStorage は
-    // IOWorker を使うので RegionFileStorage として渡せない。Shifu は Paper のチャンク系を
-    // 繋いでいない(chunkTaskScheduler に何も入れていない)ので、ここに来たら落とす
-    public final io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController poiDataControllerNew
-        = new io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController(io.papermc.paper.chunk.system.io.RegionFileIOThread.RegionFileType.POI_DATA) {
-
-        @Override
-        public net.minecraft.world.level.chunk.storage.RegionFileStorage getCache() {
-            throw new UnsupportedOperationException("Shifu: POI は vanilla の IOWorker が読み書きする");
-        }
-
-        @Override
-        public void writeData(int chunkX, int chunkZ, net.minecraft.nbt.CompoundTag compound) {
-            throw new UnsupportedOperationException("Shifu: POI は vanilla の IOWorker が読み書きする");
-        }
-
-        @Override
-        public net.minecraft.nbt.CompoundTag readData(int chunkX, int chunkZ) {
-            throw new UnsupportedOperationException("Shifu: POI は vanilla の IOWorker が読み書きする");
-        }
-    };
-
 // ServerLevel.hasEntityMoveEvent
-    // EntityMoveEvent に登録があるか。毎 tick 世界を回す前に入れる(patches/wire)
+    // EntityMoveEvent に登録があるか。毎 tick 世界を回す前に入れる(patches/wire)。
+    // Paper 1.18.2 は MinecraftServer と LivingEntity から読む
     public boolean hasEntityMoveEvent;
 
 // ServerLevel.addEntity
-    // Paper のチャンク系(entityLookup)へ渡す版を写すと、繋いでいないので NPE になる。
-    // **プラグインからのエンティティ生成が全部これで落ちていた**
-    // (CraftWorld.dropItem / spawn / spawnEntity)。
-    // イベントを出すところまでは Paper と同じで、最後の 1 行だけ vanilla の
-    // addEntity(Entity) へ渡す(そちらが entityManager に入れる)。
+    // Paper 1.18.2 の版は最後に entityManager.addNewEntity(entity) を呼ぶ。そこは vanilla の
+    // addEntity(Entity) と同じなので、前半の見張りだけを写して最後の 1 行を vanilla へ渡す。
+    // CraftEventFactory.doEntityAddEventCalling の発火は入れない。
     private boolean addEntity(final Entity entity, final org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason spawnReason) {
         org.spigotmc.AsyncCatcher.catchOp("entity add");
         entity.generation = false;
@@ -97,17 +77,13 @@
             return false;
         }
 
-        if (entity instanceof net.minecraft.world.entity.item.ItemEntity itemEntity && itemEntity.getItem().isEmpty()) {
-            return false;
-        }
-
         // 発火は vanilla の addEntity(Entity) の中(patches/events/entity-spawn.rules)。
         // ここで出すと、vanilla が湧かせた分と二重になる
         return this.addEntity(entity);
     }
 
 // ServerLevel.tryAddFreshEntityWithPassengers
-    // 同じく entityLookup を使う版の代わり。載っているかは vanilla の entityManager で見る。
+    // Paper の版と同じ判定。載っているかは vanilla の entityManager で見る。
     public boolean tryAddFreshEntityWithPassengers(final Entity entity,
                                                    final org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason reason) {
         if (entity.getSelfAndPassengers().map(Entity::getUUID).anyMatch(this.entityManager::isLoaded)) {
@@ -119,50 +95,22 @@
         return true;
     }
 
-// ServerLevel.addWorldGenChunkEntities
-    // Paper は forChunk を使ってチャンクごとに入れるが、vanilla の entityManager は
-    // まとめて受ける版しか持たない。呼び手は Paper のチャンク系だけなので、
-    // 繋いでいない今は vanilla の addLegacyChunkEntities に渡すだけでよい。
-    public void addWorldGenChunkEntities(final Stream<Entity> entities, final ChunkPos forChunk) {
-        this.addLegacyChunkEntities(entities);
-    }
-
-// ServerLevel.entityDataControllerNew
-    // Paper のチャンク系(RegionFileIOThread)がエンティティの保存に使う入口。Paper 1.19.4 は
-    // EntityRegionFileStorage(Paper が足したクラス)を挟むが、Shifu は vanilla のチャンク系で
-    // 保存するので、この入口は通らない。写すと entityStorage / readEntityChunk / writeEntityChunk
-    // まで引きずるので、通ったら分かる形で止める。
-    public final io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController entityDataControllerNew
-        = new io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController(io.papermc.paper.chunk.system.io.RegionFileIOThread.RegionFileType.ENTITY_DATA) {
-
-        @Override
-        public net.minecraft.world.level.chunk.storage.RegionFileStorage getCache() {
-            throw new UnsupportedOperationException("Shifu は vanilla の EntityStorage で保存する");
-        }
-
-        @Override
-        public void writeData(int chunkX, int chunkZ, net.minecraft.nbt.CompoundTag compound) {
-            throw new UnsupportedOperationException("Shifu は vanilla の EntityStorage で保存する");
-        }
-
-        @Override
-        public net.minecraft.nbt.CompoundTag readData(int chunkX, int chunkZ) {
-            throw new UnsupportedOperationException("Shifu は vanilla の EntityStorage で保存する");
-        }
-    };
-
 // ServerLevel.ServerLevel
-    // CraftServer.createWorld が呼ぶ 14 引数の版。Bukkit 側の 3 つを控えてから vanilla の 11 引数の版へ渡す。
-    // 主世界と地獄と果ての 3 つは vanilla の MinecraftServer.createLevels が 11 引数の版で作る。
+    // CraftServer.createWorld が呼ぶ 15 引数の版。Bukkit 側の 3 つを控えてから
+    // vanilla の 12 引数の版へ渡す。主世界と地獄と果ての 3 つは vanilla の
+    // MinecraftServer.createLevels が 12 引数の版で作る。
+    // Paper は gen があるときに chunkGenerator を CustomChunkGenerator で包むが、
+    // それは this(...) より前に this を要るので書けない。generator を欄に置くだけにする。
     public ServerLevel(final MinecraftServer server, final Executor workerExecutor,
-                       final LevelStorageSource.LevelStorageAccess session, final net.minecraft.world.level.storage.PrimaryLevelData properties,
-                       final ResourceKey<Level> worldKey, final LevelStem dimensionOptions,
-                       final ChunkProgressListener listener, final boolean debugWorld, final long seed,
+                       final LevelStorageSource.LevelStorageAccess session, final ServerLevelData properties,
+                       final ResourceKey<Level> worldKey, final Holder<DimensionType> dimensionType,
+                       final ChunkProgressListener listener, final ChunkGenerator chunkGenerator,
+                       final boolean debugWorld, final long seed,
                        final List<CustomSpawner> spawners, final boolean shouldTickTime,
                        final org.bukkit.World.Environment environment,
                        final org.bukkit.generator.ChunkGenerator generator,
                        final org.bukkit.generator.BiomeProvider biomeProvider) {
-        this(server, workerExecutor, session, properties, worldKey, dimensionOptions, listener, debugWorld, seed, spawners, shouldTickTime);
+        this(server, workerExecutor, session, properties, worldKey, dimensionType, listener, chunkGenerator, debugWorld, seed, spawners, shouldTickTime);
         this.convertable = session;
         this.generator = generator;
     }

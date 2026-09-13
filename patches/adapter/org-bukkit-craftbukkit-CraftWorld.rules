@@ -1,22 +1,21 @@
 # アダプタ層の書き換え。vanilla の行ではない。
+#
+# 1.19.4 から消した規則:
+#   Level.ExplosionInteraction.STANDARD の置き換え — 1.18.2 の CraftWorld.createExplosion は
+#   vanilla の Explosion.BlockInteraction.BREAK / NONE を渡していて、CraftBukkit が足した
+#   定数を使っていない。
 
 file: org/bukkit/craftbukkit/CraftWorld.java
 
-# 元案の通りで通す
-replace:
-                explosionType = net.minecraft.world.level.Level.ExplosionInteraction.STANDARD; // Break blocks, don't decay drops
-with:
-                explosionType = net.minecraft.world.level.Level.ExplosionInteraction.BLOCK; // Shifu - STANDARD は CraftBukkit が足した定数。enum に定数は足さないので vanilla の BLOCK を使う
-
 # vanilla の ServerLevel.serverLevelData は ServerLevelData 型。Paper は PrimaryLevelData に
-# 狭めているので、worldGenOptions と settings は素の型では見えない。呼ぶ側で戻す。
+# 狭めているので、worldGenSettings と settings は素の型では見えない。呼ぶ側で戻す。
 count: 1
 replace:
-    world.serverLevelData.worldGenOptions()
+    world.serverLevelData.worldGenSettings()
 with:
-    ((net.minecraft.world.level.storage.PrimaryLevelData) world.serverLevelData).worldGenOptions()
+    ((net.minecraft.world.level.storage.PrimaryLevelData) world.serverLevelData).worldGenSettings()
 
-# 同上。1.21.11 の vanilla は LevelSettings.hardcore が public な欄なので、そのまま書ける
+# 同上
 replace:
     world.serverLevelData.settings.hardcore = hardcore;
 with:
@@ -25,6 +24,6 @@ with:
 # vanilla の PrimaryLevelData は 3 つの次元で 1 つなので、getLevelName() は 3 つとも同じ。
 # Bukkit の世界は名前で引くので、次元ごとに分けた名前を返す(ServerLevel.bukkitName)。
 replace:
-        return this.world.serverLevelData.getLevelName();
+        return world.serverLevelData.getLevelName();
 with:
-        return this.world.bukkitName; // Shifu - vanilla は次元でフォルダを分けないので、名前は ServerLevel が持つ
+        return world.bukkitName; // Shifu - vanilla は次元でフォルダを分けないので、名前は ServerLevel が持つ

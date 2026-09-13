@@ -1,7 +1,13 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
 
-// Paper の書き直したチャンク系(NewChunkHolder)を使う版の置き換え。
-// Shifu は vanilla のチャンク系のままなので、vanilla の holder が持つ値で答える。
+// Paper 1.18.2 のチャンク系は vanilla の ChunkHolder のままで、Paper は
+// 読み込み段階の控え(isFullChunkReady など)を欄として足している。
+// Shifu は欄を足さずに vanilla の holder が持つ値で答える。
+// 呼び手は DistanceManager・ChunkMap・ServerChunkCache・ChunkTaskManager・
+// PaperCommand・MCUtil・PlayerChunkLoader。
+//
+// 1.19.4 では NewChunkHolder を受ける構築子も置いていた。Paper 1.18.2 には
+// 書き直したチャンク系(io.papermc.paper.chunk.system)が無いので消した。
 
 // ChunkHolder.isFullChunkReady
     public final boolean isFullChunkReady() {
@@ -30,15 +36,6 @@
 // ChunkHolder.getFullChunkNowUnchecked
     public LevelChunk getFullChunkNowUnchecked() {
         return this.getAvailableChunkNow() instanceof LevelChunk chunk ? chunk : null;
-    }
-
-// ChunkHolder.ChunkHolder
-    // Paper のチャンク系(NewChunkHolder)が作る版。vanilla は読み込み段階を int で持つので、
-    // 何も読めていない値(MAX_CHUNK_DISTANCE + 1)で渡す。newChunkHolder は使わない
-    public ChunkHolder(final ChunkPos pos, final LevelHeightAccessor world, final LevelLightEngine lightingProvider,
-                       final ChunkHolder.PlayerProvider playersWatchingChunkProvider,
-                       final io.papermc.paper.chunk.system.scheduling.NewChunkHolder newChunkHolder) {
-        this(pos, ChunkMap.MAX_CHUNK_DISTANCE + 1, world, lightingProvider, null, playersWatchingChunkProvider);
     }
 
 // ChunkHolder.getSendingChunk

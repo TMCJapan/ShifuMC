@@ -1,8 +1,4 @@
 # アダプタ層の書き換え。vanilla の行ではない。
-
-file: org/bukkit/craftbukkit/entity/CraftAllay.java
-
-replace:
-    Allay nmsAllay = this.getHandle().duplicateAllay();
-with:
-    Allay nmsAllay = this.getHandle().shifuDuplicateAllay(); // Shifu - vanilla の duplicateAllay は値を返さない
+#
+# 1.18.2 にアレイ(Allay)は無く、CraftAllay も無い。duplicateAllay を
+# shifuDuplicateAllay へ向ける規則を消した。

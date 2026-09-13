@@ -12,7 +12,6 @@ import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.Location;
@@ -20,7 +19,6 @@ import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.block.CraftBlock;
 import org.bukkit.craftbukkit.event.CraftEventFactory;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.util.CraftLocation;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
@@ -93,6 +91,22 @@ public final class ShifuEvents {
      */
     public static boolean listening(final HandlerList handlers) {
         return handlers.getRegisteredListeners().length != 0;
+    }
+
+    /**
+     * 使った手を Bukkit の枠へ。1.18.2 の {@code CraftEquipmentSlot} に
+     * {@code getHand} は無いので、CraftBukkit と同じ判定をここに置く。
+     *
+     * <p>読んだ位置: Paper-Server
+     * src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:538
+     */
+    public static org.bukkit.inventory.EquipmentSlot hand(final net.minecraft.world.InteractionHand hand) {
+        if (hand == null) {
+            return null;
+        }
+
+        return hand == net.minecraft.world.InteractionHand.OFF_HAND
+                ? org.bukkit.inventory.EquipmentSlot.OFF_HAND : org.bukkit.inventory.EquipmentSlot.HAND;
     }
 
     /**
@@ -273,10 +287,10 @@ public final class ShifuEvents {
             return true;
         }
 
+        // 1.18.2 の構築子は使った手を取らない
         final org.bukkit.event.player.PlayerItemConsumeEvent event = new org.bukkit.event.player.PlayerItemConsumeEvent(
                 player.getBukkitEntity(),
-                org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(player.getUseItem()),
-                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand));
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(player.getUseItem()));
 
         if (event.callEvent()) {
             return true;
@@ -485,9 +499,13 @@ public final class ShifuEvents {
      * <p>取り消しと {@code setDamage} は効く。原因
      * ({@code DamageCause})は Paper と同じ導出をそのまま使う。
      *
-     * <p>参照した位置(Paper 26.2):
-     * {@code paper-server src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:1228}
-     * ({@code callNonLivingEntityDamageEvent}。名前に反して中身は生死を問わない)
+     * <p>1.18.2 の {@code handleNonLivingEntityDamageEvent} は boolean しか返さないので、
+     * 出来事そのものを返す {@code handleLivingEntityDamageEvent} を使う。
+     * 防具・抵抗・魔法・吸収の補正は {@code actuallyHurt} の中で出る値なので、
+     * 外からは出せない。<b>渡しているのは BASE だけ</b>で、残りは 0 を置く。
+     *
+     * <p>読んだ位置: Paper-Server
+     * src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:1162
      */
     public static org.bukkit.event.entity.EntityDamageEvent entityDamage(
             final Entity entity,
@@ -497,7 +515,10 @@ public final class ShifuEvents {
             return null;
         }
 
-        return CraftEventFactory.callNonLivingEntityDamageEvent(entity, source, damage, false);
+        final com.google.common.base.Function<Double, Double> zero = value -> -0.0;
+
+        return CraftEventFactory.handleLivingEntityDamageEvent(entity, source, damage,
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, zero, zero, zero, zero, zero, zero);
     }
 
     /**
@@ -801,11 +822,14 @@ public final class ShifuEvents {
      *
      * <p>未対応: Bukkit の Conversation API({@code Player.isConversing()})。
      *
-     * <p>参照した位置(Paper 26.2):
-     * {@code paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch:1709}
+     * <p>1.18.2 に署名付きチャット({@code PlayerChatMessage})は無い。
+     * {@code ChatProcessor} は生の文字列を受け取る。
+     *
+     * <p>読んだ位置: Paper-Server
+     * src/main/java/io/papermc/paper/adventure/ChatProcessor.java:52
      */
     public static boolean playerChat(final net.minecraft.server.MinecraftServer server, final ServerPlayer player,
-                                     final net.minecraft.network.chat.PlayerChatMessage message) {
+                                     final String message) {
         new io.papermc.paper.adventure.ChatProcessor(server, player, message, false).process();
 
         return false;
@@ -978,11 +1002,12 @@ public final class ShifuEvents {
             final net.minecraft.server.players.PlayerList list = player.server.getPlayerList();
 
             if (team == null || team.getDeathMessageVisibility() == net.minecraft.world.scores.Team.Visibility.ALWAYS) {
-                list.broadcastSystemMessage(message, false);
+                list.broadcastMessage(message, net.minecraft.network.chat.ChatType.SYSTEM,
+                        net.minecraft.Util.NIL_UUID);
             } else if (team.getDeathMessageVisibility() == net.minecraft.world.scores.Team.Visibility.HIDE_FOR_OTHER_TEAMS) {
-                list.broadcastSystemToTeam(player, message);
+                list.broadcastToTeam(player, message);
             } else if (team.getDeathMessageVisibility() == net.minecraft.world.scores.Team.Visibility.HIDE_FOR_OWN_TEAM) {
-                list.broadcastSystemToAllExceptTeam(player, message);
+                list.broadcastToAllExceptTeam(player, message);
             }
         } else {
             sendCombatKill(player, showDeathMessage, message);
@@ -1055,12 +1080,11 @@ public final class ShifuEvents {
             return;
         }
 
-        final BlockPos from = CraftEventFactory.sourceBlockOverride != null
-                ? CraftEventFactory.sourceBlockOverride : source;
+        // 1.18.2 の CraftEventFactory に sourceBlockOverride は無い
         final org.bukkit.craftbukkit.block.CraftBlockState placed =
                 org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
         final org.bukkit.event.block.BlockSpreadEvent event = new org.bukkit.event.block.BlockSpreadEvent(
-                placed.getBlock(), CraftBlock.at(level, from), placed);
+                placed.getBlock(), CraftBlock.at(level, source), placed);
         finishBlockChange(level, pos, before, placed, event.callEvent(), flags);
     }
 
@@ -1134,13 +1158,17 @@ public final class ShifuEvents {
         }
 
         final BlockPos pos = hitResult.getBlockPos();
-        final boolean cancelledBlock = gameMode.getGameModeForPlayer() == net.minecraft.world.level.GameType.SPECTATOR
-                && state.getMenuProvider(level, pos) == null;
-        final boolean cancelledItem = player.getCooldowns().isOnCooldown(itemStack.getItem());
+        // 1.18.2 の callPlayerInteractEvent は「品を使わせない」を別の引数で取らない。
+        // Paper と同じく、クールダウン中はブロック側の拒否に混ぜる
+        // (Paper-Server src/main/java/net/minecraft/server/level/ServerPlayerGameMode.java:559)
+        final boolean cancelledBlock =
+                (gameMode.getGameModeForPlayer() == net.minecraft.world.level.GameType.SPECTATOR
+                        && state.getMenuProvider(level, pos) == null)
+                        || player.getCooldowns().isOnCooldown(itemStack.getItem());
 
         return CraftEventFactory.callPlayerInteractEvent(
                 player, org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK, pos, hitResult.getDirection(), itemStack,
-                cancelledBlock, cancelledItem, hand, hitResult.getLocation());
+                cancelledBlock, hand, hitResult.getLocation());
     }
 
     /**
@@ -1189,74 +1217,74 @@ public final class ShifuEvents {
 
     // ------------------------------------------------------------ TNT
 
-    private static org.bukkit.event.block.TNTPrimeEvent.PrimeCause primeCause;
+    private static com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason primeReason;
     private static Entity primeEntity;
-    private static BlockPos primeBlock;
 
     /**
      * 次の {@code TntBlock.prime} の理由を置く。Paper は prime の署名に発火の Supplier を
      * 足して呼び出し側から渡しているが、Shifu は呼ぶ直前に置く。登録が無ければ何もしない。
+     *
+     * <p>1.18.2 のイベントは {@code com.destroystokyo.paper.event.block.TNTPrimeEvent}。
+     * 理由は EXPLOSION / FIRE / ITEM / PROJECTILE / REDSTONE の 5 つで、
+     * 主のブロック({@code getPrimingBlock})は無い。
      */
-    public static void tntPrimeCause(final org.bukkit.event.block.TNTPrimeEvent.PrimeCause cause,
-                                     final Entity entity, final BlockPos block) {
-        if (!listening(org.bukkit.event.block.TNTPrimeEvent.getHandlerList())) {
+    public static void tntPrimeCause(final com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason reason,
+                                     final Entity entity) {
+        if (!listening(com.destroystokyo.paper.event.block.TNTPrimeEvent.getHandlerList())) {
             return;
         }
 
-        primeCause = cause;
+        primeReason = reason;
         primeEntity = entity;
-        primeBlock = block;
     }
 
     /**
      * TNTPrimeEvent。{@code TntBlock.prime} の中で、ゲームルールの判定を通ったあと、
      * {@code PrimedTnt} を作る前。Paper と同じ位置。
      *
+     * <p>読んだ位置: Paper-Server
+     * src/main/java/net/minecraft/world/level/block/TntBlock.java:43,58,82,116,152
+     *
      * @return 点火してよいか
      */
     public static boolean tntPrime(final net.minecraft.world.level.Level level, final BlockPos pos, final LivingEntity source) {
-        if (!listening(org.bukkit.event.block.TNTPrimeEvent.getHandlerList())) {
+        if (!listening(com.destroystokyo.paper.event.block.TNTPrimeEvent.getHandlerList())) {
             return true;
         }
 
-        org.bukkit.event.block.TNTPrimeEvent.PrimeCause cause = primeCause;
+        com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason reason = primeReason;
         Entity entity = primeEntity;
-        final BlockPos block = primeBlock;
-        primeCause = null;
+        primeReason = null;
         primeEntity = null;
-        primeBlock = null;
 
-        if (cause == null) {
+        if (reason == null) {
             // 理由を置いていない呼び出し。点火した生き物がいればそれを主とみなす
-            cause = source instanceof net.minecraft.world.entity.player.Player
-                    ? org.bukkit.event.block.TNTPrimeEvent.PrimeCause.PLAYER
-                    : org.bukkit.event.block.TNTPrimeEvent.PrimeCause.REDSTONE;
+            reason = source instanceof net.minecraft.world.entity.player.Player
+                    ? com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason.ITEM
+                    : com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason.REDSTONE;
             entity = source;
         }
 
-        return CraftEventFactory.callTNTPrimeEvent(level, pos, cause, entity, block);
+        return new com.destroystokyo.paper.event.block.TNTPrimeEvent(CraftBlock.at(level, pos), reason,
+                entity == null ? null : entity.getBukkitEntity()).callEvent();
     }
 
     /**
      * 爆発で誘爆するとき。vanilla は prime を通らず {@code wasExploded} で直に作る。
      *
-     * <p>Paper は爆発の中心を主のブロックとして渡すが、1.19.4 の {@code Explosion} は
-     * 中心も半径も private で、{@code TntBlock.wasExploded} から読む手立てが無い。
-     * 元のエンティティが無い爆発では主のブロックを渡さない
-     * ({@code TNTPrimeEvent#getPrimingBlock} が null になる)。
-     *
-     * <p>読んだ位置(Paper 1.19.4):
-     * {@code paper-server src/main/java/net/minecraft/world/level/Explosion.java:371}
+     * <p>読んだ位置: Paper-Server
+     * src/main/java/net/minecraft/world/level/block/TntBlock.java:80-82
      */
     public static boolean tntPrimeByExplosion(final net.minecraft.world.level.Level level, final BlockPos pos, final net.minecraft.world.level.Explosion explosion) {
-        if (!listening(org.bukkit.event.block.TNTPrimeEvent.getHandlerList())) {
+        if (!listening(com.destroystokyo.paper.event.block.TNTPrimeEvent.getHandlerList())) {
             return true;
         }
 
-        final Entity source = explosion.getDirectSourceEntity();
+        final Entity source = explosion.source;
 
-        return CraftEventFactory.callTNTPrimeEvent(level, pos, org.bukkit.event.block.TNTPrimeEvent.PrimeCause.EXPLOSION,
-                source, null);
+        return new com.destroystokyo.paper.event.block.TNTPrimeEvent(CraftBlock.at(level, pos),
+                com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason.EXPLOSION,
+                source == null ? null : source.getBukkitEntity()).callEvent();
     }
 
 
@@ -1312,17 +1340,16 @@ public final class ShifuEvents {
      * ({@code explosion_decay})が爆発の半径から読むので、渡す先が無い。
      * Paper は {@code BlockBehaviour.onExplosionHit} を書き換えて通している。
      *
-     * <p>読んだ位置(Paper 1.19.4):
-     * {@code paper-server src/main/java/net/minecraft/world/level/Explosion.java:321-368}
+     * <p>読んだ位置: Paper-Server src/main/java/net/minecraft/world/level/Explosion.java
      *
-     * @param yield 落ちる確率。1.19.4 の {@code Explosion} は半径も壊し方も private で
-     *              読む手立てが無いので、Paper と同じ式を呼ぶ側で出して渡す
+     * @param yield 落ちる確率。1.18.2 の {@code BlockInteraction} は NONE / BREAK / DESTROY で、
+     *              DESTROY のときだけ {@code 1.0F / radius}。式は呼ぶ側で出して渡す
      * @return 壊してよいか。取り消されたら false
      */
     public static boolean explode(final net.minecraft.world.level.Explosion explosion,
                                   final net.minecraft.world.level.Level level, final Vec3 center,
                                   final List<BlockPos> targetBlocks, final float yield) {
-        final Entity source = explosion.getDirectSourceEntity();
+        final Entity source = explosion.source;
         final HandlerList handlers = source != null
                 ? org.bukkit.event.entity.EntityExplodeEvent.getHandlerList()
                 : org.bukkit.event.block.BlockExplodeEvent.getHandlerList();
@@ -1342,7 +1369,7 @@ public final class ShifuEvents {
         }
 
         final float amount = Float.isFinite(yield) ? yield : 0.0F;
-        final org.bukkit.Location location = CraftLocation.toBukkit(center, level.getWorld());
+        final org.bukkit.Location location = new org.bukkit.Location(level.getWorld(), center.x, center.y, center.z);
         final boolean allowed;
         final List<org.bukkit.block.Block> result;
 
@@ -1352,8 +1379,9 @@ public final class ShifuEvents {
             allowed = event.callEvent();
             result = event.blockList();
         } else {
+            // 1.18.2 の BlockExplodeEvent は壊した元のブロックの状態を取らない
             final org.bukkit.event.block.BlockExplodeEvent event = new org.bukkit.event.block.BlockExplodeEvent(
-                    location.getBlock(), blockList, amount, explosion.getDamageSource().explodedBlockState);
+                    location.getBlock(), blockList, amount);
             allowed = event.callEvent();
             result = event.blockList();
         }
@@ -1511,22 +1539,33 @@ public final class ShifuEvents {
                 connection.getRemoteAddress() instanceof java.net.InetSocketAddress socket
                         && socket.getAddress() != null
                         ? socket.getAddress() : java.net.InetAddress.getLoopbackAddress();
-        final int max = status.players().map(net.minecraft.network.protocol.status.ServerStatus.Players::max)
-                .orElse(0);
-        final int online = status.players().map(net.minecraft.network.protocol.status.ServerStatus.Players::online)
-                .orElse(0);
+        final net.minecraft.network.protocol.status.ServerStatus.Players players = status.getPlayers();
+        final int max = players == null ? 0 : players.getMaxPlayers();
+        final int online = players == null ? 0 : players.getNumPlayers();
         final org.bukkit.event.server.ServerListPingEvent event = new org.bukkit.event.server.ServerListPingEvent(
-                connection.hostname, address, PaperAdventure.asAdventure(status.description()), online, max);
+                address, PaperAdventure.asAdventure(status.getDescription()), online, max);
 
         if (!event.callEvent()) {
             return status;
         }
 
-        return new net.minecraft.network.protocol.status.ServerStatus(
-                PaperAdventure.asVanilla(event.motd()),
-                status.players().map(players -> new net.minecraft.network.protocol.status.ServerStatus.Players(
-                        event.getMaxPlayers(), players.online(), players.sample())),
-                status.version(), status.favicon(), status.enforcesSecureChat());
+        // 1.18.2 の ServerStatus は書き換えられる持ち物。サーバーが持っているものを
+        // 触らないように、送る分だけ写しを作る
+        final net.minecraft.network.protocol.status.ServerStatus sent =
+                new net.minecraft.network.protocol.status.ServerStatus();
+        sent.setDescription(PaperAdventure.asVanilla(event.motd()));
+        sent.setVersion(status.getVersion());
+        sent.setFavicon(status.getFavicon());
+
+        if (players != null) {
+            final net.minecraft.network.protocol.status.ServerStatus.Players changed =
+                    new net.minecraft.network.protocol.status.ServerStatus.Players(
+                            event.getMaxPlayers(), players.getNumPlayers());
+            changed.setSample(players.getSample());
+            sent.setPlayers(changed);
+        }
+
+        return sent;
     }
 
 
@@ -1781,24 +1820,33 @@ public final class ShifuEvents {
 
     /** 死亡の画面。Paper の PlayerDeathEvent と同じで、文言が長すぎるときは短い版に差し替える。 */
     private static void sendCombatKill(final ServerPlayer player, final boolean display, final Component message) {
-        if (!display || message == net.minecraft.network.chat.CommonComponents.EMPTY) {
+        if (!display || message == net.minecraft.network.chat.TextComponent.EMPTY) {
             player.connection.send(new net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket(
-                    player.getCombatTracker(), net.minecraft.network.chat.CommonComponents.EMPTY));
+                    player.getCombatTracker(), net.minecraft.network.chat.TextComponent.EMPTY));
 
             return;
         }
 
+        // 1.18.2 に PacketSendListener は無い。vanilla の die と同じく netty の listener を渡す
         player.connection.send(
                 new net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket(player.getCombatTracker(), message),
-                net.minecraft.network.PacketSendListener.exceptionallySend(() -> {
+                future -> {
+                    if (future.isSuccess()) {
+                        return;
+                    }
+
                     final String cut = message.getString(256);
-                    final Component tooLong = Component.translatable("death.attack.message_too_long",
-                            Component.literal(cut).withStyle(net.minecraft.ChatFormatting.YELLOW));
-                    final Component fallback = Component.translatable("death.attack.even_more_magic", player.getDisplayName())
+                    final Component tooLong = new net.minecraft.network.chat.TranslatableComponent(
+                            "death.attack.message_too_long",
+                            new net.minecraft.network.chat.TextComponent(cut)
+                                    .withStyle(net.minecraft.ChatFormatting.YELLOW));
+                    final Component fallback = new net.minecraft.network.chat.TranslatableComponent(
+                            "death.attack.even_more_magic", player.getDisplayName())
                             .withStyle(style -> style.withHoverEvent(new net.minecraft.network.chat.HoverEvent(
                                     net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT, tooLong)));
 
-                    return new net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket(player.getCombatTracker(), fallback);
-                }));
+                    player.connection.send(new net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket(
+                            player.getCombatTracker(), fallback));
+                });
     }
 }

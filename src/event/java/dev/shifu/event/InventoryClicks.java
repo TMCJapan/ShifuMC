@@ -228,7 +228,7 @@ final class InventoryClicks {
                     : new SmithItemEvent(view, type, slotIndex, click, action);
         }
 
-        // 1.19.4 の API に CartographyItemEvent は無い
+        // Paper-API 1.18.2 に CartographyItemEvent は無い
 
         return event;
     }

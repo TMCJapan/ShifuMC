@@ -51,7 +51,6 @@ import net.minecraft.world.level.block.entity.BannerPattern;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import org.bukkit.craftbukkit.CraftEquipmentSlot;
 import org.bukkit.craftbukkit.block.CraftBlock;
 import org.bukkit.craftbukkit.enchantments.CraftEnchantment;
 import org.bukkit.craftbukkit.event.CraftEventFactory;
@@ -328,7 +327,8 @@ public final class ItemEvents {
             return true;
         }
 
-        return !CraftEventFactory.callEntityPlaceEvent(level, pos, face, player, entity, hand).isCancelled();
+        // 1.18.2 の callEntityPlaceEvent は手を取らない
+        return !CraftEventFactory.callEntityPlaceEvent(level, pos, face, player, entity).isCancelled();
     }
 
     /**
@@ -426,29 +426,18 @@ public final class ItemEvents {
 
     // ------------------------------------------------------------ リード
 
-    private static InteractionHand leashHand;
-    private static Player leashHandPlayer;
-
     /**
-     * 次の {@code LeadItem.bindPlayerMobs} で使った手を置く。vanilla の bindPlayerMobs は手を受け取らない
-     * (Paper は引数を足している)。
+     * 次の {@code LeadItem.bindPlayerMobs} で使った手を置く。
+     *
+     * <p>1.18.2 の {@code callPlayerLeashEntityEvent} は手を取らないので、置いた手は使わない。
+     * 呼び出し側(patches/events)が渡すので口だけ残している。
      */
     public static void leashHand(final Player player, final InteractionHand hand) {
-        leashHand = hand;
-        leashHandPlayer = player;
-    }
-
-    /**
-     * 置かれた手。1 回の bindPlayerMobs で結び目と繋ぐ相手(複数)の両方が読むので消さない。
-     * 置いた相手と違うプレイヤー(柵を素手で右クリックした経路)なら MAIN_HAND とみなす。
-     */
-    private static InteractionHand peekLeashHand(final Player player) {
-        return leashHand == null || leashHandPlayer != player ? InteractionHand.MAIN_HAND : leashHand;
     }
 
     /**
      * PlayerLeashEntityEvent(縄で柵に繋ぐ。1 匹ずつ)。
-     * 1.20.6 に Leashable は無いので Mob を受ける。
+     * 1.18.2 に Leashable は無いので Mob を受ける。
      */
     public static boolean leash(final net.minecraft.world.entity.Mob mob,
                                 final net.minecraft.world.entity.Entity holder, final Player player) {
@@ -456,7 +445,8 @@ public final class ItemEvents {
             return true;
         }
 
-        return !CraftEventFactory.callPlayerLeashEntityEvent(mob, holder, player, peekLeashHand(player)).isCancelled();
+        // 1.18.2 の callPlayerLeashEntityEvent は手を取らない
+        return !CraftEventFactory.callPlayerLeashEntityEvent(mob, holder, player).isCancelled();
     }
 
 
@@ -532,8 +522,9 @@ public final class ItemEvents {
         }
 
         final org.bukkit.event.player.PlayerItemMendEvent event =
+                // 1.18.2 の callPlayerItemMendEvent は枠も耐久 → 経験値の変換も取らない
                 org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerItemMendEvent(
-                        player, orb, item, slot, repair, orb::durabilityToXp);
+                        player, orb, item, repair);
 
         return event.isCancelled() ? -1 : event.getRepairAmount();
     }
@@ -635,7 +626,7 @@ public final class ItemEvents {
     public static boolean loadCrossbow(final net.minecraft.world.entity.LivingEntity user, final ItemStack crossbow) {
         return new io.papermc.paper.event.entity.EntityLoadCrossbowEvent(user.getBukkitLivingEntity(),
                 org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(crossbow),
-                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(user.getUsedItemHand())).callEvent();
+                ShifuEvents.hand(user.getUsedItemHand())).callEvent();
     }
 
 

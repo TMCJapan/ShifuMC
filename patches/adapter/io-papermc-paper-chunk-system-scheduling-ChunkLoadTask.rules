@@ -1,9 +1,7 @@
 # アダプタ層の書き換え。vanilla の行ではない。
-# Paper は EntityStorage.upgradeChunkTag を static にしている。vanilla は private の実体メソッドで、
-# Shifu は vanilla の EntityStorage で読み書きするのでこの経路は通らない。読んだ値をそのまま返す
-
-file: io/papermc/paper/chunk/system/scheduling/ChunkLoadTask.java
-replace:
-                return new TaskResult<>(EntityStorage.upgradeChunkTag(data.copy()), null);
-with:
-                return new TaskResult<>(data.copy(), null); // Shifu - vanilla の EntityStorage が読むときに直す
+#
+# 1.18.2 に io.papermc.paper.chunk.system.scheduling.ChunkLoadTask は無い。
+# 1.19.4 ではそこの EntityStorage.upgradeChunkTag(static 版)の呼び出しを外していた。
+# 1.18.2 の読み込みは com.destroystokyo.paper.io.chunk.ChunkLoadTask で、
+# そちらは ChunkStorage.upgradeChunkTag(6 引数)を呼ぶ
+# (patches/hand/net/minecraft/world/level/chunk/storage/ChunkStorage.java.add)。

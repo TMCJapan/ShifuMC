@@ -38,7 +38,7 @@
 // RecipeManager.clearRecipes
     public void clearRecipes() {
         Map<RecipeType<?>, Map<ResourceLocation, Recipe<?>>> outer = Maps.newHashMap();
-        for (RecipeType<?> recipeType : net.minecraft.core.registries.BuiltInRegistries.RECIPE_TYPE) {
+        for (RecipeType<?> recipeType : Registry.RECIPE_TYPE) { // 1.18.2 は net.minecraft.core.Registry
             outer.put(recipeType, new it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap<>());
         }
         this.recipes = outer;

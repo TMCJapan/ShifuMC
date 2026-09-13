@@ -892,3 +892,15 @@ line:
 file: net/minecraft/server/network/ServerLoginPacketListenerImpl.java
 line:
     GameProfile gameProfile;
+
+# ---- 親を public にしたので、上書きしている子も public にする(1.19.4 の木から)
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/horse/AbstractHorse.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/ElderGuardian.java
+line:
+    protected SoundEvent getDeathSound() {

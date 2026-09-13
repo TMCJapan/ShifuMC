@@ -1,35 +1,6 @@
 # アダプタ層の書き換え。vanilla の行ではない。
-
-file: io/papermc/paper/util/TickThread.java
-
-# moonrise はメインスレッドを自前の TickThread 型で作る。Shifu の NMS は
-# vanilla なので、サーバースレッドは MinecraftServer.spin が作る素の Thread。
-# isTickThread() はどこから呼んでも false を返す。
 #
-# 影響はこの 1 メソッドに留まらない。isTickThreadFor の版は全部これに委ねて
-# いるし、CraftServer.isPrimaryThread() もこれを見ている。同期イベントは
-# PaperEventManager が isPrimaryThread() を確かめるので、発火が全部
-# 「may only be triggered synchronously」で落ちる。実際に
-# WorldSaveEvent が起動時に落として、サーバーが上がらなかった。
-#
-# Folia ではないサーバーでは、tick スレッド = メインのサーバースレッド。
-# vanilla でそれを見るのは BlockableEventLoop.isSameThread()。
-replace:
-    public static boolean isTickThread() {
-        return Thread.currentThread() instanceof TickThread;
-    }
-with:
-    public static boolean isTickThread() {
-        // Shifu - vanilla のサーバースレッドは TickThread ではない
-        final net.minecraft.server.MinecraftServer server = net.minecraft.server.MinecraftServer.getServer();
-
-        return Thread.currentThread() instanceof TickThread
-                || (server != null && server.isSameThread());
-    }
-
-# 1.19.4 の isTickThreadFor は isTickThread を通さず instanceof を直に書いている。同じ判定へ向ける
-count: 2
-replace:
-        return Thread.currentThread() instanceof TickThread;
-with:
-        return isTickThread(); // Shifu - vanilla のサーバースレッドは TickThread ではない
+# 1.18.2 の io.papermc.paper.util.TickThread は isTickThread() / isTickThreadFor() を
+# 持たない。メインスレッドの判定は Bukkit.isPrimaryThread() で、そちらは
+# CraftServer 経由で MinecraftServer.isSameThread() を見るので、vanilla の
+# サーバースレッドでもそのまま通る。1.19.4 で要った書き換えは 1.18.2 では要らない。

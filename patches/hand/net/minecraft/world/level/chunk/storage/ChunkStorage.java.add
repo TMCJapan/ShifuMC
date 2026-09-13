@@ -1,10 +1,15 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
 
 // ChunkStorage.upgradeChunkTag
-    // Paper のチャンク系が呼ぶ版。位置と世界は vanilla の版が使わないので落とす
+    // Paper の版は次元の鍵を ResourceKey<LevelStem> で受け、位置と世界も取る
+    // (ChunkMap.readChunk と com.destroystokyo.paper.io.chunk.ChunkLoadTask が呼ぶ)。
+    // vanilla の版は ResourceKey<Level> の 4 引数なので、鍵を作り直して渡す。
+    // 位置と世界は vanilla の版が使わないので落とす。
+    // 1.18.2 の鍵は net.minecraft.core.Registry.DIMENSION_REGISTRY
+    // (net.minecraft.core.registries.Registries は 1.19.3 から)。
     public CompoundTag upgradeChunkTag(final ResourceKey<net.minecraft.world.level.dimension.LevelStem> levelStem, final Supplier<DimensionDataStorage> persistentStateManagerFactory,
                                        final CompoundTag nbt, final Optional<ResourceKey<Codec<? extends ChunkGenerator>>> generatorCodecKey,
                                        final ChunkPos pos, final @Nullable net.minecraft.world.level.LevelAccessor level) {
-        return this.upgradeChunkTag(ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, levelStem.location()),
+        return this.upgradeChunkTag(ResourceKey.create(net.minecraft.core.Registry.DIMENSION_REGISTRY, levelStem.location()),
                 persistentStateManagerFactory, nbt, generatorCodecKey);
     }

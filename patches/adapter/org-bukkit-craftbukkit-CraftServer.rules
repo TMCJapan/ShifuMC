@@ -7,8 +7,7 @@ replace:
 with:
     new DedicatedServerSettings(java.nio.file.Paths.get("server.properties")) /* Shifu - vanilla の Main と同じ場所を読む */
 
-count: 4
-replace:
-    io.papermc.paper.configuration.GlobalConfiguration.get().misc.loadPermissionsYmlBeforePlugins
-with:
-    true /* Shifu - Paper の設定は読まないので既定値を書く */
+# 1.19.4 では GlobalConfiguration.get().misc.loadPermissionsYmlBeforePlugins を true に
+# 置き換えていた(Paper 1.19 の設定を読まないため)。1.18.2 の CraftServer は
+# com.destroystokyo.paper.PaperConfig.loadPermsBeforePlugins を読み、その PaperConfig は
+# CraftServer 自身が init するので置き換えは要らない。

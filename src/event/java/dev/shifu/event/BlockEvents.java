@@ -132,12 +132,23 @@ public final class BlockEvents {
      * @param velocity Paper がイベントに入れている値(投射物は向き、ボート等は置く位置、それ以外は 0)
      * @return 続けてよいか
      */
+    /**
+     * 1 個だけの写し。1.18.2 の {@code ItemStack} に {@code copyWithCount} は無い。
+     * Paper は {@code split(1)} で元を減らしているが、ここは vanilla の行が続くので減らさない。
+     */
+    private static ItemStack one(final ItemStack stack) {
+        final ItemStack copy = stack.copy();
+        copy.setCount(1);
+
+        return copy;
+    }
+
     public static boolean dispense(final BlockSource source, final ItemStack dispensed, final Vec3 velocity) {
         if (!listening(org.bukkit.event.block.BlockDispenseEvent.getHandlerList())) {
             return true;
         }
 
-        final CraftItemStack craftItem = CraftItemStack.asCraftMirror(dispensed.isDamageableItem() ? dispensed : dispensed.copyWithCount(1));
+        final CraftItemStack craftItem = CraftItemStack.asCraftMirror(dispensed.isDamageableItem() ? dispensed : one(dispensed));
 
         return new org.bukkit.event.block.BlockDispenseEvent(
                 bukkit(source.getLevel(), source.getPos()), craftItem.clone(), CraftVector.toBukkit(velocity)).callEvent();
@@ -396,21 +407,20 @@ public final class BlockEvents {
 
 
 
+    /** Paper-API 1.18.2 に HopperInventorySearchEvent が無いので常に false。 */
     public static boolean listeningHopperSearch() {
-        return listening(org.bukkit.event.inventory.HopperInventorySearchEvent.getHandlerList());
+        return false;
     }
 
     /**
      * HopperInventorySearchEvent。ホッパーが相手の容器を探した結果を差し替える。
-     * 登録があるときだけ呼ばれ、vanilla の返り値の代わりになる。
+     *
+     * <p>Paper-API 1.18.2 に HopperInventorySearchEvent が無いので vanilla の値をそのまま返す。
+     * 1.19.4 では第 5 引数に {@code ContainerType} を取っていた。
      */
-    public static Container hopperSearch(final Level level, final BlockPos hopper, final BlockPos searched, final Container found,
-                                         final org.bukkit.event.inventory.HopperInventorySearchEvent.ContainerType type) {
-        final org.bukkit.event.inventory.HopperInventorySearchEvent event = new org.bukkit.event.inventory.HopperInventorySearchEvent(
-                found == null ? null : new org.bukkit.craftbukkit.inventory.CraftInventory(found), type, bukkit(level, hopper), bukkit(level, searched));
-        event.callEvent();
-
-        return event.getInventory() == null ? null : ((org.bukkit.craftbukkit.inventory.CraftInventory) event.getInventory()).getInventory();
+    public static Container hopperSearch(final Level level, final BlockPos hopper, final BlockPos searched,
+                                         final Container found) {
+        return found;
     }
 
     // ------------------------------------------------------------ レッドストーン
@@ -498,24 +508,27 @@ public final class BlockEvents {
 
 
     /**
-     * SignChangeEvent。1.19.4 は看板に面が無く、行は ServerGamePacketListenerImpl.updateSignText で
+     * SignChangeEvent。1.18.2 は看板に面が無く、行は ServerGamePacketListenerImpl.updateSignText で
      * 1 行ずつ setMessage される。その手前で発火して、書き換えた行を返す。
+     *
+     * <p>1.18.2 の濾した文字は {@code TextFilter} の中の {@code FilteredText}
+     * ({@code getRaw()} / {@code getFiltered()})。
      *
      * @return 書き込む行。取り消されたら null
      */
-    public static java.util.List<net.minecraft.server.network.FilteredText> signChange(
+    public static java.util.List<net.minecraft.server.network.TextFilter.FilteredText> signChange(
             final net.minecraft.world.level.block.entity.SignBlockEntity sign,
             final net.minecraft.server.level.ServerPlayer player,
-            final java.util.List<net.minecraft.server.network.FilteredText> lines) {
+            final java.util.List<net.minecraft.server.network.TextFilter.FilteredText> lines) {
         if (!ShifuEvents.listening(org.bukkit.event.block.SignChangeEvent.getHandlerList())) {
             return lines;
         }
 
         final java.util.List<net.kyori.adventure.text.Component> componentLines = new java.util.ArrayList<>();
 
-        for (final net.minecraft.server.network.FilteredText line : lines) {
+        for (final net.minecraft.server.network.TextFilter.FilteredText line : lines) {
             componentLines.add(net.kyori.adventure.text.Component.text(
-                    player.isTextFilteringEnabled() ? line.filteredOrEmpty() : line.raw()));
+                    player.isTextFilteringEnabled() ? line.getFiltered() : line.getRaw()));
         }
 
         final org.bukkit.event.block.SignChangeEvent event = new org.bukkit.event.block.SignChangeEvent(
@@ -526,11 +539,12 @@ public final class BlockEvents {
             return null;
         }
 
-        final java.util.List<net.minecraft.server.network.FilteredText> result = new java.util.ArrayList<>(lines);
+        final java.util.List<net.minecraft.server.network.TextFilter.FilteredText> result =
+                new java.util.ArrayList<>(lines);
 
         for (int i = 0; i < result.size() && i < event.lines().size(); i++) {
             if (!java.util.Objects.equals(componentLines.get(i), event.line(i))) {
-                result.set(i, net.minecraft.server.network.FilteredText.passThrough(
+                result.set(i, net.minecraft.server.network.TextFilter.FilteredText.passThrough(
                         net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(event.line(i))));
             }
         }
@@ -539,7 +553,7 @@ public final class BlockEvents {
     }
 
     /**
-     * 看板の面。1.19.4 の {@code org.bukkit.block.sign.Side} は {@code FRONT} しか無く、
+     * 看板の面。1.18.2 の {@code org.bukkit.block.sign.Side} は {@code FRONT} しか無く、
      * SignChangeEvent も面を取らないので、受け取った面は使わない。
      */
     public static void signSide(final boolean front) {
@@ -808,8 +822,9 @@ public final class BlockEvents {
 
     // ------------------------------------------------------------ 錠
 
+    /** Paper-API 1.18.2 に BlockLockCheckEvent が無いので常に false。 */
     public static boolean listeningLockCheck() {
-        return listening(io.papermc.paper.event.block.BlockLockCheckEvent.getHandlerList());
+        return false;
     }
 
     // ------------------------------------------------------------ ビーコン
@@ -1049,7 +1064,14 @@ public final class BlockEvents {
     }
 
 
-    /** BellRingEvent。鐘が鳴る直前。 */
+    /**
+     * BellRingEvent。鐘が鳴る直前。
+     *
+     * <p>1.18.2 の CraftEventFactory に {@code handleBellRingEvent} は無い。Paper と同じく
+     * ブロックと鳴らした者だけを載せて直に出す。
+     *
+     * <p>読んだ位置: Paper-Server src/main/java/net/minecraft/world/level/block/BellBlock.java:135
+     */
     public static boolean bellRing(final net.minecraft.world.level.Level level,
                                    final net.minecraft.core.BlockPos pos,
                                    final net.minecraft.core.Direction direction,
@@ -1058,52 +1080,51 @@ public final class BlockEvents {
             return true;
         }
 
-        return org.bukkit.craftbukkit.event.CraftEventFactory.handleBellRingEvent(level, pos, direction, entity);
-    }
-
-    /** BellResonateEvent か BellRevealRaiderEvent に登録があるか。 */
-    public static boolean bellResonateListening() {
-        return ShifuEvents.listening(org.bukkit.event.block.BellResonateEvent.getHandlerList())
-                || ShifuEvents.listening(io.papermc.paper.event.block.BellRevealRaiderEvent.getHandlerList());
+        return new io.papermc.paper.event.block.BellRingEvent(bukkit(level, pos),
+                entity == null ? null : entity.getBukkitEntity()).callEvent();
     }
 
     /**
-     * BellResonateEvent と BellRevealRaiderEvent。鐘の共鳴で襲撃者が光る直前。
+     * BellRevealRaiderEvent に登録があるか。
+     *
+     * <p>Bukkit の BellResonateEvent は 1.18.2 の API に無い。
+     */
+    public static boolean bellResonateListening() {
+        return ShifuEvents.listening(io.papermc.paper.event.block.BellRevealRaiderEvent.getHandlerList());
+    }
+
+    /**
+     * BellRevealRaiderEvent。鐘の共鳴で襲撃者が光る直前。
      *
      * <p>登録があるときだけ vanilla の絞り込みを組み直して呼ぶ。
      * 光らせる中身({@code addEffect})は vanilla の {@code glow} と同じ。
+     *
+     * <p>読んだ位置: Paper-Server
+     * src/main/java/net/minecraft/world/level/block/entity/BellBlockEntity.java:138-177
      */
     public static void bellResonate(final net.minecraft.world.level.Level level,
                                     final net.minecraft.core.BlockPos pos,
                                     final java.util.List<net.minecraft.world.entity.LivingEntity> heard) {
-        final java.util.List<org.bukkit.entity.LivingEntity> raiders = new java.util.ArrayList<>();
-
         for (final net.minecraft.world.entity.LivingEntity entity : heard) {
-            if (entity.isAlive() && !entity.isRemoved() && pos.closerToCenterThan(entity.position(), 48.0)
-                    && entity.getType().is(net.minecraft.tags.EntityTypeTags.RAIDERS)) {
-                raiders.add((org.bukkit.entity.LivingEntity) entity.getBukkitEntity());
+            if (!entity.isAlive() || entity.isRemoved() || !pos.closerToCenterThan(entity.position(), 48.0)
+                    || !entity.getType().is(net.minecraft.tags.EntityTypeTags.RAIDERS)) {
+                continue;
             }
+
+            if (!new io.papermc.paper.event.block.BellRevealRaiderEvent(bukkit(level, pos),
+                    (org.bukkit.entity.Raider) entity.getBukkitEntity()).callEvent()) {
+                continue;
+            }
+
+            entity.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                    net.minecraft.world.effect.MobEffects.GLOWING, 60));
         }
-
-        org.bukkit.craftbukkit.event.CraftEventFactory.handleBellResonateEvent(level, pos, raiders)
-                .forEach(entity -> {
-                    if (ShifuEvents.listening(io.papermc.paper.event.block.BellRevealRaiderEvent.getHandlerList())
-                            && !new io.papermc.paper.event.block.BellRevealRaiderEvent(
-                                    org.bukkit.craftbukkit.block.CraftBlock.at(entity.level, pos),
-                                    (org.bukkit.entity.Raider) entity.getBukkitEntity()).callEvent()) {
-                        return;
-                    }
-
-                    entity.addEffect(new net.minecraft.world.effect.MobEffectInstance(
-                            net.minecraft.world.effect.MobEffects.GLOWING, 60));
-                });
     }
 
     /**
      * CompostItemEvent と EntityCompostItemEvent。コンポスターの中身が 1 段上がる直前。
      *
-     * <p>Paper は上がらないときも出す。vanilla はその判定を乱数ごと 1 つの式で
-     * 済ませていて、外から作り直すと乱数を 2 度引く。<b>出しているのは上がるときだけ。</b>
+     * <p>Paper-API 1.18.2 に CompostItemEvent と EntityCompostItemEvent が無いので何もしない。
      *
      * @return 上げてよいか
      */
@@ -1111,22 +1132,7 @@ public final class BlockEvents {
                                       final net.minecraft.world.level.LevelAccessor level,
                                       final net.minecraft.core.BlockPos pos,
                                       final net.minecraft.world.item.ItemStack stack) {
-        final boolean plain = ShifuEvents.listening(io.papermc.paper.event.block.CompostItemEvent.getHandlerList());
-        final boolean byEntity = user != null
-                && ShifuEvents.listening(io.papermc.paper.event.entity.EntityCompostItemEvent.getHandlerList());
-
-        if (!plain && !byEntity) {
-            return true;
-        }
-
-        final org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
-        final org.bukkit.inventory.ItemStack item =
-                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack);
-        final io.papermc.paper.event.block.CompostItemEvent event = user == null
-                ? new io.papermc.paper.event.block.CompostItemEvent(block, item, true)
-                : new io.papermc.paper.event.entity.EntityCompostItemEvent(user.getBukkitEntity(), block, item, true);
-
-        return event.callEvent() && event.willRaiseLevel();
+        return true;
     }
 
     /**
@@ -1169,33 +1175,32 @@ public final class BlockEvents {
                 (org.bukkit.entity.Item) item.getBukkitEntity()).callEvent();
     }
 
-    /** BrewingStartEvent に登録があるか。 */
+    /** Paper-API 1.18.2 に BrewingStartEvent が無いので常に false。 */
     public static boolean brewingStartListening() {
-        return ShifuEvents.listening(org.bukkit.event.block.BrewingStartEvent.getHandlerList());
+        return false;
     }
 
     /**
      * BrewingStartEvent。醸造が始まる直後。
      *
+     * <p>Paper-API 1.18.2 に BrewingStartEvent が無いので vanilla の時間をそのまま返す。
+     *
      * @return 醸造にかける時間
      */
     public static int brewingStart(final net.minecraft.world.level.Level level, final net.minecraft.core.BlockPos pos,
                                    final net.minecraft.world.item.ItemStack ingredient, final int brewTime) {
-        final org.bukkit.event.block.BrewingStartEvent event = new org.bukkit.event.block.BrewingStartEvent(
-                org.bukkit.craftbukkit.block.CraftBlock.at(level, pos),
-                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(ingredient), brewTime);
-        event.callEvent();
-
-        return event.getTotalBrewTime();
+        return brewTime;
     }
 
-    /** CampfireStartEvent に登録があるか。 */
+    /** Paper-API 1.18.2 に CampfireStartEvent が無いので常に false。 */
     public static boolean campfireStartListening() {
-        return ShifuEvents.listening(org.bukkit.event.block.CampfireStartEvent.getHandlerList());
+        return false;
     }
 
     /**
      * CampfireStartEvent。焚き火に載せた直後。
+     *
+     * <p>Paper-API 1.18.2 に CampfireStartEvent が無いので vanilla の時間をそのまま返す。
      *
      * @return 焼くのにかける時間
      */
@@ -1203,17 +1208,7 @@ public final class BlockEvents {
                                     final net.minecraft.world.item.ItemStack food,
                                     final net.minecraft.world.item.crafting.CampfireCookingRecipe recipe,
                                     final int cookTime) {
-        if (recipe == null) {
-            return cookTime;
-        }
-
-        final org.bukkit.event.block.CampfireStartEvent event = new org.bukkit.event.block.CampfireStartEvent(
-                org.bukkit.craftbukkit.block.CraftBlock.at(level, pos),
-                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(food),
-                (org.bukkit.inventory.CampfireRecipe) recipe.toBukkitRecipe());
-        event.callEvent();
-
-        return event.getTotalCookTime();
+        return cookTime;
     }
 
 
@@ -1234,10 +1229,9 @@ public final class BlockEvents {
 
         return new org.bukkit.event.world.GenericGameEvent(
                 org.bukkit.GameEvent.getByKey(org.bukkit.craftbukkit.util.CraftNamespacedKey.fromMinecraft(
-                        net.minecraft.core.registries.BuiltInRegistries.GAME_EVENT.getKey(event))),
-                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level.getWorld()),
-                source == null ? null : source.getBukkitEntity(), radius,
-                !org.bukkit.Bukkit.isPrimaryThread()).callEvent();
+                        net.minecraft.core.Registry.GAME_EVENT.getKey(event))),
+                new org.bukkit.Location(level.getWorld(), pos.getX(), pos.getY(), pos.getZ()),
+                source == null ? null : source.getBukkitEntity(), radius).callEvent();
     }
 
 
@@ -1404,7 +1398,7 @@ public final class BlockEvents {
      */
     public static boolean sculkBloom(final net.minecraft.world.level.LevelAccessor level,
                                      final net.minecraft.core.BlockPos pos, final int charge) {
-        // SculkBloomEvent は 1.19.4 の Paper API に無い。
+        // SculkBloomEvent は Paper-API 1.18.2 に無い。
         return true;
     }
 
@@ -1423,7 +1417,7 @@ public final class BlockEvents {
 
         return new org.bukkit.event.block.BlockDispenseArmorEvent(
                 org.bukkit.craftbukkit.block.CraftBlock.at(pointer.getLevel(), pointer.getPos()),
-                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(armor.copyWithCount(1)).clone(),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(one(armor)).clone(),
                 (org.bukkit.craftbukkit.entity.CraftLivingEntity) target.getBukkitEntity()).callEvent();
     }
 
@@ -1431,33 +1425,42 @@ public final class BlockEvents {
     /** BlockBreakProgressUpdateEvent。壊れ具合を送る直前。 */
     public static boolean breakProgress(final ServerLevel level, final net.minecraft.core.BlockPos pos,
                                         final int progress, final net.minecraft.world.entity.Entity breaker) {
-        // BlockBreakProgressUpdateEvent は 1.19.4 の Paper API に無い。
+        // BlockBreakProgressUpdateEvent は Paper-API 1.18.2 に無い。
         return true;
     }
 
-    /** StructuresLocateEvent。構造物を探す直前。 */
+    /**
+     * StructuresLocateEvent。構造物を探す直前。
+     *
+     * <p>1.18.2 は構造物が {@code ConfiguredStructureFeature} で、API へは Paper の
+     * {@code PaperRegistry} が写す。{@code org.bukkit.generator.structure} は 1.18.2 に無い。
+     *
+     * <p>効かないもの: {@code setResult} と、原点・半径・対象の差し替え。
+     * vanilla の行が同じ値を使い回すので取り消しだけを渡す。
+     *
+     * <p>読んだ位置: Paper-Server
+     * src/main/java/net/minecraft/world/level/chunk/ChunkGenerator.java:311-319
+     */
     public static boolean structuresLocate(final ServerLevel level, final net.minecraft.core.BlockPos center,
                                            final net.minecraft.core.HolderSet<
-                                                   net.minecraft.world.level.levelgen.structure.Structure> structures,
+                                                   net.minecraft.world.level.levelgen.feature
+                                                           .ConfiguredStructureFeature<?, ?>> structures,
                                            final int radius, final boolean findUnexplored) {
         if (!ShifuEvents.listening(io.papermc.paper.event.world.StructuresLocateEvent.getHandlerList())) {
             return true;
         }
 
-        final java.util.List<org.bukkit.generator.structure.Structure> list = new java.util.ArrayList<>();
+        final var registry = io.papermc.paper.registry.PaperRegistry.getRegistry(
+                io.papermc.paper.registry.RegistryKey.CONFIGURED_STRUCTURE_REGISTRY);
+        final java.util.List<io.papermc.paper.world.structure.ConfiguredStructure> list = new java.util.ArrayList<>();
 
-        for (final net.minecraft.core.Holder<net.minecraft.world.level.levelgen.structure.Structure> one : structures) {
-            final org.bukkit.generator.structure.Structure bukkit =
-                    org.bukkit.craftbukkit.generator.strucutre.CraftStructure.minecraftToBukkit(
-                            one.value(), level.registryAccess());
-
-            if (bukkit != null) {
-                list.add(bukkit);
-            }
+        for (final net.minecraft.core.Holder<net.minecraft.world.level.levelgen.feature
+                .ConfiguredStructureFeature<?, ?>> one : structures) {
+            list.add(registry.convertToApi(one));
         }
 
         return new io.papermc.paper.event.world.StructuresLocateEvent(level.getWorld(),
-                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(center, level.getWorld()), list, radius,
+                new org.bukkit.Location(level.getWorld(), center.getX(), center.getY(), center.getZ()), list, radius,
                 findUnexplored).callEvent();
     }
 
@@ -1480,49 +1483,34 @@ public final class BlockEvents {
      * AsyncStructureSpawnEvent。構造物の置き場所が決まった直後、
      * チャンクへ書き込む手前。
      *
-     * <p>世界生成の担い手の上で走るので、Paper と同じく main ではない。
-     *
-     * <p>読んだ位置(Paper 1.19.4):
-     *   Paper-Server src/main/java/net/minecraft/world/level/chunk/ChunkGenerator.java:709
+     * <p>Paper-API 1.18.2 に AsyncStructureSpawnEvent が無いので何もしない。
      */
-    public static boolean structureSpawn(final net.minecraft.world.level.StructureManager accessor,
-                                         final net.minecraft.world.level.levelgen.structure.Structure structure,
+    public static boolean structureSpawn(final net.minecraft.world.level.StructureFeatureManager accessor,
                                          final net.minecraft.world.level.levelgen.structure.StructureStart start,
                                          final net.minecraft.world.level.ChunkPos pos) {
-        if (!listening(org.bukkit.event.world.AsyncStructureSpawnEvent.getHandlerList())) {
-            return true;
-        }
-
-        final net.minecraft.world.level.levelgen.structure.BoundingBox box = start.getBoundingBox();
-
-        return new org.bukkit.event.world.AsyncStructureSpawnEvent(
-                accessor.level.getMinecraftWorld().getWorld(),
-                org.bukkit.craftbukkit.generator.strucutre.CraftStructure.minecraftToBukkit(
-                        structure, accessor.level.registryAccess()),
-                new org.bukkit.util.BoundingBox(box.minX(), box.minY(), box.minZ(),
-                        box.maxX(), box.maxY(), box.maxZ()),
-                pos.x, pos.z).callEvent();
+        return true;
     }
 
 
     /**
      * AsyncStructureGenerateEvent。構造物の部品を書き込む直前。
      *
+     * <p>Paper-API 1.18.2 に AsyncStructureGenerateEvent が無いので何もしない。
+     *
      * @return 書き込み先の世界
      */
     public static net.minecraft.world.level.WorldGenLevel structureAccess(
             final net.minecraft.world.level.WorldGenLevel world,
-            final net.minecraft.world.level.StructureManager accessor,
+            final net.minecraft.world.level.StructureFeatureManager accessor,
             final net.minecraft.world.level.levelgen.structure.StructureStart start,
             final net.minecraft.world.level.levelgen.structure.BoundingBox box,
             final net.minecraft.world.level.ChunkPos pos) {
-        // AsyncStructureGenerateEvent は 1.19.4 の Paper API に無い。
         return world;
     }
 
     /** 1 チャンク分の部品を書き終えたところ。 */
     public static void structureAccessDone() {
-        // AsyncStructureGenerateEvent は 1.19.4 の Paper API に無い。
+        // AsyncStructureGenerateEvent は Paper-API 1.18.2 に無い。
     }
 
 
@@ -1658,10 +1646,6 @@ public final class BlockEvents {
             return org.bukkit.TreeType.JUNGLE;
         } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.AZALEA_TREE) {
             return org.bukkit.TreeType.AZALEA;
-        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.MANGROVE) {
-            return org.bukkit.TreeType.MANGROVE;
-        } else if (key == net.minecraft.data.worldgen.features.TreeFeatures.TALL_MANGROVE) {
-            return org.bukkit.TreeType.TALL_MANGROVE;
         }
 
         return null;
@@ -1695,7 +1679,7 @@ public final class BlockEvents {
 
         if (type != null) {
             grow = new org.bukkit.event.world.StructureGrowEvent(
-                    org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level.getWorld()),
+                    new org.bukkit.Location(level.getWorld(), pos.getX(), pos.getY(), pos.getZ()),
                     type, bonemeal, who, blocks);
             grow.callEvent();
         }

@@ -1,10 +1,6 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
-
-// MessageArgument.resolveChatMessage
-    // Paper の版は文を引数で受けるが、vanilla の版は context から読み直す。
-    // 渡された message は使われない。
-    public static void resolveChatMessage(final MessageArgument.Message message,
-                                          final CommandContext<CommandSourceStack> context, final String name,
-                                          final Consumer<PlayerChatMessage> task) throws CommandSyntaxException {
-        MessageArgument.resolveChatMessage(context, name, task);
-    }
+//
+// 1.19.4 では resolveChatMessage(Message, CommandContext, String, Consumer<PlayerChatMessage>)
+// を置いていた。署名付きチャット(PlayerChatMessage)は 1.19 からのもので、1.18.2 の
+// MessageArgument は getMessage(CommandContext, String) で Component を返すだけなので消した。
+// Paper 1.18.2 が MessageArgument に足している宣言も無い。

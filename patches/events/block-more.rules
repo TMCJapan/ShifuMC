@@ -190,8 +190,7 @@ anchor:
 insert:
     if (dev.shifu.event.BlockEvents.listeningHopperSearch()) {
         final BlockPos shifuSearch = pos.relative(direction);
-        return dev.shifu.event.BlockEvents.hopperSearch(world, pos, shifuSearch, getContainerAt(world, shifuSearch),
-                org.bukkit.event.inventory.HopperInventorySearchEvent.ContainerType.DESTINATION);
+        return dev.shifu.event.BlockEvents.hopperSearch(world, pos, shifuSearch, getContainerAt(world, shifuSearch));
     }
 
 # HopperInventorySearchEvent(取る元)
@@ -200,10 +199,9 @@ anchor:
     return getContainerAt(world, hopper.getLevelX(), hopper.getLevelY() + 1.0, hopper.getLevelZ());
 insert:
     if (dev.shifu.event.BlockEvents.listeningHopperSearch()) {
-        final BlockPos shifuHopperPos = BlockPos.containing(hopper.getLevelX(), hopper.getLevelY(), hopper.getLevelZ());
+        final BlockPos shifuHopperPos = new BlockPos(hopper.getLevelX(), hopper.getLevelY(), hopper.getLevelZ());
         return dev.shifu.event.BlockEvents.hopperSearch(world, shifuHopperPos, shifuHopperPos.above(),
-                getContainerAt(world, hopper.getLevelX(), hopper.getLevelY() + 1.0, hopper.getLevelZ()),
-                org.bukkit.event.inventory.HopperInventorySearchEvent.ContainerType.SOURCE);
+                getContainerAt(world, hopper.getLevelX(), hopper.getLevelY() + 1.0, hopper.getLevelZ()));
     }
 
 # ------------------------------------------------------------ 中に入った・踏んだ

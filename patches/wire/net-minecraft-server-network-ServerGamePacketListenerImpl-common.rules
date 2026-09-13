@@ -1,8 +1,9 @@
 # Bukkit 層の配線。vanilla の行は変えていない。
 
-# Paper は構築子で cserver に CraftServer を入れる。1.20.6 の
-# ServerCommonPacketListenerImpl は disconnect と PlayerKickEvent の発火で
-# this.cserver を読むので、入れないと kick した瞬間に NPE になる。
+# Paper は構築子で cserver に CraftServer を入れる。1.18.2 は
+# ServerGamePacketListenerImpl 自身がその欄を持ち、disconnect と PlayerKickEvent の
+# 発火で this.cserver を読むので、入れないと kick した瞬間に NPE になる
+# (ServerCommonPacketListenerImpl へ分かれるのは 1.20.2 から)。
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
         this.connection = connection;

@@ -59,12 +59,7 @@ insert:
 insert-after:
     }
 
-# PlayerPickupExperienceEvent、PlayerExpCooldownChangeEvent、PlayerExpChangeEvent
-file: net/minecraft/world/entity/ExperienceOrb.java
-anchor:
-    player.takeXpDelay = 2;
-insert-after:
-    player.takeXpDelay = dev.shifu.event.EntityEvents.xpCooldown(player, player.takeXpDelay, org.bukkit.event.player.PlayerExpCooldownChangeEvent.ChangeReason.PICKUP_ORB);
+# PlayerExpCooldownChangeEvent は Paper-API 1.18.2 に無い(規則を外した)
 
 # EntityPotionEffectEvent(CLEARED)。1.20.6 の removeAllEffects は iterator で消す。
 # 残す指定があれば、消したあとに戻す。

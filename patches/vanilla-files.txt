@@ -7,10 +7,16 @@
 # 挙動の一致のためにも vanilla のまま。
 #
 #     <vanilla の木の相対パス>
+#
+# 1.19.4 からの差:
+#   Services.java は 1.18.2 に無い(1.19.1 から)。
+#   DropExperienceBlock / SculkCatalystBlock / SculkShriekerBlock も 1.18.2 に無い。
+#   経験値を spawnAfterBreak から getExpDrop へ移されているのは 1.18.2 では
+#   OreBlock・RedStoneOreBlock・SpawnerBlock なので、そちらを書く
+#   (patches/shim-skip.txt の getExpDrop の項と 1 組)。
 
 net/minecraft/network/CipherDecoder.java
 net/minecraft/network/CipherEncoder.java
-net/minecraft/server/Services.java
 net/minecraft/server/dedicated/DedicatedPlayerList.java
 net/minecraft/server/dedicated/DedicatedServerSettings.java
 net/minecraft/world/entity/Marker.java
@@ -20,11 +26,11 @@ net/minecraft/world/entity/ai/goal/WrappedGoal.java
 net/minecraft/world/entity/ai/sensing/PlayerSensor.java
 net/minecraft/world/entity/animal/Fox.java
 net/minecraft/world/level/NaturalSpawner.java
-net/minecraft/world/level/block/DropExperienceBlock.java
+net/minecraft/world/level/block/OreBlock.java
+net/minecraft/world/level/block/RedStoneOreBlock.java
 net/minecraft/world/level/block/RedStoneWireBlock.java
-net/minecraft/world/level/block/SculkCatalystBlock.java
 net/minecraft/world/level/block/SculkSensorBlock.java
-net/minecraft/world/level/block/SculkShriekerBlock.java
+net/minecraft/world/level/block/SpawnerBlock.java
 net/minecraft/world/level/levelgen/structure/LegacyStructureDataHandler.java
 net/minecraft/world/level/levelgen/structure/StructureCheck.java
 net/minecraft/world/level/material/WaterFluid.java

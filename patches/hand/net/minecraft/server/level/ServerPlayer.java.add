@@ -1,11 +1,9 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
-
-// ServerPlayer.sendChatMessage
-    // unsigned は署名の無い代替文。vanilla は署名付きの文だけを送るので渡さない。
-    public void sendChatMessage(final OutgoingChatMessage message, final boolean filtered,
-                                final ChatType.Bound chatType, final Component unsigned) {
-        this.sendChatMessage(message, filtered, chatType);
-    }
+//
+// 1.19.4 から消した塊:
+//   sendChatMessage(OutgoingChatMessage, boolean, ChatType.Bound, Component)
+//     — 署名付きチャットは 1.19 からのもの。1.18.2 の送りは vanilla の
+//       sendMessage(Component, ChatType, UUID) で、Paper もそこへ渡している。
 
 // ServerPlayer.shifuNextContainerCounter
     // vanilla の nextContainerCounter() は void。アダプタ層は進めた番号を値で使う。
@@ -20,7 +18,8 @@
     // (発火は changeGameModeForPlayer の中)。message は Paper の /gamemode が使うもので、
     // vanilla のコマンドは読まないので捨てる。呼んでいるのは CraftPlayer.setGameMode の
     // 1 か所だけで返り値を使っていないので void。
-    // 1.19.4 の Paper はイベントを返し、DefaultGameModeCommands が null なら進む。発火は vanilla の版の中なので null を返す
+    // Paper 1.18.2 もイベントを返す形(setGameMode(GameType, Cause, Component))。
+    // 発火は vanilla の版の中なので null を返す
     public org.bukkit.event.player.PlayerGameModeChangeEvent setGameMode(final GameType mode, final org.bukkit.event.player.PlayerGameModeChangeEvent.Cause cause,
                             final net.kyori.adventure.text.Component message) {
         dev.shifu.event.ShifuEvents.gameModeCause(this, cause);

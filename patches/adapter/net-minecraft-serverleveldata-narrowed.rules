@@ -1,10 +1,13 @@
 # アダプタ層の書き換え。vanilla の行ではない(Paper が持つ vanilla のファイル)。
 
+# vanilla の ServerLevel.serverLevelData は ServerLevelData 型。1.18.2 の ServerLevelData は
+# getLevelName() しか持たないので、worldGenSettings は PrimaryLevelData へ戻して読む。
+# (1.19.4 では worldGenOptions().generateStructures() という名前だった)
 file: net/minecraft/world/level/chunk/ChunkStatus.java
 replace:
-            if (worldserver.serverLevelData.worldGenOptions().generateStructures()) { // CraftBukkit
+            if (worldserver.serverLevelData.worldGenSettings().generateFeatures()) { // CraftBukkit
 with:
-            if (((net.minecraft.world.level.storage.PrimaryLevelData) worldserver.serverLevelData).worldGenOptions().generateStructures()) { // CraftBukkit
+            if (((net.minecraft.world.level.storage.PrimaryLevelData) worldserver.serverLevelData).worldGenSettings().generateFeatures()) { // CraftBukkit
 
 file: net/minecraft/server/commands/ScheduleCommand.java
 replace:

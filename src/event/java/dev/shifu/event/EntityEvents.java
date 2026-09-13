@@ -39,7 +39,6 @@ import net.minecraft.world.level.GameRules;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 
-import org.bukkit.craftbukkit.CraftEquipmentSlot;
 import org.bukkit.craftbukkit.entity.CraftLivingEntity;
 import org.bukkit.craftbukkit.event.CraftEventFactory;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
@@ -66,7 +65,6 @@ import org.bukkit.event.entity.ItemDespawnEvent;
 import org.bukkit.event.entity.PlayerLeashEntityEvent;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.hanging.HangingBreakEvent;
-import org.bukkit.event.player.PlayerExpCooldownChangeEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.player.PlayerUnleashEntityEvent;
@@ -213,20 +211,12 @@ public final class EntityEvents {
 
     // ------------------------------------------------------------ 押し
 
-    private static Entity pusher;
-    private static Entity pushee;
-
     /**
-     * 次の {@code push(xa, ya, za)} の主を置く。Paper は push に主の引数を足して呼び出し側
-     * (剣の薙ぎ払い、矢のノックバック、ドラゴンの体当たりなど)から渡している。
+     * 次の {@code push(xa, ya, za)} の主を置く。
+     *
+     * <p>Paper-API 1.18.2 に EntityPushedByEntityAttackEvent が無いので何もしない。
      */
     public static void pushedBy(final Entity pushingEntity, final Entity pushed) {
-        if (!listening(io.papermc.paper.event.entity.EntityPushedByEntityAttackEvent.getHandlerList())) {
-            return;
-        }
-
-        pusher = pushingEntity;
-        pushee = pushed;
     }
 
 
@@ -270,7 +260,8 @@ public final class EntityEvents {
         }
 
         final org.bukkit.event.player.PlayerUnleashEntityEvent event =
-                CraftEventFactory.callPlayerUnleashEntityEvent(mob, player, hand, dropLeash);
+                // 1.18.2 の callPlayerUnleashEntityEvent は手を取らない
+                CraftEventFactory.callPlayerUnleashEntityEvent(mob, player, dropLeash);
 
         return event.isCancelled() ? null : event.isDropLeash();
     }
@@ -285,7 +276,7 @@ public final class EntityEvents {
 
     /** 次の {@code setRemoved} の理由を置く。アダプタ層(hand の {@code discard(cause)} など)から。 */
     public static void removeCause(final Object cause) {
-        // EntityRemoveEvent は 1.19.4 の Paper API に無い。
+        // EntityRemoveEvent は Paper-API 1.18.2 に無い。
     }
 
 
@@ -328,13 +319,14 @@ public final class EntityEvents {
     }
 
 
-    /** PlayerExpCooldownChangeEvent。vanilla が入れた直後に、イベントの値で入れ直す。 */
-    public static int xpCooldown(final Player player, final int newCooldown, final PlayerExpCooldownChangeEvent.ChangeReason reason) {
-        if (!listening(PlayerExpCooldownChangeEvent.getHandlerList())) {
-            return newCooldown;
-        }
-
-        return CraftEventFactory.callPlayerXpCooldownEvent(player, newCooldown, reason).getNewCooldown();
+    /**
+     * PlayerExpCooldownChangeEvent。vanilla が入れた直後に、イベントの値で入れ直す。
+     *
+     * <p>Paper-API 1.18.2 に PlayerExpCooldownChangeEvent が無いので何もしない。
+     * 1.19.4 では第 3 引数に {@code ChangeReason} を取っていた。
+     */
+    public static int xpCooldown(final Player player, final int newCooldown) {
+        return newCooldown;
     }
 
 
@@ -764,12 +756,12 @@ public final class EntityEvents {
     }
 
     private static org.bukkit.inventory.EquipmentSlot fishingSlot() {
-        return fishingHand == null ? null : CraftEquipmentSlot.getHand(fishingHand);
+        return fishingHand == null ? null : ShifuEvents.hand(fishingHand);
     }
 
     /** PlayerFishEvent(LURED)。かかるまでの間合いを決めた直後。 */
     public static boolean fishLured(final FishingHook hook) {
-        // PlayerFishEvent.State.LURED は 1.19.4 の Paper API に無い。
+        // PlayerFishEvent.State.LURED は Paper-API 1.18.2 に無い。
         return true;
     }
 
@@ -855,8 +847,8 @@ public final class EntityEvents {
      */
     public static void vehicleMoveBefore(final net.minecraft.world.entity.vehicle.AbstractMinecart cart) {
         cart.shifuLastLocation = vehicleMoveListening()
-                ? org.bukkit.craftbukkit.util.CraftLocation.toBukkit(
-                        cart.position(), cart.level.getWorld(), cart.getYRot(), cart.getXRot())
+                ? new org.bukkit.Location(cart.level.getWorld(),
+                        cart.getX(), cart.getY(), cart.getZ(), cart.getYRot(), cart.getXRot())
                 : null;
     }
 
@@ -875,8 +867,8 @@ public final class EntityEvents {
 
         cart.shifuLastLocation = null;
 
-        final org.bukkit.Location to = org.bukkit.craftbukkit.util.CraftLocation.toBukkit(
-                cart.position(), cart.level.getWorld(), cart.getYRot(), cart.getXRot());
+        final org.bukkit.Location to = new org.bukkit.Location(cart.level.getWorld(),
+                cart.getX(), cart.getY(), cart.getZ(), cart.getYRot(), cart.getXRot());
         final org.bukkit.entity.Vehicle vehicle = (org.bukkit.entity.Vehicle) cart.getBukkitEntity();
 
         new org.bukkit.event.vehicle.VehicleUpdateEvent(vehicle).callEvent();
@@ -949,7 +941,7 @@ public final class EntityEvents {
 
         // 1.20.6 の構築子は PortalType を取らない(26.2 の追加)
         return new org.bukkit.event.entity.EntityPortalEnterEvent(entity.getBukkitEntity(),
-                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level.getWorld())).callEvent();
+                new org.bukkit.Location(level.getWorld(), pos.getX(), pos.getY(), pos.getZ())).callEvent();
     }
 
 
@@ -967,9 +959,9 @@ public final class EntityEvents {
             return true;
         }
 
+        // 1.18.2 の構築子は使った手を取らない
         return new org.bukkit.event.entity.EntityResurrectEvent(
-                (org.bukkit.entity.LivingEntity) entity.getBukkitEntity(),
-                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand)).callEvent();
+                (org.bukkit.entity.LivingEntity) entity.getBukkitEntity()).callEvent();
     }
 
 
@@ -1145,13 +1137,13 @@ public final class EntityEvents {
             return true;
         }
 
+        // 1.18.2 の構築子は使った手を取らない
         return new org.bukkit.event.hanging.HangingPlaceEvent(
                 (org.bukkit.entity.Hanging) hanging.getBukkitEntity(),
                 player instanceof net.minecraft.server.level.ServerPlayer serverPlayer
                         ? serverPlayer.getBukkitEntity() : null,
                 org.bukkit.craftbukkit.block.CraftBlock.at(hanging.level, clicked),
                 org.bukkit.craftbukkit.block.CraftBlock.notchToBlockFace(face),
-                org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(hand),
                 org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack)).callEvent();
     }
 
@@ -1253,14 +1245,13 @@ public final class EntityEvents {
 
 
 
-    /** EntityPortalReadyEvent。ポータルで飛ぶ用意ができた直後。 */
+    /**
+     * EntityPortalReadyEvent。ポータルで飛ぶ用意ができた直後。
+     *
+     * <p>Paper-API 1.18.2 に EntityPortalReadyEvent が無いので何もしない。
+     */
     public static boolean portalReady(final Entity entity, final ServerLevel destination) {
-        if (!listening(io.papermc.paper.event.entity.EntityPortalReadyEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new io.papermc.paper.event.entity.EntityPortalReadyEvent(entity.getBukkitEntity(),
-                destination == null ? null : destination.getWorld(), org.bukkit.PortalType.NETHER).callEvent();
+        return true;
     }
 
 
@@ -1305,8 +1296,8 @@ public final class EntityEvents {
             return;
         }
 
-        new org.bukkit.event.vehicle.VehicleBlockCollisionEvent(vehicle, block,
-                org.bukkit.craftbukkit.util.CraftVector.toBukkit(wanted)).callEvent();
+        // 1.18.2 の構築子はぶつかった向きを取らない
+        new org.bukkit.event.vehicle.VehicleBlockCollisionEvent(vehicle, block).callEvent();
     }
 
 
@@ -1323,7 +1314,7 @@ public final class EntityEvents {
         }
 
         return new com.destroystokyo.paper.event.entity.PhantomPreSpawnEvent(
-                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level.getWorld()),
+                new org.bukkit.Location(level.getWorld(), pos.getX(), pos.getY(), pos.getZ()),
                 player.getBukkitEntity(),
                 org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL).callEvent();
     }
@@ -1352,7 +1343,7 @@ public final class EntityEvents {
 
         return new com.destroystokyo.paper.event.entity.PreSpawnerSpawnEvent(
                 new org.bukkit.Location(level.getWorld(), x, y, z), bukkitType,
-                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(spawner, level.getWorld())).callEvent();
+                new org.bukkit.Location(level.getWorld(), spawner.getX(), spawner.getY(), spawner.getZ())).callEvent();
     }
 
 
@@ -1422,7 +1413,7 @@ public final class EntityEvents {
         }
 
         return new com.destroystokyo.paper.event.entity.EntityPathfindEvent(mob.getBukkitEntity(),
-                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(target, mob.level.getWorld()),
+                new org.bukkit.Location(mob.level.getWorld(), target.getX(), target.getY(), target.getZ()),
                 targetEntity == null ? null : targetEntity.getBukkitEntity()).callEvent();
     }
 

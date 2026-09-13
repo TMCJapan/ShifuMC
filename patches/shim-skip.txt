@@ -18,40 +18,36 @@ net/minecraft/world/level/GameRules.java IntegerValue.create
 net/minecraft/world/entity/ai/village/poi/PoiManager.java PoiManager.read
 net/minecraft/world/entity/ai/village/poi/PoiManager.java PoiManager.write
 
-# Paper は tryDropExperience を「経験値を出さずに量を返す」形に**書き換えて**いる
-# (CraftBukkit が BlockExpEvent を出してから落とすため)。vanilla はその場で出すので、
-# その形を前提にした getExpDrop は載らない。
-net/minecraft/world/level/block/DropExperienceBlock.java DropExperienceBlock.getExpDrop
-net/minecraft/world/level/block/SculkSensorBlock.java SculkSensorBlock.getExpDrop
-net/minecraft/world/level/block/SculkShriekerBlock.java SculkShriekerBlock.getExpDrop
-net/minecraft/world/level/block/SculkCatalystBlock.java SculkCatalystBlock.getExpDrop
+# Paper は経験値を spawnAfterBreak から getExpDrop へ移している(CraftBukkit が
+# BlockExpEvent を出してから落とすため)。vanilla の spawnAfterBreak はその場で出すので、
+# 移した先の getExpDrop を足すと二重に出る。ここに書いて外し、ファイル自体は
+# vanilla のまま使う(patches/vanilla-files.txt)。
+# 1.19.4 では DropExperienceBlock と SculkShriekerBlock と SculkCatalystBlock だった。
+# 1.18.2 にその 3 つは無く、同じことをしているのは次の 3 つ。
+# Block.getExpDrop(既定の 0 を返す版)は Paper の追加そのものなので外さない。
+net/minecraft/world/level/block/OreBlock.java OreBlock.getExpDrop
+net/minecraft/world/level/block/RedStoneOreBlock.java RedStoneOreBlock.getExpDrop
+net/minecraft/world/level/block/SpawnerBlock.java SpawnerBlock.getExpDrop
 
 # 可視性を広げるだけの構築子。patches/access で広げるので、Paper の宣言は足さない
 net/minecraft/world/phys/shapes/ArrayVoxelShape.java ArrayVoxelShape.ArrayVoxelShape
 
-# POI の読み書きを Paper のチャンク系に渡す欄。Paper は SectionStorage を
-# RegionFileStorage の下に付け替えているので、getPoiManager() をそのまま返せる。
-# vanilla の SectionStorage は IOWorker を使うので載らない。patches/hand に置き換えを書いた
-net/minecraft/server/level/ServerLevel.java ServerLevel.poiDataControllerNew
+# 1.19.4 では ServerLevel.poiDataControllerNew を外していた。1.18.2 の Paper は
+# 書き直したチャンク系(io.papermc.paper.chunk.system)を持たないので、その欄自体が無い。
 
-# 抜けたときの文言。vanilla の remove(ServerPlayer) は何も返さないので、
-# Paper の三項演算子が載らない。patches/hand に 2 引数の版だけを呼ぶ形で書いた
-net/minecraft/server/network/ServerGamePacketListenerImpl.java ServerGamePacketListenerImpl.removePlayerFromWorld
+# 1.19.4 では ServerGamePacketListenerImpl.removePlayerFromWorld を外していた。
+# 1.18.2 の Paper はその名前を持たず、onDisconnect(Component, kyori Component) を足している。
 
-# Paper は hurtAndBreak の 3 つめを LivingEntity に替えている。vanilla は ServerPlayer なので、
-# 同じ本体のうち渡す実体だけを変えた版を patches/hand に置いた
-net/minecraft/world/item/ItemStack.java ItemStack.hurtAndBreakWithoutChecks
+# 1.19.4 では ItemStack.hurtAndBreakWithoutChecks を外していた。1.18.2 の Paper に
+# その名前は無い。
 
-# Paper 1.19.4 が同梱する Alternate Current の入口。Shifu はその実装ごと外す(env.sh)ので、
+# Paper が同梱する Alternate Current の入口(1.18.2 にもある)。Shifu はその実装ごと外す(env.sh)ので、
 # 参照先の alternate.current.wire が無い
 net/minecraft/server/level/ServerLevel.java ServerLevel.getWireHandler
 net/minecraft/world/level/Level.java Level.getWireHandler
 
-# Paper 1.19.4 のエンティティ保存(EntityRegionFileStorage)。patches/hand の entityDataControllerNew が
-# 止める形で置き換えるので、それが使う 3 つは足さない
-net/minecraft/server/level/ServerLevel.java ServerLevel.entityStorage
-net/minecraft/server/level/ServerLevel.java ServerLevel.writeEntityChunk
-net/minecraft/server/level/ServerLevel.java ServerLevel.readEntityChunk
+# 1.19.4 ではエンティティ保存(EntityRegionFileStorage)の 3 件を外していた。
+# 1.18.2 の Paper は vanilla の EntityStorage のままで、その 3 つを持たない。
 
 # vanilla の enum に定数は足さない(順序が変わる)。MobGoalHelper(patches/adapter)で null にする
 net/minecraft/world/entity/ai/goal/Goal.java Flag.UNKNOWN_BEHAVIOR
@@ -60,24 +56,18 @@ net/minecraft/world/entity/ai/goal/Goal.java Flag.UNKNOWN_BEHAVIOR
 
 # Paper の PlayerList.respawn が使う。vanilla の respawn は新しい ServerPlayer を作るので要らない
 
-# record の成分(paperConfigurations)は足せない。vanilla の create(YggdrasilAuthenticationService, File) を使う
-net/minecraft/server/Services.java Services.Services
-net/minecraft/server/Services.java Services.create
-
-# 次元の鍵の型が違う。patches/hand の upgradeChunkTag が vanilla の版へ渡す
-net/minecraft/world/level/chunk/storage/ChunkStorage.java ChunkStorage.getLegacyStructureHandler
+# 1.19.4 では Services の record の成分を外していた。1.18.2 に net.minecraft.server.Services は無い。
 
 # Paper の playerGeneralAreaMap(近くのプレイヤーの表)。vanilla は EntityGetter の版で探す
 net/minecraft/world/level/Level.java Level.getNearbyPlayers
 net/minecraft/server/level/ServerLevel.java ServerLevel.getNearbyPlayers
 
 # patches/hand に vanilla の版へ渡す形で書いた
-net/minecraft/server/MinecraftServer.java MinecraftServer.addLevel
-net/minecraft/server/MinecraftServer.java MinecraftServer.removeLevel
-net/minecraft/commands/Commands.java Commands.performPrefixedCommand
 net/minecraft/server/dedicated/DedicatedServerProperties.java DedicatedServerProperties.fromFile
-net/minecraft/world/entity/projectile/ThrownPotion.java ThrownPotion.splash
 net/minecraft/world/level/chunk/storage/ChunkStorage.java ChunkStorage.upgradeChunkTag
+# 1.18.2 の Paper が持たないので外した: MinecraftServer.addLevel / removeLevel
+# (CraftServer は console.levels を直に触る)、Commands.performPrefixedCommand、
+# ThrownPotion.splash、ChunkStorage.getLegacyStructureHandler
 
 # vanilla のまま使うファイルに、Paper の書き換えの残りが載らないようにする
 net/minecraft/world/entity/ai/goal/GoalSelector.java GoalSelector.inactiveTick
@@ -98,7 +88,8 @@ net/minecraft/world/item/crafting/RecipeManager.java RecipeManager.addRecipe
 net/minecraft/world/item/crafting/RecipeManager.java RecipeManager.removeRecipe
 net/minecraft/world/item/crafting/RecipeManager.java RecipeManager.clearRecipes
 
-# Paper のチャンク系(NewChunkHolder)に聞く版。vanilla の holder の値で答える版を patches/hand に置いた
+# Paper は読み込み段階を自前の欄に控えて答える(1.19.4 は NewChunkHolder に聞く版だった)。
+# vanilla の holder の値で答える版を patches/hand に置いた
 net/minecraft/server/level/ChunkHolder.java ChunkHolder.isFullChunkReady
 net/minecraft/server/level/ChunkHolder.java ChunkHolder.getSendingChunk
 

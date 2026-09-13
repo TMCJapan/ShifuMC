@@ -37,28 +37,21 @@ anchor:
     if (world.hasNeighborSignal(pos)) {
 count: 2
 insert:
-    dev.shifu.event.ShifuEvents.tntPrimeCause(org.bukkit.event.block.TNTPrimeEvent.PrimeCause.REDSTONE, null, null);
-
-# playerWillDestroy(不安定な TNT を壊した)
-file: net/minecraft/world/level/block/TntBlock.java
-anchor:
-    if (!world.isClientSide() && !player.isCreative() && state.getValue(UNSTABLE)) {
-insert-after:
-    dev.shifu.event.ShifuEvents.tntPrimeCause(org.bukkit.event.block.TNTPrimeEvent.PrimeCause.BLOCK_BREAK, player, null);
+    dev.shifu.event.ShifuEvents.tntPrimeCause(com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason.REDSTONE, null);
 
 # useItemOn(火打ち石・ファイヤーチャージ)
 file: net/minecraft/world/level/block/TntBlock.java
 anchor:
     explode(world, pos, player);
 insert:
-    dev.shifu.event.ShifuEvents.tntPrimeCause(org.bukkit.event.block.TNTPrimeEvent.PrimeCause.PLAYER, player, null);
+    dev.shifu.event.ShifuEvents.tntPrimeCause(com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason.ITEM, player);
 
 # onProjectileHit(燃えている矢など)
 file: net/minecraft/world/level/block/TntBlock.java
 anchor:
     if (projectile.isOnFire() && projectile.mayInteract(world, blockPos)) {
 insert:
-    dev.shifu.event.ShifuEvents.tntPrimeCause(org.bukkit.event.block.TNTPrimeEvent.PrimeCause.PROJECTILE, projectile, null);
+    dev.shifu.event.ShifuEvents.tntPrimeCause(com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason.PROJECTILE, projectile);
 
 # wasExploded(誘爆)
 file: net/minecraft/world/level/block/TntBlock.java
@@ -69,16 +62,10 @@ insert:
         return;
     }
 
-# ディスペンサーの火打ち石
-file: net/minecraft/core/dispenser/DispenseItemBehavior.java
-anchor:
-    TntBlock.explode(level, blockPos);
-insert:
-    dev.shifu.event.ShifuEvents.tntPrimeCause(org.bukkit.event.block.TNTPrimeEvent.PrimeCause.DISPENSER, null, null);
-
+# Paper 1.18.2 の TNTPrimeEvent(com.destroystokyo)には BLOCK_BREAK / DISPENSER の理由が無く、Paper もそこでは出さない
 # 火が燃え移った
 file: net/minecraft/world/level/block/FireBlock.java
 anchor:
     TntBlock.explode(world, pos);
 insert:
-    dev.shifu.event.ShifuEvents.tntPrimeCause(org.bukkit.event.block.TNTPrimeEvent.PrimeCause.FIRE, null, null);
+    dev.shifu.event.ShifuEvents.tntPrimeCause(com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason.FIRE, null);
