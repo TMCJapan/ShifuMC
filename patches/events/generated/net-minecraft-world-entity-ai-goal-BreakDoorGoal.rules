@@ -1,1 +1,15 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
+# callEntityBreakDoorEvent
+# 1.19.4 の callEntityBreakDoorEvent は壊れたあとの状態を取らない。
+# MC-263999 の直し(oldState)もこの版の Paper には無い。
+file: net/minecraft/world/entity/ai/goal/BreakDoorGoal.java
+anchor:
+            this.mob.level.removeBlock(this.doorPos, false);
+insert:
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityBreakDoorEvent(this.mob, this.doorPos).isCancelled()) {
+        this.start();
+        return;
+    }
+    // CraftBukkit end

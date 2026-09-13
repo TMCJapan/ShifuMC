@@ -15,6 +15,7 @@ import net.minecraft.network.Connection;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ServerboundCustomPayloadPacket;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 
 /**
  * プラグインメッセージ(Bukkit の Messenger)の受け口。
@@ -112,11 +113,79 @@ public final class PluginMessages {
         CHANNELS.remove(connection);
     }
 
+    /** 復号した packet を接続ごとの列と結びつける handler を差し込む。 */
+    public static void install(final ChannelPipeline pipeline, final Connection connection) {
+        pipeline.addBefore("packet_handler", "shifu_plugin_messages", new ChannelInboundHandlerAdapter() {
+            @Override
+            public void channelRead(final ChannelHandlerContext context, final Object message) throws Exception {
+                afterDecode(connection, message);
+                super.channelRead(context, message);
+            }
+        });
+    }
 
 
     private static final ResourceLocation REGISTER = new ResourceLocation("register");
     private static final ResourceLocation UNREGISTER = new ResourceLocation("unregister");
 
+    /**
+     * {@code handleCustomPayload}(vanilla は空)の中身。
+     *
+     * <p>Paper と同じことをする: {@code minecraft:register} / {@code unregister} は
+     * チャンネルの登録、それ以外は Bukkit の Messenger へ渡す。
+     *
+     * <p>Paper は読めない本文で接続を切るが、vanilla は何もしないので切らずに記録だけ残す。
+     *
+     * <p>1.19.4 の {@code ServerboundCustomPayloadPacket} は本文を自分で持っている
+     * ({@code getData})ので、控え({@code remember} / {@code take})は使わない。
+     * {@code minecraft:brand} は Paper の {@code clientBrandName} が private で、
+     * 外から書けないため渡していない。
+     *
+     * <p>読んだ位置:
+     *   Paper-Server@HEAD src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java:3545
+     */
+    public static void handle(final ServerGamePacketListenerImpl listener, final ServerboundCustomPayloadPacket packet) {
+        if (!enabled()) {
+            return;
+        }
+
+        // vanilla は何もしない packet なので、ここから先はサーバースレッドで行う。
+        net.minecraft.network.protocol.PacketUtils.ensureRunningOnSameThread(packet, listener,
+                listener.player.getLevel());
+
+        final ResourceLocation identifier = packet.getIdentifier();
+        final FriendlyByteBuf body = packet.getData();
+        final byte[] data = new byte[body.readableBytes()];
+        body.readBytes(data);
+
+        final org.bukkit.craftbukkit.entity.CraftPlayer bukkit = listener.player.getBukkitEntity();
+
+        try {
+            final boolean register = REGISTER.equals(identifier);
+
+            if (register || UNREGISTER.equals(identifier)) {
+                for (final String channel : new String(data, StandardCharsets.UTF_8).split("\0")) {
+                    if (channel.isEmpty()) {
+                        continue;
+                    }
+
+                    if (register) {
+                        bukkit.addChannel(channel);
+                    } else {
+                        bukkit.removeChannel(channel);
+                    }
+                }
+
+                return;
+            }
+
+            net.minecraft.server.MinecraftServer.getServer().server.getMessenger()
+                    .dispatchIncomingMessage(bukkit, identifier.toString(), data);
+        } catch (final RuntimeException e) {
+            org.slf4j.LoggerFactory.getLogger(PluginMessages.class)
+                    .error("チャンネル {} のプラグインメッセージを処理できない", identifier, e);
+        }
+    }
 
     private static byte[] take(final Connection connection) {
         final Deque<byte[]> queue = PENDING.get(connection);

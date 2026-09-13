@@ -1,1 +1,10 @@
-# PreSpawnerSpawnEvent。スポナーが中身を作る直前。
+# PreSpawnerSpawnEvent。スポナーが実体を作る直前。
+
+file: net/minecraft/world/level/BaseSpawner.java
+anchor:
+                        Entity entity = EntityType.loadEntityRecursive(entityToSpawn, world, entity1 -> {
+insert:
+    if (optional.isPresent()
+            && !dev.shifu.event.EntityEvents.preSpawnerSpawn(world, optional.get(), d, d1, d2, pos)) {
+        continue;
+    }

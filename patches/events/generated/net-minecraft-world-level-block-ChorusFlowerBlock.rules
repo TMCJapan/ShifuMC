@@ -1,1 +1,11 @@
-
+# main(26.2)の規則を reanchor.py で局所変数の名前だけ当て直したもの。
+# callEntityChangeBlockEvent
+file: net/minecraft/world/level/block/ChorusFlowerBlock.java
+anchor:
+            world.destroyBlock(blockPos, true, projectile);
+insert:
+    // CraftBukkit start
+    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(projectile, blockPos, state.getFluidState().createLegacyBlock()).isCancelled()) { // Paper - fix wrong block state
+        return;
+    }
+    // CraftBukkit end

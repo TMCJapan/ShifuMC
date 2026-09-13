@@ -1,1 +1,13 @@
-
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+# PlayerRiptideEvent
+# 1.19.4 の CraftEventFactory に callPlayerRiptideEvent は無く、
+# この版の PlayerRiptideEvent は速さを取らないので、Paper と同じくその場で組む。
+file: net/minecraft/world/item/TridentItem.java
+anchor:
+                        player.push(f, f1, f2);
+insert:
+    // CraftBukkit start
+    org.bukkit.event.player.PlayerRiptideEvent shifuRiptide = new org.bukkit.event.player.PlayerRiptideEvent(
+            (org.bukkit.entity.Player) player.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack));
+    shifuRiptide.callEvent();
+    // CraftBukkit end

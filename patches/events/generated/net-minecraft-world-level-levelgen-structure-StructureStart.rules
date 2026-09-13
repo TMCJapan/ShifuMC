@@ -1,1 +1,2 @@
-
+# AsyncStructureGenerateEvent。1.19.4 の Paper は StructureStart に
+# generationEventCause を持たないので置かない。

@@ -156,6 +156,23 @@ public final class BlockEvents {
 
 
     /**
+     * BlockShearEntityEvent。ディスペンサーのハサミが生き物を刈る直前。
+     *
+     * <p>効かないもの: 落とし物の差し替え(vanilla の {@code shear} が自分で落とす)。
+     * 1.19.4 のイベントは落とし物を持たない。
+     *
+     * @return 刈ってよいか
+     */
+    public static boolean shearByBlock(final ServerLevel level, final BlockPos dispenser, final Entity entity, final ItemStack tool) {
+        if (!listening(org.bukkit.event.block.BlockShearEntityEvent.getHandlerList())) {
+            return true;
+        }
+
+        return !CraftEventFactory.callBlockShearEntityEvent(entity, bukkit(level, dispenser),
+                CraftItemStack.asCraftMirror(tool)).isCancelled();
+    }
+
+    /**
      * ディスペンサーのハサミの側で、刈る生き物の位置は分かるがディスペンサーの位置と
      * 使った道具が分からないので置く。1.20.6 の {@code tryShearLivingEntity} は
      * 位置しか受け取らない(Paper は引数を 2 つ増やしている)。
@@ -206,7 +223,34 @@ public final class BlockEvents {
         oreToucher = entity;
     }
 
+    /**
+     * EntityChangeBlockEvent(レッドストーン鉱石が光る)。置く前。
+     *
+     * @return 光らせてよいか
+     */
+    public static boolean oreLight(final Level level, final BlockPos pos, final BlockState lit) {
+        final Entity entity = oreToucher;
+        oreToucher = null;
 
+        if (entity == null || !listening(org.bukkit.event.entity.EntityChangeBlockEvent.getHandlerList())) {
+            return true;
+        }
+
+        return !CraftEventFactory.callEntityChangeBlockEvent(entity, pos, lit).isCancelled();
+    }
+
+    /**
+     * EntityChangeBlockEvent。置く前に発火する形(Paper と同じ)。
+     *
+     * @return 置いてよいか
+     */
+    public static boolean entityChangeBlock(final Entity entity, final BlockPos pos, final BlockState newState) {
+        if (!listening(org.bukkit.event.entity.EntityChangeBlockEvent.getHandlerList())) {
+            return true;
+        }
+
+        return !CraftEventFactory.callEntityChangeBlockEvent(entity, pos, newState).isCancelled();
+    }
 
     public static boolean listeningEntityChangeBlock() {
         return listening(org.bukkit.event.entity.EntityChangeBlockEvent.getHandlerList());
@@ -494,6 +538,13 @@ public final class BlockEvents {
         return result;
     }
 
+    /**
+     * 看板の面。1.19.4 の {@code org.bukkit.block.sign.Side} は {@code FRONT} しか無く、
+     * SignChangeEvent も面を取らないので、受け取った面は使わない。
+     */
+    public static void signSide(final boolean front) {
+    }
+
 
 
     private static BlockPos bellPos;
@@ -600,6 +651,35 @@ public final class BlockEvents {
     }
 
 
+    /**
+     * FurnaceSmeltEvent。焼き上がりを結果の枠に入れる直前(呼び出し側で)。
+     *
+     * @return 入れる結果。取り消されたら null。差し替えた結果が枠の物と重ねられないときも null
+     */
+    public static ItemStack furnaceSmelt(final ServerLevel level, final BlockPos pos, final net.minecraft.core.NonNullList<ItemStack> items,
+                                         final ItemStack ingredient, final ItemStack result,
+                                         final net.minecraft.world.item.crafting.Recipe<?> recipe) {
+        if (!listening(org.bukkit.event.inventory.FurnaceSmeltEvent.getHandlerList())) {
+            return result;
+        }
+
+        final org.bukkit.event.inventory.FurnaceSmeltEvent event = new org.bukkit.event.inventory.FurnaceSmeltEvent(
+                bukkit(level, pos), CraftItemStack.asCraftMirror(ingredient), CraftItemStack.asBukkitCopy(result),
+                (org.bukkit.inventory.CookingRecipe<?>) recipe.toBukkitRecipe());
+
+        if (!event.callEvent()) {
+            return null;
+        }
+
+        final ItemStack replaced = CraftItemStack.asNMSCopy(event.getResult());
+        final ItemStack slot = items.get(2);
+
+        if (!replaced.isEmpty() && !slot.isEmpty() && !CraftItemStack.asCraftMirror(slot).isSimilar(event.getResult())) {
+            return null;
+        }
+
+        return replaced;
+    }
 
     private static net.minecraft.world.level.Level furnaceSmeltLevel;
     private static BlockPos furnaceSmeltPos;
@@ -654,6 +734,33 @@ public final class BlockEvents {
         furnaceCount = count;
     }
 
+    /**
+     * BlockExpEvent。かまどの経験値を出す直前。取り出した人が分かっていれば
+     * {@code FurnaceExtractEvent}(BlockExpEvent の派生)。
+     *
+     * @return 出す経験値
+     */
+    public static int furnaceExp(final ServerLevel level, final int xp) {
+        final BlockPos pos = furnaceAt;
+        final ServerPlayer taker = furnaceTaker;
+        final net.minecraft.world.item.ItemStack taken = furnaceTaken;
+        final int count = furnaceCount;
+        furnaceTaker = null;
+        furnaceTaken = null;
+        furnaceCount = 0;
+
+        if (pos == null || !listening(org.bukkit.event.block.BlockExpEvent.getHandlerList())) {
+            return xp;
+        }
+
+        final org.bukkit.event.block.BlockExpEvent event = taker != null && taken != null
+                ? new org.bukkit.event.inventory.FurnaceExtractEvent(taker.getBukkitEntity(), bukkit(level, pos),
+                        org.bukkit.craftbukkit.util.CraftMagicNumbers.getMaterial(taken.getItem()), count, xp)
+                : new org.bukkit.event.block.BlockExpEvent(bukkit(level, pos), xp);
+        event.callEvent();
+
+        return event.getExpToDrop();
+    }
 
     // ------------------------------------------------------------ 焚き火
 
@@ -681,9 +788,21 @@ public final class BlockEvents {
 
     // ------------------------------------------------------------ 怪しい砂・トライアルスポナー・宝物庫
 
+    /**
+     * EntityChangeBlockEvent(ブラシで怪しい砂を削る)。削る前。
+     *
+     * <p>1.19.4 に {@code BrushableBlockEntity} は無いので、呼ぶ側は今のところ無い。
+     *
+     * @param next 次の段の状態(壊れるなら中身のブロック)
+     * @return 削ってよいか
+     */
+    public static boolean brush(final BlockEntity brushable, final LivingEntity user, final BlockState next) {
+        if (!listening(org.bukkit.event.entity.EntityChangeBlockEvent.getHandlerList())) {
+            return true;
+        }
 
-
-
+        return !CraftEventFactory.callEntityChangeBlockEvent(user, brushable.getBlockPos(), next).isCancelled();
+    }
 
 
 
@@ -843,6 +962,21 @@ public final class BlockEvents {
         lightningStriker = lightning;
     }
 
+    /**
+     * EntityChangeBlockEvent(落雷が酸化した銅を戻す)。置く前。
+     *
+     * @return 戻してよいか
+     */
+    public static boolean lightningClearsCopper(final Level level, final BlockPos pos, final BlockState newState) {
+        final Entity lightning = lightningStriker;
+        lightningStriker = null;
+
+        if (lightning == null || !listening(org.bukkit.event.entity.EntityChangeBlockEvent.getHandlerList())) {
+            return true;
+        }
+
+        return !CraftEventFactory.callEntityChangeBlockEvent(lightning, pos, newState).isCancelled();
+    }
 
     /**
      * TargetHitEvent。的に投射物が当たった。
@@ -892,6 +1026,27 @@ public final class BlockEvents {
         return ShifuEvents.listening(org.bukkit.event.block.BlockCanBuildEvent.getHandlerList());
     }
 
+    /**
+     * BlockCanBuildEvent。置けるかどうかの判定を返したあと、プラグインに委ねる。
+     *
+     * <p>1.19.4 のイベントは使った手を取らない。
+     *
+     * @param allowed vanilla の判定
+     * @return 実際に置けるか
+     */
+    public static boolean canBuild(final net.minecraft.world.item.context.BlockPlaceContext context,
+                                   final net.minecraft.world.level.block.state.BlockState state,
+                                   final boolean allowed) {
+        final org.bukkit.entity.Player player =
+                context.getPlayer() instanceof net.minecraft.server.level.ServerPlayer serverPlayer
+                        ? serverPlayer.getBukkitEntity() : null;
+        final org.bukkit.event.block.BlockCanBuildEvent event = new org.bukkit.event.block.BlockCanBuildEvent(
+                org.bukkit.craftbukkit.block.CraftBlock.at(context.getLevel(), context.getClickedPos()), player,
+                org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(state), allowed);
+        event.callEvent();
+
+        return event.isBuildable();
+    }
 
 
     /** BellRingEvent。鐘が鳴る直前。 */
@@ -974,9 +1129,28 @@ public final class BlockEvents {
         return event.callEvent() && event.willRaiseLevel();
     }
 
+    /**
+     * BeaconEffectEvent。ビーコンの効果を 1 人にかける直前。
+     *
+     * <p>Paper はプラグインが差し替えた効果をかける。vanilla の
+     * {@code addEffect} の引数は変えられないので、<b>渡しているのは取り消しだけ。</b>
+     */
+    public static boolean beaconEffect(final net.minecraft.world.level.Level level,
+                                       final net.minecraft.core.BlockPos pos,
+                                       final net.minecraft.world.entity.player.Player player,
+                                       final net.minecraft.world.effect.MobEffect effect,
+                                       final int duration, final int amplifier, final boolean primary) {
+        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)
+                || !ShifuEvents.listening(com.destroystokyo.paper.event.block.BeaconEffectEvent.getHandlerList())) {
+            return true;
+        }
 
-
-
+        return new com.destroystokyo.paper.event.block.BeaconEffectEvent(
+                org.bukkit.craftbukkit.block.CraftBlock.at(level, pos),
+                org.bukkit.craftbukkit.potion.CraftPotionUtil.toBukkit(
+                        new net.minecraft.world.effect.MobEffectInstance(effect, duration, amplifier, true, true)),
+                serverPlayer.getBukkitEntity(), primary).callEvent();
+    }
 
     /**
      * InventoryPickupItemEvent。ホッパーが落ちている物を吸う直前。
@@ -1020,12 +1194,111 @@ public final class BlockEvents {
         return ShifuEvents.listening(org.bukkit.event.block.CampfireStartEvent.getHandlerList());
     }
 
+    /**
+     * CampfireStartEvent。焚き火に載せた直後。
+     *
+     * @return 焼くのにかける時間
+     */
+    public static int campfireStart(final net.minecraft.world.level.Level level, final net.minecraft.core.BlockPos pos,
+                                    final net.minecraft.world.item.ItemStack food,
+                                    final net.minecraft.world.item.crafting.CampfireCookingRecipe recipe,
+                                    final int cookTime) {
+        if (recipe == null) {
+            return cookTime;
+        }
+
+        final org.bukkit.event.block.CampfireStartEvent event = new org.bukkit.event.block.CampfireStartEvent(
+                org.bukkit.craftbukkit.block.CraftBlock.at(level, pos),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(food),
+                (org.bukkit.inventory.CampfireRecipe) recipe.toBukkitRecipe());
+        event.callEvent();
+
+        return event.getTotalCookTime();
+    }
 
 
+    /**
+     * GenericGameEvent。ゲームイベントを配る直前。
+     *
+     * <p>Paper はプラグインが直した通知の半径を使う。vanilla は半径を
+     * 局所変数に入れたあとの分岐で使い回すので、<b>渡しているのは取り消しだけ。</b>
+     */
+    public static boolean genericGameEvent(final net.minecraft.server.level.ServerLevel level,
+                                           final net.minecraft.world.level.gameevent.GameEvent event,
+                                           final net.minecraft.core.BlockPos pos,
+                                           final net.minecraft.world.entity.Entity source,
+                                           final int radius) {
+        if (!ShifuEvents.listening(org.bukkit.event.world.GenericGameEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.world.GenericGameEvent(
+                org.bukkit.GameEvent.getByKey(org.bukkit.craftbukkit.util.CraftNamespacedKey.fromMinecraft(
+                        net.minecraft.core.registries.BuiltInRegistries.GAME_EVENT.getKey(event))),
+                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level.getWorld()),
+                source == null ? null : source.getBukkitEntity(), radius,
+                !org.bukkit.Bukkit.isPrimaryThread()).callEvent();
+    }
 
 
+    /**
+     * InventoryMoveItemEvent。ホッパーなどが 1 個ずつ移す直前。
+     *
+     * <p>渡す入れ物は {@code CraftInventory} をそのまま作る。Paper は
+     * 二重チェストなどを見分けているが、その振り分けは 1.19.4 の木に無い。
+     * 差し替えたアイテム({@code setItem})も vanilla の行が持つので使っていない。
+     *
+     * @return 移してよいか
+     */
+    public static boolean inventoryMoveItem(final net.minecraft.world.Container from,
+                                            final net.minecraft.world.Container to,
+                                            final net.minecraft.world.item.ItemStack stack) {
+        if (from == null
+                || !ShifuEvents.listening(org.bukkit.event.inventory.InventoryMoveItemEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.bukkit.event.inventory.InventoryMoveItemEvent(
+                new org.bukkit.craftbukkit.inventory.CraftInventory(from),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack),
+                new org.bukkit.craftbukkit.inventory.CraftInventory(to),
+                from instanceof net.minecraft.world.level.block.entity.Hopper).callEvent();
+    }
 
 
+    /**
+     * BrewEvent。醸造が終わって中身を書き換える直前。
+     *
+     * <p>Paper はプラグインが直した結果を入れる。vanilla は
+     * {@code doBrew} の中で作るので、<b>渡しているのは取り消しだけ。</b>
+     *
+     * @return 醸造してよいか
+     */
+    public static boolean brew(final net.minecraft.world.level.Level level, final net.minecraft.core.BlockPos pos,
+                               final net.minecraft.world.level.block.entity.BrewingStandBlockEntity stand,
+                               final net.minecraft.core.NonNullList<net.minecraft.world.item.ItemStack> slots,
+                               final int fuel) {
+        if (!ShifuEvents.listening(org.bukkit.event.inventory.BrewEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+
+        if (!(block.getState() instanceof org.bukkit.block.BrewingStand state)) {
+            return true;
+        }
+
+        final net.minecraft.world.item.ItemStack ingredient = slots.get(3);
+        final java.util.List<org.bukkit.inventory.ItemStack> results = new java.util.ArrayList<>();
+
+        for (int i = 0; i < 3; i++) {
+            results.add(i, org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(
+                    net.minecraft.world.item.alchemy.PotionBrewing.mix(ingredient, slots.get(i))));
+        }
+
+        return new org.bukkit.event.inventory.BrewEvent(block,
+                (org.bukkit.inventory.BrewerInventory) state.getInventory(), results, fuel).callEvent();
+    }
 
 
     /** DragonEggFormEvent。ドラゴンを倒して卵を置く直前。 */
@@ -1127,6 +1400,16 @@ public final class BlockEvents {
 
 
     /**
+     * SculkBloomEvent。スカルクの広がりを 1 つ足す直前。
+     */
+    public static boolean sculkBloom(final net.minecraft.world.level.LevelAccessor level,
+                                     final net.minecraft.core.BlockPos pos, final int charge) {
+        // SculkBloomEvent は 1.19.4 の Paper API に無い。
+        return true;
+    }
+
+
+    /**
      * BlockDispenseArmorEvent。ディスペンサーが防具を着せる直前。
      *
      * <p>差し替えた品({@code setItem})は vanilla の行が持つので使っていない。
@@ -1145,7 +1428,38 @@ public final class BlockEvents {
     }
 
 
+    /** BlockBreakProgressUpdateEvent。壊れ具合を送る直前。 */
+    public static boolean breakProgress(final ServerLevel level, final net.minecraft.core.BlockPos pos,
+                                        final int progress, final net.minecraft.world.entity.Entity breaker) {
+        // BlockBreakProgressUpdateEvent は 1.19.4 の Paper API に無い。
+        return true;
+    }
 
+    /** StructuresLocateEvent。構造物を探す直前。 */
+    public static boolean structuresLocate(final ServerLevel level, final net.minecraft.core.BlockPos center,
+                                           final net.minecraft.core.HolderSet<
+                                                   net.minecraft.world.level.levelgen.structure.Structure> structures,
+                                           final int radius, final boolean findUnexplored) {
+        if (!ShifuEvents.listening(io.papermc.paper.event.world.StructuresLocateEvent.getHandlerList())) {
+            return true;
+        }
+
+        final java.util.List<org.bukkit.generator.structure.Structure> list = new java.util.ArrayList<>();
+
+        for (final net.minecraft.core.Holder<net.minecraft.world.level.levelgen.structure.Structure> one : structures) {
+            final org.bukkit.generator.structure.Structure bukkit =
+                    org.bukkit.craftbukkit.generator.strucutre.CraftStructure.minecraftToBukkit(
+                            one.value(), level.registryAccess());
+
+            if (bukkit != null) {
+                list.add(bukkit);
+            }
+        }
+
+        return new io.papermc.paper.event.world.StructuresLocateEvent(level.getWorld(),
+                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(center, level.getWorld()), list, radius,
+                findUnexplored).callEvent();
+    }
 
 
     /** WorldBorderBoundsChangeFinishEvent。境界の移動が終わった直後。 */
@@ -1162,8 +1476,54 @@ public final class BlockEvents {
     }
 
 
+    /**
+     * AsyncStructureSpawnEvent。構造物の置き場所が決まった直後、
+     * チャンクへ書き込む手前。
+     *
+     * <p>世界生成の担い手の上で走るので、Paper と同じく main ではない。
+     *
+     * <p>読んだ位置(Paper 1.19.4):
+     *   Paper-Server src/main/java/net/minecraft/world/level/chunk/ChunkGenerator.java:709
+     */
+    public static boolean structureSpawn(final net.minecraft.world.level.StructureManager accessor,
+                                         final net.minecraft.world.level.levelgen.structure.Structure structure,
+                                         final net.minecraft.world.level.levelgen.structure.StructureStart start,
+                                         final net.minecraft.world.level.ChunkPos pos) {
+        if (!listening(org.bukkit.event.world.AsyncStructureSpawnEvent.getHandlerList())) {
+            return true;
+        }
+
+        final net.minecraft.world.level.levelgen.structure.BoundingBox box = start.getBoundingBox();
+
+        return new org.bukkit.event.world.AsyncStructureSpawnEvent(
+                accessor.level.getMinecraftWorld().getWorld(),
+                org.bukkit.craftbukkit.generator.strucutre.CraftStructure.minecraftToBukkit(
+                        structure, accessor.level.registryAccess()),
+                new org.bukkit.util.BoundingBox(box.minX(), box.minY(), box.minZ(),
+                        box.maxX(), box.maxY(), box.maxZ()),
+                pos.x, pos.z).callEvent();
+    }
 
 
+    /**
+     * AsyncStructureGenerateEvent。構造物の部品を書き込む直前。
+     *
+     * @return 書き込み先の世界
+     */
+    public static net.minecraft.world.level.WorldGenLevel structureAccess(
+            final net.minecraft.world.level.WorldGenLevel world,
+            final net.minecraft.world.level.StructureManager accessor,
+            final net.minecraft.world.level.levelgen.structure.StructureStart start,
+            final net.minecraft.world.level.levelgen.structure.BoundingBox box,
+            final net.minecraft.world.level.ChunkPos pos) {
+        // AsyncStructureGenerateEvent は 1.19.4 の Paper API に無い。
+        return world;
+    }
+
+    /** 1 チャンク分の部品を書き終えたところ。 */
+    public static void structureAccessDone() {
+        // AsyncStructureGenerateEvent は 1.19.4 の Paper API に無い。
+    }
 
 
 

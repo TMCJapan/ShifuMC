@@ -1,1 +1,14 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
+# EntityPoseChangeEvent
+# 1.19.4 の Paper は Expand Pose API(fixedPose)も generation の見張りも持たない。
+file: net/minecraft/world/entity/Entity.java
+anchor:
+        this.entityData.set(DATA_POSE, pose);
+insert:
+    // CraftBukkit start
+    if (pose == this.getPose()) {
+        return;
+    }
+    this.level.getCraftServer().getPluginManager().callEvent(new org.bukkit.event.entity.EntityPoseChangeEvent(this.getBukkitEntity(), org.bukkit.entity.Pose.values()[pose.ordinal()]));
+    // CraftBukkit end

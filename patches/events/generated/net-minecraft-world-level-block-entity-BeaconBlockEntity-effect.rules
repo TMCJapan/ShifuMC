@@ -1,1 +1,17 @@
 # BeaconEffectEvent。ビーコンの効果を 1 人にかける直前。
+
+file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
+anchor:
+                player.addEffect(new MobEffectInstance(primaryEffect, i1, i, true, true));
+insert:
+    if (!dev.shifu.event.BlockEvents.beaconEffect(world, pos, player, primaryEffect, i1, i, true)) {
+        continue;
+    }
+
+file: net/minecraft/world/level/block/entity/BeaconBlockEntity.java
+anchor:
+                    player.addEffect(new MobEffectInstance(secondaryEffect, i1, 0, true, true));
+insert:
+    if (!dev.shifu.event.BlockEvents.beaconEffect(world, pos, player, secondaryEffect, i1, 0, false)) {
+        continue;
+    }

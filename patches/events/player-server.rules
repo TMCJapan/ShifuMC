@@ -121,6 +121,17 @@ insert-after:
 # PreCreatureSpawnEvent(自然湧き)。位置の判定の前
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/world/NaturalSpawner.java.patch
+file: net/minecraft/world/level/NaturalSpawner.java
+anchor:
+    if (entityType.getCategory() == MobCategory.MISC) {
+insert:
+    if (!dev.shifu.event.PlayerEvents.preCreatureSpawn(world, pos, entityType)) {
+        return false;
+    }
+
+# PreSpawnerSpawnEvent。エンティティを作る前
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/world/BaseSpawner.java.patch
 file: net/minecraft/server/players/PlayerList.java
 anchor:
     return Component.translatable("multiplayer.disconnect.not_whitelisted");
@@ -137,6 +148,19 @@ anchor:
 insert-after:
     playerNames = dev.shifu.event.PlayerEvents.queryPlayers(playerNames);
 
+# MapInitializeEvent。読み込んだとき(Paper は getMapData でも出す)
+file: net/minecraft/world/level/NaturalSpawner.java
+anchor:
+    if (mobForSpawn.isMaxGroupSizeReached(i3)) {
+    break;
+    }
+    }
+    }
+insert-after:
+    if (dev.shifu.event.PlayerEvents.takeSpawnAbort()) {
+        return;
+    }
+
 # ============================================================ プレイヤー
 
 # PlayerSpawnChangeEvent / PlayerSetSpawnEvent。setRespawnPosition の頭
@@ -152,4 +176,22 @@ insert:
 # PlayerShieldDisableEvent。クールダウンを付ける前。攻撃者は Player.blockUsingItem で置く(担当範囲外)
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/component/BlocksAttacks.java.patch
-# 1.20.6 は Player.eat が食べる。FoodProperties は成分から取る
+# 1.19.4 は Player.eat が食べる。FoodProperties は Item から取る
+file: net/minecraft/world/entity/player/Player.java
+anchor:
+    this.getFoodData().eat(stack.getItem(), stack);
+insert:
+    final net.minecraft.world.food.FoodProperties shifuFood = stack.getItem().getFoodProperties();
+    if (shifuFood == null || dev.shifu.event.PlayerEvents.eatFood(this, shifuFood, stack)) {
+insert-after:
+    }
+
+# PlayerShieldDisableEvent の攻撃者を置く。1.19.4 の Paper API に
+# PlayerShieldDisableEvent が無く、発火層は何もしない。
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/player/Player.java.patch(PlayerShieldDisableEvent)
+file: net/minecraft/world/entity/player/Player.java
+anchor:
+    if (attacker.canDisableShield()) {
+    this.disableShield(true);
+insert:
+    dev.shifu.event.PlayerEvents.shieldAttacker(attacker);

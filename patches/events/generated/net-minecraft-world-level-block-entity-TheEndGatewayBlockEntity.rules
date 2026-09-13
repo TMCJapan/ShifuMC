@@ -1,1 +1,9 @@
-
+# PlayerTeleportEndGatewayEvent と EntityTeleportEndGatewayEvent。
+file: net/minecraft/world/level/block/entity/TheEndGatewayBlockEntity.java
+anchor:
+                entity1.setPortalCooldown();
+                entity1.teleportToWithTicket(blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5);
+insert:
+    if (!dev.shifu.event.EntityEvents.endGatewayTeleport(entity1, serverLevel, blockPos, blockEntity)) {
+        return;
+    }

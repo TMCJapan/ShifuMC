@@ -1,1 +1,12 @@
-
+# AnvilDamagedEvent。金床が傷む直前。登録があるときだけ組み直す。
+file: net/minecraft/world/inventory/AnvilMenu.java
+anchor:
+                BlockState blockState1 = AnvilBlock.damage(blockState);
+insert-after:
+    if (dev.shifu.event.ItemEvents.anvilDamagedListening()) {
+        BlockState shifuAnvil = dev.shifu.event.ItemEvents.anvilDamaged(this, blockState, blockState1);
+        if (shifuAnvil == blockState) {
+            return;
+        }
+        blockState1 = shifuAnvil;
+    }

@@ -1,1 +1,15 @@
 # EntityAddToWorldEvent と EntityRemoveFromWorldEvent。
+# 1.19.4 は entity.inWorld / entity.valid を wire が入れないので、
+# onTrackingStart / onTrackingEnd の最後の vanilla の行に当てる。
+
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+            entity.updateDynamicGameEventListener(DynamicGameEventListener::add);
+insert-after:
+    dev.shifu.event.ShifuEvents.entityAddToWorld(entity, ServerLevel.this);
+
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+            entity.updateDynamicGameEventListener(DynamicGameEventListener::remove);
+insert-after:
+    dev.shifu.event.ShifuEvents.entityRemoveFromWorld(entity, ServerLevel.this);

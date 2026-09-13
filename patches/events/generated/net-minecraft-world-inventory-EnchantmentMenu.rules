@@ -1,1 +1,10 @@
-# EnchantItemEvent。エンチャントを付ける直前。
+# EnchantItemEvent。付与を決める直前。
+
+file: net/minecraft/world/inventory/EnchantmentMenu.java
+anchor:
+                        player.onEnchantmentPerformed(item, i);
+insert:
+    if (!dev.shifu.event.ItemEvents.enchantItem(this, player, item, enchantmentList, this.costs[id], id,
+            this.enchantClue[id], this.levelClue[id], world, pos)) {
+        return;
+    }

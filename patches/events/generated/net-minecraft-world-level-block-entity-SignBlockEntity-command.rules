@@ -1,1 +1,10 @@
-# PlayerSignCommandPreprocessEvent。看板のコマンドを走らせる直前。
+# PlayerSignCommandPreprocessEvent。看板のコマンドを実行する直前。
+# 1.19.4 の看板は表裏を持たないので front には true を渡す。
+
+file: net/minecraft/world/level/block/entity/SignBlockEntity.java
+anchor:
+                player.getServer().getCommands().performPrefixedCommand(this.createCommandSourceStack(player), clickEvent.getValue());
+insert:
+    if (!dev.shifu.event.PlayerEvents.signCommand(player, this, clickEvent.getValue(), true)) {
+        return false;
+    }

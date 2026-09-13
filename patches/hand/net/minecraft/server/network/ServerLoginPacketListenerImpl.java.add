@@ -5,3 +5,9 @@
     public Connection shifuConnection() {
         return this.connection;
     }
+
+// ServerLoginPacketListenerImpl.shifuPreLogin
+    // AsyncPlayerPreLoginEvent の進み具合。0 = まだ、1 = 別スレッドで発火中、2 = 済み。
+    // 1.19.4 は Paper の startClientVerification が無く、handleAcceptedLogin の入口で出すので、
+    // 済むまで受け入れを見送る(tick が毎回 handleAcceptedLogin を呼び直す)
+    public volatile int shifuPreLogin;

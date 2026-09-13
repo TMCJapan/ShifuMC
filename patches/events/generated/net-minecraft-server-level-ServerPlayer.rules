@@ -21,3 +21,28 @@ insert:
         ((org.bukkit.craftbukkit.CraftWorldBorder) this.getBukkitEntity().getWorldBorder()).getHandle().tick();
     }
     // CraftBukkit end
+
+# callInventoryOpenEvent
+# 1.19.4 の Paper は titleOverride を持たないので、戻り値の差し替えだけ。
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+            if (abstractContainerMenu == null) {
+insert:
+    // CraftBukkit start - Inventory open hook
+    if (abstractContainerMenu != null) {
+        abstractContainerMenu.setTitle(factory.getDisplayName());
+
+        boolean cancelled = false;
+        abstractContainerMenu = org.bukkit.craftbukkit.event.CraftEventFactory.callInventoryOpenEvent(this, abstractContainerMenu, cancelled);
+        if (abstractContainerMenu == null && !cancelled) { // Let pre-cancelled events fall through
+            // SPIGOT-5263 - close chest if cancelled
+            if (factory instanceof net.minecraft.world.Container shifuContainer) {
+                shifuContainer.stopOpen(this);
+            } else if (factory instanceof net.minecraft.world.level.block.ChestBlock.DoubleInventory shifuDouble) {
+                // SPIGOT-5355 - double chests too :(
+                shifuDouble.inventorylargechest.stopOpen(this);
+            }
+            return OptionalInt.empty();
+        }
+    }
+    // CraftBukkit end

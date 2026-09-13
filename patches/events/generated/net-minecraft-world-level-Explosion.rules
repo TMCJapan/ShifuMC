@@ -1,1 +1,14 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+# EntityKnockbackEvent は 1.19.4 の Paper に無いので置かない。
 
+# callBlockIgniteEvent
+# 1.19.4 の callBlockIgniteEvent は爆発の分だけ x/y/z を取る。
+file: net/minecraft/world/level/Explosion.java
+anchor:
+                    this.level.setBlockAndUpdate(blockPos2, BaseFireBlock.getState(this.level, blockPos2));
+insert:
+    // CraftBukkit start - Ignition by explosion
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(this.level, blockPos2.getX(), blockPos2.getY(), blockPos2.getZ(), this).isCancelled()) {
+insert-after:
+    }
+    // CraftBukkit end

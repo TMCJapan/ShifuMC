@@ -1,2 +1,19 @@
 # BlockBreakBlockEvent。水や溶岩が流れ込んで壊したブロックの落とし物が
 # 出そろった直後。取り消せない催しなので、vanilla のとおり出してから並べ直す。
+#
+# hand が 4 引数の beforeDestroyingBlock を足していて、その本体が
+# 3 引数の版を呼ぶ 1 行と同じになる。当たる先を 1 つに決めるため、
+# 手前の if も含めて当てる。
+
+file: net/minecraft/world/level/material/FlowingFluid.java
+anchor:
+            if (!state.isAir()) {
+insert-after:
+    dev.shifu.event.ShifuEvents.armBreakBlock();
+
+file: net/minecraft/world/level/material/FlowingFluid.java
+anchor:
+            if (!state.isAir()) {
+                this.beforeDestroyingBlock(world, pos, state);
+insert-after:
+    dev.shifu.event.ShifuEvents.fireBreakBlock(world, pos, pos.relative(direction.getOpposite()));

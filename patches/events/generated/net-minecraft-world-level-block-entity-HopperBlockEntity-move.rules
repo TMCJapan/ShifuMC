@@ -1,1 +1,9 @@
-# InventoryMoveItemEvent。ホッパーなどが 1 個ずつ移す直前。
+# InventoryMoveItemEvent。ホッパーが 1 つ運ぶ直前。
+
+file: net/minecraft/world/level/block/entity/HopperBlockEntity.java
+anchor:
+    public static ItemStack addItem(@Nullable Container from, Container to, ItemStack stack, @Nullable Direction side) {
+insert-after:
+    if (!dev.shifu.event.BlockEvents.inventoryMoveItem(from, to, stack)) {
+        return stack;
+    }

@@ -27,6 +27,21 @@ insert:
         return Optional.empty();
     }
 
+# ItemTransportingEntityValidateTargetEvent。vanilla の判定が通ったときだけ発火する(短絡)。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/ai/behavior/TransportItemsBetweenContainers.java.patch
+file: net/minecraft/world/entity/ai/goal/RunAroundLikeCrazyGoal.java
+anchor:
+    if (maxTemper > 0 && this.horse.getRandom().nextInt(maxTemper) < temper) {
+insert-after:
+    if (!dev.shifu.event.AnimalEvents.tame(this.horse, (Player) entity)) {
+        this.horse.modifyTemper(5);
+        this.horse.ejectPassengers();
+        this.horse.makeMad();
+        this.horse.level.broadcastEntityEvent(this.horse, (byte) 6);
+        return;
+    }
+
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/feline/Cat.java.patch(callEntityTameEvent)
 file: net/minecraft/world/entity/animal/Cat.java
 anchor:
@@ -78,6 +93,160 @@ insert-after:
     if (!dev.shifu.event.AnimalEvents.tame(this, player)) {
         this.level.broadcastEntityEvent(this, (byte) 6);
         return InteractionResult.SUCCESS;
+    }
+
+# ============================================================ 誘い(EntityTargetLivingEntityEvent TEMPT)
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/ai/sensing/TemptingSensor.java.patch
+file: net/minecraft/world/entity/ai/sensing/TemptingSensor.java
+anchor:
+    brain.setMemory(MemoryModuleType.TEMPTING_PLAYER, player);
+insert:
+    final int shifuTempt = dev.shifu.event.AnimalEvents.tempt(entity, player);
+    if (shifuTempt == dev.shifu.event.AnimalEvents.CANCEL) {
+        return;
+    }
+    if (shifuTempt == dev.shifu.event.AnimalEvents.KEEP) {
+insert-after:
+    } else if (shifuTempt == dev.shifu.event.AnimalEvents.ERASE) {
+        brain.eraseMemory(MemoryModuleType.TEMPTING_PLAYER);
+    } else {
+        brain.setMemory(MemoryModuleType.TEMPTING_PLAYER, dev.shifu.event.AnimalEvents.temptTarget());
+    }
+
+# ============================================================ 繁殖
+
+# EntityEnterLoveModeEvent。tick 数の差し替えが効く。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/Animal.java.patch(callEntityEnterLoveModeEvent)
+file: net/minecraft/world/entity/animal/Animal.java
+anchor:
+    this.inLove = 600;
+insert:
+    final int shifuLove = dev.shifu.event.AnimalEvents.enterLove(this, player);
+    if (shifuLove < 0) {
+        return;
+    }
+    if (shifuLove == 600) {
+insert-after:
+    } else {
+        this.inLove = shifuLove;
+    }
+
+# EntityBreedEvent(動物)。Paper と同じ位置。取り消しは resetLove(Paper と同じ)。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/Animal.java.patch(callEntityBreedEvent)
+file: net/minecraft/world/entity/animal/Animal.java
+anchor:
+    this.setAge(6000);
+    other.setAge(6000);
+insert:
+    if (!dev.shifu.event.AnimalEvents.breed(this, other, breedOffspring)) {
+        this.resetLove();
+        other.resetLove();
+        return;
+    }
+
+# EntityBreedEvent(キツネ)。Paper と同じ位置(統計の前)。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/fox/Fox.java.patch(callEntityBreedEvent)
+file: net/minecraft/world/entity/animal/Fox.java
+anchor:
+    if (serverPlayer != null) {
+    serverPlayer.awardStat(Stats.ANIMALS_BRED);
+    CriteriaTriggers.BRED_ANIMALS.trigger(serverPlayer, this.animal, this.partner, fox);
+insert:
+    if (!dev.shifu.event.AnimalEvents.breed(this.animal, this.partner, fox)) {
+        this.animal.resetLove();
+        this.partner.resetLove();
+        return;
+    }
+
+# EntityFertilizeEggEvent(カエル)。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/frog/Frog.java.patch
+file: net/minecraft/world/entity/animal/frog/Frog.java
+anchor:
+    this.setAge(6000);
+    other.setAge(6000);
+insert:
+    if (!dev.shifu.event.AnimalEvents.fertilizeEgg(this, other)) {
+        return;
+    }
+
+# EntityFertilizeEggEvent(カメ)。Paper と同じ位置(統計の前)。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/turtle/Turtle.java.patch(callEntityFertilizeEggEvent)
+file: net/minecraft/world/entity/animal/Turtle.java
+anchor:
+    if (loveCause != null) {
+    loveCause.awardStat(Stats.ANIMALS_BRED);
+    CriteriaTriggers.BRED_ANIMALS.trigger(loveCause, this.animal, this.partner, null);
+insert:
+    if (!dev.shifu.event.AnimalEvents.fertilizeEgg(this.animal, this.partner)) {
+        return;
+    }
+
+# ============================================================ 刈る(PlayerShearEntityEvent)
+#
+# Paper は落とし物を先に引いてイベントに載せ、差し替えた物を落とす。Shifu は vanilla の shear が
+# 自分で引くので、空のリストを載せて、取り消しだけ効かせる。取り消しは PASS(Paper と同じ)。
+
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/sheep/Sheep.java.patch(handlePlayerShearEntityEvent)
+file: net/minecraft/world/entity/animal/Sheep.java
+anchor:
+    this.shear(SoundSource.PLAYERS);
+insert:
+    if (!dev.shifu.event.AnimalEvents.shear(player, this, itemInHand, hand)) {
+        return InteractionResult.PASS;
+    }
+
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/cow/MushroomCow.java.patch(handlePlayerShearEntityEvent)
+file: net/minecraft/world/entity/animal/MushroomCow.java
+anchor:
+    this.shear(SoundSource.PLAYERS);
+insert:
+    if (!dev.shifu.event.AnimalEvents.shear(player, this, itemInHand, hand)) {
+        return InteractionResult.PASS;
+    }
+
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/golem/SnowGolem.java.patch(handlePlayerShearEntityEvent)
+file: net/minecraft/world/entity/animal/SnowGolem.java
+anchor:
+    this.shear(SoundSource.PLAYERS);
+insert:
+    if (!dev.shifu.event.AnimalEvents.shear(player, this, itemInHand, hand)) {
+        return InteractionResult.PASS;
+    }
+
+
+
+
+# ============================================================ 拾う・落とす
+
+# EntityPickupItemEvent(キツネ)。拾えると判定した直後。登録があれば拾う物を読み直す(Paper と同じ)。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/fox/Fox.java.patch(callEntityPickupItemEvent)
+file: net/minecraft/world/entity/animal/Fox.java
+anchor:
+    if (this.canHoldItem(item1)) {
+insert-after:
+    if (!dev.shifu.event.AnimalEvents.pickupItem(this, item, item1.getCount() - 1)) {
+        return;
+    }
+    if (!dev.shifu.event.AnimalEvents.silentPickup()) {
+        item1 = item.getItem();
+    }
+
+# EntityPickupItemEvent(パンダ)。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/animal/panda/Panda.java.patch(callEntityPickupItemEvent)
+file: net/minecraft/world/entity/animal/Panda.java
+anchor:
+    if (this.getItemBySlot(EquipmentSlot.MAINHAND).isEmpty() && PANDA_ITEMS.test(item)) {
+insert-after:
+    if (!dev.shifu.event.AnimalEvents.pickupItem(this, item, 0)) {
+        return;
     }
 
 # EntityDropItemEvent(キツネが吐き出す・落とす)。Paper は spawnAtLocation の中で発火する。

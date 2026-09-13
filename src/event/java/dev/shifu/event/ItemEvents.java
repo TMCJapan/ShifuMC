@@ -254,6 +254,9 @@ public final class ItemEvents {
     // ------------------------------------------------------------ ビーコン
 
 
+    public static net.minecraft.world.effect.MobEffect effect(final org.bukkit.potion.PotionEffectType type) {
+        return type == null ? null : net.minecraft.world.effect.MobEffect.byId(type.getId());
+    }
 
     // ------------------------------------------------------------ エンチャント台
 
@@ -649,7 +652,53 @@ public final class ItemEvents {
                 .isCancelled();
     }
 
+    /** PlayerStonecutterRecipeSelectEvent。石切台のレシピを選んだ直前。 */
+    public static boolean stonecutterSelect(final net.minecraft.world.entity.player.Player player,
+                                            final net.minecraft.world.inventory.StonecutterMenu menu,
+                                            final net.minecraft.world.item.crafting.StonecutterRecipe recipe) {
+        if (!ShifuEvents.listening(
+                io.papermc.paper.event.player.PlayerStonecutterRecipeSelectEvent.getHandlerList())) {
+            return true;
+        }
 
+        final boolean allowed = new io.papermc.paper.event.player.PlayerStonecutterRecipeSelectEvent(
+                (org.bukkit.entity.Player) player.getBukkitEntity(),
+                (org.bukkit.inventory.StonecutterInventory) menu.getBukkitView().getTopInventory(),
+                (org.bukkit.inventory.StonecuttingRecipe) recipe.toBukkitRecipe()).callEvent();
+
+        if (!allowed) {
+            player.containerMenu.sendAllDataToRemote();
+        }
+
+        return allowed;
+    }
+
+    /**
+     * PlayerLoomPatternSelectEvent。機織り機の模様を選んだ直前。
+     *
+     * <p>読んだ位置: Paper-Server@HEAD src/main/java/net/minecraft/world/inventory/LoomMenu.java:178
+     */
+    public static boolean loomSelect(final net.minecraft.world.entity.player.Player player,
+                                     final net.minecraft.world.inventory.LoomMenu menu,
+                                     final net.minecraft.core.Holder<
+                                             net.minecraft.world.level.block.entity.BannerPattern> pattern) {
+        if (!ShifuEvents.listening(io.papermc.paper.event.player.PlayerLoomPatternSelectEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.block.banner.PatternType type =
+                org.bukkit.block.banner.PatternType.getByIdentifier(pattern.value().getHashname());
+        final boolean allowed = new io.papermc.paper.event.player.PlayerLoomPatternSelectEvent(
+                (org.bukkit.entity.Player) player.getBukkitEntity(),
+                (org.bukkit.craftbukkit.inventory.CraftInventoryLoom) menu.getBukkitView().getTopInventory(),
+                type).callEvent();
+
+        if (!allowed) {
+            player.containerMenu.sendAllDataToRemote();
+        }
+
+        return allowed;
+    }
 
 
     /**
@@ -675,8 +724,92 @@ public final class ItemEvents {
     }
 
 
+    /**
+     * EnchantItemEvent。エンチャントを付ける直前。
+     *
+     * <p>Paper はプラグインが差し替えた付与内容と経験値の量を使う。vanilla の
+     * 行はその場で決めた並びをそのまま使うので、<b>渡しているのは取り消しだけ。</b>
+     *
+     * <p>1.19.4 の EnchantItemEvent は当たりの見せ札を持たないので、clueId と clueLevel は渡していない。
+     *
+     * <p>読んだ位置: Paper-Server@HEAD src/main/java/net/minecraft/world/inventory/EnchantmentMenu.java:243
+     */
+    public static boolean enchantItem(final net.minecraft.world.inventory.EnchantmentMenu menu,
+                                      final net.minecraft.world.entity.player.Player player,
+                                      final net.minecraft.world.item.ItemStack item,
+                                      final java.util.List<net.minecraft.world.item.enchantment.EnchantmentInstance> list,
+                                      final int cost, final int button, final int clueId, final int clueLevel,
+                                      final net.minecraft.world.level.Level level,
+                                      final net.minecraft.core.BlockPos pos) {
+        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)
+                || !ShifuEvents.listening(org.bukkit.event.enchantment.EnchantItemEvent.getHandlerList())) {
+            return true;
+        }
+
+        final java.util.Map<org.bukkit.enchantments.Enchantment, Integer> enchants = new java.util.LinkedHashMap<>();
+
+        for (final net.minecraft.world.item.enchantment.EnchantmentInstance one : list) {
+            enchants.put(bukkitEnchantment(one.enchantment), one.level);
+        }
+
+        return new org.bukkit.event.enchantment.EnchantItemEvent(serverPlayer.getBukkitEntity(),
+                menu.getBukkitView(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos),
+                org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(item),
+                cost, enchants, button).callEvent();
+    }
 
 
+    /**
+     * PrepareItemEnchantEvent。3 つの候補が決まった直後。
+     *
+     * <p>プラグインが直した候補({@code EnchantmentOffer})の必要レベルは
+     * {@code costs} に書き戻す。取り消されたら候補を全部消す。
+     * 付ける中身({@code enchantClue} / {@code levelClue})は vanilla が
+     * 付与のときに引き直すので、書き戻していない。
+     *
+     * <p>読んだ位置: Paper-Server@HEAD src/main/java/net/minecraft/world/inventory/EnchantmentMenu.java:178
+     */
+    public static void prepareEnchant(final net.minecraft.world.inventory.EnchantmentMenu menu,
+                                      final net.minecraft.world.item.ItemStack item,
+                                      final int[] costs, final int[] enchantClue, final int[] levelClue,
+                                      final int bookshelves,
+                                      final net.minecraft.world.level.Level level,
+                                      final net.minecraft.core.BlockPos pos) {
+        if (!ShifuEvents.listening(org.bukkit.event.enchantment.PrepareItemEnchantEvent.getHandlerList())) {
+            return;
+        }
+
+        if (!(menu.getBukkitView().getPlayer() instanceof org.bukkit.entity.Player player)) {
+            return;
+        }
+
+        final org.bukkit.enchantments.EnchantmentOffer[] offers = new org.bukkit.enchantments.EnchantmentOffer[3];
+
+        for (int i = 0; i < 3; i++) {
+            final org.bukkit.enchantments.Enchantment enchantment = enchantClue[i] >= 0
+                    ? bukkitEnchantment(net.minecraft.world.item.enchantment.Enchantment.byId(enchantClue[i]))
+                    : null;
+            offers[i] = enchantment != null
+                    ? new org.bukkit.enchantments.EnchantmentOffer(enchantment, levelClue[i], costs[i]) : null;
+        }
+
+        final org.bukkit.event.enchantment.PrepareItemEnchantEvent event =
+                new org.bukkit.event.enchantment.PrepareItemEnchantEvent(player, menu.getBukkitView(),
+                        org.bukkit.craftbukkit.block.CraftBlock.at(level, pos),
+                        org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(item), offers, bookshelves);
+        event.setCancelled(!item.isEnchantable());
+        event.callEvent();
+
+        for (int i = 0; i < 3; i++) {
+            if (event.isCancelled()) {
+                costs[i] = 0;
+                enchantClue[i] = -1;
+                levelClue[i] = -1;
+            } else if (event.getOffers()[i] != null) {
+                costs[i] = event.getOffers()[i].getCost();
+            }
+        }
+    }
 
 
     /** AnvilDamagedEvent に登録があるか。 */
@@ -834,6 +967,13 @@ public final class ItemEvents {
 
         return new org.bukkit.event.player.PlayerTakeLecternBookEvent(serverPlayer.getBukkitEntity(),
                 holder).callEvent();
+    }
+
+    /** 1.19.4 の CraftEnchantment に nms から引く口は無い。CraftBukkit と同じく鍵で引く。 */
+    private static org.bukkit.enchantments.Enchantment bukkitEnchantment(
+            final net.minecraft.world.item.enchantment.Enchantment enchantment) {
+        return org.bukkit.enchantments.Enchantment.getByKey(CraftNamespacedKey.fromMinecraft(
+                net.minecraft.core.registries.BuiltInRegistries.ENCHANTMENT.getKey(enchantment)));
     }
 
     /** 1.19.4 のビーコンは MobEffect を Optional で持つ。Bukkit の型へ。 */

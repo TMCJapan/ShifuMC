@@ -1,1 +1,11 @@
-
+# AsyncPlayerPreLoginEvent。名前が決まったところで出す。
+# 1.19.4 に startClientVerification は無い。認証の担い手と平文のどちらの道も
+# handleAcceptedLogin を通るので、その入口で自分のスレッドに出し、済むまで受け入れを見送る
+# (tick が毎回 handleAcceptedLogin を呼び直す。Bukkit は主スレッドからの発火を弾く)。
+file: net/minecraft/server/network/ServerLoginPacketListenerImpl.java
+anchor:
+    public void handleAcceptedLogin() {
+insert-after:
+    if (!dev.shifu.event.PlayerEvents.preLoginDeferred(this)) {
+        return;
+    }

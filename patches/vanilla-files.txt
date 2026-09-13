@@ -28,3 +28,8 @@ net/minecraft/world/level/block/SculkShriekerBlock.java
 net/minecraft/world/level/levelgen/structure/LegacyStructureDataHandler.java
 net/minecraft/world/level/levelgen/structure/StructureCheck.java
 net/minecraft/world/level/material/WaterFluid.java
+# Paper は PathNavigation の createPath に「狙う実体」を通す多重定義を足し、子はそれを super で呼ぶ。
+# vanilla の PathNavigation(発火規則で触る)にその版は無いので、子も vanilla のまま使う
+net/minecraft/world/entity/ai/navigation/FlyingPathNavigation.java
+net/minecraft/world/entity/ai/navigation/GroundPathNavigation.java
+net/minecraft/world/entity/ai/navigation/WallClimberNavigation.java

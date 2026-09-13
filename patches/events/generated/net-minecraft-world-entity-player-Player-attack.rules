@@ -8,3 +8,12 @@ insert:
     if (dev.shifu.event.PlayerEvents.attackCooldownReset(this, target)) {
 insert-after:
     }
+
+# PrePlayerAttackEntityEvent。殴る手前。
+file: net/minecraft/world/entity/player/Player.java
+anchor:
+            if (!target.skipAttackInteraction(this)) {
+insert-after:
+    if (!dev.shifu.event.PlayerEvents.prePlayerAttack(this, target)) {
+        return;
+    }

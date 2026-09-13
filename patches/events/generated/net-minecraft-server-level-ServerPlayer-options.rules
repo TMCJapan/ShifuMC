@@ -1,1 +1,32 @@
+# ベッドから出る、設定を受け取る、視点を移す。
 
+# PlayerBedLeaveEvent
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    public void stopSleepInBed(boolean skipSleepTimer, boolean updateSleepingPlayers) {
+insert-after:
+    if (this.isSleeping() && !dev.shifu.event.PlayerEvents.bedLeave(this)) {
+        return;
+    }
+
+# PlayerChangedMainHandEvent と PlayerLocaleChangeEvent
+# 1.19.4 に ClientInformation は無いので、受け取った packet をそのまま渡す。
+# 前の言語は Paper と同じ this.locale。wire が入れるのは 1 文あとなので、
+# メソッドの先頭ではまだ前の値が残っている。
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    public void updateOptions(ServerboundClientInformationPacket packet) {
+insert-after:
+    dev.shifu.event.PlayerEvents.clientOptions(this, this.locale, packet);
+
+# PlayerStartSpectatingEntityEvent と PlayerStopSpectatingEntityEvent
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+        Entity camera = this.getCamera();
+        this.camera = (Entity)(entity == null ? this : entity);
+        if (camera != this.camera) {
+insert-after:
+    if (!dev.shifu.event.PlayerEvents.spectateChange(this, camera, entity)) {
+        this.camera = camera;
+        return;
+    }

@@ -1,1 +1,11 @@
 # PlayerFailMoveEvent。移動の packet をはねる直前。
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+                                    LOGGER.warn("{} moved too quickly! {},{},{}", new Object[]{this.player.getName().getString(), d3, d4, d5});
+insert:
+    if (!dev.shifu.event.PlayerEvents.failMove(this.player,
+            "MOVED_TOO_QUICKLY",
+            d, d1, d2, f, f1)) {
+        return;
+    }

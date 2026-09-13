@@ -1,1 +1,36 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
+# 1.19.4 は入力の packet が record ではないので、Paper の PlayerInputEvent と
+# ClientTickEndEvent はこの版に無い。しゃがみと走りは handlePlayerCommand で出す。
+# PlayerToggleSneakEvent, PlayerToggleSprintEvent
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+        this.player.resetLastActionTime();
+        switch (packet.getAction()) {
+            case PRESS_SHIFT_KEY:
+                this.player.setShiftKeyDown(true);
+insert:
+    // CraftBukkit start
+    if (this.player.isRemoved()) return;
+    switch (packet.getAction()) {
+        case PRESS_SHIFT_KEY:
+        case RELEASE_SHIFT_KEY:
+            org.bukkit.event.player.PlayerToggleSneakEvent shifuSneak = new org.bukkit.event.player.PlayerToggleSneakEvent(this.getCraftPlayer(), packet.getAction() == net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action.PRESS_SHIFT_KEY);
+            this.cserver.getPluginManager().callEvent(shifuSneak);
 
+            if (shifuSneak.isCancelled()) {
+                return;
+            }
+            break;
+        case START_SPRINTING:
+        case STOP_SPRINTING:
+            org.bukkit.event.player.PlayerToggleSprintEvent shifuSprint = new org.bukkit.event.player.PlayerToggleSprintEvent(this.getCraftPlayer(), packet.getAction() == net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action.START_SPRINTING);
+            this.cserver.getPluginManager().callEvent(shifuSprint);
+
+            if (shifuSprint.isCancelled()) {
+                return;
+            }
+            break;
+        default:
+            break;
+    }
+    // CraftBukkit end

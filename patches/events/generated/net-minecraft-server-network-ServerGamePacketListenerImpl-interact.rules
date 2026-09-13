@@ -1,1 +1,17 @@
+# PlayerInteractEntityEvent と PlayerInteractAtEntityEvent。
 
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+                            this.performInteraction(hand, Player::interactOn);
+insert:
+    if (!dev.shifu.event.PlayerEvents.interactEntity(ServerGamePacketListenerImpl.this.player, target, hand, null)) {
+        return;
+    }
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+                            this.performInteraction(hand, (player, entity, hand1) -> entity.interactAt(player, pos, hand1));
+insert:
+    if (!dev.shifu.event.PlayerEvents.interactEntity(ServerGamePacketListenerImpl.this.player, target, hand, pos)) {
+        return;
+    }

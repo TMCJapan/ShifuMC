@@ -1,1 +1,19 @@
+# main(26.2)の規則を reanchor.py で局所変数の名前だけ当て直したもの。
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
+# EntityInteractEvent
+# 1.19.4 の CraftEventFactory に callEntityInteractEvent は無いので、
+# Paper と同じくその場で組む。
+file: net/minecraft/world/entity/ai/goal/RemoveBlockGoal.java
+anchor:
+                level.removeBlock(posWithBlock, false);
+insert:
+    // CraftBukkit start - Step on eggs
+    org.bukkit.event.entity.EntityInteractEvent shifuStep = new org.bukkit.event.entity.EntityInteractEvent(
+            this.removerMob.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, posWithBlock));
+    level.getCraftServer().getPluginManager().callEvent(shifuStep);
+
+    if (shifuStep.isCancelled()) {
+        return;
+    }
+    // CraftBukkit end

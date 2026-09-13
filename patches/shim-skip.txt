@@ -101,3 +101,9 @@ net/minecraft/world/item/crafting/RecipeManager.java RecipeManager.clearRecipes
 # Paper のチャンク系(NewChunkHolder)に聞く版。vanilla の holder の値で答える版を patches/hand に置いた
 net/minecraft/server/level/ChunkHolder.java ChunkHolder.isFullChunkReady
 net/minecraft/server/level/ChunkHolder.java ChunkHolder.getSendingChunk
+
+# Paper は createPath に「狙う実体」を通す多重定義を足している。子(vanilla-files.txt で vanilla のまま)に
+# その版を写すと、vanilla の PathNavigation に無い super.createPath(pos, entity, distance) を呼ぶ
+net/minecraft/world/entity/ai/navigation/FlyingPathNavigation.java FlyingPathNavigation.createPath
+net/minecraft/world/entity/ai/navigation/GroundPathNavigation.java GroundPathNavigation.createPath
+net/minecraft/world/entity/ai/navigation/WallClimberNavigation.java WallClimberNavigation.createPath

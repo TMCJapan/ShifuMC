@@ -20,3 +20,11 @@ anchor:
         this.getServer().getPlayerList().broadcastAll(new ClientboundSetDefaultSpawnPositionPacket(pos, angle));
 insert-after:
     dev.shifu.event.PlayerEvents.spawnChanged(this, shifuSpawnBefore);
+
+# MapInitializeEvent。置く前
+# 1.19.4 の地図の鍵は MapId ではなく String。
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    public void setMapData(String id, MapItemSavedData state) {
+insert-after:
+    dev.shifu.event.PlayerEvents.mapInitialize(id, state);

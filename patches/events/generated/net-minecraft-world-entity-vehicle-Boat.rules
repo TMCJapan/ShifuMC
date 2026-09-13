@@ -1,4 +1,42 @@
+# Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
+# VehicleEntityCollisionEvent(舟どうし)
+file: net/minecraft/world/entity/vehicle/Boat.java
+anchor:
+            if (entity.getBoundingBox().minY < this.getBoundingBox().maxY) {
+                super.push(entity);
+            }
+insert-after:
+    // CraftBukkit start
+    if (!this.isPassengerOfSameVehicle(entity)) {
+        org.bukkit.event.vehicle.VehicleEntityCollisionEvent event = new org.bukkit.event.vehicle.VehicleEntityCollisionEvent(
+            (org.bukkit.entity.Vehicle) this.getBukkitEntity(), entity.getBukkitEntity());
+        this.level.getCraftServer().getPluginManager().callEvent(event);
+
+        if (event.isCancelled()) {
+            return;
+        }
+    }
+    // CraftBukkit end
+
+# VehicleEntityCollisionEvent(舟以外)
+file: net/minecraft/world/entity/vehicle/Boat.java
+anchor:
+        } else if (entity.getBoundingBox().minY <= this.getBoundingBox().minY) {
+            super.push(entity);
+        }
+insert-after:
+    // CraftBukkit start
+    if (!this.isPassengerOfSameVehicle(entity)) {
+        org.bukkit.event.vehicle.VehicleEntityCollisionEvent event = new org.bukkit.event.vehicle.VehicleEntityCollisionEvent(
+            (org.bukkit.entity.Vehicle) this.getBukkitEntity(), entity.getBukkitEntity());
+        this.level.getCraftServer().getPluginManager().callEvent(event);
+
+        if (event.isCancelled()) {
+            return;
+        }
+    }
+    // CraftBukkit end
 
 # VehicleMoveEvent, VehicleUpdateEvent
 file: net/minecraft/world/entity/vehicle/Boat.java

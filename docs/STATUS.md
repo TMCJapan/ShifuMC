@@ -3,42 +3,41 @@
 このブランチは Minecraft 1.19.4。`ver/1.20.6` から切った。節ごとにどの版で測ったかを頭に書いてある。
 構成は [ARCHITECTURE.md](ARCHITECTURE.md)、開発の手順は [DEVELOPING.md](DEVELOPING.md)。
 
-## 1.19.4 の状態(2026-09-12)
+## 1.19.4 の状態(2026-09-13)
 
-**まだコンパイルが通っていない。** ここまでで済んだこと、分かったこと、次の手。
+コンパイル 0 件、公式に戻したクラスへの参照の欠落 0 件(`LinkCheck`)、プラグイン無しで起動(Done 4.8s、例外 0)。
+`shifu.jar`(Fabric Loader 0.19.5)+ プラグイン 19 個で起動し、bot が参加して drive の一連が通る。
 
 ### 済んだこと
 
 | | |
 |---|---|
 | Paper 1.19.4 | `100462074`(1.20 へ移る直前)を `/d/.pw194` に展開。API 993 / 993、server 2899 / 2900 のパッチが入る(`tools/setup-classic.sh`) |
-| vanilla の木 | paperweight の ForgeFlower 出力は通らないファイルが多いので、Vineflower 1.11.1 でライブラリ付きに作り直した(`-ind="    "`、`@Override` の二重を畳む)。手順は `docs/DEVELOPING.md` |
-| 規則 | 273 件が全部当たる(`check_events.py`)。1.20.6 の形のアンカーに `.level()` → `.level` などの置き換えを掛けたものがそのまま当たる |
-| 1.19.4 に無いもの | SignText・DiscardedPayload・Bogged・Saturation・ブラシ・deflect・Paper の brigadier API と lifecycle event・ReloadableServerRegistries・LootDataType・Alternate Current・EntityRegionFileStorage。規則ごと外し、控えは `docs/backlog/*-dropped.txt` |
-| 手で足した宣言 | `ChatDecorator` の Result / LegacyResult / ModernResult / MessagePair / create、`MinecraftServer` の RollingAverage / TickTimes と TPS の定数(Paper 1.19.4 の内部クラスは生成器が写さない) |
-| 道具 | `tools/closure.ps1` / `tools/run-server.ps1`(MSYS を通らない版。`-TouchedOnly` で Shifu が触ったファイルだけを vanilla の木から写す) |
+| vanilla の木 | codebook で LVT を付けた jar を Vineflower 1.11.1 で戻したもの(`docs/DEVELOPING.md`)。`-TouchedOnly` で触ったファイルだけ写し、触っていないクラスは公式のバイトコードに戻す |
+| 規則 | 627 件が全部当たる(`check_events.py`)。`4c9fae4` で外していた 188 ブロックと発火層 67 メソッドを 1.19.4 の API で戻した。reanchor --write が別の行に付けていた規則(DispenseItemBehavior の 6 件、MinecraftServer の heartbeat、Raider、AbstractMinecart、EnderMan、FishingHook)を直し、当たらなかった 56 件を 1.19.4 の行に付け直した |
+| drive(プラグイン 19 個 + bot) | 1.21.11 の基準と同じ数: AuthMe の登録・ログイン、HuskHomes の sethome/home、vanilla の gamemode、PlayerCommandPreprocessEvent、拾う 2、InventoryClick 1、爆発 1、PlayerMove 2、TNT の着火、ドアの BlockMultiPlaceEvent、BlockBreakEvent、CreatureSpawnEvent / ItemSpawnEvent |
+| 道具 | `LinkCheck`(公式に戻したクラスへの参照を数える。公式の jar も読む)、`link_to_required.py`、`closure.ps1` / `run-server.ps1` |
+
+### 通っていないもの
+
+* **spigot マッピング前提のプラグイン。** 1.19.4 の Paper はプラグインを実行時に写さないので、
+  NMS を `net.minecraft.server.level.EntityPlayer` の名前で呼ぶプラグイン(FancyNpcs、FancyHolograms、TAB、NBTAPI、InvSee++)は
+  mojmap の Shifu では `ClassNotFoundException`。WorldEdit 7.2.20 も同じ理由でアダプタが載らず(`does not fully support`)、
+  `//set` が何も返さない。避けられない。
+* Veinminer は 1.19.4 非対応で自分で disable する。QuickShop-Hikari は混成サーバーを止めるので試験から外している。
+* MOD を入れた起動はまだ(`run-mix19.ps1` を `-NoMods` 無しで)。世界生成と処理順の突き合わせもまだ。
+* 1.19.4 の Paper-API に無いイベントは発火層が何もしない(ShulkerDuplicate、BlockBreakProgressUpdate、SculkBloom、
+  AsyncStructureGenerate、EntityRemove、PlayerFailMove、PlayerPickItem、PlayerRecipeBookSettingsChange、PlayerShieldDisable、
+  PlayerOpenSign、PlayerFishEvent の LURED)。
 
 ### 分かったこと
 
-* **`cannot find symbol: class X` が宣言に出ているあいだ、javac は本体の検査に進まない。**
-  「残り 6 件」に見えても、直した途端に 1700 件出る。件数は本体の検査に進んでから読む。
-* 要求メンバーの一覧(`docs/backlog/required-members.txt`)は、名前だけで突き合わせるので
-  `Result` `set` のようなありふれた名前が入ると無関係の型にまで足して 3000 件に跳ねる。
-  そういう名前は一覧に入れず、`patches/hand` に手で書く。
-* Vineflower の出力は局所変数が raw 型(`Iterator iterator`、`Object object`)。1.19.4 の jar に
-  LVT が無いため。`Object cannot be converted to T` になる箇所は `patches/decompile` で
-  型を付け直す(命令列は変わらない)。
-
-### 次の手
-
-1. `closure.ps1 -TouchedOnly` を不動点まで回し、残った `cannot find symbol` を
-   「Paper 1.19.4 に無い」「名前がありふれていて一覧に入れられない」「raw 型」に分ける
-2. raw 型は `patches/decompile/locals.rules` に足す(`BlockGetter.traverseBlocks` の `Object object`、
-   `Level.tickBlockEntities` の `iterator.next()`、`Level.getEntities` の `filter.tryCast`、
-   `Block` の `StateDefinition.Builder`)
-3. Paper のチャンク系(`ChunkSystem`、`ChunkHolder`、`ChunkMap` の `playerGeneralAreaMap` など)は
-   1.20.6 と同じく vanilla のチャンク系へ繋ぎ直す(`patches/adapter`、`patches/hand`)
-4. 通ったら `tools/run-server.ps1` で起動 → `mods-and-plugins.sh` の後半(`scratchpad/run-mix21.ps1` の形)で bot
+* 触っていないクラスを公式に戻すと、Paper がそのクラスに足した欄・メソッド(`TicketType.PLUGIN`、
+  `LevelAccessor.getMinecraftWorld`)への参照が起動時に落ちる。`LinkCheck` で起動前に数える。
+  親や interface が置き場に無いときに「有る」とみなすと、interface の default メソッドの欠落が隠れる。
+* 1.19.4 の bot は `setProtocol` を自分で呼ばない(intention より先に LOGIN になって黙って切れる)。
+  ClientInformation は Login packet を受けてから送る(サーバーが PLAY へ切り替える前に届くと id が無い)。
+* Bukkit のスケジューラは `tickChildren` の先頭で回す。付け直しで `statusIcon` の行に付いていて 1 tick も回らなかった。
 
 ---
 

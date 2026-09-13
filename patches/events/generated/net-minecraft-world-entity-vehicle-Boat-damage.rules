@@ -1,0 +1,19 @@
+# VehicleDamageEvent と VehicleDestroyEvent。
+# 1.19.4 に VehicleEntity は無いので、舟とトロッコに分けて置く。
+file: net/minecraft/world/entity/vehicle/Boat.java
+anchor:
+            this.setHurtDir(-this.getHurtDir());
+            this.setHurtTime(10);
+            this.setDamage(this.getDamage() + amount * 10.0F);
+insert:
+    if (!dev.shifu.event.EntityEvents.vehicleDamage(this, source, amount)) {
+        return false;
+    }
+
+file: net/minecraft/world/entity/vehicle/Boat.java
+anchor:
+                    this.destroy(source);
+insert:
+    if (!dev.shifu.event.EntityEvents.vehicleDestroy(this, source)) {
+        return true;
+    }

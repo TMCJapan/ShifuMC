@@ -8,3 +8,15 @@ anchor:
 insert:
     this.currentTickStart = System.nanoTime(); // Shifu - ServerTickEndEvent が読む
     new com.destroystokyo.paper.event.server.ServerTickStartEvent(this.tickCount+1).callEvent(); // Paper - Server Tick Events
+
+# ServerTickEndEvent
+# 1.19.4 の nextTickTime はミリ秒なので、残りをナノ秒に直して渡す。
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    this.profiler.push("tallying");
+insert:
+    // Paper start - Server Tick Events
+    long endTime = System.nanoTime();
+    long remaining = this.nextTickTime * 1000000L - endTime;
+    new com.destroystokyo.paper.event.server.ServerTickEndEvent(this.tickCount, ((double)(endTime - this.currentTickStart) / 1000000D), remaining).callEvent();
+    // Paper end - Server Tick Events

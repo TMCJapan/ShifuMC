@@ -1,1 +1,9 @@
-# PlayerElytraBoostEvent。エリトラ中に花火を使う直前。
+# PlayerElytraBoostEvent。滑空中に花火を焚く直前。
+
+file: net/minecraft/world/item/FireworkRocketItem.java
+anchor:
+                world.addFreshEntity(fireworkRocketEntity);
+insert:
+    if (!dev.shifu.event.PlayerEvents.elytraBoost(user, itemInHand, fireworkRocketEntity, hand)) {
+        return InteractionResultHolder.pass(user.getItemInHand(hand));
+    }

@@ -1,1 +1,10 @@
-
+# SlimeChangeDirectionEvent。向きを決め直した直後。
+file: net/minecraft/world/entity/monster/Slime.java
+anchor:
+                this.chosenDegrees = this.slime.getRandom().nextInt(360);
+insert-after:
+    Float shifuYaw = dev.shifu.event.AnimalEvents.slimeChangeDirection(this.slime, this.chosenDegrees);
+    if (shifuYaw == null) {
+        return;
+    }
+    this.chosenDegrees = shifuYaw;

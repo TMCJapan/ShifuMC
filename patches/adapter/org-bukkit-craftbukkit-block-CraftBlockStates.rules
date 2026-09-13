@@ -1,0 +1,9 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+# 1.19.4 の CraftBlockStates は「壊す前の状態から作る」版(World, BlockPos, BlockState, BlockEntity)を private に持つ。
+# BlockDropItemEvent の発火規則(1.20.6 と同じ形)がこれを呼ぶので public にする
+
+file: org/bukkit/craftbukkit/block/CraftBlockStates.java
+replace:
+    private static CraftBlockState getBlockState(World world, BlockPos blockPosition, net.minecraft.world.level.block.state.BlockState blockData, BlockEntity tileEntity) {
+with:
+    public static CraftBlockState getBlockState(World world, BlockPos blockPosition, net.minecraft.world.level.block.state.BlockState blockData, BlockEntity tileEntity) {

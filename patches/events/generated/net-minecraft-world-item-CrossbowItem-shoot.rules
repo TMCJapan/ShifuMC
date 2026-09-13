@@ -1,0 +1,9 @@
+# EntityShootBowEvent(クロスボウ)。矢を世界に置く直前。
+# 1.19.4 は ProjectileWeaponItem ではなく BowItem と CrossbowItem が矢を撃つ。
+file: net/minecraft/world/item/CrossbowItem.java
+anchor:
+            crossbow.hurtAndBreak(isFireworkRocket ? 3 : 1, shooter, e -> e.broadcastBreakEvent(hand));
+insert:
+    if (!dev.shifu.event.ItemEvents.shootBow(shooter, crossbow, projectile, projectile1, hand, soundPitch)) {
+        return;
+    }

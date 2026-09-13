@@ -541,6 +541,11 @@ file: net/minecraft/world/entity/ai/gossip/GossipContainer.java
 line:
     static class EntityGossips {
 
+# pathFinder
+file: net/minecraft/world/entity/ai/navigation/PathNavigation.java
+line:
+    private final PathFinder pathFinder;
+
 # setDirty(long)
 file: net/minecraft/world/entity/ai/village/poi/PoiManager.java
 line:
@@ -550,6 +555,11 @@ line:
 file: net/minecraft/world/entity/ambient/Bat.java
 line:
     private BlockPos targetPosition;
+
+# inLove
+file: net/minecraft/world/entity/animal/Animal.java
+line:
+    private int inLove;
 
 # hivePos
 file: net/minecraft/world/entity/animal/Bee.java
@@ -651,6 +661,11 @@ file: net/minecraft/world/entity/animal/Panda.java
 line:
     private void setEatCounter(int eatingTicks) {
 
+# steering
+file: net/minecraft/world/entity/animal/Pig.java
+line:
+    private final ItemBasedSteering steering = new ItemBasedSteering(this.entityData, DATA_BOOST_TIME, DATA_SADDLE_ID);
+
 # moreCarrotTicks
 file: net/minecraft/world/entity/animal/Rabbit.java
 line:
@@ -660,6 +675,21 @@ line:
 file: net/minecraft/world/entity/animal/Rabbit.java
 line:
     protected void registerGoals() {
+
+# getHomePos()
+file: net/minecraft/world/entity/animal/Turtle.java
+line:
+    BlockPos getHomePos() {
+
+# isGoingHome()
+file: net/minecraft/world/entity/animal/Turtle.java
+line:
+    boolean isGoingHome() {
+
+# setHasEgg(boolean)
+file: net/minecraft/world/entity/animal/Turtle.java
+line:
+    void setHasEgg(boolean hasEgg) {
 
 # canDuplicate()
 file: net/minecraft/world/entity/animal/allay/Allay.java
@@ -920,6 +950,26 @@ line:
 file: net/minecraft/world/entity/monster/Ravager.java
 line:
     private int stunnedTick;
+
+# DATA_COLOR_ID
+file: net/minecraft/world/entity/monster/Shulker.java
+line:
+    protected static final EntityDataAccessor<Byte> DATA_COLOR_ID = SynchedEntityData.defineId(Shulker.class, EntityDataSerializers.BYTE);
+
+# getRawPeekAmount()
+file: net/minecraft/world/entity/monster/Shulker.java
+line:
+    private int getRawPeekAmount() {
+
+# setAttachFace(Direction)
+file: net/minecraft/world/entity/monster/Shulker.java
+line:
+    private void setAttachFace(Direction face) {
+
+# setRawPeekAmount(int)
+file: net/minecraft/world/entity/monster/Shulker.java
+line:
+    void setRawPeekAmount(int peekAmount) {
 
 # DATA_STRAY_CONVERSION_ID
 file: net/minecraft/world/entity/monster/Skeleton.java
@@ -1231,6 +1281,11 @@ file: net/minecraft/world/entity/projectile/FishingHook.java
 line:
     private int timeUntilLured;
 
+# explosionPower
+file: net/minecraft/world/entity/projectile/LargeFireball.java
+line:
+    private int explosionPower = 1;
+
 # canHitEntity(Entity)
 file: net/minecraft/world/entity/projectile/Projectile.java
 line:
@@ -1381,6 +1436,16 @@ file: net/minecraft/world/inventory/MerchantContainer.java
 line:
     private int selectionHint;
 
+# CooldownInstance
+file: net/minecraft/world/item/ItemCooldowns.java
+line:
+    static class CooldownInstance {
+
+# tickCount
+file: net/minecraft/world/item/ItemCooldowns.java
+line:
+    private int tickCount;
+
 # UseOnContext(Level,Player,InteractionHand,ItemStack,BlockHitResult)
 file: net/minecraft/world/item/context/UseOnContext.java
 line:
@@ -1515,6 +1580,11 @@ line:
 file: net/minecraft/world/level/block/RedStoneWireBlock.java
 line:
     private boolean shouldSignal = true;
+
+# decreaseEggs(Level,BlockPos,BlockState)
+file: net/minecraft/world/level/block/TurtleEggBlock.java
+line:
+    private void decreaseEggs(Level world, BlockPos pos, BlockState state) {
 
 # cookingProgress
 file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
@@ -1675,6 +1745,21 @@ line:
 file: net/minecraft/world/level/block/entity/SignBlockEntity.java
 line:
     private final Component[] messages = new Component[]{CommonComponents.EMPTY, CommonComponents.EMPTY, CommonComponents.EMPTY, CommonComponents.EMPTY};
+
+# age
+file: net/minecraft/world/level/block/entity/TheEndGatewayBlockEntity.java
+line:
+    private long age;
+
+# exactTeleport
+file: net/minecraft/world/level/block/entity/TheEndGatewayBlockEntity.java
+line:
+    private boolean exactTeleport;
+
+# exitPortal
+file: net/minecraft/world/level/block/entity/TheEndGatewayBlockEntity.java
+line:
+    private BlockPos exitPortal;
 
 # max
 file: net/minecraft/world/level/block/state/properties/IntegerProperty.java

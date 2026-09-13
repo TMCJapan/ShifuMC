@@ -283,7 +283,10 @@ public final class EntityEvents {
     private static boolean settingAir;
 
 
-
+    /** 次の {@code setRemoved} の理由を置く。アダプタ層(hand の {@code discard(cause)} など)から。 */
+    public static void removeCause(final Object cause) {
+        // EntityRemoveEvent は 1.19.4 の Paper API に無い。
+    }
 
 
     // ------------------------------------------------------------ 経験値オーブ
@@ -764,6 +767,11 @@ public final class EntityEvents {
         return fishingHand == null ? null : CraftEquipmentSlot.getHand(fishingHand);
     }
 
+    /** PlayerFishEvent(LURED)。かかるまでの間合いを決めた直後。 */
+    public static boolean fishLured(final FishingHook hook) {
+        // PlayerFishEvent.State.LURED は 1.19.4 の Paper API に無い。
+        return true;
+    }
 
     /**
      * PlayerFishEvent(CAUGHT_FISH)。{@code retrieve} で釣った物を作った直後。
@@ -928,6 +936,21 @@ public final class EntityEvents {
         return !CraftEventFactory.callFireworkExplodeEvent(firework).isCancelled();
     }
 
+    /**
+     * EntityPortalEnterEvent。ネザーポータルの中に入った。
+     *
+     * @return 続けてよいか
+     */
+    public static boolean portalEnter(final Entity entity, final net.minecraft.world.level.Level level,
+                                      final net.minecraft.core.BlockPos pos) {
+        if (!listening(org.bukkit.event.entity.EntityPortalEnterEvent.getHandlerList())) {
+            return true;
+        }
+
+        // 1.20.6 の構築子は PortalType を取らない(26.2 の追加)
+        return new org.bukkit.event.entity.EntityPortalEnterEvent(entity.getBukkitEntity(),
+                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level.getWorld())).callEvent();
+    }
 
 
     /**
@@ -999,9 +1022,62 @@ public final class EntityEvents {
         return hatch.isHatching() ? hatch.getNumHatches() : 0;
     }
 
+    /**
+     * VehicleDamageEvent。乗り物が傷つく直前。
+     *
+     * <p>Paper はプラグインが直した傷の量を使う。vanilla の
+     * {@code setDamage} の引数は変えられないので、<b>渡しているのは取り消しだけ。</b>
+     */
+    public static boolean vehicleDamage(final Entity vehicle,
+                                        final net.minecraft.world.damagesource.DamageSource source,
+                                        final float amount) {
+        if (!listening(org.bukkit.event.vehicle.VehicleDamageEvent.getHandlerList())) {
+            return true;
+        }
 
+        return new org.bukkit.event.vehicle.VehicleDamageEvent(
+                (org.bukkit.entity.Vehicle) vehicle.getBukkitEntity(),
+                source.getEntity() == null ? null : source.getEntity().getBukkitEntity(),
+                (double) amount).callEvent();
+    }
 
+    /** VehicleDestroyEvent。乗り物が壊れる直前。 */
+    public static boolean vehicleDestroy(final Entity vehicle,
+                                         final net.minecraft.world.damagesource.DamageSource source) {
+        if (!listening(org.bukkit.event.vehicle.VehicleDestroyEvent.getHandlerList())) {
+            return true;
+        }
 
+        return new org.bukkit.event.vehicle.VehicleDestroyEvent(
+                (org.bukkit.entity.Vehicle) vehicle.getBukkitEntity(),
+                source.getEntity() == null ? null : source.getEntity().getBukkitEntity()).callEvent();
+    }
+
+    /**
+     * VehicleEnterEvent と EntityMountEvent。乗る直前。
+     *
+     * <p>世界生成の途中では出さない(Paper と同じ)。
+     */
+    public static boolean mount(final Entity passenger, final Entity vehicle) {
+        if (!passenger.valid) {
+            return true;
+        }
+
+        if (vehicle.getBukkitEntity() instanceof org.bukkit.entity.Vehicle bukkitVehicle
+                && listening(org.bukkit.event.vehicle.VehicleEnterEvent.getHandlerList())
+                && !new org.bukkit.event.vehicle.VehicleEnterEvent(
+                        bukkitVehicle, passenger.getBukkitEntity()).callEvent()) {
+            return false;
+        }
+
+        // 1.19.4 の EntityMountEvent は org.spigotmc.event.entity(org.bukkit.event.entity は後の版)
+        if (!listening(org.spigotmc.event.entity.EntityMountEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new org.spigotmc.event.entity.EntityMountEvent(
+                passenger.getBukkitEntity(), vehicle.getBukkitEntity()).callEvent();
+    }
 
 
     /** EntityToggleSwimEvent。泳ぐ・やめるの切り替え直前。 */
@@ -1234,8 +1310,50 @@ public final class EntityEvents {
     }
 
 
+    /**
+     * PhantomPreSpawnEvent。ファントムを 1 匹作る直前。
+     *
+     * <p>{@code shouldAbortSpawn} は「その群れを打ち切る」印。vanilla の
+     * ループを外から止められないので、<b>1 匹ずつ飛ばすだけにしている。</b>
+     */
+    public static boolean phantomPreSpawn(final ServerLevel level, final net.minecraft.core.BlockPos pos,
+                                          final net.minecraft.server.level.ServerPlayer player) {
+        if (!listening(com.destroystokyo.paper.event.entity.PhantomPreSpawnEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.entity.PhantomPreSpawnEvent(
+                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level.getWorld()),
+                player.getBukkitEntity(),
+                org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL).callEvent();
+    }
 
 
+    /**
+     * PreSpawnerSpawnEvent。スポナーが中身を作る直前。
+     *
+     * <p>読んだ位置: Paper-Server src/main/java/net/minecraft/world/level/BaseSpawner.java:136
+     *   (1.19.4 の CraftBukkit に種類を写す関数が無いので、Paper と同じく名前から引く)
+     */
+    public static boolean preSpawnerSpawn(final net.minecraft.world.level.Level level,
+                                          final net.minecraft.world.entity.EntityType<?> type,
+                                          final double x, final double y, final double z,
+                                          final net.minecraft.core.BlockPos spawner) {
+        if (!listening(com.destroystokyo.paper.event.entity.PreSpawnerSpawnEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.entity.EntityType bukkitType = org.bukkit.entity.EntityType.fromName(
+                net.minecraft.world.entity.EntityType.getKey(type).getPath());
+
+        if (bukkitType == null) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.entity.PreSpawnerSpawnEvent(
+                new org.bukkit.Location(level.getWorld(), x, y, z), bukkitType,
+                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(spawner, level.getWorld())).callEvent();
+    }
 
 
     /** HangingBreakByEntityEvent。雷が額縁や絵に当たったとき。 */
@@ -1291,6 +1409,22 @@ public final class EntityEvents {
     }
 
 
+    /**
+     * EntityPathfindEvent。道を引く直前。
+     *
+     * @return 引いてよいか
+     */
+    public static boolean pathfind(final net.minecraft.world.entity.Mob mob,
+                                   final net.minecraft.core.BlockPos target,
+                                   final Entity targetEntity) {
+        if (!listening(com.destroystokyo.paper.event.entity.EntityPathfindEvent.getHandlerList())) {
+            return true;
+        }
+
+        return new com.destroystokyo.paper.event.entity.EntityPathfindEvent(mob.getBukkitEntity(),
+                org.bukkit.craftbukkit.util.CraftLocation.toBukkit(target, mob.level.getWorld()),
+                targetEntity == null ? null : targetEntity.getBukkitEntity()).callEvent();
+    }
 
     /**
      * PlayerTradeEvent。取引が成立した直後。
@@ -1309,6 +1443,24 @@ public final class EntityEvents {
         new io.papermc.paper.event.player.PlayerTradeEvent(player.getBukkitEntity(),
                 (org.bukkit.entity.AbstractVillager) villager.getBukkitEntity(),
                 offer.asBukkit(), true, true).callEvent();
+    }
+
+    /**
+     * 持ち主のいないウィザースカルの EntityDamageByEntityEvent。
+     *
+     * <p>vanilla は {@code magic()} をそのまま渡すので、催しの「殴った者」が
+     * 空になる。Paper は {@code customEventDamager} でスカル自身を入れる。
+     * 聞き手がいなければ渡された damage source をそのまま返すので、
+     * 増えるのは static 呼び出しが 1 つ。
+     *
+     * <p>読んだ位置(1.19.4):
+     *   Paper-Server src/main/java/net/minecraft/world/entity/projectile/WitherSkull.java:73
+     */
+    public static net.minecraft.world.damagesource.DamageSource unownedSkull(
+            final net.minecraft.world.damagesource.DamageSource source,
+            final net.minecraft.world.entity.Entity skull) {
+        // 1.19.4 の DamageSource に customEventDamager は無い(Paper も殴った者を入れていない)。
+        return source;
     }
 
 

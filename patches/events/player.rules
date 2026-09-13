@@ -38,6 +38,20 @@ anchor:
 insert:
     dev.shifu.event.ShifuEvents.silentTeleport(this);
 
+# PlayerMoveEvent
+#
+# vanilla が位置を確定させる absMoveTo(d, d1, d2, f, f1) の直前。Paper と同じ位置。
+# 登録が無ければ真偽値 1 つで抜ける。取り消しか行き先の変更があれば、
+# 以降(位置の確定・落下判定・統計)を飛ばす。
+# 1.19.4 の局所変数は 動く前が x/y/z、行き先が d/d1/d2/f/f1。
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    this.player.absMoveTo(d, d1, d2, f, f1);
+insert:
+    if (!dev.shifu.event.ShifuEvents.playerMove(this, x, y, z, d, d1, d2, f, f1)) {
+        return;
+    }
+
 # PlayerTeleportEvent(同じ世界の中)
 #
 # connection.teleport(destination, relatives) の中。vanilla が位置を確定させて
@@ -113,6 +127,26 @@ anchor:
 insert-after:
     }
 
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    if (!this.isSpectator()) {
+    this.dropAllDeathLoot(damageSource);
+    }
+insert:
+    final java.util.List<net.minecraft.world.entity.item.ItemEntity> shifuDeathDrops =
+            shifuDeath ? dev.shifu.event.ShifuEvents.beginPlayerDeath(this) : null;
+insert-after:
+    if (!dev.shifu.event.ShifuEvents.playerDeath(this, damageSource, shifuDeathDrops,
+            this.level.getGameRules().getBoolean(GameRules.RULE_SHOWDEATHMESSAGES))) {
+        return;
+    }
+
+# PlayerInteractEvent(ブロックへの右クリック)
+#
+# useItemOn の先頭、状態を読んだ直後。Paper と同じ位置。ブロックの使用が拒まれたら
+# Paper と同じ後始末をして返る。手に持った物の使用だけが拒まれたら、
+# vanilla がそれを使う直前で抜ける(Paper は条件の行を書き換えているが、
+# ここは vanilla の行を残して手前で抜ける)。
 file: net/minecraft/server/level/ServerPlayerGameMode.java
 anchor:
     BlockState blockState = world.getBlockState(blockPos);

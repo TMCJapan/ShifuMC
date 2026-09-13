@@ -326,6 +326,7 @@ public final class ShifuEvents {
      * 1 つ前の控えを持って戻す。
      */
     private static final class DeathCapture {
+        final List<net.minecraft.world.entity.item.ItemEntity> drops = new ArrayList<>();
         final List<ExperienceOrb> orbs = new ArrayList<>();
         final DeathCapture previous;
         DeathInventory inventory;
@@ -347,8 +348,107 @@ public final class ShifuEvents {
 
     private static DeathCapture capture;
 
+    /**
+     * 世界に入ろうとしている物を控えに移す。移したら true。
+     *
+     * <p>{@code ServerLevel.addEntity} から呼ぶ。控えている最中でなければ
+     * 何もしないので、プラグインを入れていないときに増える仕事は参照 1 つの比較。
+     *
+     * <p>落とし物は vanilla が作った {@link net.minecraft.world.entity.item.ItemEntity} を
+     * そのまま控える。プラグインが触らなければ、あとで同じものを世界に入れるので、
+     * 速度や向きも vanilla が決めたままになる。経験値オーブも同じ。
+     */
+    public static boolean catchDrop(final net.minecraft.world.entity.Entity entity) {
+        final List<net.minecraft.world.entity.item.ItemEntity> broken = blockDrops;
 
+        if (broken != null && entity instanceof net.minecraft.world.entity.item.ItemEntity dropped) {
+            // 壊したブロックの落とし物。**世界へは vanilla のとおり入れる。**
+            // 控えるのは「どれが出たか」だけで、発火はあとから。
+            broken.add(dropped);
+        }
 
+        final List<net.minecraft.world.entity.Entity> byBlock = brokenByBlock;
+
+        if (byBlock != null && entity instanceof net.minecraft.world.entity.item.ItemEntity) {
+            // 1.19.4 の BlockBreakBlockEvent に経験値の欄は無いので、オーブは控えない
+            byBlock.add(entity);
+        }
+
+        final DeathCapture current = capture;
+
+        if (current == null) {
+            return false;
+        }
+
+        if (entity instanceof net.minecraft.world.entity.item.ItemEntity item) {
+            current.drops.add(item);
+
+            return true;
+        }
+
+        if (entity instanceof ExperienceOrb orb) {
+            current.orbs.add(orb);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /** 控えを閉じて返す。渡された落とし物の控えと食い違っていたら、それが見つかるまで戻す。 */
+    private static DeathCapture endCapture(final List<net.minecraft.world.entity.item.ItemEntity> drops) {
+        DeathCapture current = capture;
+
+        while (current != null && current.drops != drops) {
+            current = current.previous;
+        }
+
+        capture = current == null ? null : current.previous;
+
+        return current;
+    }
+
+    /**
+     * 落とす物を実際に落とす。
+     *
+     * <p>プラグインが並びに残したものは vanilla が作った {@code ItemEntity} をそのまま
+     * 世界へ入れる。中身を書き換えられていても、{@code asCraftMirror} は同じ
+     * NMS の {@code ItemStack} を指しているので、書き換えはその物に載っている。
+     * 差し替えられた物と足された物だけ Bukkit の側から落とす。
+     *
+     * @param mirrors 発火の前に作った控え。並びは {@code drops} と同じ
+     * @param wanted イベントが返した並び
+     */
+    private static void dropAllItems(final List<net.minecraft.world.entity.item.ItemEntity> drops,
+                                     final List<org.bukkit.inventory.ItemStack> mirrors,
+                                     final List<org.bukkit.inventory.ItemStack> wanted,
+                                     final org.bukkit.World world, final org.bukkit.Location at) {
+        for (int i = 0; i < drops.size(); i++) {
+            if (sameIn(wanted, mirrors.get(i))) {
+                drops.get(i).level.addFreshEntity(drops.get(i));
+            }
+        }
+
+        for (final org.bukkit.inventory.ItemStack stack : wanted) {
+            if (stack == null || stack.getType() == org.bukkit.Material.AIR || sameIn(mirrors, stack)) {
+                continue;
+            }
+
+            world.dropItem(at, stack);
+        }
+    }
+
+    /** 同じ物が並びに入っているか。{@code equals} は中身の同じ別の物にも当たるので参照で見る。 */
+    private static boolean sameIn(final List<org.bukkit.inventory.ItemStack> list,
+                                  final org.bukkit.inventory.ItemStack stack) {
+        for (final org.bukkit.inventory.ItemStack one : list) {
+            if (one == stack) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
 
     /**
@@ -735,7 +835,129 @@ public final class ShifuEvents {
 
     // ------------------------------------------------------------ 死亡とリスポーン
 
+    /**
+     * プレイヤーが死んで落とし物を出す直前。登録が無ければ null で vanilla のまま。
+     *
+     * <p>{@code setKeepInventory} と {@code getItemsToKeep} を後から効かせられるよう、
+     * 落とす前の持ち物を控える。Paper は先に発火して、通ってから落としているが、
+     * その順序は vanilla と違う。
+     */
+    public static List<net.minecraft.world.entity.item.ItemEntity> beginPlayerDeath(final ServerPlayer player) {
+        if (!listening(org.bukkit.event.entity.PlayerDeathEvent.getHandlerList())) {
+            return null;
+        }
 
+        capture = new DeathCapture(capture);
+        capture.inventory = new DeathInventory(player.getInventory());
+
+        return capture.drops;
+    }
+
+    /**
+     * プレイヤーの死亡。vanilla が落とし物と経験値を出し終えた直後。
+     *
+     * <p>死亡メッセージの告知は、発火する前に vanilla が済ませないよう
+     * 呼ぶ側で飛ばしてある。ここでイベントの結果に従って送る。
+     *
+     * <p>取り消されたら控えた持ち物を戻し、落とし物と経験値は捨て、
+     * 体力を戻して false を返す。呼ぶ側は統計や死亡地点の記録へ進まない。
+     * その前に走った肩の生き物の解放と、周りの生き物への通知は戻せない。
+     *
+     * <p>死亡音は vanilla の {@code LivingEntity.die} が鳴らしているので、ここでは鳴らさない
+     * (Paper はイベントのあとに鳴らす形に変えていて、{@code setDeathSound} が効く)。
+     *
+     * <p>1.19.4 の {@code PlayerDeathEvent} に原因を載せる欄は無い。{@code source} は
+     * 呼ぶ側の形を 1.20.6 と揃えるために取る。
+     *
+     * <p>読んだ位置(Paper 1.19.4):
+     * {@code paper-server src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:918}
+     * ({@code callPlayerDeathEvent})、
+     * {@code paper-server src/main/java/net/minecraft/server/level/ServerPlayer.java} ({@code die})
+     *
+     * @return vanilla の続き(統計・死亡地点)へ進んでよいか
+     */
+    public static boolean playerDeath(final ServerPlayer player,
+                                      final net.minecraft.world.damagesource.DamageSource source,
+                                      final List<net.minecraft.world.entity.item.ItemEntity> drops,
+                                      final boolean showDeathMessage) {
+        if (drops == null) {
+            return true;
+        }
+
+        final DeathCapture current = endCapture(drops);
+
+        if (current == null) {
+            return true;
+        }
+
+        final int experience = current.experience();
+        final boolean keepInventoryRule =
+                player.level.getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_KEEPINVENTORY);
+        final boolean keepInventory = keepInventoryRule || player.isSpectator();
+        final Component defaultMessage = player.getCombatTracker().getDeathMessage();
+        final List<org.bukkit.inventory.ItemStack> mirrors = new ArrayList<>(drops.size());
+
+        for (final net.minecraft.world.entity.item.ItemEntity one : drops) {
+            mirrors.add(CraftItemStack.asCraftMirror(one.getItem()));
+        }
+
+        player.keepLevel = keepInventory; // SPIGOT-2222: Paper と同じく先に入れておく
+
+        final org.bukkit.event.entity.PlayerDeathEvent event = new org.bukkit.event.entity.PlayerDeathEvent(
+                player.getBukkitEntity(),
+                new ArrayList<>(mirrors),
+                experience,
+                0,
+                PaperAdventure.asAdventure(defaultMessage),
+                defaultMessage.getString());
+        event.setKeepInventory(keepInventory);
+        event.setKeepLevel(player.keepLevel);
+        event.setReviveHealth(player.getBukkitEntity()
+                .getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue());
+        event.callEvent();
+
+        if (event.isCancelled()) {
+            current.inventory.restore(player.getInventory());
+
+            if (player.getHealth() <= 0) {
+                player.setHealth((float) event.getReviveHealth());
+            }
+
+            return false;
+        }
+
+        player.keepLevel = event.getKeepLevel();
+        player.newLevel = event.getNewLevel();
+        player.newTotalExp = event.getNewTotalExp();
+        player.expToDrop = event.getDroppedExp();
+        player.newExp = event.getNewExp();
+        player.shifuDeathEvent = true;
+        player.shifuKeepInventory = event.getKeepInventory();
+
+        if (event.getKeepInventory()) {
+            if (!keepInventory) {
+                // vanilla は落とし終えている。控えから戻す
+                current.inventory.restore(player.getInventory());
+            }
+        } else if (keepInventory) {
+            // vanilla は残している。Paper と同じく空にする(残す指定の物は除く)
+            current.inventory.clear(player.getInventory(), event.getItemsToKeep());
+        } else {
+            current.inventory.restoreKept(player.getInventory(), event.getItemsToKeep());
+        }
+
+        // 残す指定に入っていて持ち物に無かった物(Paper と同じ扱い)
+        for (final org.bukkit.inventory.ItemStack stack : event.getItemsToKeep()) {
+            player.getBukkitEntity().getInventory().addItem(stack);
+        }
+
+        dropAllItems(drops, mirrors, event.getDrops(),
+                player.getBukkitEntity().getWorld(), player.getBukkitEntity().getLocation());
+        releaseExperience(player, current, event.getDroppedExp());
+        announceDeath(player, event, showDeathMessage);
+
+        return true;
+    }
 
     /**
      * 死亡メッセージを送る。vanilla の {@code ServerPlayer.die} の前半と同じ手順で、
@@ -1015,6 +1237,28 @@ public final class ShifuEvents {
         return CraftEventFactory.callTNTPrimeEvent(level, pos, cause, entity, block);
     }
 
+    /**
+     * 爆発で誘爆するとき。vanilla は prime を通らず {@code wasExploded} で直に作る。
+     *
+     * <p>Paper は爆発の中心を主のブロックとして渡すが、1.19.4 の {@code Explosion} は
+     * 中心も半径も private で、{@code TntBlock.wasExploded} から読む手立てが無い。
+     * 元のエンティティが無い爆発では主のブロックを渡さない
+     * ({@code TNTPrimeEvent#getPrimingBlock} が null になる)。
+     *
+     * <p>読んだ位置(Paper 1.19.4):
+     * {@code paper-server src/main/java/net/minecraft/world/level/Explosion.java:371}
+     */
+    public static boolean tntPrimeByExplosion(final net.minecraft.world.level.Level level, final BlockPos pos, final net.minecraft.world.level.Explosion explosion) {
+        if (!listening(org.bukkit.event.block.TNTPrimeEvent.getHandlerList())) {
+            return true;
+        }
+
+        final Entity source = explosion.getDirectSourceEntity();
+
+        return CraftEventFactory.callTNTPrimeEvent(level, pos, org.bukkit.event.block.TNTPrimeEvent.PrimeCause.EXPLOSION,
+                source, null);
+    }
+
 
     // ------------------------------------------------------------ ゲームモード・飛行・ベッド・食事
 
@@ -1056,6 +1300,72 @@ public final class ShifuEvents {
 
     // ------------------------------------------------------------ 爆発
 
+    /**
+     * 爆発。{@code Explosion.finalizeExplosion} で、壊す位置の並びが
+     * 並べ替えられた直後。Paper と同じ位置。
+     *
+     * <p>{@code source} があれば {@code EntityExplodeEvent}、無ければ
+     * {@code BlockExplodeEvent}。プラグインが直した位置の並びを
+     * {@code targetBlocks} に書き戻す。
+     *
+     * <p><b>未対応:</b> {@code setYield}。落ちる確率は vanilla の戦利品表
+     * ({@code explosion_decay})が爆発の半径から読むので、渡す先が無い。
+     * Paper は {@code BlockBehaviour.onExplosionHit} を書き換えて通している。
+     *
+     * <p>読んだ位置(Paper 1.19.4):
+     * {@code paper-server src/main/java/net/minecraft/world/level/Explosion.java:321-368}
+     *
+     * @param yield 落ちる確率。1.19.4 の {@code Explosion} は半径も壊し方も private で
+     *              読む手立てが無いので、Paper と同じ式を呼ぶ側で出して渡す
+     * @return 壊してよいか。取り消されたら false
+     */
+    public static boolean explode(final net.minecraft.world.level.Explosion explosion,
+                                  final net.minecraft.world.level.Level level, final Vec3 center,
+                                  final List<BlockPos> targetBlocks, final float yield) {
+        final Entity source = explosion.getDirectSourceEntity();
+        final HandlerList handlers = source != null
+                ? org.bukkit.event.entity.EntityExplodeEvent.getHandlerList()
+                : org.bukkit.event.block.BlockExplodeEvent.getHandlerList();
+
+        if (!listening(handlers)) {
+            return true;
+        }
+
+        final List<org.bukkit.block.Block> blockList = new ArrayList<>();
+
+        for (int i = targetBlocks.size() - 1; i >= 0; i--) {
+            final org.bukkit.block.Block block = CraftBlock.at(level, targetBlocks.get(i));
+
+            if (!block.getType().isAir()) {
+                blockList.add(block);
+            }
+        }
+
+        final float amount = Float.isFinite(yield) ? yield : 0.0F;
+        final org.bukkit.Location location = CraftLocation.toBukkit(center, level.getWorld());
+        final boolean allowed;
+        final List<org.bukkit.block.Block> result;
+
+        if (source != null) {
+            final org.bukkit.event.entity.EntityExplodeEvent event = new org.bukkit.event.entity.EntityExplodeEvent(
+                    source.getBukkitEntity(), location, blockList, amount);
+            allowed = event.callEvent();
+            result = event.blockList();
+        } else {
+            final org.bukkit.event.block.BlockExplodeEvent event = new org.bukkit.event.block.BlockExplodeEvent(
+                    location.getBlock(), blockList, amount, explosion.getDamageSource().explodedBlockState);
+            allowed = event.callEvent();
+            result = event.blockList();
+        }
+
+        targetBlocks.clear();
+
+        for (final org.bukkit.block.Block block : result) {
+            targetBlocks.add(((CraftBlock) block).getPosition());
+        }
+
+        return allowed;
+    }
 
     // ------------------------------------------------------------ コンソール
 
@@ -1098,7 +1408,23 @@ public final class ShifuEvents {
                 org.bukkit.event.weather.ThunderChangeEvent.Cause.UNKNOWN).callEvent();
     }
 
+    /** EntityAddToWorldEvent。世界に入り切った直後。1.19.4 の構築子は世界を取らない。 */
+    public static void entityAddToWorld(final Entity entity, final ServerLevel level) {
+        if (!listening(com.destroystokyo.paper.event.entity.EntityAddToWorldEvent.getHandlerList())) {
+            return;
+        }
 
+        new com.destroystokyo.paper.event.entity.EntityAddToWorldEvent(entity.getBukkitEntity()).callEvent();
+    }
+
+    /** EntityRemoveFromWorldEvent。世界から抜けた直後。1.19.4 の構築子は世界を取らない。 */
+    public static void entityRemoveFromWorld(final Entity entity, final ServerLevel level) {
+        if (!listening(com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent.getHandlerList())) {
+            return;
+        }
+
+        new com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent(entity.getBukkitEntity()).callEvent();
+    }
 
 
     // ------------------------------------------------------------ インベントリ
@@ -1319,6 +1645,47 @@ public final class ShifuEvents {
                 ? new ArrayList<>() : null;
     }
 
+    /**
+     * BlockBreakBlockEvent。ピストンと液体が別のブロックを壊したとき。
+     *
+     * <p>取り消せない催しなので、見るのは落とし物だけ。1.19.4 の
+     * {@code BlockBreakBlockEvent} に経験値の欄は無い(Paper があとで足したもの)ので、
+     * オーブは vanilla が入れたまま触らない。
+     *
+     * <p>読んだ位置(Paper 1.19.4):
+     * {@code paper-api src/main/java/io/papermc/paper/event/block/BlockBreakBlockEvent.java:23}
+     */
+    public static void fireBreakBlock(final net.minecraft.world.level.LevelAccessor world,
+                                      final BlockPos pos, final BlockPos source) {
+        final List<net.minecraft.world.entity.Entity> spawned = brokenByBlock;
+        brokenByBlock = null;
+
+        if (spawned == null || !(world instanceof ServerLevel level)) {
+            return;
+        }
+
+        final List<org.bukkit.inventory.ItemStack> drops = new ArrayList<>();
+
+        for (final net.minecraft.world.entity.Entity one : spawned) {
+            if (one instanceof net.minecraft.world.entity.item.ItemEntity item) {
+                drops.add(CraftItemStack.asBukkitCopy(item.getItem()));
+            }
+        }
+
+        final io.papermc.paper.event.block.BlockBreakBlockEvent event =
+                new io.papermc.paper.event.block.BlockBreakBlockEvent(
+                        CraftBlock.at(level, pos), CraftBlock.at(level, source), drops);
+        event.callEvent();
+
+        for (final net.minecraft.world.entity.Entity one : spawned) {
+            one.discard();
+        }
+
+        for (final org.bukkit.inventory.ItemStack stack : event.getDrops()) {
+            net.minecraft.world.level.block.Block.popResource(
+                    level, pos, CraftItemStack.asNMSCopy(stack));
+        }
+    }
 
 
     // ------------------------------------------------------------ チャンクの entity

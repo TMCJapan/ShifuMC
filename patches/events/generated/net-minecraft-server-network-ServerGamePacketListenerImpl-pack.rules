@@ -1,0 +1,10 @@
+# PlayerResourcePackStatusEvent。リソースパックの結果を受け取った直後。
+# 1.19.4 に ServerCommonPacketListenerImpl は無いので ServerGamePacketListenerImpl に置く。
+# 1.19.4 の packet は要求の id を持たないので、helper も id を取らない。
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    public void handleResourcePackResponse(ServerboundResourcePackPacket packet) {
+        PacketUtils.ensureRunningOnSameThread(packet, this, this.player.getLevel());
+insert-after:
+    dev.shifu.event.PlayerEvents.resourcePackStatus(this.player, packet.getAction().ordinal());
