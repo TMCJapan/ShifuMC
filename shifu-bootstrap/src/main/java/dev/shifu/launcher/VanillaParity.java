@@ -69,11 +69,46 @@ final class VanillaParity {
 	private VanillaParity() {
 	}
 
-	static void apply(Path serverDir) throws IOException {
+	/**
+	 * 1.19 より前の Paper はワールドの設定を {@code paper.yml} の {@code world-settings.default} で読む
+	 * ({@code config/paper-world-defaults.yml} は 1.19 で入った)。書く場所を版で分ける。
+	 * 1.18.2 では {@code config/} に書いても読まれず、per-player-mob-spawns が true のまま走っていた。
+	 */
+	private static final String PAPER_YML_LEGACY = """
+			# Shifu が vanilla 挙動に合わせるために書いた paper.yml(1.19 より前)。
+			# 書かなかった項目は Paper が既定値で埋める。詳細は docs/VANILLA-PARITY.md。
+			world-settings:
+			  default:
+			    # vanilla の湧き上限はワールド単位。Paper の既定はプレイヤーごと。
+			    per-player-mob-spawns: false
+			""";
+
+	static void apply(Path serverDir, String minecraftVersion) throws IOException {
 		write(serverDir.resolve("spigot.yml"), SPIGOT_YML,
 				"entity-activation-range.* = 512, max-tnt-per-tick = 0");
+
+		if (before119(minecraftVersion)) {
+			write(serverDir.resolve("paper.yml"), PAPER_YML_LEGACY,
+					"world-settings.default.per-player-mob-spawns = false");
+			return;
+		}
+
 		write(serverDir.resolve("config").resolve("paper-world-defaults.yml"), PAPER_WORLD_DEFAULTS_YML,
 				"entities.spawning.per-player-mob-spawns = false");
+	}
+
+	/** {@code 1.18.2} のような版の文字列が 1.19 より前か。{@code 26.2} のような新しい形は前ではない。 */
+	static boolean before119(String version) {
+		final String[] parts = version.split("\\.");
+
+		try {
+			final int major = Integer.parseInt(parts[0]);
+			final int minor = parts.length > 1 ? Integer.parseInt(parts[1]) : 0;
+
+			return major == 1 && minor < 19;
+		} catch (NumberFormatException e) {
+			return false;
+		}
 	}
 
 	private static void write(Path file, String content, String summary) throws IOException {

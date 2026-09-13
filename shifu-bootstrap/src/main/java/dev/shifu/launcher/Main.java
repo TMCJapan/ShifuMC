@@ -46,7 +46,7 @@ public final class Main {
 				config.minecraftVersion(), config.loaderVersion());
 
 		if (config.vanillaParity()) {
-			VanillaParity.apply(serverDir);
+			VanillaParity.apply(serverDir, config.minecraftVersion());
 		} else {
 			Log.warn("vanilla-parity is off - Paper's own behaviour changes are left in place");
 		}
