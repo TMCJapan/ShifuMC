@@ -1,0 +1,8 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+# vanilla の VoxelShape.calculateFace は private。patches/access で public にしたので、上書きも public にする
+
+file: io/papermc/paper/voxel/AABBVoxelShape.java
+replace:
+    protected VoxelShape calculateFace(Direction direction) {
+with:
+    public VoxelShape calculateFace(Direction direction) {

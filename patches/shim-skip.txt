@@ -88,3 +88,6 @@ net/minecraft/server/dedicated/DedicatedPlayerList.java DedicatedPlayerList.load
 
 # Paper の entity activation range(inactiveTick)。GoalSelector は vanilla のまま
 net/minecraft/world/entity/Mob.java Mob.inactiveTick
+
+# Paper のチャンク系(chunkTaskScheduler)へ POI を向ける上書き。vanilla の SectionStorage.get を使う
+net/minecraft/world/entity/ai/village/poi/PoiManager.java PoiManager.get

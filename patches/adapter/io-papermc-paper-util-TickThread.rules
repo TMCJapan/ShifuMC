@@ -26,3 +26,10 @@ with:
         return Thread.currentThread() instanceof TickThread
                 || (server != null && server.isSameThread());
     }
+
+# 1.19.4 の isTickThreadFor は isTickThread を通さず instanceof を直に書いている。同じ判定へ向ける
+count: 2
+replace:
+        return Thread.currentThread() instanceof TickThread;
+with:
+        return isTickThread(); // Shifu - vanilla のサーバースレッドは TickThread ではない

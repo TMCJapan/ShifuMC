@@ -104,3 +104,17 @@ insert:
         shifuLevel.hasEntityMoveEvent = io.papermc.paper.event.entity.EntityMoveEvent.getHandlerList().getRegisteredListeners().length > 0;
     }
 
+
+# CraftServer.setVanillaCommands が読む Paper の欄。Paper は構築子で dataPackResources().commands を入れる。
+# 再読み込みでは resources を差し替えるので、そこでも入れ直す
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    this.resources = new MinecraftServer.ReloadableResources(saveLoader.resourceManager(), saveLoader.dataPackResources());
+insert-after:
+    this.vanillaCommandDispatcher = saveLoader.dataPackResources().commands; // CraftBukkit
+
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    this.resources = resourceManagerHolder;
+insert-after:
+    this.vanillaCommandDispatcher = resourceManagerHolder.managers().commands; // CraftBukkit

@@ -66,6 +66,24 @@ powershell -File tools\closure.ps1 -Paper D:\.pw194 -JavaHome "C:\Program Files\
 `-TouchedOnly` は Shifu が触ったファイルだけを vanilla の木から写す。Paper が持つだけのファイルは
 Paper の版のまま組み、postcompile で公式のバイトコードに戻る。
 
+Paper が vanilla の宣言の型や返り値を替えているファイル(`TemptGoal.player` を `LivingEntity` に、
+`DropExperienceBlock.tryDropExperience` を int を返す形に、など)は、Paper の版のままだと Shifu の
+vanilla のクラスと噛み合わない。そういうファイルは `patches/vanilla-files.txt` に書く。
+規則が触らなくても vanilla の木から写す。湧き・AI・レッドストーンのような tick の経路は、
+挙動の一致のためにもここに入れる。
+
+Paper の版のまま組んだクラスは公式のバイトコードに戻るので、Paper がそのクラスに足した欄や
+メソッド(1.19.4 の `TicketType.PLUGIN`)を別のクラスが参照していると、compile は通るのに起動時に
+`NoSuchFieldError` になる。`tools/run-server.ps1` は公式に戻したあとに `LinkCheck` でそれを数え、
+`tools/build/link-missing.txt` に書く。`python tools/link_to_required.py tools/build/link-missing.txt
+docs/backlog/required-members.txt` で要求一覧に足すと、次の閉包で生成器が Paper の宣言を写し、
+そのクラスは触った側に回る。
+
+閉包は「同じ誤りの集合が 2 周続いたら」止まる。件数で見ないのは、宣言に
+`cannot find symbol: class X` が 1 つあると javac が後ろの検査に進まず、直した次の周に
+件数が跳ね上がるため。gradle が javac まで届かずに落ちたときは `GRADLE FAILED` と出て止まる
+(`error:` が 0 件でも通ったことにしない)。
+
 `tools/env.sh` は基点コミットをそのクローンの履歴から拾うので、`SHIFU_PAPER` を
 差し替えるだけでツールは全部そのバージョンを見る。
 
@@ -313,6 +331,18 @@ file: net/minecraft/server/network/ServerCommonPacketListenerImpl.java
 line:
     protected final Connection connection;
 ```
+
+Paper が代入し直す欄(`CraftMapView` が書く `MapItemSavedData.scale`、`CraftPlayer.setPlayerProfile` が
+書く `Player.gameProfile`)は `line:` の代わりに `unfinal:` で書く。`final` を外してから public にする。
+実行される命令列は変わらない。
+
+型に interface を 1 つ足すときは `line:` に型の宣言の行を書き、続けて `implements:` に interface を書く
+(Paper の brigadier API が `CommandSourceStack` を `BukkitBrigadierCommandSource` として扱うため)。
+宣言が interface なら `extends` に足す。
+
+`tools/make_access_rules.py` はコンパイルの誤り(`has private access in`、`is not public in`)から
+`patches/access/generated.rules` を作り直す。**手で書いた規則はそこに置かない**(作り直しで消える)。
+`members.rules` に書く。
 
 ### adapter
 
@@ -563,6 +593,8 @@ jvm-args            = -Xmx4G
 | `tools/check_extra_locals.py` | 差し込みが公式にもある型の局所変数を作っている場所を出す |
 | `tools/make_decompile_rules.py` | 逆コンパイルで消えた局所変数を戻す規則を作り直す |
 | `tools/keep_vanilla_classes.py` | 触っていないクラスを公式のバイトコードに差し替える |
+| `tools/lvtmatch` の `LinkCheck` | 公式に戻したクラスに、残りのクラスが参照している欄やメソッドが無いものを数える |
+| `tools/link_to_required.py` | `LinkCheck` の出力を `required-members.txt` の項目にする |
 | `tools/missing_members.py` | プラグインが呼ぶメンバーのうち、サーバーに無いものを出す |
 | `tools/compare_worlds.py` | 同じシードで作った世界を突き合わせる |
 | `tools/compare-worldgen.sh` | vanilla を 2 回、Shifu を 1 回走らせて世界生成を突き合わせる |

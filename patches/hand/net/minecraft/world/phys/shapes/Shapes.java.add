@@ -1,0 +1,7 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// Shapes.getFullUnoptimisedCube
+    // Paper の AABBVoxelShape が使う。Paper は BLOCK の初期化子と同じ行に書いていて生成器が拾えない
+    public static VoxelShape getFullUnoptimisedCube() {
+        return BLOCK;
+    }

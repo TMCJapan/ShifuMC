@@ -619,3 +619,129 @@ line:
 file: net/minecraft/world/entity/projectile/FishingHook.java
 line:
     protected boolean canHitEntity(Entity entity) {
+
+# CraftVillager が評判を読む(GossipContainer の内部クラス)
+file: net/minecraft/world/entity/ai/gossip/GossipContainer.java
+line:
+    static class EntityGossips {
+
+# ---- unfinal(generated.rules は作り直しで消えるのでここに置く)
+
+# Paper が代入し直す欄
+file: net/minecraft/server/dedicated/DedicatedServer.java
+unfinal:
+    private final DedicatedServerSettings settings;
+
+# Paper が代入し直す欄
+file: net/minecraft/world/entity/Mob.java
+unfinal:
+    protected final GoalSelector goalSelector;
+
+# Paper が代入し直す欄
+file: net/minecraft/world/entity/Mob.java
+unfinal:
+    protected final GoalSelector targetSelector;
+
+# Paper が代入し直す欄
+file: net/minecraft/world/entity/player/Player.java
+unfinal:
+    private final GameProfile gameProfile;
+
+# Paper が代入し直す欄
+file: net/minecraft/world/inventory/AbstractContainerMenu.java
+unfinal:
+    private final List<DataSlot> dataSlots = Lists.newArrayList();
+
+# Paper が代入し直す欄
+file: net/minecraft/world/inventory/AbstractContainerMenu.java
+unfinal:
+    private final NonNullList<ItemStack> lastSlots = NonNullList.create();
+
+# Paper が代入し直す欄
+file: net/minecraft/world/inventory/AbstractContainerMenu.java
+unfinal:
+    private final IntList remoteDataSlots = new IntArrayList();
+
+# Paper が代入し直す欄
+file: net/minecraft/world/inventory/AbstractContainerMenu.java
+unfinal:
+    private final NonNullList<ItemStack> remoteSlots = NonNullList.create();
+
+# Paper が代入し直す欄
+file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
+unfinal:
+    private final boolean trackingPosition;
+
+# Paper が代入し直す欄
+file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
+unfinal:
+    private final boolean unlimitedTracking;
+
+# Paper が代入し直す欄
+file: net/minecraft/world/entity/LivingEntity.java
+unfinal:
+    private final CombatTracker combatTracker = new CombatTracker(this);
+
+# Paper が代入し直す欄
+file: net/minecraft/world/level/LevelSettings.java
+unfinal:
+    private final String levelName;
+
+# Paper が代入し直す欄
+file: net/minecraft/world/item/trading/MerchantOffer.java
+unfinal:
+    private final int maxUses;
+
+# Paper が代入し直す欄
+file: net/minecraft/world/item/trading/MerchantOffer.java
+unfinal:
+    private final ItemStack baseCostA;
+
+# Paper が代入し直す欄
+file: net/minecraft/world/item/trading/MerchantOffer.java
+unfinal:
+    private final ItemStack costB;
+
+# Paper が代入し直す欄
+file: net/minecraft/server/level/TicketType.java
+unfinal:
+    private final long timeout;
+
+# Paper が代入し直す欄
+file: net/minecraft/server/level/progress/LoggerChunkProgressListener.java
+unfinal:
+    private final int maxCount;
+
+# CraftVillager が評判を読み書きする
+file: net/minecraft/world/entity/ai/gossip/GossipContainer.java
+line:
+    private final Map<UUID, GossipContainer.EntityGossips> gossips = Maps.newHashMap();
+
+# CraftVillager が作る
+file: net/minecraft/world/entity/ai/gossip/GossipContainer.java
+line:
+        EntityGossips() {
+
+# Paper が LevelChunk に足したメソッドが読む
+file: net/minecraft/world/level/chunk/LevelChunkSection.java
+line:
+    private short nonEmptyBlockCount;
+
+# PaperPathfinder が読む
+file: net/minecraft/world/level/pathfinder/Path.java
+line:
+    private final List<Node> nodes;
+
+# Paper の AABBVoxelShape が上書きする
+file: net/minecraft/world/phys/shapes/VoxelShape.java
+line:
+    private VoxelShape calculateFace(Direction direction) {
+
+# Paper の AABBVoxelShape(別パッケージ)が親の構築子と shape を使う
+file: net/minecraft/world/phys/shapes/VoxelShape.java
+line:
+    VoxelShape(DiscreteVoxelShape voxels) {
+
+file: net/minecraft/world/phys/shapes/VoxelShape.java
+line:
+    protected final DiscreteVoxelShape shape;

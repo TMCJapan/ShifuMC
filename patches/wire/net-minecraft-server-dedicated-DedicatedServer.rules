@@ -1,34 +1,47 @@
+# Paper が vanilla のメソッドの中で行う代入。既存の行は変えていない。
 
+# Paper と同じ順で、設定(spigot.yml と Paper の設定)を読んでからプラグインを読む。
+# SpigotConfig.init は CraftServer.loadPlugins でも呼ばれるが、Paper の設定の既定値が
+# SpigotWorldConfig を先に要求するので、ここでも先に読む。watchdog はプラグインを読む前に起動する。
+# 1.19.4 には brigadier API の PaperCommands と lifecycle event が無いので、その 2 行は無い。
+#
+# 読んだ位置: Paper-Server src/main/java/net/minecraft/server/dedicated/DedicatedServer.java(initServer)
+file: net/minecraft/server/dedicated/DedicatedServer.java
+anchor:
+            this.setPlayerList(new DedicatedPlayerList(this, this.registries(), this.playerDataStorage));
+insert-after:
+    org.spigotmc.SpigotConfig.init((java.io.File) this.options.valueOf("spigot-settings"));
+    dev.shifu.event.ShifuBootstrap.initializeConfigurations(this);
+    org.spigotmc.WatchdogThread.doStart(org.spigotmc.SpigotConfig.timeoutTime, org.spigotmc.SpigotConfig.restartOnCrash);
+    this.server.loadPlugins();
+    this.server.enablePlugins(org.bukkit.plugin.PluginLoadOrder.STARTUP);
 
-# stop のあと JVM を終える(stopServer の末尾)。理由は ShifuBootstrap.exitAfterServerThread。
-# Paper は同じ位置で System.exit している(patches/sources/.../DedicatedServer.java.patch)。
+file: net/minecraft/server/dedicated/DedicatedServer.java
+anchor:
+            LOGGER.info("Done ({})! For help, type \"help\"", string);
+insert:
+    this.server.enablePlugins(org.bukkit.plugin.PluginLoadOrder.POSTWORLD);
+    this.server.getCommandMap().registerServerAliases();
+    ((org.bukkit.craftbukkit.help.SimpleHelpMap) this.server.getHelpMap()).initializeCommands();
+    this.server.getPluginManager().callEvent(new org.bukkit.event.server.ServerLoadEvent(org.bukkit.event.server.ServerLoadEvent.LoadType.STARTUP));
+
+# stop のあと JVM を終える(stopServer の末尾)。理由は ShifuBootstrap.exitAfterServerThread
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
     super.stopServer();
-    Util.shutdownExecutors();
+        Util.shutdownExecutors();
 insert-after:
     dev.shifu.event.ShifuBootstrap.exitAfterServerThread();
 
 # 起動が終わったことを watchdog に伝える。ここまでは長くかかっても落とさない
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
-    LOGGER.info("Done ({})! For help, type \"help\"", string);
+            LOGGER.info("Done ({})! For help, type \"help\"", string);
 insert-after:
     org.spigotmc.WatchdogThread.tick();
     org.spigotmc.WatchdogThread.hasStarted = true;
 
-# プラグインのログを log4j に流す。
-#
-# プラグインは java.util.logging を使う(JavaPlugin#getLogger)。Paper は根の
-# JUL ロガーの handler を差し替えて log4j に渡している。これが無いと JUL の
-# 既定の書式(「9月 04, 2026 5:55:37 午後 <クラス> <メソッド>」+「情報: 本文」の 2 行)で
-# 標準エラーに出るだけになり、[HH:mm:ss INFO]: の書式にも logs/latest.log にも入らない。
-# System.out / System.err も同じ理由で log4j に向ける。
-#
-# 中身は発火層に置く。ここで書くと for が int の局所変数を作り、initServer を @Local で
-# 狙う mixin の候補を増やす。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/server/dedicated/DedicatedServer.java.patch:60-72
+# プラグインのログを log4j に流す(中身は発火層)
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
     thread.setDaemon(true);

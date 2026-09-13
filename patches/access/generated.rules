@@ -1,6 +1,11 @@
 # tools/make_access_rules.py が作ったもの。
 # 可視性が足りないというエラーから、宣言の行をそのまま写している。
 
+# onThreadException(Thread,Throwable)
+file: net/minecraft/Util.java
+line:
+    private static void onThreadException(Thread thread, Throwable t) {
+
 # source
 file: net/minecraft/commands/CommandSourceStack.java
 line:
@@ -70,11 +75,6 @@ line:
 file: net/minecraft/server/dedicated/DedicatedServer.java
 line:
     private final RconConsoleSource rconConsoleSource;
-
-# settings
-file: net/minecraft/server/dedicated/DedicatedServer.java
-unfinal:
-    private final DedicatedServerSettings settings;
 
 # properties
 file: net/minecraft/server/dedicated/Settings.java
@@ -456,11 +456,6 @@ file: net/minecraft/world/entity/LivingEntity.java
 line:
     private static final EntityDataAccessor<Float> DATA_HEALTH_ID = SynchedEntityData.defineId(LivingEntity.class, EntityDataSerializers.FLOAT);
 
-# combatTracker
-file: net/minecraft/world/entity/LivingEntity.java
-unfinal:
-    private final CombatTracker combatTracker = new CombatTracker(this);
-
 # detectEquipmentUpdates()
 file: net/minecraft/world/entity/LivingEntity.java
 line:
@@ -521,11 +516,6 @@ file: net/minecraft/world/entity/Mob.java
 line:
     protected final float[] armorDropChances = new float[4];
 
-# goalSelector
-file: net/minecraft/world/entity/Mob.java
-unfinal:
-    protected final GoalSelector goalSelector;
-
 # handDropChances
 file: net/minecraft/world/entity/Mob.java
 line:
@@ -546,10 +536,10 @@ file: net/minecraft/world/entity/Mob.java
 line:
     private long lootTableSeed;
 
-# targetSelector
-file: net/minecraft/world/entity/Mob.java
-unfinal:
-    protected final GoalSelector targetSelector;
+# EntityGossips
+file: net/minecraft/world/entity/ai/gossip/GossipContainer.java
+line:
+    static class EntityGossips {
 
 # setDirty(long)
 file: net/minecraft/world/entity/ai/village/poi/PoiManager.java
@@ -1061,11 +1051,6 @@ file: net/minecraft/world/entity/player/Player.java
 line:
     protected int enchantmentSeed;
 
-# gameProfile
-file: net/minecraft/world/entity/player/Player.java
-unfinal:
-    private final GameProfile gameProfile;
-
 # hurtDir
 file: net/minecraft/world/entity/player/Player.java
 line:
@@ -1256,26 +1241,6 @@ file: net/minecraft/world/food/FoodData.java
 line:
     private float saturationLevel;
 
-# dataSlots
-file: net/minecraft/world/inventory/AbstractContainerMenu.java
-unfinal:
-    private final List<DataSlot> dataSlots = Lists.newArrayList();
-
-# lastSlots
-file: net/minecraft/world/inventory/AbstractContainerMenu.java
-unfinal:
-    private final NonNullList<ItemStack> lastSlots = NonNullList.create();
-
-# remoteDataSlots
-file: net/minecraft/world/inventory/AbstractContainerMenu.java
-unfinal:
-    private final IntList remoteDataSlots = new IntArrayList();
-
-# remoteSlots
-file: net/minecraft/world/inventory/AbstractContainerMenu.java
-unfinal:
-    private final NonNullList<ItemStack> remoteSlots = NonNullList.create();
-
 # cost
 file: net/minecraft/world/inventory/AnvilMenu.java
 line:
@@ -1315,6 +1280,41 @@ line:
 file: net/minecraft/world/item/context/UseOnContext.java
 line:
     protected UseOnContext(Level world, @Nullable Player player, InteractionHand hand, ItemStack stack, BlockHitResult hit) {
+
+# demand
+file: net/minecraft/world/item/trading/MerchantOffer.java
+line:
+    private int demand;
+
+# priceMultiplier
+file: net/minecraft/world/item/trading/MerchantOffer.java
+line:
+    private float priceMultiplier;
+
+# result
+file: net/minecraft/world/item/trading/MerchantOffer.java
+line:
+    private final ItemStack result;
+
+# rewardExp
+file: net/minecraft/world/item/trading/MerchantOffer.java
+line:
+    private boolean rewardExp = true;
+
+# specialPriceDiff
+file: net/minecraft/world/item/trading/MerchantOffer.java
+line:
+    private int specialPriceDiff;
+
+# uses
+file: net/minecraft/world/item/trading/MerchantOffer.java
+line:
+    private int uses;
+
+# xp
+file: net/minecraft/world/item/trading/MerchantOffer.java
+line:
+    private int xp = 1;
 
 # delay(Level,BlockPos)
 file: net/minecraft/world/level/BaseSpawner.java
@@ -1366,6 +1366,11 @@ file: net/minecraft/world/level/BaseSpawner.java
 line:
     private int spawnRange = 4;
 
+# source
+file: net/minecraft/world/level/Explosion.java
+line:
+    private final Entity source;
+
 # blockEntityTickers
 file: net/minecraft/world/level/Level.java
 line:
@@ -1380,11 +1385,6 @@ line:
 file: net/minecraft/world/level/Level.java
 line:
     private final Thread thread;
-
-# levelName
-file: net/minecraft/world/level/LevelSettings.java
-unfinal:
-    private final String levelName;
 
 # SPAWNING_CATEGORIES
 file: net/minecraft/world/level/NaturalSpawner.java
@@ -1556,10 +1556,25 @@ file: net/minecraft/world/level/block/entity/SignBlockEntity.java
 line:
     private final Component[] messages = new Component[]{CommonComponents.EMPTY, CommonComponents.EMPTY, CommonComponents.EMPTY, CommonComponents.EMPTY};
 
+# max
+file: net/minecraft/world/level/block/state/properties/IntegerProperty.java
+line:
+    private final int max;
+
+# min
+file: net/minecraft/world/level/block/state/properties/IntegerProperty.java
+line:
+    private final int min;
+
 # level
 file: net/minecraft/world/level/chunk/LevelChunk.java
 line:
     final Level level;
+
+# states
+file: net/minecraft/world/level/chunk/LevelChunkSection.java
+line:
+    private final PalettedContainer<BlockState> states;
 
 # get(int)
 file: net/minecraft/world/level/chunk/PalettedContainer.java
@@ -1646,20 +1661,20 @@ file: net/minecraft/world/level/levelgen/structure/StructurePiece.java
 line:
     private static final Set<Block> SHAPE_CHECK_BLOCKS = ImmutableSet.<Block>builder()
 
+# entityInfoList
+file: net/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate.java
+line:
+    private final List<StructureTemplate.StructureEntityInfo> entityInfoList = Lists.newArrayList();
+
+# palettes
+file: net/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate.java
+line:
+    private final List<StructureTemplate.Palette> palettes = Lists.newArrayList();
+
 # setColorsDirty(int,int)
 file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
 line:
     private void setColorsDirty(int x, int z) {
-
-# trackingPosition
-file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
-unfinal:
-    private final boolean trackingPosition;
-
-# unlimitedTracking
-file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
-unfinal:
-    private final boolean unlimitedTracking;
 
 # storage
 file: net/minecraft/world/phys/shapes/BitSetDiscreteVoxelShape.java

@@ -99,7 +99,7 @@ if [ ! -d "$TREE/.git" ]; then
     mkdir -p "$TREE"
     unzip -qo "$PW/.gradle/caches/paperweight/taskCache/decompileJar.jar" -d "$TREE"
     (cd "$TREE" && rm -rf assets data flightrecorder-config.jfc version.json \
-        && git init -q && git add -A \
+        && git init -q && git config core.autocrlf false && git add -A \
         && git -c user.name=shifu -c user.email=shifu@local commit -qm "paper Imports")
 fi
 

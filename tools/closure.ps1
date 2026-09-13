@@ -51,7 +51,7 @@ if (-not (Test-Path $Req)) { New-Item -ItemType File $Req | Out-Null }
 
 function Py { param([string[]] $a) & python @a 2>&1 | ForEach-Object { "$_" } }
 
-$before = 999999
+$before = ""
 
 for ($round = 1; $round -le $Rounds; $round++) {
     Set-Location $Tree
@@ -138,13 +138,16 @@ for ($round = 1; $round -le $Rounds; $round++) {
 
     if ($count -eq 0) { "COMPILED"; break }
 
-    if ($count -ge $before) {
+    # 数ではなく中身で見る。宣言レベルの誤り(cannot find symbol: class)が 1 つあると javac は
+    # 後ろの検査をしないので、それを直した次の周は数が跳ね上がる。同じ誤りの集合が 2 周続いたら止める
+    $errorSet = (Select-String -Path $Gap -Pattern "error:" | ForEach-Object { $_.Line } | Sort-Object -Unique) -join "`n"
+    if ($errorSet -eq $before) {
         if (Test-Path "$Req.bak") { Move-Item "$Req.bak" $Req -Force; "要求を 1 つ前に戻した" }
         "STALLED"
         break
     }
 
-    $before = $count
+    $before = $errorSet
     Set-Location $Shifu
     Copy-Item $Req "$Req.bak" -Force
     $more = Py @("$Shifu\tools\required_members.py", $Gap, $Tree, $Adapter)

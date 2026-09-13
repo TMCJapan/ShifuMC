@@ -241,3 +241,10 @@ with:
                 return Either.<ChunkAccess, ChunkHolder.ChunkLoadingFailure>left(chunkAccess);
             } else {
                 return Either.<ChunkAccess, ChunkHolder.ChunkLoadingFailure>left(this.createEmptyChunk(pos));
+
+# 逆コンパイラが cast を落としている。Mojang の版は (Strategy<K>) を付けている
+file: net/minecraft/Util.java
+replace:
+        return Util.IdentityStrategy.INSTANCE;
+with:
+        return (Strategy<K>)Util.IdentityStrategy.INSTANCE;

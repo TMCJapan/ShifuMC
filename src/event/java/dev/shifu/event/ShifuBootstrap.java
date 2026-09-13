@@ -100,4 +100,17 @@ public final class ShifuBootstrap {
         exit.setDaemon(true);
         exit.start();
     }
+
+    /**
+     * Paper の設定(paper-global.yml と paper-world-defaults.yml)を読む。
+     * {@code GlobalConfiguration.get()} はこれが済むまで null を返す。1.19.4 の版は引数を取らない。
+     */
+    public static void initializeConfigurations(final net.minecraft.server.MinecraftServer server) {
+        try {
+            server.paperConfigurations.initializeGlobalConfiguration();
+            server.paperConfigurations.initializeWorldDefaultsConfiguration();
+        } catch (final org.spongepowered.configurate.ConfigurateException e) {
+            throw new IllegalStateException("Paper の設定を読めない", e);
+        }
+    }
 }

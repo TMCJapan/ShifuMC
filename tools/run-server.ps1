@@ -33,11 +33,15 @@ if (-not $SkipBuild) {
     python tools\compare_lvt.py $Classes $Mojang --list | Select-Object -Last 1
     & $java -cp $cp dev.shifu.lvtmatch.LvtMatch $Classes $Mojang $differs --slots | Select-Object -Last 2
     python tools\compare_lvt.py $Classes $Mojang --list | Select-Object -Last 1
-    & $java -cp $cp dev.shifu.lvtmatch.LvtMatch $Classes $Mojang $differs --vars | Select-Object -Last 2
+    # --vars は使わない。1.19.4 の公式 jar の LVT の名前(paperweight 1.5 が付けたもの)は codebook の名前と
+    # 違うので大量に動かし、名前の無い一時変数(for-each の iterator)を生きている slot に重ねる
+    # (ChunkGenerator.applyBiomeDecoration が IncompatibleClassChangeError で落ちた)。slot の並びは --slots で合わせる
     python tools\check_extra_locals.py $Classes $Mojang --list | Select-Object -Last 1
     python tools\check_lambdas.py $Classes $Mojang --list | Select-Object -Last 1
     & $java -cp $cp dev.shifu.lvtmatch.LambdaMatch $Classes $Mojang "$Shifu\tools\build\lambda-differs.txt" | Select-Object -Last 4
     python tools\keep_vanilla_classes.py $Classes $Mojang
+    # 公式に戻したクラスに、残りのクラスが参照している欄やメソッドが無いと起動時に NoSuchFieldError になる。ここで数える
+    & $java -cp $cp dev.shifu.lvtmatch.LinkCheck $Classes "$Shifu\tools\build\kept-classes.txt" "$Shifu\tools\build\link-missing.txt" | Select-Object -Last 1
     python tools\check_synthetic_names.py $Classes $Mojang | Select-Object -Last 1
     & $java -cp $cp dev.shifu.lvtmatch.CodeDiff $Classes $Mojang "$Shifu\tools\build\code-differs.txt" | Select-Object -Last 3
 
