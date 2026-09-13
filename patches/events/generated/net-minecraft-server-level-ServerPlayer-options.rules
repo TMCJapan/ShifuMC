@@ -15,9 +15,9 @@ insert-after:
 # メソッドの先頭ではまだ前の値が残っている。
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    public void updateOptions(ServerboundClientInformationPacket packet) {
+    public void updateOptions(ServerboundClientInformationPacket var1) {
 insert-after:
-    dev.shifu.event.PlayerEvents.clientOptions(this, this.locale, packet);
+    dev.shifu.event.PlayerEvents.clientOptions(this, this.locale, var1);
 
 # PlayerStartSpectatingEntityEvent と PlayerStopSpectatingEntityEvent
 file: net/minecraft/server/level/ServerPlayer.java

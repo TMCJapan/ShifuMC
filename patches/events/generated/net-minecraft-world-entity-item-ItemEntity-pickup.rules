@@ -2,7 +2,7 @@
 # EntityPickupItemEvent。Paper: net/minecraft/world/entity/item/ItemEntity.java の playerTouch
 file: net/minecraft/world/entity/item/ItemEntity.java
 anchor:
-            if (this.pickupDelay == 0 && (this.target == null || this.target.equals(player.getUUID())) && player.getInventory().add(item)) {
+    if (this.pickupDelay == 0 && (this.owner == null || this.owner.equals(player.getUUID())) && player.getInventory().add(item)) {
 insert:
     if (!dev.shifu.event.ItemEvents.playerPickup(player, this, item, this.pickupDelay)) {
         return;

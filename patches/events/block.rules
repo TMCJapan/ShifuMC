@@ -24,10 +24,10 @@ insert:
 # 原因は呼ぶ側がその直前に置く。
 file: net/minecraft/world/level/block/TntBlock.java
 anchor:
-    private static void explode(Level world, BlockPos pos, @Nullable LivingEntity igniter) {
+    private static void explode(Level var0, BlockPos var1, @Nullable LivingEntity var2) {
     if (!world.isClientSide) {
 insert-after:
-    if (!dev.shifu.event.ShifuEvents.tntPrime(world, pos, igniter)) {
+    if (!dev.shifu.event.ShifuEvents.tntPrime(var0, var1, var2)) {
         return;
     }
 

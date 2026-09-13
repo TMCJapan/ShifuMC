@@ -2,8 +2,8 @@
 
 file: net/minecraft/world/entity/decoration/ArmorStand.java
 anchor:
-    private boolean swapItem(Player player, EquipmentSlot slot, ItemStack stack, InteractionHand hand) {
+    private boolean swapItem(Player var1, EquipmentSlot var2, ItemStack var3, InteractionHand var4) {
 insert-after:
-    if (!dev.shifu.event.PlayerEvents.armorStandManipulate(this, player, slot, stack, hand)) {
+    if (!dev.shifu.event.PlayerEvents.armorStandManipulate(this, var1, var2, var3, var4)) {
         return false;
     }

@@ -4,7 +4,7 @@
 # 1.19.4 の CraftBukkit は tickChildren の先頭で呼ぶ(1.20.6 の suspendFlushing の行は無い)
 file: net/minecraft/server/MinecraftServer.java
 anchor:
-    public void tickChildren(BooleanSupplier shouldKeepTicking) {
+    public void tickChildren(BooleanSupplier var1) {
 insert-after:
     this.server.getScheduler().mainThreadHeartbeat(this.tickCount);
 
@@ -85,7 +85,7 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/MinecraftServer.java.patch:575,972
 file: net/minecraft/server/MinecraftServer.java
 anchor:
-    public void tickServer(BooleanSupplier shouldKeepTicking) {
+    public void tickServer(BooleanSupplier var1) {
 insert-after:
     org.spigotmc.WatchdogThread.tick();
 

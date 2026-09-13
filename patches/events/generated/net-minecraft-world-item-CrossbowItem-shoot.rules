@@ -2,7 +2,7 @@
 # 1.19.4 は ProjectileWeaponItem ではなく BowItem と CrossbowItem が矢を撃つ。
 file: net/minecraft/world/item/CrossbowItem.java
 anchor:
-            crossbow.hurtAndBreak(isFireworkRocket ? 3 : 1, shooter, e -> e.broadcastBreakEvent(hand));
+    crossbow.hurtAndBreak(isFireworkRocket ? 3 : 1, shooter, var1x -> var1x.broadcastBreakEvent(hand));
 insert:
     if (!dev.shifu.event.ItemEvents.shootBow(shooter, crossbow, projectile, projectile1, hand, soundPitch)) {
         return;

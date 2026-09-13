@@ -4,7 +4,7 @@
 
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    public void handleResourcePackResponse(ServerboundResourcePackPacket packet) {
-        PacketUtils.ensureRunningOnSameThread(packet, this, this.player.getLevel());
+    public void handleResourcePackResponse(ServerboundResourcePackPacket var1) {
+    PacketUtils.ensureRunningOnSameThread(packet, this, this.player.getLevel());
 insert-after:
-    dev.shifu.event.PlayerEvents.resourcePackStatus(this.player, packet.getAction().ordinal());
+    dev.shifu.event.PlayerEvents.resourcePackStatus(this.player, var1.getAction().ordinal());

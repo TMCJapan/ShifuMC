@@ -3,7 +3,7 @@
 # BlockDamageEvent。attack が済んで壊す速さが決まったあと(Paper と同じ位置)
 file: net/minecraft/server/level/ServerPlayerGameMode.java
 anchor:
-                if (!blockState.isAir() && f >= 1.0F) {
+    if (!blockState1.isAir() && f >= 1.0F) {
 insert:
     org.bukkit.event.block.BlockDamageEvent shifuDamage =
             dev.shifu.event.PlayerEvents.blockDamage(this.player, pos, direction, f >= 1.0F);

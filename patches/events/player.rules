@@ -130,13 +130,13 @@ insert-after:
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
     if (!this.isSpectator()) {
-    this.dropAllDeathLoot(damageSource);
+    this.dropAllDeathLoot(source);
     }
 insert:
     final java.util.List<net.minecraft.world.entity.item.ItemEntity> shifuDeathDrops =
             shifuDeath ? dev.shifu.event.ShifuEvents.beginPlayerDeath(this) : null;
 insert-after:
-    if (!dev.shifu.event.ShifuEvents.playerDeath(this, damageSource, shifuDeathDrops,
+    if (!dev.shifu.event.ShifuEvents.playerDeath(this, source, shifuDeathDrops,
             this.level.getGameRules().getBoolean(GameRules.RULE_SHOWDEATHMESSAGES))) {
         return;
     }

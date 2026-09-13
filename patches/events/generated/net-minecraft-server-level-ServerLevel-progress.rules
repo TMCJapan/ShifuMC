@@ -2,8 +2,8 @@
 
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    public void destroyBlockProgress(int entityId, BlockPos pos, int progress) {
+    public void destroyBlockProgress(int var1, BlockPos var2, int var3) {
 insert-after:
-    if (!dev.shifu.event.BlockEvents.breakProgress(this, pos, progress, this.getEntity(entityId))) {
+    if (!dev.shifu.event.BlockEvents.breakProgress(this, var2, var3, this.getEntity(var1))) {
         return;
     }

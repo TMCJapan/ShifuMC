@@ -25,6 +25,6 @@ insert-after:
 # 1.19.4 の地図の鍵は MapId ではなく String。
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    public void setMapData(String id, MapItemSavedData state) {
+    public void setMapData(String var1, MapItemSavedData var2) {
 insert-after:
-    dev.shifu.event.PlayerEvents.mapInitialize(id, state);
+    dev.shifu.event.PlayerEvents.mapInitialize(var1, var2);

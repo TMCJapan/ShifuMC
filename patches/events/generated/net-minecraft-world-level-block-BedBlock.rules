@@ -4,7 +4,7 @@
 # pos はこの手前で書き換わるので、ラムダに渡す用に控える
 file: net/minecraft/world/level/block/BedBlock.java
 anchor:
-                player.startSleepInBed(pos).ifLeft(reason -> {
+    player.startSleepInBed(pos).ifLeft(var1x -> {
 insert:
     BlockPos shifuBedPos = pos;
 file: net/minecraft/world/level/block/BedBlock.java

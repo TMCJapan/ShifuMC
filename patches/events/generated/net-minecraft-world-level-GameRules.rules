@@ -9,8 +9,8 @@
 # 代わりに GameRules.Value.setFromArgument で出す。鍵は持ち主の表から引く。
 file: net/minecraft/world/level/GameRules.java
 anchor:
-        public void setFromArgument(CommandContext<CommandSourceStack> context, String name) {
+    public void setFromArgument(CommandContext<CommandSourceStack> var1, String var2) {
 insert-after:
-    if (!dev.shifu.event.ShifuEvents.gameRuleChange(this, context)) {
+    if (!dev.shifu.event.ShifuEvents.gameRuleChange(this, var1)) {
         return;
     }

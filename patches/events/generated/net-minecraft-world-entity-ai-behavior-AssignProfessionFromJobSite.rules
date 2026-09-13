@@ -2,9 +2,9 @@
 
 file: net/minecraft/world/entity/ai/behavior/AssignProfessionFromJobSite.java
 anchor:
-                                        entity.setVillagerData(entity.getVillagerData().setProfession(profession));
+    entity.setVillagerData(entity.getVillagerData().setProfession(var2x));
 insert:
-    if (!dev.shifu.event.AnimalEvents.villagerCareerChange(entity, profession,
+    if (!dev.shifu.event.AnimalEvents.villagerCareerChange(entity, var2x,
             org.bukkit.event.entity.VillagerCareerChangeEvent.ChangeReason.EMPLOYED)) {
         return;
     }

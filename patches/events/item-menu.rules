@@ -26,10 +26,10 @@ insert-after:
 
 file: net/minecraft/world/inventory/GrindstoneMenu.java
 anchor:
-    ExperienceOrb.award((ServerLevel)world, Vec3.atCenterOf(pos), this.getExperienceAmount(world));
+    ExperienceOrb.award((ServerLevel)var1x, Vec3.atCenterOf(var2xx), this.getExperienceAmount(var1x));
 insert:
     if (!dev.shifu.event.ItemEvents.grindstoneExpListening()
-            || dev.shifu.event.ItemEvents.grindstoneExp((net.minecraft.server.level.ServerLevel) world, pos, this.getExperienceAmount(world))) {
+            || dev.shifu.event.ItemEvents.grindstoneExp((net.minecraft.server.level.ServerLevel) var1x, var2xx, this.getExperienceAmount(var1x))) {
 insert-after:
     }
 

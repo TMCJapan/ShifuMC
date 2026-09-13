@@ -23,6 +23,6 @@ insert:
 # EntityInsideBlockEvent
 file: net/minecraft/world/level/block/ButtonBlock.java
 anchor:
-    public void entityInside(BlockState state, Level world, BlockPos pos, Entity entity) {
+    public void entityInside(BlockState var1, Level var2, BlockPos var3, Entity var4) {
 insert-after:
-    if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(world, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+    if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(var4.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(var2, var3)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent

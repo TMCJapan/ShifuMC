@@ -8,8 +8,8 @@
 #   Paper-Server src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    public void handleCustomCommandSuggestions(ServerboundCommandSuggestionPacket packet) {
+    public void handleCustomCommandSuggestions(ServerboundCommandSuggestionPacket var1) {
 insert-after:
-    if (dev.shifu.event.PlayerEvents.asyncTabComplete(this, this.server, this.player, packet)) {
+    if (dev.shifu.event.PlayerEvents.asyncTabComplete(this, this.server, this.player, var1)) {
         return;
     }
