@@ -51,7 +51,7 @@ public final class Main {
 				paper, fabric, ownJar());
 
 		if (config.vanillaParity()) {
-			VanillaParity.apply(serverDir);
+			VanillaParity.apply(serverDir, config.minecraftVersion());
 		} else {
 			Log.warn("vanilla-parity is off - Paper's own behaviour changes are left in place");
 		}
