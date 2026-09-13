@@ -101,7 +101,7 @@ for ($round = 1; $round -le $Rounds; $round++) {
     # Paper が書き換えているが vanilla のまま使うファイル。規則が触らなくても vanilla の木から写す
     $vanillaList = Join-Path $Shifu "patches\vanilla-files.txt"
     if (Test-Path $vanillaList) {
-        $rels += @(Get-Content $vanillaList | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith("#") })
+        $rels += @(Get-Content $vanillaList -Encoding UTF8 | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith("#") })
     }
     $staged = 0
     foreach ($rel in ($rels | Sort-Object -Unique)) {
