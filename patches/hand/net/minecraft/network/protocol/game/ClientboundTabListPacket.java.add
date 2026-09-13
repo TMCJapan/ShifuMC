@@ -1,0 +1,10 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+//
+// Paper 1.18.2 は欄(adventure$header・adventure$footer)に入れてから write を書き換えている。
+// Shifu の write は vanilla なので、構築子のうちに vanilla の Component へ直す。
+
+// ClientboundTabListPacket.ClientboundTabListPacket
+    // Paper が adventure の Component から送る版
+    public ClientboundTabListPacket(final net.kyori.adventure.text.Component header, final net.kyori.adventure.text.Component footer) {
+        this(io.papermc.paper.adventure.PaperAdventure.asVanilla(header), io.papermc.paper.adventure.PaperAdventure.asVanilla(footer));
+    }

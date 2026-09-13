@@ -1,0 +1,17 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+//
+// Paper 1.18.2 は欄(adventure$message・components)に入れてから write を書き換えている。
+// Shifu の write は vanilla なので、構築子のうちに vanilla の Component へ直す。
+
+// ClientboundChatPacket.ClientboundChatPacket
+    // Paper が adventure の Component から送る版
+    public ClientboundChatPacket(final net.kyori.adventure.text.Component message, final ChatType type, final UUID sender) {
+        this(io.papermc.paper.adventure.PaperAdventure.asVanilla(message), type, sender);
+    }
+
+// ClientboundChatPacket.ClientboundChatPacket
+    // Spigot が BaseComponent[] から送る版。Paper の write は 1 件のときだけ入れ子にしないが、
+    // bungeecord-chat 1.16-R0.4+build.6 の toString(BaseComponent...) が既にそうしている
+    public ClientboundChatPacket(final net.md_5.bungee.api.chat.BaseComponent[] components, final ChatType type, final UUID sender) {
+        this(Component.Serializer.fromJson(net.md_5.bungee.chat.ComponentSerializer.toString(components)), type, sender);
+    }

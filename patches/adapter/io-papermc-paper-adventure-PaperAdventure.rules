@@ -1,0 +1,12 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: io/papermc/paper/adventure/PaperAdventure.java
+
+# asVanilla は AdventureComponent(遅延で JSON に直す包み)を返す。Paper は
+# Component.Serializer の GsonBuilder に AdventureComponent.Serializer を登録して
+# それを直せるようにしているが、Shifu の Component.Serializer は vanilla なので
+# 「Don't know how to serialize」で落ちる。Paper が if (true) で飛ばしている次の行
+# (WRAPPER_AWARE_SERIALIZER で深く変換する版)をそのまま通す。
+replace:
+        if (true) return new AdventureComponent(component);
+with:

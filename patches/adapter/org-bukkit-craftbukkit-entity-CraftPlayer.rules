@@ -7,3 +7,103 @@ replace:
     new DiscardedPayload(id, Unpooled.wrappedBuffer(message))
 with:
     new DiscardedPayload(id)
+
+# 以下 14 件は、Paper が「vanilla の Component を null にした packet を作り、
+# Paper が足した欄に adventure / BaseComponent[] の文を入れて write に読ませる」形。
+# Shifu の write は vanilla なので欄は読まれず、文が null のまま飛ぶ。
+# patches/hand で packet に構築子を足し、呼ぶ側をそちらへ向ける。
+# ChatType と送り主の UUID、title の位置は元のまま。
+
+# sendActionBar(BaseComponent[])
+replace:
+        net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket packet = new net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket((net.minecraft.network.chat.Component) null);
+        packet.components = message;
+with:
+        net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket packet = new net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket(message);
+
+# setSubtitle(BaseComponent[])
+replace:
+        final ClientboundSetSubtitleTextPacket packet = new ClientboundSetSubtitleTextPacket((net.minecraft.network.chat.Component) null);
+        packet.components = subtitle;
+with:
+        final ClientboundSetSubtitleTextPacket packet = new ClientboundSetSubtitleTextPacket(subtitle);
+
+# showTitle(BaseComponent[])
+replace:
+        final ClientboundSetTitleTextPacket packet = new ClientboundSetTitleTextPacket((net.minecraft.network.chat.Component) null);
+        packet.components = title;
+with:
+        final ClientboundSetTitleTextPacket packet = new ClientboundSetTitleTextPacket(title);
+
+# sendMessage(Identity, Component, MessageType)
+replace:
+        final ClientboundChatPacket packet = new ClientboundChatPacket(null, type == net.kyori.adventure.audience.MessageType.CHAT ? net.minecraft.network.chat.ChatType.CHAT : net.minecraft.network.chat.ChatType.SYSTEM, identity.uuid());
+        packet.adventure$message = message;
+with:
+        final ClientboundChatPacket packet = new ClientboundChatPacket(message, type == net.kyori.adventure.audience.MessageType.CHAT ? net.minecraft.network.chat.ChatType.CHAT : net.minecraft.network.chat.ChatType.SYSTEM, identity.uuid());
+
+# sendActionBar(Component)
+replace:
+        final net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket packet = new net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket((net.minecraft.network.chat.Component) null);
+        packet.adventure$text = message;
+with:
+        final net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket packet = new net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket(message);
+
+# adventure$sendPlayerListHeaderAndFooter()
+replace:
+        final ClientboundTabListPacket packet = new ClientboundTabListPacket(null, null);
+        packet.adventure$header = (this.playerListHeader == null) ? net.kyori.adventure.text.Component.empty() : this.playerListHeader;
+        packet.adventure$footer = (this.playerListFooter == null) ? net.kyori.adventure.text.Component.empty() : this.playerListFooter;
+with:
+        final ClientboundTabListPacket packet = new ClientboundTabListPacket(
+                (this.playerListHeader == null) ? net.kyori.adventure.text.Component.empty() : this.playerListHeader,
+                (this.playerListFooter == null) ? net.kyori.adventure.text.Component.empty() : this.playerListFooter);
+
+# showTitle(Title) の副題
+replace:
+        final ClientboundSetSubtitleTextPacket sp = new ClientboundSetSubtitleTextPacket((net.minecraft.network.chat.Component) null);
+        sp.adventure$text = title.subtitle();
+with:
+        final ClientboundSetSubtitleTextPacket sp = new ClientboundSetSubtitleTextPacket(title.subtitle());
+
+# showTitle(Title) の表題
+replace:
+        final ClientboundSetTitleTextPacket tp = new ClientboundSetTitleTextPacket((net.minecraft.network.chat.Component) null);
+        tp.adventure$text = title.title();
+with:
+        final ClientboundSetTitleTextPacket tp = new ClientboundSetTitleTextPacket(title.title());
+
+# sendTitlePart(TitlePart.TITLE, value)
+replace:
+            final ClientboundSetTitleTextPacket tp = new ClientboundSetTitleTextPacket((net.minecraft.network.chat.Component) null);
+            tp.adventure$text = (net.kyori.adventure.text.Component) value;
+with:
+            final ClientboundSetTitleTextPacket tp = new ClientboundSetTitleTextPacket((net.kyori.adventure.text.Component) value);
+
+# sendTitlePart(TitlePart.SUBTITLE, value)
+replace:
+            final ClientboundSetSubtitleTextPacket sp = new ClientboundSetSubtitleTextPacket((net.minecraft.network.chat.Component) null);
+            sp.adventure$text = (net.kyori.adventure.text.Component) value;
+with:
+            final ClientboundSetSubtitleTextPacket sp = new ClientboundSetSubtitleTextPacket((net.kyori.adventure.text.Component) value);
+
+# spigot().sendMessage(BaseComponent...)
+replace:
+            ClientboundChatPacket packet = new ClientboundChatPacket(null, net.minecraft.network.chat.ChatType.SYSTEM, Util.NIL_UUID);
+            packet.components = components;
+with:
+            ClientboundChatPacket packet = new ClientboundChatPacket(components, net.minecraft.network.chat.ChatType.SYSTEM, Util.NIL_UUID);
+
+# spigot().sendMessage(ChatMessageType, BaseComponent...)
+replace:
+            ClientboundChatPacket packet = new ClientboundChatPacket(null, net.minecraft.network.chat.ChatType.getForIndex((byte) position.ordinal()), Util.NIL_UUID);
+            packet.components = components;
+with:
+            ClientboundChatPacket packet = new ClientboundChatPacket(components, net.minecraft.network.chat.ChatType.getForIndex((byte) position.ordinal()), Util.NIL_UUID);
+
+# spigot().sendMessage(ChatMessageType, UUID, BaseComponent...)
+replace:
+            ClientboundChatPacket packet = new ClientboundChatPacket(null, net.minecraft.network.chat.ChatType.getForIndex((byte) position.ordinal()), sender == null ? Util.NIL_UUID : sender);
+            packet.components = components;
+with:
+            ClientboundChatPacket packet = new ClientboundChatPacket(components, net.minecraft.network.chat.ChatType.getForIndex((byte) position.ordinal()), sender == null ? Util.NIL_UUID : sender);

@@ -3,4 +3,5 @@
 // 1.18.2 に ClientboundSystemChatPacket は無い(1.19 から)。system の文も
 // ClientboundChatPacket(Component, ChatType, UUID) で送る。
 // Paper 1.18.2 はその packet に構築子を足しておらず、欄(adventure$message・components)を
-// 足して write を書き換えているので、ここに写す宣言は無い。
+// 足して write を書き換えている。1.19.4 でここに置いた構築子は
+// ClientboundChatPacket.java.add にある。

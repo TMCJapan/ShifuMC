@@ -1,0 +1,15 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: net/kyori/adventure/bossbar/HackyBossBarPlatformBridge.java
+
+# Paper は BossEvent に欄 adventure を足し、getName / getProgress / getColor / getOverlay の
+# 先頭でそれを見て adventure の BossBar の今の値を返す。Shifu の BossEvent は vanilla なので
+# 欄を読むところが無く、公式のバイトコードに戻った BossEvent への代入だけが残って
+# NoSuchFieldError になる(LinkCheck の
+# `net/minecraft/server/level/ServerBossEvent adventure ... missing`)。代入を落とす。
+#
+# showBossBar で送る表題・色・形・割合は ServerBossEvent を作るときの値。
+# そのあと adventure の BossBar 側で変えた分は client に届かない。
+replace:
+            this.vanilla$bar.adventure = $this;
+with:

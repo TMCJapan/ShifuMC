@@ -98,3 +98,23 @@ net/minecraft/server/level/ChunkHolder.java ChunkHolder.getSendingChunk
 net/minecraft/world/entity/ai/navigation/FlyingPathNavigation.java FlyingPathNavigation.createPath
 net/minecraft/world/entity/ai/navigation/GroundPathNavigation.java GroundPathNavigation.createPath
 net/minecraft/world/entity/ai/navigation/WallClimberNavigation.java WallClimberNavigation.createPath
+
+# Paper が「文を null にした packet を作り、この欄に入れて write に読ませる」ための欄。
+# Shifu の write は vanilla なので読まれない。patches/hand で構築子を足し、
+# patches/adapter で CraftPlayer をそちらへ向けたので、参照するものはもう無い
+net/minecraft/network/protocol/game/ClientboundChatPacket.java ClientboundChatPacket.adventure$message
+net/minecraft/network/protocol/game/ClientboundChatPacket.java ClientboundChatPacket.components
+net/minecraft/network/protocol/game/ClientboundSetActionBarTextPacket.java ClientboundSetActionBarTextPacket.adventure$text
+net/minecraft/network/protocol/game/ClientboundSetActionBarTextPacket.java ClientboundSetActionBarTextPacket.components
+net/minecraft/network/protocol/game/ClientboundSetSubtitleTextPacket.java ClientboundSetSubtitleTextPacket.adventure$text
+net/minecraft/network/protocol/game/ClientboundSetSubtitleTextPacket.java ClientboundSetSubtitleTextPacket.components
+net/minecraft/network/protocol/game/ClientboundSetTitleTextPacket.java ClientboundSetTitleTextPacket.adventure$text
+net/minecraft/network/protocol/game/ClientboundSetTitleTextPacket.java ClientboundSetTitleTextPacket.components
+net/minecraft/network/protocol/game/ClientboundTabListPacket.java ClientboundTabListPacket.adventure$header
+net/minecraft/network/protocol/game/ClientboundTabListPacket.java ClientboundTabListPacket.adventure$footer
+
+# 同じ形。Paper は BossEvent の getter でこの欄を先に見るが、Shifu の getter は vanilla。
+# 代入する HackyBossBarPlatformBridge を patches/adapter で直したので参照は無い。
+# 足すと BossEvent が vanilla の木の版(欄が protected)で組まれ、CraftBossBar が
+# handle.name / handle.color / handle.overlay を読めなくなる
+net/minecraft/world/BossEvent.java BossEvent.adventure

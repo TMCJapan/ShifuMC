@@ -1,0 +1,16 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+//
+// Paper 1.18.2 は欄(adventure$text・components)に入れてから write を書き換えている。
+// Shifu の write は vanilla なので、構築子のうちに vanilla の Component へ直す。
+
+// ClientboundSetTitleTextPacket.ClientboundSetTitleTextPacket
+    // Paper が adventure の Component から送る版
+    public ClientboundSetTitleTextPacket(final net.kyori.adventure.text.Component text) {
+        this(io.papermc.paper.adventure.PaperAdventure.asVanilla(text));
+    }
+
+// ClientboundSetTitleTextPacket.ClientboundSetTitleTextPacket
+    // Spigot が BaseComponent[] から送る版
+    public ClientboundSetTitleTextPacket(final net.md_5.bungee.api.chat.BaseComponent[] components) {
+        this(Component.Serializer.fromJson(net.md_5.bungee.chat.ComponentSerializer.toString(components)));
+    }
