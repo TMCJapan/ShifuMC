@@ -11,9 +11,7 @@ import java.util.Optional;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
 import net.minecraft.core.IdMap;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundCooldownPacket;
 import net.minecraft.server.level.ServerLevel;
@@ -294,7 +292,7 @@ public final class ItemEvents {
     // ------------------------------------------------------------ 機織り機
 
     /** 機織り機の選び直し。index が {@link #CANCELLED} なら取り消し。 */
-    public record LoomChoice(int index, Holder<BannerPattern> pattern) {
+    public record LoomChoice(int index, BannerPattern pattern) {
         public boolean cancelled() {
             return this.index == CANCELLED;
         }
@@ -680,14 +678,13 @@ public final class ItemEvents {
      */
     public static boolean loomSelect(final net.minecraft.world.entity.player.Player player,
                                      final net.minecraft.world.inventory.LoomMenu menu,
-                                     final net.minecraft.core.Holder<
-                                             net.minecraft.world.level.block.entity.BannerPattern> pattern) {
+                                     final net.minecraft.world.level.block.entity.BannerPattern pattern) {
         if (!ShifuEvents.listening(io.papermc.paper.event.player.PlayerLoomPatternSelectEvent.getHandlerList())) {
             return true;
         }
 
         final org.bukkit.block.banner.PatternType type =
-                org.bukkit.block.banner.PatternType.getByIdentifier(pattern.value().getHashname());
+                org.bukkit.block.banner.PatternType.getByIdentifier(pattern.getHashname());
         final boolean allowed = new io.papermc.paper.event.player.PlayerLoomPatternSelectEvent(
                 (org.bukkit.entity.Player) player.getBukkitEntity(),
                 (org.bukkit.craftbukkit.inventory.CraftInventoryLoom) menu.getBukkitView().getTopInventory(),
@@ -969,14 +966,14 @@ public final class ItemEvents {
                 holder).callEvent();
     }
 
-    /** 1.19.4 の CraftEnchantment に nms から引く口は無い。CraftBukkit と同じく鍵で引く。 */
+    /** 1.18.2 の CraftEnchantment に nms から引く口は無い。CraftBukkit と同じく鍵で引く。 */
     private static org.bukkit.enchantments.Enchantment bukkitEnchantment(
             final net.minecraft.world.item.enchantment.Enchantment enchantment) {
         return org.bukkit.enchantments.Enchantment.getByKey(CraftNamespacedKey.fromMinecraft(
-                net.minecraft.core.registries.BuiltInRegistries.ENCHANTMENT.getKey(enchantment)));
+                net.minecraft.core.Registry.ENCHANTMENT.getKey(enchantment)));
     }
 
-    /** 1.19.4 のビーコンは MobEffect を Optional で持つ。Bukkit の型へ。 */
+    /** 1.18.2 のビーコンは MobEffect を Optional で持つ。Bukkit の型へ。 */
     private static org.bukkit.potion.PotionEffectType convert(
             final java.util.Optional<net.minecraft.world.effect.MobEffect> effect) {
         return effect.map(one -> org.bukkit.potion.PotionEffectType.getById(net.minecraft.world.effect.MobEffect.getId(one)))

@@ -139,46 +139,14 @@ public final class AnimalEvents {
     }
 
     /**
-     * EntityFertilizeEggEvent。{@code Frog.spawnChildFromBreeding} と {@code Turtle.TurtleBreedGoal.breed}
-     * の先頭。取り消されたら両親の love を戻す。
+     * EntityFertilizeEggEvent。{@code Turtle.TurtleBreedGoal.breed} の先頭。
      *
-     * <p>効かないもの: {@code setExperience}。{@code getBredWith()} は null
-     * (1.19.4 の {@code Animal} に {@code breedItem} が無い)。
-     * 登録があると、この動物の乱数を 1 回余分に引く。
-     *
-     * <p>読んだ位置(Paper 1.19.4):
-     *   Paper-Server src/main/java/net/minecraft/world/entity/animal/Turtle.java:447
-     *   Paper-Server src/main/java/net/minecraft/world/entity/animal/frog/Frog.java:257
+     * <p>Paper-API 1.18.2 に EntityFertilizeEggEvent が無いので何もしない。
      *
      * @return 続けてよいか
      */
     public static boolean fertilizeEgg(final Animal breeding, final Animal partner) {
-        if (!listening(io.papermc.paper.event.entity.EntityFertilizeEggEvent.getHandlerList())) {
-            return true;
-        }
-
-        ServerPlayer breeder = breeding.getLoveCause();
-
-        if (breeder == null) {
-            breeder = partner.getLoveCause();
-        }
-
-        final io.papermc.paper.event.entity.EntityFertilizeEggEvent event =
-                new io.papermc.paper.event.entity.EntityFertilizeEggEvent(
-                        (org.bukkit.entity.LivingEntity) breeding.getBukkitEntity(),
-                        (org.bukkit.entity.LivingEntity) partner.getBukkitEntity(),
-                        breeder == null ? null : breeder.getBukkitEntity(),
-                        null,
-                        breeding.getRandom().nextInt(7) + 1);
-
-        if (event.callEvent()) {
-            return true;
-        }
-
-        breeding.resetLove();
-        partner.resetLove();
-
-        return false;
+        return true;
     }
 
     /**
@@ -457,16 +425,14 @@ public final class AnimalEvents {
     }
 
     /**
-     * EntityToggleSitEvent。座り(立ち)を書き換える先頭。Paper と同じ位置。
+     * EntityToggleSitEvent。座り(立ち)を書き換える先頭。
+     *
+     * <p>Paper-API 1.18.2 に EntityToggleSitEvent が無いので何もしない。
      *
      * @return 書き換えてよいか
      */
     public static boolean toggleSit(final net.minecraft.world.entity.Entity entity, final boolean sitting) {
-        if (!listening(io.papermc.paper.event.entity.EntityToggleSitEvent.getHandlerList())) {
-            return true;
-        }
-
-        return new io.papermc.paper.event.entity.EntityToggleSitEvent(entity.getBukkitEntity(), sitting).callEvent();
+        return true;
     }
 
     /**
@@ -729,27 +695,6 @@ public final class AnimalEvents {
         }
 
         return org.bukkit.craftbukkit.event.CraftEventFactory.handleEntitySpellCastEvent(caster, spell);
-    }
-
-    /** WardenAngerChangeEvent に登録があるか。今の怒りを引く前に見る。 */
-    public static boolean wardenAngerListening() {
-        return listening(io.papermc.paper.event.entity.WardenAngerChangeEvent.getHandlerList());
-    }
-
-    /**
-     * WardenAngerChangeEvent。怒りが増える直前。
-     *
-     * @return 新しい怒りの合計。取り消されたら null
-     */
-    public static Integer wardenAngerChange(final net.minecraft.world.entity.monster.warden.Warden warden,
-                                            final net.minecraft.world.entity.Entity target,
-                                            final int oldAnger, final int newAnger) {
-        final io.papermc.paper.event.entity.WardenAngerChangeEvent event =
-                new io.papermc.paper.event.entity.WardenAngerChangeEvent(
-                        (org.bukkit.entity.Warden) warden.getBukkitEntity(),
-                        target == null ? null : target.getBukkitEntity(), oldAnger, newAnger);
-
-        return event.callEvent() ? event.getNewAnger() : null;
     }
 
     /** TameableDeathMessageEvent に登録があるか。 */

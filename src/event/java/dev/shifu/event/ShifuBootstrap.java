@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 package dev.shifu.event;
 
-import io.papermc.paper.configuration.PaperConfigurations;
 import java.io.File;
-import java.nio.file.Path;
 import joptsimple.OptionSet;
 import net.minecraft.server.MinecraftServer;
 
@@ -11,17 +9,16 @@ import net.minecraft.server.MinecraftServer;
  * Paper の設定を立ち上げる。
  *
  * <p>アダプタ層({@code CraftWorld} や {@code ChatProcessor})は
- * {@code Level.paperConfig()} と {@code GlobalConfiguration.get()} が入っている
- * 前提で書かれている。Paper は {@code Services.create} と {@code Level} の構築子で
- * 作っているが、どちらも vanilla の行の書き換えなので、配線
- * ({@code patches/wire})から呼ぶ形にした。
+ * {@code PaperConfig} の static 欄と {@code Level.paperConfig} が入っている
+ * 前提で書かれている。Paper は {@code DedicatedServer.initServer} で読んでいるが、
+ * vanilla の行の書き換えなので、配線({@code patches/wire})から呼ぶ形にした。
  *
  * <p>設定の値は vanilla の NMS からは読まれない(Paper のパッチは当てていない)。
  * 読むのはアダプタ層と、そこから呼ばれるプラグインだけ。
  *
- * <p>参照した位置(Paper 26.2):
- * {@code paper-server patches/sources/net/minecraft/server/Services.java.patch:28},
- * {@code paper-server patches/sources/net/minecraft/server/dedicated/DedicatedServer.java.patch:105}
+ * <p>読んだ位置: Paper-Server
+ * {@code src/main/java/net/minecraft/server/dedicated/DedicatedServer.java}(initServer),
+ * {@code src/main/java/com/destroystokyo/paper/PaperConfig.java}(init)
  */
 public final class ShifuBootstrap {
     /**
@@ -42,21 +39,6 @@ public final class ShifuBootstrap {
 
     private ShifuBootstrap() {
     }
-
-
-    /** {@code paper.yml} / {@code config/} / {@code spigot.yml} の場所は Bukkit の Main が解析した引数から取る。 */
-    public static PaperConfigurations paperConfigurations(final OptionSet options) {
-        try {
-            final Path legacy = ((File) options.valueOf("paper-settings")).toPath();
-            final Path configDir = ((File) options.valueOf("paper-settings-directory")).toPath();
-            final Path universe = ((File) options.valueOf("universe")).toPath();
-
-            return PaperConfigurations.setup(legacy, configDir, universe, (File) options.valueOf("spigot-settings"));
-        } catch (final Exception e) {
-            throw new IllegalStateException("Paper の設定を用意できない", e);
-        }
-    }
-
 
 
     /**
@@ -102,15 +84,12 @@ public final class ShifuBootstrap {
     }
 
     /**
-     * Paper の設定(paper-global.yml と paper-world-defaults.yml)を読む。
-     * {@code GlobalConfiguration.get()} はこれが済むまで null を返す。1.19.4 の版は引数を取らない。
+     * Paper の設定({@code paper.yml})を読む。1.18.2 の Paper は
+     * {@code PaperConfig} の static 欄に読み込むので、サーバーごとの持ち物は無い。
+     * {@code Level} の構築子が {@code PaperWorldConfig} を作るため、世界を読む前に済ませる。
      */
-    public static void initializeConfigurations(final net.minecraft.server.MinecraftServer server) {
-        try {
-            server.paperConfigurations.initializeGlobalConfiguration();
-            server.paperConfigurations.initializeWorldDefaultsConfiguration();
-        } catch (final org.spongepowered.configurate.ConfigurateException e) {
-            throw new IllegalStateException("Paper の設定を読めない", e);
-        }
+    public static void initializeConfigurations(final MinecraftServer server) {
+        com.destroystokyo.paper.PaperConfig.init((File) options.valueOf("paper-settings"));
+        com.destroystokyo.paper.PaperConfig.registerCommands();
     }
 }

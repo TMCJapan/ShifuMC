@@ -8,9 +8,9 @@
 
 file: net/minecraft/world/level/block/entity/BlockEntity.java
 anchor:
-    public void load(CompoundTag var1) {
+    public void load(CompoundTag nbt) {
 insert-after:
-    final net.minecraft.nbt.Tag shifuValues = var1.get("PublicBukkitValues");
+    final net.minecraft.nbt.Tag shifuValues = nbt.get("PublicBukkitValues");
 
     if (shifuValues instanceof CompoundTag shifuCompound) {
         final CraftPersistentDataContainer shifuData = this.shifuPersistentData();

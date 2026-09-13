@@ -2,10 +2,10 @@
 
 file: net/minecraft/world/item/ItemCooldowns.java
 anchor:
-    public void addCooldown(Item var1, int var2) {
+    public void addCooldown(Item item, int duration) {
 insert-after:
-    Integer shifuCooldown = dev.shifu.event.PlayerEvents.itemCooldown(this, var1, var2);
+    Integer shifuCooldown = dev.shifu.event.PlayerEvents.itemCooldown(this, item, duration);
     if (shifuCooldown == null) {
         return;
     }
-    var2 = shifuCooldown;
+    duration = shifuCooldown;

@@ -70,7 +70,7 @@ insert-after:
 # 残す指定があれば、消したあとに戻す。
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    Iterator iterator = this.activeEffects.values().iterator();
+    Iterator<MobEffectInstance> iterator = this.activeEffects.values().iterator();
 insert:
     final java.util.List<MobEffectInstance> shifuKept = dev.shifu.event.EntityEvents.clearEffects(this, this.activeEffects.values());
 

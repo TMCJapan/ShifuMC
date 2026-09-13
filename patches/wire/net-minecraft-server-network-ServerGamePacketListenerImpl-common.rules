@@ -17,7 +17,7 @@ insert-after:
 # Paper 1.18.2 と同じく Location を直に組む。
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    public void send(Packet<?> var1, @Nullable GenericFutureListener<? extends Future<? super Void>> var2) {
+    public void send(Packet<?> packet, @Nullable GenericFutureListener<? extends Future<? super Void>> listener) {
 insert-after:
     if (packet instanceof net.minecraft.network.protocol.game.ClientboundSetDefaultSpawnPositionPacket shifuSpawn && this.player != null) {
         this.player.compassTarget = new org.bukkit.Location(this.player.level.getWorld(),

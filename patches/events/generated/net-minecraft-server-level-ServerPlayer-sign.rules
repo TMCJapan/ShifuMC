@@ -3,8 +3,8 @@
 # 表裏も無いので front には true を渡す。
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    public void openTextEdit(SignBlockEntity var1) {
+    public void openTextEdit(SignBlockEntity sign) {
 insert-after:
-    if (!dev.shifu.event.PlayerEvents.signOpen(this, var1, true)) {
+    if (!dev.shifu.event.PlayerEvents.signOpen(this, sign, true)) {
         return;
     }

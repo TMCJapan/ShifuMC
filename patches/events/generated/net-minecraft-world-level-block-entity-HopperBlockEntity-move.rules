@@ -2,8 +2,8 @@
 
 file: net/minecraft/world/level/block/entity/HopperBlockEntity.java
 anchor:
-    public static ItemStack addItem(@Nullable Container var0, Container var1, ItemStack var2, @Nullable Direction var3) {
+    public static ItemStack addItem(@Nullable Container from, Container to, ItemStack stack, @Nullable Direction side) {
 insert-after:
-    if (!dev.shifu.event.BlockEvents.inventoryMoveItem(var0, var1, var2)) {
-        return var2;
+    if (!dev.shifu.event.BlockEvents.inventoryMoveItem(from, to, stack)) {
+        return stack;
     }

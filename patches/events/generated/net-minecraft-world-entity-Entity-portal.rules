@@ -3,8 +3,8 @@
 # EntityPortalEnterEvent
 file: net/minecraft/world/entity/Entity.java
 anchor:
-    public void handleInsidePortal(BlockPos var1) {
+    public void handleInsidePortal(BlockPos pos) {
 insert-after:
-    if (!dev.shifu.event.EntityEvents.portalEnter(this, this.level, var1)) {
+    if (!dev.shifu.event.EntityEvents.portalEnter(this, this.level, pos)) {
         return;
     }

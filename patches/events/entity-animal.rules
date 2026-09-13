@@ -471,10 +471,10 @@ anchor:
     this.level
     .getEntitiesOfClass(ZombifiedPiglin.class, aabb, EntitySelector.NO_SPECTATORS)
     .stream()
-    .filter(var1x -> var1x != this)
-    .filter(var0 -> var0.getTarget() == null)
-    .filter(var1x -> !var1x.isAlliedTo(this.getTarget()))
-    .forEach(var1x -> var1x.setTarget(this.getTarget()));
+    .filter(zombifiedPiglin -> zombifiedPiglin != this)
+    .filter(zombifiedPiglin -> zombifiedPiglin.getTarget() == null)
+    .filter(zombifiedPiglin -> !zombifiedPiglin.isAlliedTo(this.getTarget()))
+    .forEach(zombifiedPiglin -> zombifiedPiglin.setTarget(this.getTarget()));
 insert:
     dev.shifu.event.EntityEvents.targetReasonUntilDone(org.bukkit.event.entity.EntityTargetEvent.TargetReason.TARGET_ATTACKED_NEARBY_ENTITY);
 insert-after:

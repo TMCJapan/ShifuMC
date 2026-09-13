@@ -507,6 +507,15 @@ def main():
                 if (rel, owner, member) in skip:
                     continue
 
+                # paperweight 1.3(1.18.2)の Paper の木は record の中に、写し損ねた
+                # 難読化名の欄と構築子(`private final SoundEffect small; public a(SoundEffect ...)`)を
+                # 残している。record に欄は足せないし、1 文字の名前は本物ではない
+                if re.fullmatch(r"[a-z]", member):
+                    continue
+
+                if re.search(r"record\s+" + re.escape(owner) + r"", old) and "{" not in "".join(block):
+                    continue
+
                 blocks.append((owner, member, ms.unfinal(block)))
 
             if not blocks:

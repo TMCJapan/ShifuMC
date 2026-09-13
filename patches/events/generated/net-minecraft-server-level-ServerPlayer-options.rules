@@ -3,7 +3,7 @@
 # PlayerBedLeaveEvent
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    public void stopSleepInBed(boolean var1, boolean var2) {
+    public void stopSleepInBed(boolean skipSleepTimer, boolean updateSleepingPlayers) {
 insert-after:
     if (this.isSleeping() && !dev.shifu.event.PlayerEvents.bedLeave(this)) {
         return;
@@ -15,9 +15,9 @@ insert-after:
 # メソッドの先頭ではまだ前の値が残っている。
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    public void updateOptions(ServerboundClientInformationPacket var1) {
+    public void updateOptions(ServerboundClientInformationPacket packet) {
 insert-after:
-    dev.shifu.event.PlayerEvents.clientOptions(this, this.locale, var1);
+    dev.shifu.event.PlayerEvents.clientOptions(this, this.locale, packet);
 
 # PlayerStartSpectatingEntityEvent と PlayerStopSpectatingEntityEvent
 file: net/minecraft/server/level/ServerPlayer.java
