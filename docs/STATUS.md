@@ -23,7 +23,7 @@
 | launcher | fabric-loader は開発経路(`fabric.development=true`、MOD を intermediary から写すために使っている)で MOD の順を毎回シャッフルする。Mixin の同順位の適用順がそれに従うので、同じ呼び出しを @Redirect する krypton と lithium(`ChunkMap.TrackedEntity` の `Sets.newIdentityHashSet()`)は後になった方が外れ、`defaultRequire: 1` の krypton が起動の半分で落ちた。`-Dfabric.debug.disableModShuffle=true` で本番と同じ id 順に固定(1.20.6 / 1.21.11 / 1.19.4 にも入れた) |
 | MOTD | Paper は MOTD を AdventureComponent のまま ServerStatus に入れ、書き換えた Serializer で JSON にする。Shifu は Serializer が vanilla なので `PaperAdventure.asVanilla` に変換して入れる adapter。サーバー一覧 ping で MiniMOTD の装飾付きの文が返る |
 | 世界生成の突き合わせ | 同じシードで vanilla 4 回、Shifu 2 回(Done の 20 秒後に stop)。ばらつきを両側から引いた残り **18 チャンクは 17 一致、不一致 1**(ブロック配列の 1 バイト)。1.18.2 も vanilla 同士で 532 中 478 が違い、比べられる範囲が狭い |
-| 処理順の突き合わせ | tickstop の agent で 1200 tick ちょうどで止める。vanilla 4 回と Shifu 2 回でばらつきを引いた残り **1374 チャンクのうち 1371 一致、不一致 3**(r.-1.-1 の (19,29) (19,30) (20,29)、隣り合う 3 チャンクのブロック配列)。同じ方法で vanilla 同士を比べると 1 回目 vs 4 回目で不一致 8、1 回目 vs 3 回目で 10。3 はその幅の中だが、vanilla 4 回と Shifu 2 回がそれぞれ揃っていて差が出た 3 チャンクなので、原因は見ていない |
+| 処理順の突き合わせ | tickstop の agent で 1200 tick ちょうどで止める。vanilla 4 回と Shifu 2 回でばらつきを引いた残り **1374 チャンクのうち 1371 一致、不一致 3**(r.-1.-1 の (19,29) (19,30) (20,29)、隣り合う 3 チャンクのブロック配列)。同じ方法で vanilla 同士を比べると 1 回目 vs 4 回目で不一致 8、1 回目 vs 3 回目で 10。3 チャンクの中身を NBT で読むと、チャンク境界(z=14〜15)の閃緑岩の塊が安山岩になっている 89 ブロックと、水がシーグラスになっている 9 ブロックで、block_entities / block_ticks / Heightmaps は同じ。どれも隣のチャンクの装飾が重なる場所で、後から置いた方が残る種類の差(ore の置換対象は互いを含む)。この 3 チャンクは起動時のスポーン範囲の外で 1200 tick の間に生成されたもので、隣同士のどちらが先に装飾されるか(チャンクの生成順)が vanilla と Shifu で違う。生成順は Paper のチャンクの仕組み(CraftBukkit 側)が決めるので、vanilla のバイトコードの差ではない |
 
 ### 通っていないもの
 
@@ -31,7 +31,7 @@
 * Multiverse-Core: nether / end の `DerivedLevelData` を `PrimaryLevelData` に cast して落ちる(CraftBukkit は世界ごとに PrimaryLevelData を持たせるが Shifu は vanilla のまま)。
 * adventure の boss bar は作ったときの名前・色しか届かない(BossEvent の getter が vanilla のまま)。
 * MOD 併用で落ちるプラグイン: Chunky / ChunkyBorder は同名の Fabric MOD とクラスを取り合う。Veinminer は CommandAPI が 1.18.2 非対応。どちらも版の組み合わせの問題。
-* 処理順の 3 チャンクの差(上の表)。
+* 処理順の 3 チャンクの差(上の表)は生成順の違い。生成順まで vanilla に揃えるならチャンクの仕組みから。
 
 ---
 
