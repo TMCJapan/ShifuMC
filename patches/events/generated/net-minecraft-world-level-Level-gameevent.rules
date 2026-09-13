@@ -1,0 +1,13 @@
+# GenericGameEvent。ゲームイベントを配る直前。
+# 1.18.2 の GameEventDispatcher は interface で、配る相手を数えるのは
+# Level.postGameEventInRadius。Paper 1.18.2 もそこで出している。
+# そのメソッドは Level のものなので、ServerLevel のときだけ出す。
+
+file: net/minecraft/world/level/Level.java
+anchor:
+        int sectionPosCoord = SectionPos.blockToSectionCoord(pos.getX() - range);
+insert:
+    if (this instanceof net.minecraft.server.level.ServerLevel shifuLevel
+            && !dev.shifu.event.BlockEvents.genericGameEvent(shifuLevel, gameEvent, pos, entity, range)) {
+        return;
+    }

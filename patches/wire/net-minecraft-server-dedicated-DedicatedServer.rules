@@ -8,7 +8,7 @@
 # 読んだ位置: Paper-Server src/main/java/net/minecraft/server/dedicated/DedicatedServer.java(initServer)
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
-            this.setPlayerList(new DedicatedPlayerList(this, this.registries(), this.playerDataStorage));
+            this.setPlayerList(new DedicatedPlayerList(this, this.registryAccess(), this.playerDataStorage));
 insert-after:
     org.spigotmc.SpigotConfig.init((java.io.File) this.options.valueOf("spigot-settings"));
     dev.shifu.event.ShifuBootstrap.initializeConfigurations(this);

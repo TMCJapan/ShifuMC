@@ -18,8 +18,9 @@ insert:
     }
 
 # BlockDamageAbortEvent。壊すのをやめたとき
+# 1.18.2 に debugLogging は無く、ClientboundBlockBreakAckPacket を直に送る
 file: net/minecraft/server/level/ServerPlayerGameMode.java
 anchor:
-                this.debugLogging(pos, true, sequence, "aborted destroying");
+                this.player.connection.send(new ClientboundBlockBreakAckPacket(pos, this.level.getBlockState(pos), action, true, "aborted destroying"));
 insert-after:
     dev.shifu.event.PlayerEvents.blockDamageAbort(this.player, pos);

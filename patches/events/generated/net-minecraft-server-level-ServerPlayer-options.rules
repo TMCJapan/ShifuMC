@@ -3,7 +3,7 @@
 # PlayerBedLeaveEvent
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    public void stopSleepInBed(boolean skipSleepTimer, boolean updateSleepingPlayers) {
+    public void stopSleepInBed(boolean var1, boolean var2) {
 insert-after:
     if (this.isSleeping() && !dev.shifu.event.PlayerEvents.bedLeave(this)) {
         return;

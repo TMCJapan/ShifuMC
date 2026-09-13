@@ -2,7 +2,7 @@
 
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-                this.player.inventoryMenu.getSlot(packet.getSlotNum()).setByPlayer(item);
+                this.player.inventoryMenu.getSlot(packet.getSlotNum()).set(item);
 insert:
     if (!dev.shifu.event.ItemEvents.inventoryCreative(this.player, packet.getSlotNum(), item)) {
         return;

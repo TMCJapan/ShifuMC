@@ -70,7 +70,7 @@ insert-after:
 # 残す指定があれば、消したあとに戻す。
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    Iterator<MobEffectInstance> iterator = this.activeEffects.values().iterator();
+    Iterator iterator = this.activeEffects.values().iterator();
 insert:
     final java.util.List<MobEffectInstance> shifuKept = dev.shifu.event.EntityEvents.clearEffects(this, this.activeEffects.values());
 
@@ -130,7 +130,7 @@ insert-after:
 # EntityPickupItemEvent。装備できるかは hand の shifuCanPickup で先に見る(Paper は取り消し済みで出す)。
 file: net/minecraft/world/entity/Mob.java
 anchor:
-    ItemStack itemStack = this.equipItemIfPossible(item1.copy());
+    if (this.equipItemIfPossible(item1)) {
 insert:
     if (dev.shifu.event.EntityEvents.pickupListening() && !dev.shifu.event.EntityEvents.mobPickupItem(this, item, this.shifuCanPickup(item1))) {
         return;
@@ -200,7 +200,7 @@ insert:
     if (dev.shifu.event.EntityEvents.damageCancelled(this, source, amount, false, false)) {
         return false;
     }
-    final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = source.is(DamageTypeTags.IS_EXPLOSION)
+    final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = source.isExplosion()
         ? null
         : dev.shifu.event.EntityEvents.explosionPrime(this, 6.0F, false);
     if (shifuPrime != null && shifuPrime.isCancelled()) {
@@ -209,12 +209,12 @@ insert:
 
 file: net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
 anchor:
-    this.level.explode(this, damageSource, null, this.getX(), this.getY(), this.getZ(), 6.0F, false, Level.ExplosionInteraction.BLOCK);
+    this.level.explode(null, this.getX(), this.getY(), this.getZ(), 6.0F, Explosion.BlockInteraction.DESTROY);
 insert:
     if (shifuPrime == null) {
 insert-after:
     } else {
-        this.level.explode(this, damageSource, null, this.getX(), this.getY(), this.getZ(), shifuPrime.getRadius(), shifuPrime.getFire(), Level.ExplosionInteraction.BLOCK);
+        this.level.explode(null, this.getX(), this.getY(), this.getZ(), shifuPrime.getRadius(), shifuPrime.getFire(), Explosion.BlockInteraction.DESTROY);
     }
 
 # ============================================================ EnderDragon
@@ -231,13 +231,13 @@ insert:
 # ExplosionPrimeEvent(出現時の爆発)
 file: net/minecraft/world/entity/boss/wither/WitherBoss.java
 anchor:
-    this.level.explode(this, this.getX(), this.getEyeY(), this.getZ(), 7.0F, false, Level.ExplosionInteraction.MOB);
+    this.level.explode(this, this.getX(), this.getEyeY(), this.getZ(), 7.0F, false, blockInteraction);
 insert:
     final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = dev.shifu.event.EntityEvents.explosionPrime(this, 7.0F, false);
     if (shifuPrime == null) {
 insert-after:
     } else if (!shifuPrime.isCancelled()) {
-        this.level.explode(this, this.getX(), this.getEyeY(), this.getZ(), shifuPrime.getRadius(), shifuPrime.getFire(), Level.ExplosionInteraction.MOB);
+        this.level.explode(this, this.getX(), this.getEyeY(), this.getZ(), shifuPrime.getRadius(), shifuPrime.getFire(), blockInteraction);
     }
 
 # ============================================================ ArmorStand
@@ -257,7 +257,7 @@ insert:
 # EntityDamageEvent(爆発)
 file: net/minecraft/world/entity/decoration/ArmorStand.java
 anchor:
-    } else if (source.is(DamageTypeTags.IS_EXPLOSION)) {
+    } else if (source.isExplosion()) {
 insert-after:
     if (dev.shifu.event.EntityEvents.damageCancelled(this, source, amount, true, false)) {
         return false;
@@ -354,25 +354,35 @@ insert:
 # PlayerPickupArrowEvent
 file: net/minecraft/world/entity/projectile/LargeFireball.java
 anchor:
-    this.level.explode(this, this.getX(), this.getY(), this.getZ(), this.explosionPower, _boolean, Level.ExplosionInteraction.MOB);
+    this.level
+    .explode(
+    null,
+    this.getX(),
+    this.getY(),
+    this.getZ(),
+    this.explosionPower,
+    _boolean,
+    _boolean ? Explosion.BlockInteraction.DESTROY : Explosion.BlockInteraction.NONE
+    );
 insert:
     final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = dev.shifu.event.EntityEvents.explosionPrime(this, this.explosionPower, _boolean);
     if (shifuPrime == null) {
 insert-after:
     } else if (!shifuPrime.isCancelled()) {
-        this.level.explode(this, this.getX(), this.getY(), this.getZ(), shifuPrime.getRadius(), shifuPrime.getFire(), Level.ExplosionInteraction.MOB);
+        this.level.explode(null, this.getX(), this.getY(), this.getZ(), shifuPrime.getRadius(), shifuPrime.getFire(),
+                _boolean ? Explosion.BlockInteraction.DESTROY : Explosion.BlockInteraction.NONE);
     }
 
 # ExplosionPrimeEvent(ウィザーの頭)
 file: net/minecraft/world/entity/projectile/WitherSkull.java
 anchor:
-    this.level.explode(this, this.getX(), this.getY(), this.getZ(), 1.0F, false, Level.ExplosionInteraction.MOB);
+    this.level.explode(this, this.getX(), this.getY(), this.getZ(), 1.0F, false, blockInteraction);
 insert:
     final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = dev.shifu.event.EntityEvents.explosionPrime(this, 1.0F, false);
     if (shifuPrime == null) {
 insert-after:
     } else if (!shifuPrime.isCancelled()) {
-        this.level.explode(this, this.getX(), this.getY(), this.getZ(), shifuPrime.getRadius(), shifuPrime.getFire(), Level.ExplosionInteraction.MOB);
+        this.level.explode(this, this.getX(), this.getY(), this.getZ(), shifuPrime.getRadius(), shifuPrime.getFire(), blockInteraction);
     }
 
 # EntityCombustByEntityEvent(小さな火の玉)

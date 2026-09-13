@@ -1,0 +1,11 @@
+# ElderGuardianAppearanceEvent。エルダーガーディアンの幻を見せる直前。
+# 1.18.2 に MobEffectUtil.addEffectToPlayersAround は無い。効果を配るのは
+# ElderGuardian.customServerAiStep の中で、Paper 1.18.2 もそこで出している。
+
+file: net/minecraft/world/entity/monster/ElderGuardian.java
+anchor:
+            for (ServerPlayer serverPlayer : players) {
+insert-after:
+    if (!dev.shifu.event.EntityEvents.elderGuardianAppearance(this, serverPlayer)) {
+        continue;
+    }

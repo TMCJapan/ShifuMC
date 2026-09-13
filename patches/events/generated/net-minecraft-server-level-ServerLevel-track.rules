@@ -1,15 +1,21 @@
 # EntityAddToWorldEvent と EntityRemoveFromWorldEvent。
-# 1.19.4 は entity.inWorld / entity.valid を wire が入れないので、
+# 1.18.2 は entity.inWorld / entity.valid を wire が入れないので、
 # onTrackingStart / onTrackingEnd の最後の vanilla の行に当てる。
+# 1.18.2 に updateDynamicGameEventListener は無い。onTrackingStart の末尾は
+# EnderDragonPart の登録、onTrackingEnd の末尾は GameEventListenerRegistrar の外し。
 
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-            entity.updateDynamicGameEventListener(DynamicGameEventListener::add);
+                    ServerLevel.this.dragonParts.put(enderDragonPart.getId(), enderDragonPart);
+                }
+            }
 insert-after:
     dev.shifu.event.ShifuEvents.entityAddToWorld(entity, ServerLevel.this);
 
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-            entity.updateDynamicGameEventListener(DynamicGameEventListener::remove);
+            if (gameEventListenerRegistrar != null) {
+                gameEventListenerRegistrar.onListenerRemoved(entity.level);
+            }
 insert-after:
     dev.shifu.event.ShifuEvents.entityRemoveFromWorld(entity, ServerLevel.this);

@@ -1,8 +1,1 @@
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
-
-# sourceBlockOverride
-file: net/minecraft/world/level/block/entity/SculkCatalystBlockEntity.java
-anchor:
-    blockEntity.sculkSpreader.updateCursors(world, pos, world.getRandom(), true);
-insert:
-    org.bukkit.craftbukkit.event.CraftEventFactory.sourceBlockOverride = blockEntity.getBlockPos(); // CraftBukkit - SPIGOT-7068: Add source block override, not the most elegant way but better than passing down a BlockPosition up to five methods deep.
+# CraftEventFactory.sourceBlockOverride。1.18.2 にスカルクの触媒は無い。

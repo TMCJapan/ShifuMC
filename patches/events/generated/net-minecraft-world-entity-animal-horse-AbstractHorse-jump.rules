@@ -1,8 +1,10 @@
-# main(26.2)の同名の規則を 1.20.6 の行に当て直したもの。
-
 # HorseJumpEvent。乗り手の跳躍を実行する直前
+# 1.18.2 に executeRidersJump は無く、跳躍は travel の中に直に書いてある。
+# 跳ぶ条件の if ごと囲む。取り消されたら playerJumpPendingScale は
+# そのあとの onGround の枝で 0 に戻る。
 file: net/minecraft/world/entity/animal/horse/AbstractHorse.java
 anchor:
-                    this.executeRidersJump(this.playerJumpPendingScale, movementInput);
+                if (this.playerJumpPendingScale > 0.0F && !this.isJumping() && this.onGround) {
+                    double d = this.getCustomJump() * this.playerJumpPendingScale * this.getBlockJumpFactor();
 insert:
     if (dev.shifu.event.EntityEvents.horseJump(this, this.playerJumpPendingScale))

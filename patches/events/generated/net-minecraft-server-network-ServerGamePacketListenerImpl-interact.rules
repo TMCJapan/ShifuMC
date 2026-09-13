@@ -10,7 +10,7 @@ insert:
 
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-                            this.performInteraction(hand, (player, entity, hand1) -> entity.interactAt(player, pos, hand1));
+                            this.performInteraction(hand, (var1x, var2x, var3x) -> var2x.interactAt(var1x, pos, var3x));
 insert:
     if (!dev.shifu.event.PlayerEvents.interactEntity(ServerGamePacketListenerImpl.this.player, target, hand, pos)) {
         return;

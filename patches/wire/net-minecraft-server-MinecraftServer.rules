@@ -19,10 +19,10 @@ insert-after:
     while (!this.processQueue.isEmpty()) { this.processQueue.remove().run(); }
 
 # 起動中に積まれた 1 tick 遅延のタスクを、最初の tick の前に 1 回流す
+# 1.18.2 の runServer は status を組み立てず、その場の欄に入れて icon を足す
 file: net/minecraft/server/MinecraftServer.java
 anchor:
-                this.statusIcon = this.loadStatusIcon().orElse(null);
-                this.status = this.buildServerStatus();
+                this.updateStatusIcon(this.status);
 insert-after:
     this.server.getScheduler().mainThreadHeartbeat(this.tickCount);
 
@@ -115,6 +115,6 @@ insert-after:
 
 file: net/minecraft/server/MinecraftServer.java
 anchor:
-    this.resources = resourceManagerHolder;
+                this.resources = var2x;
 insert-after:
-    this.vanillaCommandDispatcher = resourceManagerHolder.managers().commands; // CraftBukkit
+    this.vanillaCommandDispatcher = var2x.managers().commands; // CraftBukkit

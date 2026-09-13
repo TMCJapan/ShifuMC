@@ -7,12 +7,12 @@ anchor:
     player.startSleepInBed(pos).ifLeft(var1x -> {
 insert:
     BlockPos shifuBedPos = pos;
+# 1.18.2 のラムダの引数は var1x。理由が null のことがあるので、
+# Paper 1.18.2 と同じく null を弾いた中で出す
 file: net/minecraft/world/level/block/BedBlock.java
 anchor:
-                    if (reason.getMessage() != null) {
-                        player.displayClientMessage(reason.getMessage(), true);
-                    }
+                        player.displayClientMessage(var1x.getMessage(), true);
 insert:
-    if (!dev.shifu.event.PlayerEvents.bedFailEnter(player, reason, world, shifuBedPos)) {
+    if (!dev.shifu.event.PlayerEvents.bedFailEnter(player, var1x, world, shifuBedPos)) {
         return;
     }

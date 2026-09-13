@@ -28,12 +28,12 @@ insert:
 
 # PlayerCommandPreprocessEvent。コマンドを組み立てる直前。
 # 差し替えられたら、差し替えた文で呼び直して vanilla の続きを飛ばす。
-# 1.19.4 は署名付きの経路(performChatCommand)だけ。文は packet.command()
+# 1.18.2 は handleCommand(String) の 1 経路。input は先頭に "/" が付いているので落として渡す
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    ParseResults<CommandSourceStack> parseResults = this.parseCommand(packet.command());
+    this.server.getCommands().performCommand(this.player.createCommandSourceStack(), input);
 insert:
-    if (!dev.shifu.event.PlayerEvents.commandPreprocess(this, packet.command())) {
+    if (!dev.shifu.event.PlayerEvents.commandPreprocess(this, input.substring(1))) {
         return;
     }
 
@@ -53,7 +53,7 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/dedicated/DedicatedServer.java.patch(RemoteServerCommandEvent)
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
-    this.executeBlocking(() -> this.getCommands().performPrefixedCommand(this.rconConsoleSource.createCommandSourceStack(), command));
+    this.executeBlocking(() -> this.getCommands().performCommand(this.rconConsoleSource.createCommandSourceStack(), command));
 insert:
     if (dev.shifu.event.PlayerEvents.remoteCommand(this, this.rconConsoleSource, command)) {
 insert-after:
@@ -134,7 +134,7 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/world/BaseSpawner.java.patch
 file: net/minecraft/server/players/PlayerList.java
 anchor:
-    return Component.translatable("multiplayer.disconnect.not_whitelisted");
+    return new TranslatableComponent("multiplayer.disconnect.not_whitelisted");
 insert:
     final Component shifuWhitelistKick = dev.shifu.event.PlayerEvents.whitelistKickMessage();
     if (shifuWhitelistKick != null) {
@@ -191,7 +191,7 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/player/Player.java.patch(PlayerShieldDisableEvent)
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-    if (attacker.canDisableShield()) {
+    if (attacker.getMainHandItem().getItem() instanceof AxeItem) {
     this.disableShield(true);
 insert:
     dev.shifu.event.PlayerEvents.shieldAttacker(attacker);

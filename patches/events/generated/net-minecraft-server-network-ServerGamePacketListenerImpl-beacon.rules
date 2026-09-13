@@ -1,10 +1,13 @@
 # PlayerChangeBeaconEffectEvent。ビーコンの効果を決める直前。
+# 1.18.2 は局所変数を取らず containerMenu を直に cast する。
+# packet の効果は id(int)なので、MobEffect.byId で引いて渡す。
 
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-            beaconMenu.updateEffects(packet.getPrimary(), packet.getSecondary());
+            ((BeaconMenu)this.player.containerMenu).updateEffects(packet.getPrimary(), packet.getSecondary());
 insert:
-    if (!dev.shifu.event.ItemEvents.changeBeaconEffect(beaconMenu, this.player,
-            packet.getPrimary(), packet.getSecondary())) {
+    if (!dev.shifu.event.ItemEvents.changeBeaconEffect((BeaconMenu)this.player.containerMenu, this.player,
+            java.util.Optional.ofNullable(net.minecraft.world.effect.MobEffect.byId(packet.getPrimary())),
+            java.util.Optional.ofNullable(net.minecraft.world.effect.MobEffect.byId(packet.getSecondary())))) {
         return;
     }

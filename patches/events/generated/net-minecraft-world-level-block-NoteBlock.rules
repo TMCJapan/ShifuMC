@@ -1,12 +1,13 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # callNotePlayEvent
+# 1.18.2 の triggerEvent は音の高さを先に出すので、その手前に置く。
 file: net/minecraft/world/level/block/NoteBlock.java
 anchor:
-    NoteBlockInstrument noteBlockInstrument = state.getValue(INSTRUMENT);
-    float f;
-insert-after:
+        int noteValue = state.getValue(NOTE);
+        float f = (float)Math.pow(2.0, (noteValue - 12) / 12.0);
+insert:
     // Paper start - move NotePlayEvent call to fix instrument/note changes
-    org.bukkit.event.block.NotePlayEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callNotePlayEvent(world, pos, noteBlockInstrument, state.getValue(NOTE));
+    org.bukkit.event.block.NotePlayEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callNotePlayEvent(world, pos, state.getValue(INSTRUMENT), state.getValue(NOTE));
     if (event.isCancelled()) return false;
     // Paper end - move NotePlayEvent call to fix instrument/note changes

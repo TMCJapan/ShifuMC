@@ -21,16 +21,22 @@ insert-after:
     this.uuid = org.bukkit.craftbukkit.util.WorldUUID.getUUID(session.getDimensionPath(worldKey).toFile());
     this.getCraftServer().addWorld(this.getWorld());
 
+# 1.18.2 に updateDynamicGameEventListener は無い。onTrackingEnd の末尾は
+# GameEventListenerRegistrar の外し。
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    entity.updateDynamicGameEventListener(DynamicGameEventListener::remove);
+            if (gameEventListenerRegistrar != null) {
+                gameEventListenerRegistrar.onListenerRemoved(entity.level);
+            }
 insert-after:
     entity.valid = false;
 
 # 死亡の落とし物と経験値オーブを控えに移す。控えている最中でなければ何もしないので、
 # プラグインを入れていないときに増える仕事は参照 1 つの比較。
+# 1.18.2 の ServerLevel は gameEventDispatcher を持たない(配りはチャンクごと)。
+# worldBorder は Level の構築子で作られているので、構築子の中ならどこでも入る。
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-        this.gameEventDispatcher = new GameEventDispatcher(this);
+        this.getWorldBorder().setAbsoluteMaxSize(server.getAbsoluteMaxWorldSize());
 insert-after:
     this.getWorldBorder().world = this;

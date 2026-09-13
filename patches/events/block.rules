@@ -63,7 +63,7 @@ insert:
 # wasExploded(誘爆)
 file: net/minecraft/world/level/block/TntBlock.java
 anchor:
-    PrimedTnt primedTnt = new PrimedTnt(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, explosion.getIndirectSourceEntity());
+    PrimedTnt primedTnt = new PrimedTnt(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, explosion.getSourceMob());
 insert:
     if (!dev.shifu.event.ShifuEvents.tntPrimeByExplosion(world, pos, explosion)) {
         return;

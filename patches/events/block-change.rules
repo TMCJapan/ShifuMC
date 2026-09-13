@@ -19,14 +19,7 @@ insert:
 insert-after:
     dev.shifu.event.ShifuEvents.blockForm(this, blockPos1, shifuBlock5, net.minecraft.world.level.block.Block.UPDATE_ALL, null);
 
-# handleBlockFormEvent
-file: net/minecraft/server/level/ServerLevel.java
-anchor:
-    this.setBlockAndUpdate(blockPos, blockState1);
-insert:
-    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock6 = dev.shifu.event.ShifuEvents.blockChangeBefore(this, blockPos, org.bukkit.event.block.BlockFormEvent.getHandlerList());
-insert-after:
-    dev.shifu.event.ShifuEvents.blockForm(this, blockPos, shifuBlock6, net.minecraft.world.level.block.Block.UPDATE_ALL, null);
+# handleBlockFormEvent(雪の層の積み増し)は 1.18.2 の ServerLevel.tickChunk に無いので落とした
 
 # handleBlockFormEvent
 file: net/minecraft/server/level/ServerLevel.java
@@ -47,9 +40,11 @@ insert-after:
     dev.shifu.event.ShifuEvents.blockGrow(world, blockPos, shifuBlock12, net.minecraft.world.level.block.Block.UPDATE_ALL);
 
 # handleCauldronLevelChangeEvent
+# 1.18.2 は雨受けと鍾乳石の滴りの両方がこの 1 行なので、2 箇所に差し込む
 file: net/minecraft/world/level/block/CauldronBlock.java
 anchor:
     world.setBlockAndUpdate(pos, Blocks.WATER_CAULDRON.defaultBlockState());
+count: 2
 insert:
     final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock13 = dev.shifu.event.ShifuEvents.blockChangeBefore(world, pos, org.bukkit.event.block.CauldronLevelChangeEvent.getHandlerList());
 insert-after:
@@ -64,21 +59,12 @@ insert:
 insert-after:
     dev.shifu.event.ShifuEvents.cauldronLevelChange(world, pos, shifuBlock14, null, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.NATURAL_FILL);
 
-# handleCauldronLevelChangeEvent
-file: net/minecraft/world/level/block/CauldronBlock.java
-anchor:
-    BlockState blockState = Blocks.WATER_CAULDRON.defaultBlockState();
-    world.setBlockAndUpdate(pos, blockState);
-insert:
-    final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock15 = dev.shifu.event.ShifuEvents.blockChangeBefore(world, pos, org.bukkit.event.block.CauldronLevelChangeEvent.getHandlerList());
-insert-after:
-    dev.shifu.event.ShifuEvents.cauldronLevelChange(world, pos, shifuBlock15, null, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.NATURAL_FILL);
+# handleCauldronLevelChangeEvent(鍾乳石の水の滴り)は上の count: 2 の側で受けている
 
 # handleCauldronLevelChangeEvent
 file: net/minecraft/world/level/block/CauldronBlock.java
 anchor:
-    BlockState blockState = Blocks.LAVA_CAULDRON.defaultBlockState();
-    world.setBlockAndUpdate(pos, blockState);
+    world.setBlockAndUpdate(pos, Blocks.LAVA_CAULDRON.defaultBlockState());
 insert:
     final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock16 = dev.shifu.event.ShifuEvents.blockChangeBefore(world, pos, org.bukkit.event.block.CauldronLevelChangeEvent.getHandlerList());
 insert-after:
@@ -87,8 +73,7 @@ insert-after:
 # handleCauldronLevelChangeEvent
 file: net/minecraft/world/level/block/LayeredCauldronBlock.java
 anchor:
-    BlockState blockState = state.cycle(LEVEL);
-    world.setBlockAndUpdate(pos, blockState);
+    world.setBlockAndUpdate(pos, state.cycle(LEVEL));
 insert:
     final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock26 = dev.shifu.event.ShifuEvents.blockChangeBefore(world, pos, org.bukkit.event.block.CauldronLevelChangeEvent.getHandlerList());
 insert-after:

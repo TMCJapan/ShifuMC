@@ -1,13 +1,15 @@
 # Paper が vanilla のメソッドの中で行う代入。既存の行は変えていない。
 
 # Paper は Level の構築子で this.world = new CraftWorld((ServerLevel) this, gen, biomeProvider, environment)
-# 1.19.4 の createWorldContextMap は (Path, String, ResourceLocation, SpigotWorldConfig) の 4 引数
+# 1.18.2 の Paper の世界ごとの設定は PaperWorldConfig(名前, SpigotWorldConfig)で、
+# configuration パッケージ(createWorldContextMap)はまだ無い。
+# 1.18.2 の構築子は registryAccess も damageSources も持たないので、先頭の 2 行に当てる。
 file: net/minecraft/world/level/Level.java
 anchor:
-        this.registryAccess = registryManager;
-        this.damageSources = new DamageSources(registryManager);
-insert-after:
-    // Paper は構築子の頭で spigotConfig と paperConfig を作る。CraftWorld の構築子は paperConfig() を読むので、
+        this.profiler = profiler;
+        this.levelData = properties;
+insert:
+    // Paper は構築子の頭で spigotConfig と paperConfig を作る。CraftWorld の構築子は paperConfig を読むので、
     // CraftWorld より先に作る。世界の名前は CraftBukkit の並べ方(overworld はそのまま、他は _nether / _the_end)。
     final net.minecraft.server.MinecraftServer shifuServer = net.minecraft.server.MinecraftServer.getServer();
     final String shifuLevelName = shifuServer.getWorldData().getLevelName();
@@ -16,10 +18,7 @@ insert-after:
                     : registryRef == Level.END ? "the_end"
                             : registryRef.location().getNamespace() + "_" + registryRef.location().getPath());
     this.spigotConfig = new org.spigotmc.SpigotWorldConfig(shifuBukkitName);
-    this.paperConfig = shifuServer.paperConfigurations.createWorldConfig(
-            io.papermc.paper.configuration.PaperConfigurations.createWorldContextMap(
-                    shifuServer.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT),
-                    shifuBukkitName, registryRef.location(), this.spigotConfig));
+    this.paperConfig = new com.destroystokyo.paper.PaperWorldConfig(shifuBukkitName, this.spigotConfig);
     // CraftWorld.getName() が読む。Shifu は 1 つのフォルダに 3 次元を置くため、ここで分けた名前を欄に入れる
     ((net.minecraft.server.level.ServerLevel) this).bukkitName = shifuBukkitName;
     // Anti-Xray は繋いでいない。CraftWorld が読むので、何もしない実装を入れておく

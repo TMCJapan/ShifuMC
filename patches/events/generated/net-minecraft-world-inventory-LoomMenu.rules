@@ -1,10 +1,12 @@
 # PlayerLoomPatternSelectEvent。機織り機の模様を選ぶ直前。
+# 1.18.2 の BannerPattern は enum で、selectablePatterns も Holder も無い。
+# Paper 1.18.2 と同じく BannerPattern.values()[id] を渡す。
 
 file: net/minecraft/world/inventory/LoomMenu.java
 anchor:
             this.selectedBannerPatternIndex.set(id);
-            this.setupResultSlot(this.selectablePatterns.get(id));
+            this.setupResultSlot();
 insert:
-    if (!dev.shifu.event.ItemEvents.loomSelect(player, this, this.selectablePatterns.get(id))) {
+    if (!dev.shifu.event.ItemEvents.loomSelect(player, this, BannerPattern.values()[id])) {
         return false;
     }

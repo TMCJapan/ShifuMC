@@ -2,8 +2,8 @@
 
 file: net/minecraft/world/entity/Entity.java
 anchor:
-                if (this.onGround) {
-                    block.stepOn(this.level, onPosLegacy, blockState, this);
+                if (this.onGround && !this.isSteppingCarefully()) {
+                    block.stepOn(this.level, onPos, blockState, this);
 insert:
     if (this.horizontalCollision) {
         dev.shifu.event.EntityEvents.vehicleBlockCollision(this, movement, vec3);

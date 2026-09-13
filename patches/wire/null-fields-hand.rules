@@ -45,9 +45,4 @@ anchor:
 insert-after:
     this.player = playerInventory;
 
-# SculkSpreader.level。SculkBloomEvent が読む。Paper は updateCursors で入れる。
-file: net/minecraft/world/level/block/SculkSpreader.java
-anchor:
-    public void updateCursors(LevelAccessor world, BlockPos pos, RandomSource random, boolean shouldConvertToBlock) {
-insert-after:
-    this.level = world;
+# SculkSpreader.level。1.18.2 にスカルク一式(SculkSpreader)は無い。

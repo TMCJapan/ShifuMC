@@ -15,7 +15,7 @@
 file: net/minecraft/world/level/block/DispenserBlock.java
 anchor:
     world.levelEvent(1001, pos, 0);
-    world.gameEvent(null, GameEvent.DISPENSE_FAIL, pos);
+    world.gameEvent(GameEvent.DISPENSE_FAIL, pos);
 insert:
     if (dev.shifu.event.BlockEvents.failedDispense(world, pos)) {
 insert-after:
@@ -42,7 +42,7 @@ insert:
 
 file: net/minecraft/core/dispenser/BoatDispenseItemBehavior.java
 anchor:
-    Boat boat = (Boat)(this.isChestBoat ? new ChestBoat(level, d, d1 + d3, d2) : new Boat(level, d, d1 + d3, d2));
+    Boat boat = new Boat(level, d, d1 + d3, d2);
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, new net.minecraft.world.phys.Vec3(d, d1 + d3, d2))) {
         return stack;
@@ -98,7 +98,7 @@ insert:
 # BlockDispenseEvent(防具立て)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    Consumer<ArmorStand> consumer = EntityType.appendDefaultStackConfig(armorStand1 -> armorStand1.setYRot(direction.toYRot()), level, stack, null);
+    ArmorStand armorStand = new ArmorStand(level, blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5);
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(pointer, stack)) {
         return stack;
@@ -146,7 +146,7 @@ insert:
 # BlockDispenseEvent(グロウストーンでリスポーンアンカー)
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java
 anchor:
-    RespawnAnchorBlock.charge(null, level, blockPos, blockState);
+    RespawnAnchorBlock.charge(level, blockPos, blockState);
 insert:
     if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, blockPos)) {
         this.setSuccess(false);
@@ -163,16 +163,7 @@ insert:
         return stack;
     }
 
-# BlockDispenseEvent(水入り瓶で泥)
-file: net/minecraft/core/dispenser/DispenseItemBehavior.java
-anchor:
-    if (!level.getBlockState(blockPos).is(BlockTags.CONVERTABLE_TO_MUD)) {
-    return this.defaultDispenseItemBehavior.dispense(pointer, stack);
-    } else {
-insert-after:
-    if (!dev.shifu.event.BlockEvents.dispense(pointer, stack, blockPos)) {
-        return stack;
-    }
+# BlockDispenseEvent(水入り瓶で泥)は 1.18.2 に泥が無いので落とした
 
 # ------------------------------------------------------------ ドロッパー・ホッパー
 
@@ -369,14 +360,8 @@ insert:
 insert-after:
     }
 
-file: net/minecraft/world/level/block/ComposterBlock.java
-anchor:
-    public static BlockState extractProduce(Entity user, BlockState state, Level world, BlockPos pos) {
-insert-after:
-    if (user != null && !(user instanceof Player)
-            && !dev.shifu.event.BlockEvents.entityChangeBlock(user, pos, state.setValue(LEVEL, 0))) {
-        return state;
-    }
+# EntityChangeBlockEvent(コンポスターから骨粉を取り出す)は 1.18.2 の extractProduce に
+# 取り出した者の引数が無いので落とした
 
 # PlayerShearBlockEvent(蜂の巣をハサミで刈る)
 file: net/minecraft/world/level/material/FlowingFluid.java
@@ -418,7 +403,7 @@ insert-after:
 
 file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
-    if (flag2) {
+    if (!itemStack.isEmpty()) {
     Item item = itemStack.getItem();
     itemStack.shrink(1);
     if (itemStack.isEmpty()) {
@@ -434,7 +419,7 @@ insert-after:
 # FurnaceStartSmeltEvent
 file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
-    if (burn(world.registryAccess(), recipe, blockEntity.items, maxStackSize)) {
+    if (burn(recipe, blockEntity.items, maxStackSize)) {
 insert:
     dev.shifu.event.BlockEvents.furnaceSmeltAt(world, pos);
 
@@ -489,9 +474,9 @@ insert:
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     for (int i = 0; i < signText.size(); i++) {
-    FilteredText filteredText = signText.get(i);
+    TextFilter.FilteredText filteredText = signText.get(i);
 insert:
-    final java.util.List<FilteredText> shifuSignLines = dev.shifu.event.BlockEvents.signChange(signBlockEntity, this.player, signText);
+    final java.util.List<net.minecraft.server.network.TextFilter.FilteredText> shifuSignLines = dev.shifu.event.BlockEvents.signChange(signBlockEntity, this.player, signText);
     if (shifuSignLines == null) {
         return;
     }
@@ -566,20 +551,7 @@ insert-after:
 
 # ------------------------------------------------------------ スカルクの脈が広がる
 #
-# Paper は attemptPlaceSculk に originPos を足して渡す。Shifu は呼ぶ直前に置く。
-file: net/minecraft/world/level/block/SculkVeinBlock.java
-anchor:
-    if (shouldConvertToBlock && this.attemptPlaceSculk(spreadManager, world, cursor.getPos(), random)) {
-insert:
-    dev.shifu.event.BlockEvents.spreadSource(catalystPos);
-
-file: net/minecraft/world/level/block/SculkVeinBlock.java
-anchor:
-    world.setBlock(blockPos, blockState2, 3);
-insert:
-    if (!dev.shifu.event.BlockEvents.spreadFromSource(world, blockPos, blockState2)) {
-        return false;
-    }
+# BlockSpreadEvent(スカルク)は 1.18.2 にスカルクが無いので落とした
 
 # ------------------------------------------------------------ 鍾乳石が伸びる
 #
@@ -643,7 +615,7 @@ insert-after:
 # 竹の新しい節は広がり。状態の式が重いので、登録が無いときは短絡させる。
 # Paper は下 2 段の葉の付け替えを発火のあとへ動かすが、それは vanilla の順を変えるので採らない
 # (取り消しても葉の付け替えは済んでいる)。
-file: net/minecraft/world/level/block/BambooStalkBlock.java
+file: net/minecraft/world/level/block/BambooBlock.java
 anchor:
     world.setBlock(pos.above(), this.defaultBlockState().setValue(AGE, i).setValue(LEAVES, bambooLeaves).setValue(STAGE, i1), 3);
 insert:
@@ -748,7 +720,7 @@ insert:
 # 読んだ位置: Paper-Server src/main/java/net/minecraft/world/level/storage/loot/LootTable.java(fillInventory)
 file: net/minecraft/world/level/storage/loot/LootTable.java
 anchor:
-    List<Integer> availableSlots = this.getAvailableSlots(inventory, random);
+    List availableSlots = this.getAvailableSlots(inventory, random);
     this.shuffleAndSplitItems(randomItems, availableSlots.size(), random);
 insert:
     final org.bukkit.event.world.LootGenerateEvent shifuLoot =
@@ -756,4 +728,4 @@ insert:
     if (shifuLoot.isCancelled()) {
         return;
     }
-    randomItems = shifuLoot.getLoot().stream().map(org.bukkit.craftbukkit.inventory.CraftItemStack::asNMSCopy).collect(ObjectArrayList.toList());
+    randomItems = shifuLoot.getLoot().stream().map(org.bukkit.craftbukkit.inventory.CraftItemStack::asNMSCopy).collect(java.util.stream.Collectors.toList());

@@ -39,7 +39,7 @@ insert-after:
 file: net/minecraft/world/item/MinecartItem.java
 anchor:
     level.addFreshEntity(abstractMinecart);
-    level.gameEvent(GameEvent.ENTITY_PLACE, clickedPos, GameEvent.Context.of(context.getPlayer(), level.getBlockState(clickedPos.below())));
+    level.gameEvent(context.getPlayer(), GameEvent.ENTITY_PLACE, clickedPos);
 insert:
     if (!dev.shifu.event.ItemEvents.entityPlace(level, clickedPos, context.getClickedFace(), context.getPlayer(), abstractMinecart, context.getHand())) {
         if (context.getPlayer() != null) {

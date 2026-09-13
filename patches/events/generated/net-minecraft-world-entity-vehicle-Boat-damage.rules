@@ -10,10 +10,13 @@ insert:
         return false;
     }
 
+# 1.18.2 に destroy(DamageSource) は無く、落とし物と discard が直に書いてある。
+# Paper 1.18.2 と同じく、壊す枝に入った直後で出す。
 file: net/minecraft/world/entity/vehicle/Boat.java
 anchor:
-                    this.destroy(source);
-insert:
+            if (flag || this.getDamage() > 40.0F) {
+insert-after:
     if (!dev.shifu.event.EntityEvents.vehicleDestroy(this, source)) {
+        this.setDamage(40.0F);
         return true;
     }

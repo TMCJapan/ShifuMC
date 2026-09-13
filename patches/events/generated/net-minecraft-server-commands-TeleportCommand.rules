@@ -1,9 +1,12 @@
 # EntityTeleportEvent。/teleport でプレイヤー以外を飛ばす直前。
+# 1.18.2 に teleportTo(world, x, y, z, flags, yaw, pitch) は無く、
+# プレイヤー以外は moveTo / 次元をまたぐ作り直しに分かれている。
+# Paper 1.18.2 は Mth.clamp のあとで出すので、同じ位置に置く。
 
 file: net/minecraft/server/commands/TeleportCommand.java
 anchor:
-            if (target.teleportTo(world, x, y, z, movementFlags, f, f1)) {
-insert:
+                float f2 = Mth.clamp(f1, -90.0F, 90.0F);
+insert-after:
     if (!dev.shifu.event.EntityEvents.entityTeleportCommand(target, world, x, y, z)) {
         return;
     }

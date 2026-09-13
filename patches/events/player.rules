@@ -12,22 +12,26 @@
 # PlayerJoinEvent
 file: net/minecraft/server/players/PlayerList.java
 anchor:
-    this.broadcastSystemMessage(mutableComponent.withStyle(ChatFormatting.YELLOW), false);
+    this.broadcastMessage(mutableComponent.withStyle(ChatFormatting.YELLOW), ChatType.SYSTEM, Util.NIL_UUID);
 insert:
     if (dev.shifu.event.ShifuEvents.silentJoin()
             || dev.shifu.event.ShifuEvents.playerJoin(player, mutableComponent.withStyle(ChatFormatting.YELLOW))) {
 insert-after:
     }
 
-# PlayerQuitEvent。3 行にまたがる文を囲む
+# PlayerQuitEvent。7 行にまたがる文を囲む
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     this.server
         .getPlayerList()
-        .broadcastSystemMessage(Component.translatable("multiplayer.player.left", this.player.getDisplayName()).withStyle(ChatFormatting.YELLOW), false);
+        .broadcastMessage(
+            new TranslatableComponent("multiplayer.player.left", this.player.getDisplayName()).withStyle(ChatFormatting.YELLOW),
+            ChatType.SYSTEM,
+            Util.NIL_UUID
+        );
 insert:
     if (dev.shifu.event.ShifuEvents.silentQuit()
-            || dev.shifu.event.ShifuEvents.playerQuit(this.player, Component.translatable("multiplayer.player.left", this.player.getDisplayName()).withStyle(ChatFormatting.YELLOW))) {
+            || dev.shifu.event.ShifuEvents.playerQuit(this.player, new TranslatableComponent("multiplayer.player.left", this.player.getDisplayName()).withStyle(ChatFormatting.YELLOW))) {
 insert-after:
     }
 
@@ -61,7 +65,8 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch:986
 file: net/minecraft/server/commands/TeleportCommand.java
 anchor:
-    if (target.teleportTo(world, x, y, z, movementFlags, f, f1)) {
+    if (world == target.level) {
+    ((ServerPlayer)target).connection.teleport(x, y, z, f, f1, movementFlags);
 insert:
     dev.shifu.event.ShifuEvents.teleportCause(target, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.COMMAND);
 
@@ -93,10 +98,14 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch:1709
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-    this.server.getPlayerList().broadcastChatMessage(message, this.player, ChatType.bind(ChatType.CHAT, this.player));
+    this.server
+        .getPlayerList()
+        .broadcastMessage(
+            component1, var3x -> this.player.shouldFilterMessageTo(var3x) ? component : component1, ChatType.CHAT, this.player.getUUID()
+        );
 insert:
     if (dev.shifu.event.ShifuEvents.silentChat()
-            || dev.shifu.event.ShifuEvents.playerChat(this.server, this.player, message)) {
+            || dev.shifu.event.ShifuEvents.playerChat(this.server, this.player, raw)) {
 insert-after:
     }
 
@@ -109,7 +118,7 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch:1989
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    this.gameEvent(GameEvent.ENTITY_DIE);
+    boolean _boolean = this.level.getGameRules().getBoolean(GameRules.RULE_SHOWDEATHMESSAGES);
 insert:
     final boolean shifuDeath = dev.shifu.event.ShifuEvents.listening(org.bukkit.event.entity.PlayerDeathEvent.getHandlerList());
 
@@ -122,7 +131,7 @@ insert:
 
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    this.connection.send(new ClientboundPlayerCombatKillPacket(this.getCombatTracker(), CommonComponents.EMPTY));
+    this.connection.send(new ClientboundPlayerCombatKillPacket(this.getCombatTracker(), TextComponent.EMPTY));
     }
 insert-after:
     }
@@ -150,7 +159,7 @@ insert-after:
 file: net/minecraft/server/level/ServerPlayerGameMode.java
 anchor:
     BlockState blockState = world.getBlockState(blockPos);
-    if (!blockState.getBlock().isEnabled(world.enabledFeatures())) {
+    if (this.gameModeForPlayer == GameType.SPECTATOR) {
 insert:
     final org.bukkit.event.player.PlayerInteractEvent shifuInteract =
             dev.shifu.event.ShifuEvents.interactBlock(this, player, world, stack, hand, hitResult, world.getBlockState(blockPos));
@@ -185,7 +194,7 @@ insert:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch(PlayerToggleFlightEvent)
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
-    Either<Player.BedSleepingProblem, Unit> either = super.startSleepInBed(pos).ifRight(unit -> {
+    Either either = super.startSleepInBed(pos).ifRight(var1x -> {
 insert:
     // 波括弧で囲って、局所変数の生存範囲をここで終わらせる。囲まないと
     // すぐ下の either が公式より 1 つ後ろの slot に入る(javac は scope の

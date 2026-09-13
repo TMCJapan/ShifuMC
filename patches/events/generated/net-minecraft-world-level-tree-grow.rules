@@ -12,7 +12,7 @@
 
 file: net/minecraft/world/level/Level.java
 anchor:
-    public boolean setBlock(BlockPos pos, BlockState state, int flags, int maxUpdateDepth) {
+    public boolean setBlock(BlockPos var1, BlockState var2, int var3, int var4) {
 insert-after:
     if (this.captureTreeGeneration) {
         return dev.shifu.event.BlockEvents.captureTreeBlock(this, pos, state, flags);
@@ -30,18 +30,19 @@ insert-after:
     }
 
 # 育てる木の種類。StructureGrowEvent が要る。
-# 1.19.4 は TreeGrower が無く、大木は AbstractMegaTreeGrower に分かれている
+# 1.18.2 は TreeGrower が無く、大木は AbstractMegaTreeGrower に分かれている。
+# Holder の局所変数の名前も総称型の付き方も 1.19.4 と違う。
 file: net/minecraft/world/level/block/grower/AbstractMegaTreeGrower.java
 anchor:
-                ConfiguredFeature<?, ?> configuredFeature = holder.value();
+            ConfiguredFeature configuredFeature = (ConfiguredFeature<?, ?>)configuredMegaFeature.value();
 insert:
-    dev.shifu.event.BlockEvents.treeType(world, holder);
+    dev.shifu.event.BlockEvents.treeType(world, configuredMegaFeature);
 
 file: net/minecraft/world/level/block/grower/AbstractTreeGrower.java
 anchor:
-                ConfiguredFeature<?, ?> configuredFeature1 = holder.value();
+            ConfiguredFeature configuredFeature1 = (ConfiguredFeature<?, ?>)configuredFeature.value();
 insert:
-    dev.shifu.event.BlockEvents.treeType(world, holder);
+    dev.shifu.event.BlockEvents.treeType(world, configuredFeature);
 
 # 骨粉。手で使ったとき
 file: net/minecraft/world/item/ItemStack.java
