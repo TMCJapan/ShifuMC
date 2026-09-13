@@ -1,3 +1,40 @@
+# 現状(ver/1.18.2)
+
+このブランチは Minecraft 1.18.2。`ver/1.19.4` から切った。節ごとにどの版で測ったかを頭に書いてある。
+
+## 1.18.2 の状態(2026-09-14)
+
+コンパイル 0 件、公式に戻したクラスへの参照の欠落 0 件(`LinkCheck`)、プラグイン無しで起動(Done 1.5s、例外 0)。
+`shifu.jar`(Fabric Loader 0.19.5)+ MOD 16 個(fabric-api の中身を含めて 95)+ プラグイン 25 個で起動し
+(Mixin の失敗 0)、bot が参加して drive の一連が 1.19.4 と同じ数で通る
+(拾う 2、InventoryClick 1、爆発 1、BlockBreak 1、PlayerMove 2、gamemode、/home、TNT、ドア)。
+
+### 済んだこと
+
+| | |
+|---|---|
+| Paper 1.18.2 | `f34f678b2`(1.19 へ移る直前)を `/d/.pw182` に展開。server 2545 / 2548 のパッチが入る(外れた 3 件は build.gradle.kts。velocity-native / mapping-io / log4j 2.17.1 を手で足した) |
+| vanilla の木 | codebook + Vineflower 1.11.1(`-udv=1`。0 だと引数名が var1 になる)。基点 `bed1f08` |
+| 規則 | 607 件が全部当たる(1.19 の機能: sculk・warden・frog・camel・署名付きチャットの規則は外した)。発火層は PotionUtils / TextComponent / Registry の形 |
+| 1.18.2 だけの直し | record の中に paperweight 1.3 が残した難読化名の欄と 1 文字の構築子を shim が写さない。`PaperConfiguredStructure.init()` を起動側で呼ぶ(Paper は vanilla の static ブロックに置く)。`RangedAttribute.maxValue` の unfinal。AT で広げただけの欄(`SkeletonHorse.trapTime` など)は classic 版では全部明示の access 規則 |
+| adventure の文 | Paper 1.18.2 は packet に足した欄 `adventure$message` / `components` を書き換えた write() で流す。Shifu は write() が vanilla なので、packet に adventure を受ける構築子を hand で足し、CraftPlayer の 14 箇所を adapter でそちらに向けた。`PaperAdventure.asVanilla` の遅延包みは Paper の Serializer 登録が無いと書けないので、深い変換に落とす adapter も入れた |
+| bot / drive | 1.18.2 の API(署名無しチャット、bundle 無し、コマンドは `/` 付きのチャット)に写した |
+| MOD 併用 | Fabric API の BedBlockMixin は `BedBlock.use` の ifLeft ラムダに @Inject する。発火の呼び出しでラムダに world / pos を捕まえさせると合成メソッドの記述子が変わって当たらないので、`PlayerEvents.armBedPos` で呼ぶ前に static に控える |
+| launcher | fabric-loader は開発経路(`fabric.development=true`、MOD を intermediary から写すために使っている)で MOD の順を毎回シャッフルする。Mixin の同順位の適用順がそれに従うので、同じ呼び出しを @Redirect する krypton と lithium(`ChunkMap.TrackedEntity` の `Sets.newIdentityHashSet()`)は後になった方が外れ、`defaultRequire: 1` の krypton が起動の半分で落ちた。`-Dfabric.debug.disableModShuffle=true` で本番と同じ id 順に固定(1.20.6 / 1.21.11 / 1.19.4 にも入れた) |
+| MOTD | Paper は MOTD を AdventureComponent のまま ServerStatus に入れ、書き換えた Serializer で JSON にする。Shifu は Serializer が vanilla なので `PaperAdventure.asVanilla` に変換して入れる adapter。サーバー一覧 ping で MiniMOTD の装飾付きの文が返る |
+| 世界生成の突き合わせ | 同じシードで vanilla 4 回、Shifu 2 回(Done の 20 秒後に stop)。ばらつきを両側から引いた残り **18 チャンクは 17 一致、不一致 1**(ブロック配列の 1 バイト)。1.18.2 も vanilla 同士で 532 中 478 が違い、比べられる範囲が狭い |
+| 処理順の突き合わせ | tickstop の agent で 1200 tick ちょうどで止める。vanilla 4 回と Shifu 2 回でばらつきを引いた残り **1374 チャンクのうち 1371 一致、不一致 3**(r.-1.-1 の (19,29) (19,30) (20,29)、隣り合う 3 チャンクのブロック配列)。同じ方法で vanilla 同士を比べると 1 回目 vs 4 回目で不一致 8、1 回目 vs 3 回目で 10。3 はその幅の中だが、vanilla 4 回と Shifu 2 回がそれぞれ揃っていて差が出た 3 チャンクなので、原因は見ていない |
+
+### 通っていないもの
+
+* spigot マッピング前提のプラグイン(InvSee++、DecentHolograms、TAB、FancyNpcs)は `ClassNotFoundException` / `NoSuchMethodError`。WorldEdit のアダプタも載らない。避けられない。
+* Multiverse-Core: nether / end の `DerivedLevelData` を `PrimaryLevelData` に cast して落ちる(CraftBukkit は世界ごとに PrimaryLevelData を持たせるが Shifu は vanilla のまま)。
+* adventure の boss bar は作ったときの名前・色しか届かない(BossEvent の getter が vanilla のまま)。
+* MOD 併用で落ちるプラグイン: Chunky / ChunkyBorder は同名の Fabric MOD とクラスを取り合う。Veinminer は CommandAPI が 1.18.2 非対応。どちらも版の組み合わせの問題。
+* 処理順の 3 チャンクの差(上の表)。
+
+---
+
 # 現状(ver/1.19.4)
 
 このブランチは Minecraft 1.19.4。`ver/1.20.6` から切った。節ごとにどの版で測ったかを頭に書いてある。
