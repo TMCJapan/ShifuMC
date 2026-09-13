@@ -15,6 +15,7 @@
 | Paper 1.19.4 | `100462074`(1.20 へ移る直前)を `/d/.pw194` に展開。API 993 / 993、server 2899 / 2900 のパッチが入る(`tools/setup-classic.sh`) |
 | vanilla の木 | codebook で LVT を付けた jar を Vineflower 1.11.1 で戻したもの(`docs/DEVELOPING.md`)。`-TouchedOnly` で触ったファイルだけ写し、触っていないクラスは公式のバイトコードに戻す |
 | 規則 | 627 件が全部当たる(`check_events.py`)。`4c9fae4` で外していた 188 ブロックと発火層 67 メソッドを 1.19.4 の API で戻した。reanchor --write が別の行に付けていた規則(DispenseItemBehavior の 6 件、MinecraftServer の heartbeat、Raider、AbstractMinecart、EnderMan、FishingHook)を直し、当たらなかった 56 件を 1.19.4 の行に付け直した |
+| MOD + プラグイン | Fabric の MOD 102 個(Fabric API、Lithium、Carpet、C2ME など)とプラグイン 19 個を同時に載せて起動し、Mixin の失敗 0、bot が参加して drive の一連が通る。LvtMatch の slot の対応を位置で絞り、nextContainerCounter を vanilla の void に戻して直った |
 | drive(プラグイン 19 個 + bot) | 1.21.11 の基準と同じ数: AuthMe の登録・ログイン、HuskHomes の sethome/home、vanilla の gamemode、PlayerCommandPreprocessEvent、拾う 2、InventoryClick 1、爆発 1、PlayerMove 2、TNT の着火、ドアの BlockMultiPlaceEvent、BlockBreakEvent、CreatureSpawnEvent / ItemSpawnEvent |
 | 道具 | `LinkCheck`(公式に戻したクラスへの参照を数える。公式の jar も読む)、`link_to_required.py`、`closure.ps1` / `run-server.ps1` |
 
@@ -25,7 +26,16 @@
   mojmap の Shifu では `ClassNotFoundException`。WorldEdit 7.2.20 も同じ理由でアダプタが載らず(`does not fully support`)、
   `//set` が何も返さない。避けられない。
 * Veinminer は 1.19.4 非対応で自分で disable する。QuickShop-Hikari は混成サーバーを止めるので試験から外している。
-* MOD を入れた起動はまだ(`run-mix19.ps1` を `-NoMods` 無しで)。世界生成と処理順の突き合わせもまだ。
+* 世界生成の突き合わせ(同じシードで vanilla 4 回、Shifu 2 回、Done の 20 秒後に stop): ばらつきを両側から引いた
+  残り **18 チャンクは 18 一致、不一致 0**。ただし 1.19.4 はこの測り方だとばらつきが大きい
+  (vanilla 同士で 530 中 417 が違う。Shifu 同士も 532 中 458)ので、比べられる範囲が狭い。
+  sh の版は MSYS の fork が枯れて止まるので、PowerShell の runner(scratchpad の worldgen19-all.ps1 / ticks19-all.ps1)で回した。
+* 処理順の突き合わせ(tickstop の agent で乱数の種を固定し 1200 tick ちょうどで止める。vanilla は mojmap に写した公式 jar):
+  vanilla 4 回と Shifu 2 回でばらつきを引いた残り **1395 チャンクのうち 1384 一致、不一致 11**。
+  同じ方法で vanilla 同士(1 回目 vs 4 回目、2・3 回目を控えに)を比べると不一致 7、1 回目 vs 3 回目で 27。
+  11 はその幅の中なので、この測り方では vanilla と Shifu を区別できない。1.19.4 は種を固定しても
+  vanilla 同士で 2066 中 597 のチャンクが変わる(1.20.6 の 108 よりずっと多い)。agent が固定していない乱数の入口が
+  1.19.4 にはまだあるということで、突き合わせを細かくするならそこから。
 * 1.19.4 の Paper-API に無いイベントは発火層が何もしない(ShulkerDuplicate、BlockBreakProgressUpdate、SculkBloom、
   AsyncStructureGenerate、EntityRemove、PlayerFailMove、PlayerPickItem、PlayerRecipeBookSettingsChange、PlayerShieldDisable、
   PlayerOpenSign、PlayerFishEvent の LURED)。
