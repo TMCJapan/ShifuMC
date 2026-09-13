@@ -944,6 +944,36 @@ public final class PlayerEvents {
     }
 
 
+    /** {@link #bedFailEnter(net.minecraft.world.entity.player.Player, net.minecraft.world.entity.player.Player.BedSleepingProblem)} が読む控え。 */
+    private static net.minecraft.world.level.Level armedBedLevel;
+    private static BlockPos armedBedPos;
+
+    /**
+     * 寝る位置を控える。{@code BedBlock.use} の {@code startSleepInBed(pos).ifLeft(reason -> ...)} の
+     * ラムダは vanilla では player と reason しか捕まえない。ラムダの中で world や pos を使うと
+     * 合成メソッドの引数が増え、Fabric API(fabric-entity-events-v1 の BedBlockMixin)がそのラムダに
+     * @Inject する記述子と合わなくなる。局所変数を足しても LVT が変わるので、文 1 つで控える。
+     */
+    public static void armBedPos(final net.minecraft.world.level.Level level, final BlockPos pos) {
+        armedBedLevel = level;
+        armedBedPos = pos;
+    }
+
+    /** ラムダの中から。捕まえるのは vanilla と同じ player と reason だけ。 */
+    public static boolean bedFailEnter(final net.minecraft.world.entity.player.Player player,
+                                       final net.minecraft.world.entity.player.Player.BedSleepingProblem reason) {
+        final net.minecraft.world.level.Level level = armedBedLevel;
+        final BlockPos pos = armedBedPos;
+        armedBedLevel = null;
+        armedBedPos = null;
+
+        if (level == null || pos == null) {
+            return true;
+        }
+
+        return bedFailEnter(player, reason, level, pos);
+    }
+
     /**
      * PlayerBedFailEnterEvent。寝られなかったとき。
      *
