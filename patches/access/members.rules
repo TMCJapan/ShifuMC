@@ -963,3 +963,27 @@ line:
 file: net/minecraft/world/entity/monster/Vindicator.java
 line:
     static final Predicate<Difficulty> DOOR_BREAKING_PREDICATE = difficulty -> difficulty == Difficulty.NORMAL || difficulty == Difficulty.HARD;
+
+# LinkCheck の access(公式に戻したクラスの欄を CraftBukkit が読む)。1.18.2 の木の行
+file: net/minecraft/world/level/block/state/BlockBehaviour.java
+line:
+    protected final BlockBehaviour.Properties properties;
+
+file: net/minecraft/server/MinecraftServer.java
+line:
+    protected void setId(String serverId) {
+
+# InternalChunkGenerator.applyBiomeDecoration を要求したので ChunkGenerator が
+# vanilla の木の版で組まれる。Paper が public にしている 3 つも広げないと、
+# CraftServer と CustomChunkGenerator が NoiseBasedChunkGenerator を作り直せない
+file: net/minecraft/world/level/chunk/ChunkGenerator.java
+line:
+    protected final Registry<StructureSet> structureSets;
+
+file: net/minecraft/world/level/chunk/ChunkGenerator.java
+line:
+    protected final Optional<HolderSet<StructureSet>> structureOverrides;
+
+file: net/minecraft/world/level/chunk/ChunkGenerator.java
+line:
+    private final long ringPlacementSeed;

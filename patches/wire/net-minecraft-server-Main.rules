@@ -3,3 +3,12 @@
 # プラグインの jar を探して provider として登録する
 # Paper 1.18.2 に PluginInitializerManager は無い。プラグインは CraftServer.loadPlugins が plugins/ から読む
 
+# Paper の Registry API(org.bukkit.Registry)は PaperRegistry に登録済みの registry を引く。
+# Paper 1.18.2 はその登録を vanilla の ConfiguredStructureFeature の static ブロックに置いているが、
+# Shifu ではそのクラスは公式のバイトコードのままなので、起動側で 1 度呼ぶ。
+# 呼ばないとプラグインの読み込み(Registry の clinit)で「No registry for that type」になる
+file: net/minecraft/server/Main.java
+anchor:
+    Bootstrap.bootStrap();
+insert-after:
+    io.papermc.paper.world.structure.PaperConfiguredStructure.init();

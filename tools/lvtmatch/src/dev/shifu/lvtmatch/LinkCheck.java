@@ -36,6 +36,9 @@ import org.objectweb.asm.tree.MethodNode;
  * 欄やメソッド(1.19.4 の {@code TicketType.PLUGIN})を別のクラスが参照していると、compile は通るのに
  * 起動時に {@code NoSuchFieldError} / {@code NoSuchMethodError} になる。ここで、戻したクラスを
  * 持ち主とする参照を全部集め、置き場にあるクラス(= 実行時に載るもの)で解決できるかを見る。
+ * 持ち主が戻していないクラスでも、宣言が戻した親や interface にしか無いこと
+ * (1.18.2 の {@code ServerLevel.addFreshEntity(Entity, SpawnReason)} は Paper が {@code LevelWriter} の
+ * default で足したもの)があるので、持ち主で絞らず全部の参照を辿る。
  * 親クラスや interface が置き場に無いもの(JDK やライブラリ)まで辿ったら、あるものとみなす。
  * {@code -TouchedOnly} では触っていないクラスは置き場にも無い(実行時は公式 jar から載る)ので、
  * 公式の jar を渡してそこから読む。vanilla の型が jar にも無ければ「無い」。
@@ -85,13 +88,13 @@ public final class LinkCheck {
 
             for (final MethodNode method : node.methods) {
                 for (final AbstractInsnNode insn : method.instructions) {
-                    if (insn instanceof FieldInsnNode f && kept.contains(f.owner)) {
+                    if (insn instanceof FieldInsnNode f) {
                         check(missing, internal, method.name, f.owner, f.name, f.desc, true);
-                    } else if (insn instanceof MethodInsnNode m && kept.contains(m.owner)) {
+                    } else if (insn instanceof MethodInsnNode m) {
                         check(missing, internal, method.name, m.owner, m.name, m.desc, false);
                     } else if (insn instanceof InvokeDynamicInsnNode indy) {
                         for (final Object arg : indy.bsmArgs) {
-                            if (arg instanceof Handle h && kept.contains(h.getOwner())) {
+                            if (arg instanceof Handle h) {
                                 // H_GETFIELD=1 .. H_PUTSTATIC=4 が欄、それ以外はメソッド
                                 check(missing, internal, method.name, h.getOwner(), h.getName(), h.getDesc(),
                                         h.getTag() >= 1 && h.getTag() <= 4);

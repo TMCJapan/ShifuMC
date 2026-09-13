@@ -196,7 +196,13 @@ public final class Bot {
                 log("sent respawn");
             }
             // 1.18.2 はシステムのチャットも ClientboundChatPacket で届く
-            case "handleChat" -> this.command(((ClientboundChatPacket) packet).getMessage().getString());
+            case "handleChat" -> {
+                // Paper は adventure の Component で書くので、読めない JSON だと message が null になる
+                final net.minecraft.network.chat.Component shifuMessage = ((ClientboundChatPacket) packet).getMessage();
+                if (shifuMessage != null) {
+                    this.command(shifuMessage.getString());
+                }
+            }
             case "handleDisconnect" -> {
                 log("disconnected: " + ((ClientboundDisconnectPacket) packet).getReason().getString());
                 this.done.countDown();

@@ -131,3 +131,11 @@
                 .findNearestMapFeature(this, structures, pos, radius, skipExistingChunks);
         return pair != null ? pair.getFirst() : null;
     }
+
+// ServerLevel.addFreshEntity
+    // CraftBukkit は理由付きの版で湧かせる(CraftWorld.spawn、EntityType の spawn)。Paper 1.18.2 と同じく
+    // 理由付きの addEntity へ渡す。vanilla の addFreshEntity(Entity) は変えない(1 引数の版は DEFAULT で来る)。
+    // 同名の vanilla のメソッドがあるので shim は写さない。LevelWriter の default と対で置く
+    public boolean addFreshEntity(final Entity entity, final org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason reason) {
+        return this.addEntity(entity, reason);
+    }
