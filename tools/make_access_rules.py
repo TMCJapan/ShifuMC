@@ -118,18 +118,32 @@ def base_of(tree):
 
 
 def pristine(tree, rel, base):
-    """基点コミットでのそのファイルの中身。取れなければ今の木を読む。"""
-    if base:
-        done = subprocess.run(["git", "-C", tree, "show", f"{base}:{rel}"],
-                              capture_output=True, text=True, encoding="utf-8",
-                              errors="replace")
+    """基点コミットでのそのファイルの中身。
+
+    今の木(当てたあと)を読むと、既に public にした行がアンカーになって次の回に当たらない。
+    git が失敗したとき(Windows の spawn が間欠的に落ちる)に今の木へ黙って倒すと、
+    その回の規則だけが壊れて気付けないので、3 回まで試して駄目なら止める。
+    """
+    if not base:
+        raise SystemExit(f"基点コミットが分からない: {rel}")
+
+    last = None
+
+    for _ in range(3):
+        try:
+            done = subprocess.run(["git", "-C", tree, "show", f"{base}:{rel}"],
+                                  capture_output=True, text=True, encoding="utf-8",
+                                  errors="replace")
+        except OSError as e:
+            last = str(e)
+            continue
 
         if done.returncode == 0:
             return done.stdout.split("\n")
 
-    return io.open(os.path.join(tree, rel.replace("/", os.sep)),
-                   encoding="utf-8", errors="replace").read().split("\n")
+        last = done.stderr.strip()
 
+    raise SystemExit(f"git show {base}:{rel} が通らない({last})。今の木は読まない")
 
 def find(lines, name, args):
     """その要素の宣言の行番号。1 つに定まらなければ None。"""
