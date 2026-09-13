@@ -83,6 +83,11 @@ record Namespace(Path mappings, Path remapClassPath) {
 				"-Dfabric.defaultModDistributionNamespace=intermediary",
 				// MOD を intermediary から named へ写すのは、fabric-loader では開発環境の経路。
 				"-Dfabric.development=true",
+				// 開発環境の経路では fabric-loader が MOD の順を毎回シャッフルする(FabricLoaderImpl.setup)。
+				// Mixin の適用順が起動ごとに変わり、同じ呼び出しを @Redirect する MOD 同士
+				// (1.18.2 の krypton と lithium の ChunkMap.TrackedEntity)は後になった方が外れる。
+				// 本番と同じ id 順で固定する
+				"-Dfabric.debug.disableModShuffle=true",
 				"-Dfabric.remapClasspathFile=" + this.remapClassPath.toAbsolutePath());
 	}
 
