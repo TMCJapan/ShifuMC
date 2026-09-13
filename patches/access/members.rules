@@ -9,11 +9,6 @@
 # アンカーは vanilla のソースそのまま。Minecraft が更新されて宣言が変わったら
 # widen_access.py が失敗するので、黙って通ることはない。
 
-# CraftPlayer と Paper の接続ラッパーが接続に直に触る
-file: net/minecraft/server/network/ServerCommonPacketListenerImpl.java
-line:
-    protected final Connection connection;
-
 # CraftLlama が隊列の後続と強さを読み書きする
 file: net/minecraft/world/entity/animal/horse/Llama.java
 line:
@@ -56,11 +51,6 @@ file: net/minecraft/world/item/context/UseOnContext.java
 line:
     protected final BlockHitResult getHitResult() {
 
-# CraftEntity.teleportAsync がチケットの段を直に指定する
-file: net/minecraft/server/level/ChunkLevel.java
-line:
-    private static final int FULL_CHUNK_LEVEL = 33;
-
 # CraftWorld が gamerule の値を直に入れる。
 # 上書きしている 2 つは行が同じで 1 つに定まらないので patches/narrow で広げる。
 file: net/minecraft/world/level/GameRules.java
@@ -79,17 +69,6 @@ line:
 public class LecternBlockEntity extends BlockEntity implements Clearable, MenuProvider {
 implements:
     net.minecraft.commands.CommandSource
-
-# Paper の当たり判定の道具が別のパッケージから作る
-file: net/minecraft/world/phys/shapes/ArrayVoxelShape.java
-line:
-    ArrayVoxelShape(DiscreteVoxelShape shape, DoubleList xPoints, DoubleList yPoints, DoubleList zPoints) {
-
-# ServerLevel の中に入る EntityRegionFileStorage が super で呼ぶ。
-# 同じパッケージの外からは見えないので public にする
-file: net/minecraft/world/level/chunk/storage/RegionFileStorage.java
-line:
-    RegionFileStorage(RegionStorageInfo storageKey, Path directory, boolean dsync) {
 
 # DATA_TICKS_FROZEN。resendPossiblyDesyncedDataValues に渡す(EntityPortalEvent の発火)
 file: net/minecraft/world/entity/Entity.java
@@ -272,11 +251,6 @@ file: net/minecraft/world/level/block/ComposterBlock.java
 line:
     static class OutputContainer extends SimpleContainer implements WorldlyContainer {
 
-# CraftServer.createWorld が作る
-file: net/minecraft/server/dedicated/DedicatedServerProperties.java
-line:
-    record WorldDimensionData(JsonObject generatorSettings, String levelType) {
-
 # CraftChunk と CraftWorld が読む
 file: net/minecraft/world/level/chunk/ChunkAccess.java
 line:
@@ -292,11 +266,6 @@ file: net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
 line:
     private final EnderDragonPart[] subEntities;
 
-# Paper は BlockableEventLoop.doRunTask を public にしている。上書きは弱くできない
-file: net/minecraft/server/MinecraftServer.java
-line:
-    protected void doRunTask(TickTask task) {
-
 # CraftBlock / CraftBlockState / CraftMagicNumbers が読む
 file: net/minecraft/world/level/block/state/BlockBehaviour.java
 line:
@@ -306,16 +275,6 @@ line:
 file: net/minecraft/world/entity/vehicle/Boat.java
 line:
     private Boat.Status status;
-
-# CraftCreatureSpawner が読む
-file: net/minecraft/world/level/BaseSpawner.java
-line:
-    private SpawnData nextSpawnData;
-
-# CustomChunkGenerator が親の構築子へ渡す
-file: net/minecraft/world/level/chunk/ChunkGenerator.java
-line:
-    private final Function<Holder<Biome>, BiomeGenerationSettings> generationSettingsGetter;
 
 # Paper の PlayerChunkLoader が呼ぶ(呼ばれないが compile は通す)
 file: net/minecraft/server/level/ChunkMap.java
@@ -334,23 +293,8 @@ file: net/minecraft/world/entity/player/Player.java
 line:
     protected SoundEvent getDeathSound() {
 
-# doRunTask(): Paper が親を public にしている
-file: net/minecraft/server/MinecraftServer.java
-line:
-    protected void doRunTask(TickTask task) {
-
 # getSoundVolume(): Paper が親を public にしている
 file: net/minecraft/world/entity/animal/horse/AbstractHorse.java
-line:
-    protected float getSoundVolume() {
-
-# getDeathSound(): Paper が親を public にしている
-file: net/minecraft/world/entity/animal/allay/Allay.java
-line:
-    protected SoundEvent getDeathSound() {
-
-# getSoundVolume(): Paper が親を public にしている
-file: net/minecraft/world/entity/animal/allay/Allay.java
 line:
     protected float getSoundVolume() {
 
@@ -393,11 +337,6 @@ line:
 file: net/minecraft/world/entity/animal/Bee.java
 line:
     protected float getSoundVolume() {
-
-# getDeathSound(): Paper が親を public にしている
-file: net/minecraft/world/entity/animal/camel/Camel.java
-line:
-    protected SoundEvent getDeathSound() {
 
 # getDeathSound(): Paper が親を public にしている
 file: net/minecraft/world/entity/animal/Cat.java
@@ -544,11 +483,6 @@ file: net/minecraft/world/entity/monster/Slime.java
 line:
     protected float getSoundVolume() {
 
-# getDeathSound(): Paper が親を public にしている
-file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
-line:
-    protected SoundEvent getDeathSound() {
-
 # getPickupItem(): Paper が親を public にしている
 file: net/minecraft/world/entity/projectile/SpectralArrow.java
 line:
@@ -556,11 +490,6 @@ line:
 
 # getDeathSound(): Paper が親を public にしている
 file: net/minecraft/world/entity/monster/Strider.java
-line:
-    protected SoundEvent getDeathSound() {
-
-# getDeathSound(): Paper が親を public にしている
-file: net/minecraft/world/entity/animal/frog/Tadpole.java
 line:
     protected SoundEvent getDeathSound() {
 
@@ -608,11 +537,6 @@ line:
 file: net/minecraft/world/entity/projectile/FishingHook.java
 line:
     protected boolean canHitEntity(Entity entity) {
-
-# CraftVillager が評判を読む(GossipContainer の内部クラス)
-file: net/minecraft/world/entity/ai/gossip/GossipContainer.java
-line:
-    static class EntityGossips {
 
 # ---- unfinal(generated.rules は作り直しで消えるのでここに置く)
 
@@ -740,16 +664,6 @@ file: net/minecraft/nbt/CompoundTag.java
 line:
     private final Map<String, Tag> tags;
 
-# CraftFeatureFlag が読む。LinkCheck(access)で見つけた
-file: net/minecraft/world/flag/FeatureFlagRegistry.java
-line:
-    private final Map<ResourceLocation, FeatureFlag> names;
-
-# CraftFeatureFlag が読む。LinkCheck(access)で見つけた
-file: net/minecraft/world/flag/FeatureFlag.java
-line:
-    final FeatureFlagUniverse universe;
-
 # ---- 親を public にしたので、上書きしている子も public にする(1.19.4 の木から)
 
 # getDeathSound(): Paper が親を public にしている
@@ -821,11 +735,6 @@ line:
 # ---- 親を public にしたので、上書きしている子も public にする(1.19.4 の木から)
 
 # getDeathSound(): Paper が親を public にしている
-file: net/minecraft/world/entity/animal/frog/Frog.java
-line:
-    protected SoundEvent getDeathSound() {
-
-# getDeathSound(): Paper が親を public にしている
 file: net/minecraft/world/entity/animal/Pig.java
 line:
     protected SoundEvent getDeathSound() {
@@ -842,16 +751,6 @@ line:
 
 # getDeathSound(): Paper が親を public にしている
 file: net/minecraft/world/entity/animal/Turtle.java
-line:
-    protected SoundEvent getDeathSound() {
-
-# getSoundVolume(): Paper が親を public にしている
-file: net/minecraft/world/entity/monster/warden/Warden.java
-line:
-    protected float getSoundVolume() {
-
-# getDeathSound(): Paper が親を public にしている
-file: net/minecraft/world/entity/monster/warden/Warden.java
 line:
     protected SoundEvent getDeathSound() {
 
@@ -873,10 +772,6 @@ line:
 file: net/minecraft/server/network/ServerLoginPacketListenerImpl.java
 line:
     final MinecraftServer server;
-
-file: net/minecraft/server/network/ServerLoginPacketListenerImpl.java
-line:
-    final Connection connection;
 
 file: net/minecraft/server/network/ServerLoginPacketListenerImpl.java
 line:
@@ -987,3 +882,8 @@ line:
 file: net/minecraft/world/level/chunk/ChunkGenerator.java
 line:
     private final long ringPlacementSeed;
+
+# Paper は BlockableEventLoop.doRunTask を public にしている。上書きは弱くできない
+file: net/minecraft/server/MinecraftServer.java
+line:
+    protected void doRunTask(TickTask task) {

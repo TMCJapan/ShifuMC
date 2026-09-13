@@ -281,11 +281,6 @@ file: net/minecraft/server/level/Ticket.java
 line:
     private final T key;
 
-# connection
-file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
-line:
-    public final Connection connection;
-
 # playerIo
 file: net/minecraft/server/players/PlayerList.java
 line:
@@ -435,16 +430,6 @@ line:
 file: net/minecraft/world/entity/ExperienceOrb.java
 line:
     private int xpToDurability(int experienceAmount) {
-
-# boostTime
-file: net/minecraft/world/entity/ItemBasedSteering.java
-line:
-    public int boostTime;
-
-# boosting
-file: net/minecraft/world/entity/ItemBasedSteering.java
-line:
-    public boolean boosting;
 
 # flashes
 file: net/minecraft/world/entity/LightningBolt.java
@@ -1500,11 +1485,6 @@ line:
 file: net/minecraft/world/level/BaseSpawner.java
 line:
     private int requiredPlayerRange = 16;
-
-# setNextSpawnData(Level,BlockPos,SpawnData)
-file: net/minecraft/world/level/BaseSpawner.java
-line:
-    public void setNextSpawnData(@Nullable Level world, BlockPos pos, SpawnData spawnEntry) {
 
 # spawnCount
 file: net/minecraft/world/level/BaseSpawner.java

@@ -2,12 +2,6 @@
 
 file: org/bukkit/craftbukkit/entity/CraftPlayer.java
 
-# vanilla の DiscardedPayload は成分が ResourceLocation 1 つで、record の成分は足せない
-replace:
-    new DiscardedPayload(id, Unpooled.wrappedBuffer(message))
-with:
-    new DiscardedPayload(id)
-
 # 以下 14 件は、Paper が「vanilla の Component を null にした packet を作り、
 # Paper が足した欄に adventure / BaseComponent[] の文を入れて write に読ませる」形。
 # Shifu の write は vanilla なので欄は読まれず、文が null のまま飛ぶ。
