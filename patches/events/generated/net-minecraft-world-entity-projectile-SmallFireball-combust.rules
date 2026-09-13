@@ -3,7 +3,7 @@
 # EntityCombustByEntityEvent(小さな火の玉)
 file: net/minecraft/world/entity/projectile/SmallFireball.java
 anchor:
-    entity.igniteForSeconds(5);
+    entity.setSecondsOnFire(5);
 insert:
     if (dev.shifu.event.EntityEvents.combustByEntity(this, entity, 5)) {
 insert-after:

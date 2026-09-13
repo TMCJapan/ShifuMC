@@ -7,21 +7,22 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # PlayerAdvancementDoneEvent
+# 1.19.4 の Advancement は getDisplay() が DisplayInfo か null を返す。
+# grant は checkForAutomaticTriggers にも同じ行があるので、
+# 続く if までアンカーに入れて award の方だけを狙う。
 file: net/minecraft/server/PlayerAdvancements.java
 anchor:
-    advancement.value().rewards().grant(this.player);
+    advancement.getRewards().grant(this.player);
+    if (advancement.getDisplay() != null
 insert:
     // Paper start - Add Adventure message to PlayerAdvancementDoneEvent
-    // Paper は flatMap のラムダで書いているが、ここに足すと vanilla の
-    // ifPresent(display -> ...) が lambda$award$1 に繰り下がる。番号で狙う mixin
-    // (styled-chat の PlayerAdvancementsMixin)が当たらなくなるので、ラムダを使わずに書く。
     net.kyori.adventure.text.Component message = null;
-    if (advancement.value().display().isPresent()) {
-        final net.minecraft.advancements.DisplayInfo shifuInfo = advancement.value().display().get();
-        if (shifuInfo.shouldAnnounceChat()) {
-            message = io.papermc.paper.adventure.PaperAdventure.asAdventure(shifuInfo.getType().createAnnouncement(advancement, this.player));
-        }
+    if (advancement.getDisplay() != null && advancement.getDisplay().shouldAnnounceChat()) {
+        message = io.papermc.paper.adventure.PaperAdventure.asAdventure(net.minecraft.network.chat.Component.translatable(
+                "chat.type.advancement." + advancement.getDisplay().getFrame().getName(),
+                this.player.getDisplayName(),
+                advancement.getChatComponent()));
     }
-    final org.bukkit.event.player.PlayerAdvancementDoneEvent event = new org.bukkit.event.player.PlayerAdvancementDoneEvent(this.player.getBukkitEntity(), advancement.toBukkit(), message);
+    final org.bukkit.event.player.PlayerAdvancementDoneEvent event = new org.bukkit.event.player.PlayerAdvancementDoneEvent(this.player.getBukkitEntity(), advancement.bukkit, message);
     this.player.level.getCraftServer().getPluginManager().callEvent(event); // CraftBukkit
     // Paper end

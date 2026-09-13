@@ -23,7 +23,7 @@ insert:
 # callToggleGlideEvent
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    if (this.onGround() && !this.level.isClientSide) {
+    if (this.onGround && !this.level.isClientSide) {
     this.setSharedFlag(7, false);
     }
 insert:

@@ -75,7 +75,11 @@ vanilla のクラスと噛み合わない。そういうファイルは `patches
 Paper の版のまま組んだクラスは公式のバイトコードに戻るので、Paper がそのクラスに足した欄や
 メソッド(1.19.4 の `TicketType.PLUGIN`)を別のクラスが参照していると、compile は通るのに起動時に
 `NoSuchFieldError` になる。`tools/run-server.ps1` は公式に戻したあとに `LinkCheck` でそれを数え、
-`tools/build/link-missing.txt` に書く。`python tools/link_to_required.py tools/build/link-missing.txt
+`tools/build/link-missing.txt` に書く。`-TouchedOnly` では触っていないクラスは置き場にも無いので、
+`LinkCheck` に公式の jar(`minecraft.jar`)も渡して親や interface をそこから読む。渡さないと、
+親が置き場に無い参照(`Shulker.getEntityData` のような継承した欄・メソッド)が「無い」と数えられる。
+interface の default メソッド(CraftBukkit が `LevelAccessor` に足す `getMinecraftWorld`)の欠落は
+「置き場に無い型まで辿ったら有るとみなす」と見えなくなるので、vanilla の型は jar に無ければ「無い」。`python tools/link_to_required.py tools/build/link-missing.txt
 docs/backlog/required-members.txt` で要求一覧に足すと、次の閉包で生成器が Paper の宣言を写し、
 そのクラスは触った側に回る。
 
@@ -91,6 +95,10 @@ docs/backlog/required-members.txt` で要求一覧に足すと、次の閉包で
 `python tools/reanchor.py patches/events <木>` が付け直しの候補を出す。
 **候補を出すだけで書き換えはしない。** 当てる位置を機械が選ぶと、
 発火が黙って別の場所に付いたことに気付けなくなる。
+1.19.4 は `--write` で書いてしまい、`DispenseItemBehavior` の 6 規則(TNT・ウィザーの頭・かぼちゃ・
+巣・リスポーンアンカー)が蜜蝋の 1 行に重なり、`MinecraftServer` のスケジューラの heartbeat が
+`statusIcon` の行に付いていた。見つけ方は、元のブランチと `insert` の文が同じで `anchor` だけ違う規則を
+並べ、`anchor` の元の文が今の木にそのまま有るものを疑う(変数名が変わっただけのものは正しい)。
 
 当たらない規則を「本文を消して `file:` の行だけ残す」形で片付けると、
 何も入らないまま静かに通る(`apply_events.py` は規則が無いものを失敗にしない)。
@@ -343,6 +351,11 @@ Paper が代入し直す欄(`CraftMapView` が書く `MapItemSavedData.scale`、
 `tools/make_access_rules.py` はコンパイルの誤り(`has private access in`、`is not public in`)から
 `patches/access/generated.rules` を作り直す。**手で書いた規則はそこに置かない**(作り直しで消える)。
 `members.rules` に書く。
+閉包(`closure.ps1`)はこれを呼ばない。可視性の誤りで止まったら
+`python tools/make_access_rules.py docs/backlog/vanilla-gap.txt <木> patches/access/generated.rules --write`
+を回してから閉包をやり直す。`LinkCheck` が `access` で出したもの(`tools/build/link-access-gap.txt`)も
+同じ形なので、`vanilla-gap.txt` と繋げて渡せる。「宣言が 1 に定まらない」と言われたもの
+(同名の欄が別クラスにもある)は `members.rules` に手で書く。
 
 ### adapter
 

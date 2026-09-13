@@ -2,8 +2,8 @@
 
 file: net/minecraft/world/item/NameTagItem.java
 anchor:
-                entity.setCustomName(component);
+                entity.setCustomName(stack.getHoverName());
 insert:
-    if (!dev.shifu.event.PlayerEvents.nameEntity(user, entity, component)) {
+    if (!dev.shifu.event.PlayerEvents.nameEntity(user, entity, stack.getHoverName())) {
         return InteractionResult.PASS;
     }

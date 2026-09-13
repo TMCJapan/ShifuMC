@@ -5,8 +5,8 @@
 # PlayerFlowerPotManipulateEvent
 file: net/minecraft/world/level/block/FlowerPotBlock.java
 anchor:
-    if (!player.addItem(itemStack)) {
-insert:
+                ItemStack itemStack = new ItemStack(this.content);
+insert-after:
     // Paper start - Add PlayerFlowerPotManipulateEvent
     org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(world, pos);
     org.bukkit.inventory.ItemStack pottedStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(itemStack);

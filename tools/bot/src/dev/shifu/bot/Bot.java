@@ -2,101 +2,85 @@
 package dev.shifu.bot;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ByteToMessageDecoder;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import net.minecraft.SharedConstants;
+import net.minecraft.commands.arguments.ArgumentSignatures;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.Connection;
 import net.minecraft.network.ConnectionProtocol;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.PacketListener;
-import net.minecraft.network.ProtocolInfo;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.LastSeenMessages;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.BundlePacket;
-import net.minecraft.network.protocol.BundlerInfo;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketFlow;
-import net.minecraft.network.protocol.PacketType;
-import net.minecraft.network.protocol.common.ClientboundDisconnectPacket;
-import net.minecraft.network.protocol.common.ClientboundKeepAlivePacket;
-import net.minecraft.network.protocol.common.ClientboundPingPacket;
-import net.minecraft.network.protocol.common.CommonPacketTypes;
-import net.minecraft.network.protocol.common.ServerboundClientInformationPacket;
-import net.minecraft.network.protocol.common.ServerboundKeepAlivePacket;
-import net.minecraft.network.protocol.common.ServerboundPongPacket;
-import net.minecraft.network.protocol.configuration.ClientConfigurationPacketListener;
-import net.minecraft.network.protocol.configuration.ConfigurationProtocols;
-import net.minecraft.network.protocol.configuration.ServerboundFinishConfigurationPacket;
-import net.minecraft.network.protocol.configuration.ServerboundSelectKnownPacks;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBundlePacket;
+import net.minecraft.network.protocol.game.ClientboundDisconnectPacket;
+import net.minecraft.network.protocol.game.ClientboundKeepAlivePacket;
+import net.minecraft.network.protocol.game.ClientboundPingPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerCombatKillPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
 import net.minecraft.network.protocol.game.ClientboundSetHealthPacket;
 import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
-import net.minecraft.network.protocol.game.GameProtocols;
 import net.minecraft.network.protocol.game.ServerboundAcceptTeleportationPacket;
+import net.minecraft.network.protocol.game.ServerboundChatCommandPacket;
 import net.minecraft.network.protocol.game.ServerboundChatPacket;
 import net.minecraft.network.protocol.game.ServerboundClientCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundClientInformationPacket;
 import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
+import net.minecraft.network.protocol.game.ServerboundCustomPayloadPacket;
+import net.minecraft.network.protocol.game.ServerboundKeepAlivePacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundPongPacket;
+import net.minecraft.network.protocol.handshake.ClientIntentionPacket;
 import net.minecraft.network.protocol.login.ClientLoginPacketListener;
 import net.minecraft.network.protocol.login.ClientboundCustomQueryPacket;
 import net.minecraft.network.protocol.login.ClientboundLoginCompressionPacket;
 import net.minecraft.network.protocol.login.ClientboundLoginDisconnectPacket;
-import net.minecraft.network.protocol.login.ServerboundCustomQueryAnswerPacket;
+import net.minecraft.network.protocol.login.ServerboundCustomQueryPacket;
 import net.minecraft.network.protocol.login.ServerboundHelloPacket;
-import net.minecraft.network.protocol.login.ServerboundLoginAcknowledgedPacket;
 import net.minecraft.server.Bootstrap;
-import net.minecraft.server.level.ClientInformation;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.RelativeMovement;
+import net.minecraft.world.entity.player.ChatVisiblity;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
+import io.netty.buffer.Unpooled;
 
 /**
- * プレイヤー経路を通すためのヘッドレスクライアント。
+ * プレイヤー経路を通すためのヘッドレスクライアント(1.19.4 の版)。
  *
  * <p>サーバー自身の {@code Connection} と packet の型で接続する。
  * クライアント側の listener は動的 Proxy で作り、要る packet だけ扱う。
  * 受信の復号はサーバーの codec をそのまま使い、レジストリが要る packet
  * (ワールドの内容など)は復号に失敗しても捨てて先へ進む。
  *
- * <p>サーバー側の検証プラグイン({@code tools/probe})が chat で
+ * <p>1.19.4 には configuration の段が無い。ログインの GameProfile を受けたら
+ * そのまま PLAY へ移り、ClientInformation を送る。
+ *
+ * <p>サーバー側の検証プラグイン({@code tools/plugin-drive})が chat で
  * {@code !bot <指示>} を送り、それに従って packet を送る。
  *
  * <pre>
- * java -cp <versions/26.2/paper-26.2.jar;libraries/**> dev.shifu.bot.Bot [host] [port] [name] [seconds]
+ * java -cp <versions/1.19.4/paper-1.19.4.jar;libraries/**> dev.shifu.bot.Bot [host] [port] [name] [seconds]
  * </pre>
  */
 public final class Bot {
-    private static final Packet<PacketListener> IGNORED = new Packet<>() {
-        @Override
-        @SuppressWarnings({"unchecked", "rawtypes"})
-        public PacketType<? extends Packet<PacketListener>> type() {
-            return (PacketType) CommonPacketTypes.CLIENTBOUND_KEEP_ALIVE;
-        }
-
-        @Override
-        public void handle(final PacketListener listener) {
-        }
-    };
-
     private final String name;
     private final CountDownLatch done = new CountDownLatch(1);
     private Connection connection;
@@ -106,7 +90,6 @@ public final class Bot {
     private volatile double z;
     private volatile float yaw;
     private volatile float pitch;
-    private volatile boolean loaded;
     private volatile int teleports;
 
     private Bot(final String name) {
@@ -123,7 +106,15 @@ public final class Bot {
         Bootstrap.bootStrap();
 
         final Bot bot = new Bot(name);
-        bot.connect(host, port);
+
+        try {
+            bot.connect(host, port);
+        } catch (final Throwable t) {
+            // Bootstrap が System.err を logger 送りにするので、控えた方へ出す
+            t.printStackTrace(OUT);
+            OUT.flush();
+            System.exit(1);
+        }
 
         if (!bot.done.await(seconds, TimeUnit.SECONDS)) {
             log("time is up");
@@ -148,16 +139,23 @@ public final class Bot {
 
     // ------------------------------------------------------------ 接続
 
-    private void connect(final String host, final int port) {
-        this.connection = new Connection(PacketFlow.CLIENTBOUND);
-        final ChannelFuture future = Connection.connect(new InetSocketAddress(host, port), false, this.connection);
-        future.syncUninterruptibly();
+    private void connect(final String host, final int port) throws InterruptedException {
+        this.connection = Connection.connectToServer(new InetSocketAddress(host, port), false);
+        // channel は event loop の channelActive で入る。connect の sync が返った直後はまだ null のことがある
+        for (int i = 0; i < 200 && this.connection.channel == null; i++) {
+            Thread.sleep(10);
+        }
         log("connected to " + host + ":" + port);
 
-        final ClientLoginPacketListener login = this.listener(ClientLoginPacketListener.class, ConnectionProtocol.LOGIN, this::onLogin);
-        this.connection.initiateServerboundPlayConnection(host, port, login);
-        this.connection.send(new ServerboundHelloPacket(this.name,
-                UUID.nameUUIDFromBytes(("OfflinePlayer:" + this.name).getBytes(StandardCharsets.UTF_8))));
+        // 復号に失敗した packet(レジストリが要るもの)を捨てる decoder に差し替える
+        this.connection.channel.pipeline().replace("decoder", "decoder", new ForgivingDecoder());
+
+        final ClientLoginPacketListener login = this.listener(ClientLoginPacketListener.class, this::onLogin);
+        this.connection.setListener(login);
+        // Connection.send は packet ごとの protocol に event loop の中で切り替える。ここで setProtocol を
+        // 呼ぶと intention packet より先に LOGIN になって、intention の encode に失敗し黙って切れる
+        this.connection.send(new ClientIntentionPacket(host, port, ConnectionProtocol.LOGIN));
+        this.connection.send(new ServerboundHelloPacket(this.name, Optional.empty()));
     }
 
     private void onLogin(final String method, final Object packet) {
@@ -165,15 +163,12 @@ public final class Bot {
             case "handleCompression" -> this.connection.setupCompression(((ClientboundLoginCompressionPacket) packet).getCompressionThreshold(), false);
             case "handleGameProfile" -> {
                 log("login finished");
-                final ClientConfigurationPacketListener config = this.listener(
-                        ClientConfigurationPacketListener.class, ConnectionProtocol.CONFIGURATION, this::onConfiguration);
-                this.connection.setupInboundProtocol(ConfigurationProtocols.CLIENTBOUND, config);
-                this.connection.send(ServerboundLoginAcknowledgedPacket.INSTANCE);
-                this.connection.setupOutboundProtocol(ConfigurationProtocols.SERVERBOUND);
-                this.connection.send(new ServerboundClientInformationPacket(ClientInformation.createDefault()));
+                this.game = this.listener(ClientGamePacketListener.class, this::onGame);
+                this.connection.setProtocol(ConnectionProtocol.PLAY);
+                this.connection.setListener(this.game);
             }
             case "handleCustomQuery" -> this.connection.send(
-                    new ServerboundCustomQueryAnswerPacket(((ClientboundCustomQueryPacket) packet).transactionId(), null));
+                    new ServerboundCustomQueryPacket(((ClientboundCustomQueryPacket) packet).getTransactionId(), null));
             case "handleDisconnect" -> {
                 log("disconnected while logging in: " + ((ClientboundLoginDisconnectPacket) packet).getReason().getString());
                 this.done.countDown();
@@ -184,51 +179,33 @@ public final class Bot {
         }
     }
 
-    private void onConfiguration(final String method, final Object packet) {
-        switch (method) {
-            case "handleKeepAlive" -> this.connection.send(new ServerboundKeepAlivePacket(((ClientboundKeepAlivePacket) packet).getId()));
-            case "handlePing" -> this.connection.send(new ServerboundPongPacket(((ClientboundPingPacket) packet).getId()));
-            case "handleSelectKnownPacks" -> this.connection.send(new ServerboundSelectKnownPacks(List.of()));
-            case "handleConfigurationFinished" -> {
-                log("configuration finished");
-                final RegistryAccess access = RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
-                this.game = this.listener(ClientGamePacketListener.class, ConnectionProtocol.PLAY, this::onGame);
-                this.connection.setupInboundProtocol(
-                        forgiving(GameProtocols.CLIENTBOUND.bind(RegistryFriendlyByteBuf.decorator(access))), this.game);
-                this.connection.send(ServerboundFinishConfigurationPacket.INSTANCE);
-                this.connection.setupOutboundProtocol(
-                        GameProtocols.SERVERBOUND.bind(RegistryFriendlyByteBuf.decorator(access)));
-            }
-            case "handleDisconnect" -> {
-                log("disconnected while configuring: " + ((ClientboundDisconnectPacket) packet).reason().getString());
-                this.done.countDown();
-            }
-            default -> {
-            }
-        }
-    }
-
     private void onGame(final String method, final Object packet) throws Exception {
         switch (method) {
             case "handleBundlePacket" -> {
-                for (Packet<? super ClientGamePacketListener> sub : ((BundlePacket<ClientGamePacketListener>) packet).subPackets()) {
+                for (Packet<ClientGamePacketListener> sub : ((ClientboundBundlePacket) packet).subPackets()) {
                     sub.handle(this.game);
                 }
             }
             case "handleKeepAlive" -> this.connection.send(new ServerboundKeepAlivePacket(((ClientboundKeepAlivePacket) packet).getId()));
             case "handlePing" -> this.connection.send(new ServerboundPongPacket(((ClientboundPingPacket) packet).getId()));
-            case "handleLogin" -> log("joined the game");
+            case "handleLogin" -> {
+                log("joined the game");
+                // サーバーは Login packet を送る前に PLAY へ切り替える。GameProfile の直後に送ると、
+                // サーバーがまだ LOGIN のまま読んで id が無く切れる(vanilla のクライアントもここで送る)
+                this.connection.send(new ServerboundClientInformationPacket(
+                        "en_us", 8, ChatVisiblity.FULL, true, 0, HumanoidArm.RIGHT, false, true));
+            }
             case "handleMovePlayer" -> this.accept((ClientboundPlayerPositionPacket) packet);
             case "handleSetHealth" -> log("health " + ((ClientboundSetHealthPacket) packet).getHealth());
             case "handlePlayerCombatKill" -> {
-                log("died: " + ((ClientboundPlayerCombatKillPacket) packet).message().getString());
+                log("died: " + ((ClientboundPlayerCombatKillPacket) packet).getMessage().getString());
                 Thread.sleep(200);
                 this.connection.send(new ServerboundClientCommandPacket(ServerboundClientCommandPacket.Action.PERFORM_RESPAWN));
                 log("sent respawn");
             }
             case "handleSystemChat" -> this.command(((ClientboundSystemChatPacket) packet).content().getString());
             case "handleDisconnect" -> {
-                log("disconnected: " + ((ClientboundDisconnectPacket) packet).reason().getString());
+                log("disconnected: " + ((ClientboundDisconnectPacket) packet).getReason().getString());
                 this.done.countDown();
             }
             default -> {
@@ -250,7 +227,7 @@ public final class Bot {
         this.move();
     }
 
-    /** いまの位置を送る。1.20.6 の PosRot は座標を 3 つで受ける。 */
+    /** いまの位置を送る。 */
     private void move() {
         this.connection.send(new ServerboundMovePlayerPacket.PosRot(
                 this.x, this.y, this.z, this.yaw, this.pitch, false));
@@ -280,16 +257,14 @@ public final class Bot {
             }
             case "chat" -> this.connection.send(new ServerboundChatPacket(rest, Instant.now(), 0L, null,
                     new LastSeenMessages.Update(0, new BitSet(20))));
-            // コマンド。チャットとは別の packet
-            case "cmd" -> this.connection.send(
-                    new net.minecraft.network.protocol.game.ServerboundChatCommandPacket(rest));
+            // コマンド。チャットとは別の packet。1.19.4 は署名の欄を持つ(空で送る)
+            case "cmd" -> this.connection.send(new ServerboundChatCommandPacket(rest, Instant.now(), 0L,
+                    ArgumentSignatures.EMPTY, new LastSeenMessages.Update(0, new BitSet(20))));
             case "click" -> this.connection.send(new ServerboundContainerClickPacket(0, 0, Integer.parseInt(rest), 0,
                     ClickType.PICKUP, ItemStack.EMPTY, new Int2ObjectOpenHashMap<>()));
             // ブロックを壊す。クリエイティブなら START だけで壊れるが、両方送る
             case "break" -> {
-                final String[] shifuAt = rest.split(",");
-                final BlockPos target = new BlockPos(Integer.parseInt(shifuAt[0]),
-                        Integer.parseInt(shifuAt[1]), Integer.parseInt(shifuAt[2]));
+                final BlockPos target = blockPos(rest);
                 this.connection.send(new ServerboundPlayerActionPacket(
                         ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, target, Direction.UP, 0));
                 this.connection.send(new ServerboundPlayerActionPacket(
@@ -299,8 +274,7 @@ public final class Bot {
                     ServerboundPlayerActionPacket.Action.DROP_ITEM, BlockPos.ZERO, Direction.DOWN, 0));
             // 持ち替え。数字は 0..8
             case "slot" -> this.connection.send(
-                    new net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket(
-                            Integer.parseInt(rest)));
+                    new net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket(Integer.parseInt(rest)));
             case "respawn" -> this.connection.send(new ServerboundClientCommandPacket(ServerboundClientCommandPacket.Action.PERFORM_RESPAWN));
             case "fly" -> {
                 // 飛行の切り替え。サーバーは flying だけを読む
@@ -324,10 +298,12 @@ public final class Bot {
                 this.connection.send(new ServerboundPlayerActionPacket(
                         ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, pos, Direction.UP, 2));
             }
-            // 名乗り(minecraft:brand)。vanilla の codec が本文を書く唯一のプラグインメッセージ。
-            // 知らないチャンネルは DiscardedPayload になり、vanilla の codec は本文を書かないので送れない
-            case "brand" -> this.connection.send(new net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket(
-                    new net.minecraft.network.protocol.common.custom.BrandPayload(rest)));
+            // 名乗り(minecraft:brand)。1.19.4 のプラグインメッセージはチャンネルと本文の組
+            case "brand" -> {
+                final FriendlyByteBuf data = new FriendlyByteBuf(Unpooled.buffer());
+                data.writeUtf(rest);
+                this.connection.send(new ServerboundCustomPayloadPacket(ServerboundCustomPayloadPacket.BRAND, data));
+            }
             case "where" -> log(String.format("at %.2f %.2f %.2f", this.x, this.y, this.z));
             case "quit" -> {
                 this.connection.disconnect(Component.literal("done"));
@@ -350,13 +326,9 @@ public final class Bot {
     }
 
     /** 要る packet だけ扱う listener。それ以外の handle は何もしない。 */
-    private <T extends PacketListener> T listener(final Class<T> type, final ConnectionProtocol protocol, final Handler handler) {
+    private <T extends PacketListener> T listener(final Class<T> type, final Handler handler) {
         return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type}, (proxy, method, args) -> {
             switch (method.getName()) {
-                case "flow":
-                    return PacketFlow.CLIENTBOUND;
-                case "protocol":
-                    return protocol;
                 case "isAcceptingMessages":
                 case "shouldHandleMessage":
                     return true;
@@ -366,11 +338,8 @@ public final class Bot {
                     log("connection closed: " + ((Component) args[0]).getString());
                     this.done.countDown();
                     return null;
-                case "onPacketError":
-                    log("packet error: " + args[1]);
-                    return null;
                 case "toString":
-                    return "Bot(" + protocol + ")";
+                    return "Bot(" + type.getSimpleName() + ")";
                 case "hashCode":
                     return System.identityHashCode(proxy);
                 case "equals":
@@ -402,47 +371,33 @@ public final class Bot {
         return null;
     }
 
-    /** 復号に失敗した packet を捨てて先へ進む codec。 */
-    private static <T extends PacketListener> ProtocolInfo<T> forgiving(final ProtocolInfo<T> real) {
-        final StreamCodec<ByteBuf, Packet<? super T>> codec = new StreamCodec<>() {
-            @Override
-            @SuppressWarnings("unchecked")
-            public Packet<? super T> decode(final ByteBuf buf) {
-                try {
-                    return real.codec().decode(buf);
-                } catch (final Throwable t) {
-                    buf.readerIndex(buf.writerIndex());
+    /**
+     * 復号に失敗した packet を捨てて先へ進む decoder。vanilla の {@code PacketDecoder} と同じく
+     * id を読んで {@code ConnectionProtocol.createPacket} に渡し、例外なら残りを読み飛ばす。
+     */
+    private static final class ForgivingDecoder extends ByteToMessageDecoder {
+        @Override
+        protected void decode(final ChannelHandlerContext context, final ByteBuf in, final List<Object> out) {
+            if (in.readableBytes() == 0) {
+                return;
+            }
 
-                    return (Packet<? super T>) IGNORED;
+            final FriendlyByteBuf buf = new FriendlyByteBuf(in);
+            final int id = buf.readVarInt();
+            final ConnectionProtocol protocol = context.channel().attr(Connection.ATTRIBUTE_PROTOCOL).get();
+
+            try {
+                final Packet<?> packet = protocol.createPacket(PacketFlow.CLIENTBOUND, id, buf);
+
+                if (packet != null && buf.readableBytes() == 0) {
+                    out.add(packet);
+                    return;
                 }
+            } catch (final Throwable ignored) {
+                // レジストリが要る packet(ワールドの内容など)。捨てる
             }
 
-            @Override
-            public void encode(final ByteBuf buf, final Packet<? super T> packet) {
-                real.codec().encode(buf, packet);
-            }
-        };
-
-        return new ProtocolInfo<>() {
-            @Override
-            public ConnectionProtocol id() {
-                return real.id();
-            }
-
-            @Override
-            public PacketFlow flow() {
-                return real.flow();
-            }
-
-            @Override
-            public StreamCodec<ByteBuf, Packet<? super T>> codec() {
-                return codec;
-            }
-
-            @Override
-            public BundlerInfo bundlerInfo() {
-                return real.bundlerInfo();
-            }
-        };
+            in.readerIndex(in.writerIndex());
+        }
     }
 }

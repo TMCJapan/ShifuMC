@@ -3,22 +3,22 @@
 # EntityInsideBlockEvent
 file: net/minecraft/world/level/block/DetectorRailBlock.java
 anchor:
-    protected void entityInside(BlockState state, Level world, BlockPos pos, Entity entity) {
+    public void entityInside(BlockState state, Level world, BlockPos pos, Entity entity) {
 insert-after:
     if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(world, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
 
 # BlockRedstoneEvent
 file: net/minecraft/world/level/block/DetectorRailBlock.java
 anchor:
-    if (bl2 && !bl) {
+    if (flag && !poweredValue) {
 insert:
     // CraftBukkit start
-    if (bl != bl2) {
+    if (poweredValue != flag) {
         org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(world, pos);
 
-        org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(block, bl2 ? 15 : 0, bl2 ? 15 : 0);
+        org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(block, poweredValue ? 15 : 0, flag ? 15 : 0);
         world.getCraftServer().getPluginManager().callEvent(eventRedstone);
 
-        bl2 = eventRedstone.getNewCurrent() > 0;
+        flag = eventRedstone.getNewCurrent() > 0;
     }
     // CraftBukkit end

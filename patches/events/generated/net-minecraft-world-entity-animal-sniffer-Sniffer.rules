@@ -1,11 +1,2 @@
-
-
-# callEntityFertilizeEggEvent
-file: net/minecraft/world/entity/animal/sniffer/Sniffer.java
-anchor:
-    ItemStack itemStack = new ItemStack(Items.SNIFFER_EGG);
-insert:
-    // Paper start - Add EntityFertilizeEggEvent event
-    final io.papermc.paper.event.entity.EntityFertilizeEggEvent result = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityFertilizeEggEvent(this, other);
-    if (result.isCancelled()) return;
-    // Paper end - Add EntityFertilizeEggEvent event
+# callEntityFertilizeEggEvent は外した。1.19.4 の Sniffer は繁殖で卵を落とさず、
+# SNIFFER_EGG を置く行そのものが無い(1.20 で入った)。

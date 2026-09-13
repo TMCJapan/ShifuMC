@@ -3,6 +3,6 @@
 # PlayerItemBreakEvent。壊れた合図を送る直前
 file: net/minecraft/world/item/ItemStack.java
 anchor:
-                entity.broadcastBreakEvent(slot);
+                    breakCallback.accept(entity);
 insert:
     dev.shifu.event.ItemEvents.itemBreak(entity, this);

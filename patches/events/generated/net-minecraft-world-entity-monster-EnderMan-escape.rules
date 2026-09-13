@@ -3,11 +3,8 @@
 # 昼の光で逃げる
 file: net/minecraft/world/entity/monster/EnderMan.java
 anchor:
-                for (int i = 0; i < 64; i++) {
-                    if (this.teleport()) {
-                        return true;
-                    }
-                }
+                this.setTarget(null);
+                this.teleport();
 insert:
     if (dev.shifu.event.AnimalEvents.endermanEscape(this,
             com.destroystokyo.paper.event.entity.EndermanEscapeEvent.Reason.RUNAWAY)) {

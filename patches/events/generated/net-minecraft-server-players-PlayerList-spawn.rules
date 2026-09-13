@@ -2,6 +2,6 @@
 
 file: net/minecraft/server/players/PlayerList.java
 anchor:
-        player.setServerLevel(serverLevel2);
+        player.setLevel(serverLevel);
 insert-after:
     dev.shifu.event.PlayerEvents.initialSpawn(player);

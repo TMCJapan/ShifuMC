@@ -3,7 +3,7 @@
 # EntityCombustByBlockEvent。火のブロックが燃やす直前
 file: net/minecraft/world/level/block/BaseFireBlock.java
 anchor:
-    entity.igniteForSeconds(8);
+    entity.setSecondsOnFire(8);
 insert:
     if (dev.shifu.event.BlockEvents.combustByBlock(entity, pos)) {
 insert-after:

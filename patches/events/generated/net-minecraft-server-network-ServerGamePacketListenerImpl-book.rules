@@ -1,20 +1,19 @@
 # PlayerEditBookEvent。本を書き換えた直後。
 
-# 書きかけの本
+# 書きかけの本。1.19.4 は updateBookPages が持ち物の中の本をそのまま書き換える
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
-            List<Filterable<String>> list = pages.stream().map(this::filterableFromOutgoing).toList();
-            itemStack.set(DataComponents.WRITABLE_BOOK_CONTENT, new WritableBookContent(list));
+            this.updateBookPages(pages, UnaryOperator.identity(), item);
 insert:
-    org.bukkit.inventory.meta.BookMeta shifuOldBook = dev.shifu.event.PlayerEvents.bookMeta(itemStack);
+    org.bukkit.inventory.meta.BookMeta shifuOldBook = dev.shifu.event.PlayerEvents.bookMeta(item);
 insert-after:
-    dev.shifu.event.PlayerEvents.editBook(this.player, slotId, shifuOldBook, itemStack, false);
+    dev.shifu.event.PlayerEvents.editBook(this.player, slotId, shifuOldBook, item, false);
 
-# 署名した本
+# 署名した本。控えるのは署名前の item、渡すのは署名後の itemStack
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     this.player.getInventory().setItem(slotId, itemStack);
 insert:
-    org.bukkit.inventory.meta.BookMeta shifuSignedBook = dev.shifu.event.PlayerEvents.bookMeta(itemStack);
+    org.bukkit.inventory.meta.BookMeta shifuSignedBook = dev.shifu.event.PlayerEvents.bookMeta(item);
 insert-after:
     dev.shifu.event.PlayerEvents.editBook(this.player, slotId, shifuSignedBook, itemStack, true);

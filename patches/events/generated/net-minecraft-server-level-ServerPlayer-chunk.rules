@@ -1,0 +1,13 @@
+# main(26.2)の規則を 1.20.6 の行に当て直したもの。1.19.4 には PlayerChunkSender が無く、
+# Paper は ServerPlayer.trackChunk で送ったあとに発火する(chunk は無いので世界から引く)。
+
+# PlayerChunkLoadEvent
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    this.connection.send(chunkDataPacket);
+insert-after:
+    // Paper start - PlayerChunkLoadEvent
+    if (io.papermc.paper.event.packet.PlayerChunkLoadEvent.getHandlerList().getRegisteredListeners().length > 0) {
+        new io.papermc.paper.event.packet.PlayerChunkLoadEvent(this.getBukkitEntity().getWorld().getChunkAt(chunkPos.toLong()), this.getBukkitEntity()).callEvent();
+    }
+    // Paper end - PlayerChunkLoadEvent

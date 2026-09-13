@@ -2,6 +2,6 @@
 
 file: net/minecraft/world/entity/projectile/ThrownEgg.java
 anchor:
-                for (int j = 0; j < i; j++) {
+                for (int i1 = 0; i1 < i; i1++) {
 insert:
     i = dev.shifu.event.EntityEvents.eggHatch(this, i);

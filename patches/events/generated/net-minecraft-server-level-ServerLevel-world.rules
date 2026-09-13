@@ -11,7 +11,12 @@ insert:
 # SpawnChangeEvent。書いたあと(位置が同じなら出さない)
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-        BlockPos blockPos = this.levelData.getSpawnPos();
-        float f = this.levelData.getSpawnAngle();
+        ChunkPos chunkPos = new ChunkPos(new BlockPos(this.levelData.getXSpawn(), 0, this.levelData.getZSpawn()));
 insert:
     final org.bukkit.Location shifuSpawnBefore = dev.shifu.event.PlayerEvents.spawnBefore(this);
+
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+        this.getServer().getPlayerList().broadcastAll(new ClientboundSetDefaultSpawnPositionPacket(pos, angle));
+insert-after:
+    dev.shifu.event.PlayerEvents.spawnChanged(this, shifuSpawnBefore);

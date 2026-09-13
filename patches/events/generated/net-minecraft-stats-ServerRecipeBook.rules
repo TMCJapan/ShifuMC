@@ -3,9 +3,9 @@
 # callPlayerRecipeListUpdateEvent
 file: net/minecraft/stats/ServerRecipeBook.java
 anchor:
-    this.add(resourceLocation);
+    this.add(id);
 insert:
     // Paper start - PlayerRecipeDiscoverEvent event
-    // 1.20.6 の CraftEventFactory は鍵を受けて真偽値を返す
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handlePlayerRecipeListUpdateEvent(player, resourceLocation)) continue;
+    // 1.19.4 の CraftEventFactory は鍵を受けて真偽値を返す
+    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handlePlayerRecipeListUpdateEvent(player, id)) continue;
     // Paper end - PlayerRecipeDiscoverEvent event

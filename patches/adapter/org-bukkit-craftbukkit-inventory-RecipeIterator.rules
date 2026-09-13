@@ -1,0 +1,8 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+# vanilla の RecipeManager.recipes は Map<RecipeType<?>, Map<...>>。CraftBukkit が替えた欄の型に合わせない
+
+file: org/bukkit/craftbukkit/inventory/RecipeIterator.java
+replace:
+    private final Iterator<Map.Entry<RecipeType<?>, Object2ObjectLinkedOpenHashMap<ResourceLocation, net.minecraft.world.item.crafting.Recipe<?>>>> recipes;
+with:
+    private final Iterator<Map.Entry<RecipeType<?>, Map<ResourceLocation, net.minecraft.world.item.crafting.Recipe<?>>>> recipes;

@@ -91,3 +91,13 @@ net/minecraft/world/entity/Mob.java Mob.inactiveTick
 
 # Paper のチャンク系(chunkTaskScheduler)へ POI を向ける上書き。vanilla の SectionStorage.get を使う
 net/minecraft/world/entity/ai/village/poi/PoiManager.java PoiManager.get
+
+# CraftBukkit は RecipeManager の欄の型を Object2ObjectLinkedOpenHashMap に**替えて**いる。
+# vanilla の欄は ImmutableMap なので、patches/hand に写して足す形で書いた
+net/minecraft/world/item/crafting/RecipeManager.java RecipeManager.addRecipe
+net/minecraft/world/item/crafting/RecipeManager.java RecipeManager.removeRecipe
+net/minecraft/world/item/crafting/RecipeManager.java RecipeManager.clearRecipes
+
+# Paper のチャンク系(NewChunkHolder)に聞く版。vanilla の holder の値で答える版を patches/hand に置いた
+net/minecraft/server/level/ChunkHolder.java ChunkHolder.isFullChunkReady
+net/minecraft/server/level/ChunkHolder.java ChunkHolder.getSendingChunk

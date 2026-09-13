@@ -3,7 +3,7 @@
 # MapInitializeEvent
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
-    this.getServer().overworld().getDataStorage().set(id.key(), state);
+    this.getServer().overworld().getDataStorage().set(id, state);
 insert:
     // CraftBukkit start
     org.bukkit.event.server.MapInitializeEvent event = new org.bukkit.event.server.MapInitializeEvent(state.mapView);

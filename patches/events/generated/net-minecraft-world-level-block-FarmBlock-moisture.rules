@@ -2,15 +2,15 @@
 
 file: net/minecraft/world/level/block/FarmBlock.java
 anchor:
-                world.setBlock(pos, state.setValue(MOISTURE, Integer.valueOf(i - 1)), 2);
+                world.setBlock(pos, state.setValue(MOISTURE, moistureValue - 1), 2);
 insert:
-    if (dev.shifu.event.BlockEvents.moistureChange(world, pos, state, i - 1)) {
+    if (dev.shifu.event.BlockEvents.moistureChange(world, pos, state, moistureValue - 1)) {
 insert-after:
     }
 
 file: net/minecraft/world/level/block/FarmBlock.java
 anchor:
-            world.setBlock(pos, state.setValue(MOISTURE, Integer.valueOf(7)), 2);
+            world.setBlock(pos, state.setValue(MOISTURE, 7), 2);
 insert:
     if (dev.shifu.event.BlockEvents.moistureChange(world, pos, state, 7)) {
 insert-after:

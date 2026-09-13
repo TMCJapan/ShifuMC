@@ -3,7 +3,7 @@
 # EntityCombustByEntityEvent(燃えている矢)
 file: net/minecraft/world/entity/projectile/AbstractArrow.java
 anchor:
-    entity.igniteForSeconds(5);
+    entity.setSecondsOnFire(5);
 insert:
     if (dev.shifu.event.EntityEvents.combustByEntity(this, entity, 5)) {
 insert-after:

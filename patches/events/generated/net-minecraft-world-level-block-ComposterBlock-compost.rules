@@ -2,7 +2,7 @@
 
 file: net/minecraft/world/level/block/ComposterBlock.java
 anchor:
-            int j = i + 1;
+            int i = levelValue + 1;
 insert:
     if (!dev.shifu.event.BlockEvents.compostItem(user, world, pos, stack)) {
         return state;

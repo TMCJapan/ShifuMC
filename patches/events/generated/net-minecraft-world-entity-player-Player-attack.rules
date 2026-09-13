@@ -2,7 +2,7 @@
 
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-    g *= i;
+    damageBonus *= attackStrengthScale;
     this.resetAttackStrengthTicker();
 insert:
     if (dev.shifu.event.PlayerEvents.attackCooldownReset(this, target)) {

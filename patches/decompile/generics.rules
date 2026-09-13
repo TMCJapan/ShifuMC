@@ -101,12 +101,12 @@ replace:
 with:
             this.delayedLeashInfo = NbtUtils.readBlockPos(nbt, "leash").<Either<UUID, BlockPos>>map(Either::right).orElse(null);
 
-# Collection<RecipeHolder<?>> から Collection<RecipeHolder<T>> へは直に cast できない
+# Map<ResourceLocation, Recipe<?>> から Map<ResourceLocation, T> へは直に cast できない(公式は raw の Map に cast している)
 file: net/minecraft/world/item/crafting/RecipeManager.java
 replace:
-        return (Collection<RecipeHolder<T>>)this.byType.get(type);
+        return this.recipes.getOrDefault(type, Collections.emptyMap());
 with:
-        return (Collection<RecipeHolder<T>>)(Collection)this.byType.get(type);
+        return (Map<ResourceLocation, T>)(Map)this.recipes.getOrDefault(type, Collections.emptyMap());
 
 # Stream.empty() の要素型が定まらず、joining に渡らない
 file: net/minecraft/commands/arguments/item/ItemInput.java

@@ -198,14 +198,17 @@ public final class PluginDrive extends JavaPlugin implements Listener {
         // 空中に足場を作って、その上で WorldEdit を使わせる
         this.origin = new Location(bot.getWorld(), bot.getLocation().getBlockX(), 150.0, bot.getLocation().getBlockZ());
         this.later(20, () -> {
-            // AuthMe はログインが済んだところで保存していた状態(サバイバル)へ戻す。
-            // 空中へ運ぶ前に入れ直さないと、浮遊の判定で蹴られる。
+            // AuthMe はログインが済んだところで保存していた状態(サバイバル、op 無し)へ戻す。
+            // 空中へ運ぶ前に入れ直さないと、浮遊の判定で蹴られる。op が無いと vanilla の
+            // gamemode と WorldEdit のコマンドが「Unknown command」になる
+            bot.setOp(true);
             bot.setGameMode(org.bukkit.GameMode.CREATIVE);
             bot.teleport(this.origin);
             this.note("teleported to " + brief(this.origin) + " (" + bot.getGameMode() + ")");
         });
 
         // EssentialsX。結果が読めるように、家を置いて離れてから戻る
+        this.later(58, () -> bot.setOp(true)); // AuthMe の復元がログインの後の tick に来ることがある
         this.later(60, () -> this.tell(bot, "!bot cmd sethome shifu"));
         this.later(80, () -> {
             bot.teleport(this.origin.clone().add(40, 0, 40));
@@ -353,7 +356,7 @@ public final class PluginDrive extends JavaPlugin implements Listener {
             }
 
             final org.bukkit.entity.TNTPrimed tnt = (org.bukkit.entity.TNTPrimed)
-                    bot.getWorld().spawnEntity(at.clone().add(0, 1, 0), org.bukkit.entity.EntityType.TNT);
+                    bot.getWorld().spawnEntity(at.clone().add(0, 1, 0), org.bukkit.entity.EntityType.PRIMED_TNT);
             tnt.setFuseTicks(20);
             this.note("primed TNT at " + brief(at));
 

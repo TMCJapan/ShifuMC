@@ -1,11 +1,11 @@
 # Paper が vanilla のメソッドの中で行う代入。既存の行は変えていない。
 
 # 毎 tick のスケジューラ実行
+# 1.19.4 の CraftBukkit は tickChildren の先頭で呼ぶ(1.20.6 の suspendFlushing の行は無い)
 file: net/minecraft/server/MinecraftServer.java
 anchor:
-                this.statusIcon = this.loadStatusIcon().orElse(null);
-                this.status = this.buildServerStatus();
-insert:
+    public void tickChildren(BooleanSupplier shouldKeepTicking) {
+insert-after:
     this.server.getScheduler().mainThreadHeartbeat(this.tickCount);
 
 # メインスレッド待ちのタスク列(processQueue)を毎 tick 流す。CraftBukkit は

@@ -1,5 +1,13 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
 
+// Paper の書き直したチャンク系(NewChunkHolder)を使う版の置き換え。
+// Shifu は vanilla のチャンク系のままなので、vanilla の holder が持つ値で答える。
+
+// ChunkHolder.isFullChunkReady
+    public final boolean isFullChunkReady() {
+        return this.getFullStatus().isOrAfter(ChunkHolder.FullChunkStatus.BORDER);
+    }
+
 // ChunkHolder.getAvailableChunkNow
     public @Nullable ChunkAccess getAvailableChunkNow() {
         return this.getLastAvailable();
@@ -31,4 +39,15 @@
                        final ChunkHolder.PlayerProvider playersWatchingChunkProvider,
                        final io.papermc.paper.chunk.system.scheduling.NewChunkHolder newChunkHolder) {
         this(pos, ChunkMap.MAX_CHUNK_DISTANCE + 1, world, lightingProvider, null, playersWatchingChunkProvider);
+    }
+
+// ChunkHolder.getSendingChunk
+    // Paper は自分の chunkMap 欄(Paper のチャンク系が入れる)から辿る。vanilla の holder は
+    // ChunkMap を PlayerProvider として持っているので、そこから辿る
+    public final LevelChunk getSendingChunk() {
+        LevelChunk ret = ((ChunkMap) this.playerProvider).level.getChunkSource().getChunkAtIfLoadedImmediately(this.pos.x, this.pos.z);
+        if (ret != null && ret.areNeighboursLoaded(1)) {
+            return ret;
+        }
+        return null;
     }

@@ -1,8 +1,22 @@
-
+# WitchThrowPotionEvent。投げる薬が決まった直後。
+# 1.19.4 は PotionContents が無く、PotionUtils.setPotion で薬を作る。
 
 file: net/minecraft/world/entity/monster/Witch.java
 anchor:
-            thrownPotion.setItem(PotionContents.createItemStack(Items.SPLASH_POTION, holder));
+            ThrownPotion thrownPotion = new ThrownPotion(this.level, this);
+insert:
+    net.minecraft.world.item.ItemStack shifuPotion = null;
+    if (dev.shifu.event.AnimalEvents.witchThrowListening()) {
+        shifuPotion = dev.shifu.event.AnimalEvents.witchThrowPotion(this, target,
+            PotionUtils.setPotion(new ItemStack(Items.SPLASH_POTION), potion));
+        if (shifuPotion == null) {
+            return;
+        }
+    }
+
+file: net/minecraft/world/entity/monster/Witch.java
+anchor:
+            thrownPotion.setItem(PotionUtils.setPotion(new ItemStack(Items.SPLASH_POTION), potion));
 insert-after:
     if (shifuPotion != null) {
         thrownPotion.setItem(shifuPotion);

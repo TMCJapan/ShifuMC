@@ -338,8 +338,7 @@ anchor:
     for (Raider raider : this.mob
     .level
     .getNearbyEntities(Raider.class, this.shoutTargeting, this.mob, this.mob.getBoundingBox().inflate(8.0, 8.0, 8.0))) {
-    raider.setTarget(target);
-    raider.setAggressive(true);
+    raider.setTarget(this.mob.getTarget());
 insert:
     dev.shifu.event.EntityEvents.targetReasonUntilDone(org.bukkit.event.entity.EntityTargetEvent.TargetReason.FOLLOW_LEADER);
 insert-after:

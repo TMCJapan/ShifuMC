@@ -41,7 +41,7 @@ if (-not $SkipBuild) {
     & $java -cp $cp dev.shifu.lvtmatch.LambdaMatch $Classes $Mojang "$Shifu\tools\build\lambda-differs.txt" | Select-Object -Last 4
     python tools\keep_vanilla_classes.py $Classes $Mojang
     # 公式に戻したクラスに、残りのクラスが参照している欄やメソッドが無いと起動時に NoSuchFieldError になる。ここで数える
-    & $java -cp $cp dev.shifu.lvtmatch.LinkCheck $Classes "$Shifu\tools\build\kept-classes.txt" "$Shifu\tools\build\link-missing.txt" | Select-Object -Last 1
+    & $java -cp $cp dev.shifu.lvtmatch.LinkCheck $Classes "$Shifu\tools\build\kept-classes.txt" "$Shifu\tools\build\link-missing.txt" $Mojang | Select-Object -Last 1
     python tools\check_synthetic_names.py $Classes $Mojang | Select-Object -Last 1
     & $java -cp $cp dev.shifu.lvtmatch.CodeDiff $Classes $Mojang "$Shifu\tools\build\code-differs.txt" | Select-Object -Last 3
 

@@ -1,8 +1,1 @@
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
-
-# EntityInsideBlockEvent
-file: net/minecraft/world/level/block/PitcherCropBlock.java
-anchor:
-    public void entityInside(BlockState state, Level world, BlockPos pos, Entity entity) {
-insert-after:
-    if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(world, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+# EntityInsideBlockEvent は外した。1.19.4 に PitcherCropBlock というクラスが無い(1.20 で入った)。

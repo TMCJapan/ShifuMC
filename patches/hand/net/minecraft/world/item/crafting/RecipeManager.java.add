@@ -1,1 +1,46 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// RecipeManager.addRecipe
+    // CraftBukkit は欄を書き換え可能な Object2ObjectLinkedOpenHashMap にしている。vanilla の欄は
+    // ImmutableMap なので、書き換え可能な写しに置き換えてから足す(SPIGOT-4638: あとの recipe を先に)
+    public void addRecipe(Recipe<?> irecipe) {
+        org.spigotmc.AsyncCatcher.catchOp("Recipe Add"); // Spigot
+        if (this.byName.containsKey(irecipe.getId())) {
+            throw new IllegalStateException("Duplicate recipe ignored with ID " + irecipe.getId());
+        }
+        Map<RecipeType<?>, Map<ResourceLocation, Recipe<?>>> outer = Maps.newHashMap(this.recipes);
+        it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap<ResourceLocation, Recipe<?>> inner =
+            new it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap<>(outer.getOrDefault(irecipe.getType(), Collections.emptyMap()));
+        inner.putAndMoveToFirst(irecipe.getId(), irecipe);
+        outer.put(irecipe.getType(), inner);
+        Map<ResourceLocation, Recipe<?>> names = Maps.newHashMap(this.byName);
+        names.put(irecipe.getId(), irecipe);
+        this.recipes = outer;
+        this.byName = names;
+    }
+
+// RecipeManager.removeRecipe
+    public boolean removeRecipe(ResourceLocation mcKey) {
+        Map<RecipeType<?>, Map<ResourceLocation, Recipe<?>>> outer = Maps.newHashMap();
+        for (Map.Entry<RecipeType<?>, Map<ResourceLocation, Recipe<?>>> entry : this.recipes.entrySet()) {
+            it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap<ResourceLocation, Recipe<?>> inner =
+                new it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap<>(entry.getValue());
+            inner.remove(mcKey);
+            outer.put(entry.getKey(), inner);
+        }
+        Map<ResourceLocation, Recipe<?>> names = Maps.newHashMap(this.byName);
+        boolean removed = names.remove(mcKey) != null;
+        this.recipes = outer;
+        this.byName = names;
+        return removed;
+    }
+
+// RecipeManager.clearRecipes
+    public void clearRecipes() {
+        Map<RecipeType<?>, Map<ResourceLocation, Recipe<?>>> outer = Maps.newHashMap();
+        for (RecipeType<?> recipeType : net.minecraft.core.registries.BuiltInRegistries.RECIPE_TYPE) {
+            outer.put(recipeType, new it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap<>());
+        }
+        this.recipes = outer;
+        this.byName = Maps.newHashMap();
+    }

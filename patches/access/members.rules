@@ -745,3 +745,86 @@ line:
 file: net/minecraft/world/phys/shapes/VoxelShape.java
 line:
     protected final DiscreteVoxelShape shape;
+
+# CraftItemStack が読む(Paper は public)。LinkCheck(access)で見つけた
+file: net/minecraft/nbt/CompoundTag.java
+line:
+    private final Map<String, Tag> tags;
+
+# CraftFeatureFlag が読む。LinkCheck(access)で見つけた
+file: net/minecraft/world/flag/FeatureFlagRegistry.java
+line:
+    private final Map<ResourceLocation, FeatureFlag> names;
+
+# CraftFeatureFlag が読む。LinkCheck(access)で見つけた
+file: net/minecraft/world/flag/FeatureFlag.java
+line:
+    final FeatureFlagUniverse universe;
+
+# ---- 親を public にしたので、上書きしている子も public にする(1.19.4 の木から)
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Guardian.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Ghast.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getSoundVolume(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/Ghast.java
+line:
+    protected float getSoundVolume() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/monster/piglin/Piglin.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/animal/Rabbit.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# getPickupItem(): Paper が親を public にしている
+file: net/minecraft/world/entity/projectile/ThrownTrident.java
+line:
+    protected ItemStack getPickupItem() {
+
+# getDeathSound(): Paper が親を public にしている
+file: net/minecraft/world/entity/npc/WanderingTrader.java
+line:
+    protected SoundEvent getDeathSound() {
+
+# ---- make_access_rules が定めきれなかったもの(同名が別クラスにもある)。1.19.4 の木の行
+
+# Guardian.GuardianAttackGoal: CraftBukkit の MobGoalHelper が使う
+file: net/minecraft/world/entity/monster/Guardian.java
+line:
+    static class GuardianAttackGoal extends Goal {
+
+# RandomizableContainerBlockEntity.lootTable: PaperTileEntityLootableInventory が読む
+file: net/minecraft/world/level/block/entity/RandomizableContainerBlockEntity.java
+line:
+    protected ResourceLocation lootTable;
+
+# RecipeManager.recipes / byName: RecipeIterator と patches/hand の addRecipe が読む
+file: net/minecraft/world/item/crafting/RecipeManager.java
+line:
+    private Map<RecipeType<?>, Map<ResourceLocation, Recipe<?>>> recipes = ImmutableMap.of();
+
+file: net/minecraft/world/item/crafting/RecipeManager.java
+line:
+    private Map<ResourceLocation, Recipe<?>> byName = ImmutableMap.of();
+
+# GuardianAttackGoal.attackTime: CraftGuardian が読み書きする
+file: net/minecraft/world/entity/monster/Guardian.java
+line:
+        private int attackTime;
+
+# canHitEntity(): Paper が親(Projectile)を public にしている
+file: net/minecraft/world/entity/projectile/AbstractHurtingProjectile.java
+line:
+    protected boolean canHitEntity(Entity entity) {

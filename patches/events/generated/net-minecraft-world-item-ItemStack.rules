@@ -1,14 +1,25 @@
 
 
+# PlayerItemDamageEvent。耐久を書き込む直前。
+# 1.19.4 の hurt は boolean を返すので、取り消しは return false で表す。
+file: net/minecraft/world/item/ItemStack.java
+anchor:
+    int itemEnchantmentLevel = this.getDamageValue() + amount;
+insert:
+    amount = dev.shifu.event.ItemEvents.itemDamage(this, player, amount);
+    if (amount <= 0) {
+        return false;
+    }
+
 # EntityDamageItemEvent。持ち主がプレイヤーでないときの道具の減り。
-# vanilla の hurtAndBreak は 3 つめが ServerPlayer なので mob は届かない。
+# vanilla の hurt は 3 つめが ServerPlayer なので mob は届かない。
 # 呼ぶ手前で控えて、同じ ItemStack のときだけ使う。
 #
-# 読んだ位置(Paper 1.20.6):
-#   Paper-Server src/main/java/net/minecraft/world/item/ItemStack.java:683
+# 読んだ位置(Paper 1.19.4):
+#   Paper-Server src/main/java/net/minecraft/world/item/ItemStack.java:612
 
 file: net/minecraft/world/item/ItemStack.java
 anchor:
-            this.hurtAndBreak(amount, entity.getRandom(), entity instanceof ServerPlayer serverPlayer ? serverPlayer : null, () -> {
+                if (this.hurt(amount, entity.getRandom(), entity instanceof ServerPlayer ? (ServerPlayer)entity : null)) {
 insert:
     dev.shifu.event.ItemEvents.armItemDamage(this, entity);

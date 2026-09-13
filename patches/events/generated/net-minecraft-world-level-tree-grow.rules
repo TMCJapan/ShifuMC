@@ -29,18 +29,19 @@ insert-after:
         dev.shifu.event.BlockEvents.treeGrow(world, pos);
     }
 
-# 育てる木の種類。StructureGrowEvent が要る
-file: net/minecraft/world/level/block/grower/TreeGrower.java
+# 育てる木の種類。StructureGrowEvent が要る。
+# 1.19.4 は TreeGrower が無く、大木は AbstractMegaTreeGrower に分かれている
+file: net/minecraft/world/level/block/grower/AbstractMegaTreeGrower.java
 anchor:
-                for (int i = 0; i >= -1; i--) {
+                ConfiguredFeature<?, ?> configuredFeature = holder.value();
 insert:
     dev.shifu.event.BlockEvents.treeType(world, holder);
 
-file: net/minecraft/world/level/block/grower/TreeGrower.java
+file: net/minecraft/world/level/block/grower/AbstractTreeGrower.java
 anchor:
-                ConfiguredFeature<?, ?> configuredFeature2 = holder2.value();
+                ConfiguredFeature<?, ?> configuredFeature1 = holder.value();
 insert:
-    dev.shifu.event.BlockEvents.treeType(world, holder2);
+    dev.shifu.event.BlockEvents.treeType(world, holder);
 
 # 骨粉。手で使ったとき
 file: net/minecraft/world/item/ItemStack.java
@@ -60,7 +61,7 @@ anchor:
                 if (!BoneMealItem.growCrop(stack, level, blockPos) && !BoneMealItem.growWaterPlant(stack, level, blockPos, null)) {
                     this.setSuccess(false);
                 } else if (!level.isClientSide) {
-                    level.levelEvent(1505, blockPos, 15);
+                    level.levelEvent(1505, blockPos, 0);
                 }
 insert:
     final boolean shifuFertilize = dev.shifu.event.BlockEvents.armTreeGrow(level, true);

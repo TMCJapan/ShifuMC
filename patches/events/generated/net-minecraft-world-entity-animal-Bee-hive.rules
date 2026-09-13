@@ -3,6 +3,6 @@
 # EntityEnterBlockEvent。ハチが巣に入る直前
 file: net/minecraft/world/entity/animal/Bee.java
 anchor:
-                beehiveBlockEntity.addOccupant(Bee.this);
+                beehiveBlockEntity.addOccupant(Bee.this, Bee.this.hasNectar());
 insert:
     if (dev.shifu.event.AnimalEvents.enterHive(beehiveBlockEntity, Bee.this))

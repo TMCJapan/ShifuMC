@@ -651,6 +651,16 @@ file: net/minecraft/world/entity/animal/Panda.java
 line:
     private void setEatCounter(int eatingTicks) {
 
+# moreCarrotTicks
+file: net/minecraft/world/entity/animal/Rabbit.java
+line:
+    int moreCarrotTicks;
+
+# registerGoals()
+file: net/minecraft/world/entity/animal/Rabbit.java
+line:
+    protected void registerGoals() {
+
 # canDuplicate()
 file: net/minecraft/world/entity/animal/allay/Allay.java
 line:
@@ -856,6 +866,11 @@ file: net/minecraft/world/entity/item/ItemEntity.java
 line:
     private UUID thrower;
 
+# owner
+file: net/minecraft/world/entity/item/PrimedTnt.java
+line:
+    private LivingEntity owner;
+
 # explodeCreeper()
 file: net/minecraft/world/entity/monster/Creeper.java
 line:
@@ -880,6 +895,11 @@ line:
 file: net/minecraft/world/entity/monster/EnderMan.java
 line:
     protected boolean teleport() {
+
+# setActiveAttackTarget(int)
+file: net/minecraft/world/entity/monster/Guardian.java
+line:
+    void setActiveAttackTarget(int entityId) {
 
 # anchorPoint
 file: net/minecraft/world/entity/monster/Phantom.java
@@ -1016,6 +1036,21 @@ file: net/minecraft/world/entity/monster/piglin/AbstractPiglin.java
 line:
     protected int timeInOverworld;
 
+# cannotHunt
+file: net/minecraft/world/entity/monster/piglin/Piglin.java
+line:
+    private boolean cannotHunt;
+
+# inventory
+file: net/minecraft/world/entity/monster/piglin/Piglin.java
+line:
+    private final SimpleContainer inventory = new SimpleContainer(8);
+
+# isChargingCrossbow()
+file: net/minecraft/world/entity/monster/piglin/Piglin.java
+line:
+    private boolean isChargingCrossbow() {
+
 # increaseMerchantCareer()
 file: net/minecraft/world/entity/npc/Villager.java
 line:
@@ -1035,6 +1070,11 @@ line:
 file: net/minecraft/world/entity/npc/Villager.java
 line:
     private void setUnhappy() {
+
+# getWanderTarget()
+file: net/minecraft/world/entity/npc/WanderingTrader.java
+line:
+    BlockPos getWanderTarget() {
 
 # compartments
 file: net/minecraft/world/entity/player/Inventory.java
@@ -1106,6 +1146,31 @@ file: net/minecraft/world/entity/projectile/Arrow.java
 line:
     private void setFixedColor(int color) {
 
+# life
+file: net/minecraft/world/entity/projectile/EyeOfEnder.java
+line:
+    private int life;
+
+# surviveAfterDeath
+file: net/minecraft/world/entity/projectile/EyeOfEnder.java
+line:
+    private boolean surviveAfterDeath;
+
+# tx
+file: net/minecraft/world/entity/projectile/EyeOfEnder.java
+line:
+    private double tx;
+
+# ty
+file: net/minecraft/world/entity/projectile/EyeOfEnder.java
+line:
+    private double ty;
+
+# tz
+file: net/minecraft/world/entity/projectile/EyeOfEnder.java
+line:
+    private double tz;
+
 # DATA_ID_FIREWORKS_ITEM
 file: net/minecraft/world/entity/projectile/FireworkRocketEntity.java
 line:
@@ -1166,6 +1231,26 @@ file: net/minecraft/world/entity/projectile/FishingHook.java
 line:
     private int timeUntilLured;
 
+# canHitEntity(Entity)
+file: net/minecraft/world/entity/projectile/Projectile.java
+line:
+    protected boolean canHitEntity(Entity entity) {
+
+# hasBeenShot
+file: net/minecraft/world/entity/projectile/Projectile.java
+line:
+    private boolean hasBeenShot;
+
+# leftOwner
+file: net/minecraft/world/entity/projectile/Projectile.java
+line:
+    private boolean leftOwner;
+
+# ownerUUID
+file: net/minecraft/world/entity/projectile/Projectile.java
+line:
+    private UUID ownerUUID;
+
 # currentMoveDirection
 file: net/minecraft/world/entity/projectile/ShulkerBullet.java
 line:
@@ -1196,6 +1281,21 @@ file: net/minecraft/world/entity/projectile/SpectralArrow.java
 line:
     private int duration = 200;
 
+# getItemRaw()
+file: net/minecraft/world/entity/projectile/ThrowableItemProjectile.java
+line:
+    protected ItemStack getItemRaw() {
+
+# dealtDamage
+file: net/minecraft/world/entity/projectile/ThrownTrident.java
+line:
+    private boolean dealtDamage;
+
+# tridentItem
+file: net/minecraft/world/entity/projectile/ThrownTrident.java
+line:
+    private ItemStack tridentItem = new ItemStack(Items.TRIDENT);
+
 # heroesOfTheVillage
 file: net/minecraft/world/entity/raid/Raid.java
 line:
@@ -1225,6 +1325,11 @@ line:
 file: net/minecraft/world/entity/vehicle/MinecartCommandBlock.java
 line:
     static final EntityDataAccessor<String> DATA_ID_COMMAND_NAME = SynchedEntityData.defineId(MinecartCommandBlock.class, EntityDataSerializers.STRING);
+
+# universe
+file: net/minecraft/world/flag/FeatureFlag.java
+line:
+    final FeatureFlagUniverse universe;
 
 # exhaustionLevel
 file: net/minecraft/world/food/FoodData.java
@@ -1511,6 +1616,16 @@ file: net/minecraft/world/level/block/entity/BrewingStandBlockEntity.java
 line:
     int fuel;
 
+# cookingProgress
+file: net/minecraft/world/level/block/entity/CampfireBlockEntity.java
+line:
+    private final int[] cookingProgress = new int[4];
+
+# cookingTime
+file: net/minecraft/world/level/block/entity/CampfireBlockEntity.java
+line:
+    private final int[] cookingTime = new int[4];
+
 # openersCounter
 file: net/minecraft/world/level/block/entity/ChestBlockEntity.java
 line:
@@ -1545,6 +1660,11 @@ line:
 file: net/minecraft/world/level/block/entity/LecternBlockEntity.java
 line:
     void setPage(int currentPage) {
+
+# lootTableSeed
+file: net/minecraft/world/level/block/entity/RandomizableContainerBlockEntity.java
+line:
+    protected long lootTableSeed;
 
 # isEditable
 file: net/minecraft/world/level/block/entity/SignBlockEntity.java

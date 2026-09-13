@@ -11,9 +11,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.jar.JarFile;
 import java.util.stream.Stream;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Handle;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
@@ -26,7 +28,7 @@ import org.objectweb.asm.tree.MethodNode;
  * 公式のバイトコードに戻したクラスに、残りのクラスが参照している欄やメソッドがあるかを確かめる。
  *
  * <pre>
- * java -cp tools/build/lvtmatch dev.shifu.lvtmatch.LinkCheck <クラスの置き場> <戻したクラスの一覧> <出力先>
+ * java -cp tools/build/lvtmatch dev.shifu.lvtmatch.LinkCheck <クラスの置き場> <戻したクラスの一覧> <出力先> [公式の jar]
  * </pre>
  *
  * <p>{@code -TouchedOnly} で組むと、Shifu が触っていない vanilla のクラスは Paper の版で compile され、
@@ -35,17 +37,21 @@ import org.objectweb.asm.tree.MethodNode;
  * 起動時に {@code NoSuchFieldError} / {@code NoSuchMethodError} になる。ここで、戻したクラスを
  * 持ち主とする参照を全部集め、置き場にあるクラス(= 実行時に載るもの)で解決できるかを見る。
  * 親クラスや interface が置き場に無いもの(JDK やライブラリ)まで辿ったら、あるものとみなす。
+ * {@code -TouchedOnly} では触っていないクラスは置き場にも無い(実行時は公式 jar から載る)ので、
+ * 公式の jar を渡してそこから読む。vanilla の型が jar にも無ければ「無い」。
  *
- * <p>出力は 1 行 1 件: {@code <持ち主> <名前> <記述子> <参照元>}。
+ * <p>出力は 1 行 1 件: {@code <持ち主> <名前> <記述子> <参照元> <missing|access>}。
  * {@code tools/link_to_required.py} がこれを required-members.txt の形に直す。
  */
 public final class LinkCheck {
     private static Path root;
+    private static JarFile official;
     private static final Map<String, ClassNode> loaded = new HashMap<>();
     private static final Set<String> missingClasses = new HashSet<>();
 
     public static void main(final String[] args) throws IOException {
         root = Path.of(args[0]);
+        official = args.length > 3 ? new JarFile(args[3]) : null;
         final Set<String> kept = new HashSet<>();
 
         for (final String line : Files.readAllLines(Path.of(args[1]), StandardCharsets.UTF_8)) {
@@ -80,24 +86,15 @@ public final class LinkCheck {
             for (final MethodNode method : node.methods) {
                 for (final AbstractInsnNode insn : method.instructions) {
                     if (insn instanceof FieldInsnNode f && kept.contains(f.owner)) {
-                        if (!hasField(f.owner, f.name, f.desc)) {
-                            missing.add(f.owner + " " + f.name + " " + f.desc + " " + internal + "." + method.name);
-                        }
+                        check(missing, internal, method.name, f.owner, f.name, f.desc, true);
                     } else if (insn instanceof MethodInsnNode m && kept.contains(m.owner)) {
-                        if (!hasMethod(m.owner, m.name, m.desc)) {
-                            missing.add(m.owner + " " + m.name + " " + m.desc + " " + internal + "." + method.name);
-                        }
+                        check(missing, internal, method.name, m.owner, m.name, m.desc, false);
                     } else if (insn instanceof InvokeDynamicInsnNode indy) {
                         for (final Object arg : indy.bsmArgs) {
                             if (arg instanceof Handle h && kept.contains(h.getOwner())) {
                                 // H_GETFIELD=1 .. H_PUTSTATIC=4 が欄、それ以外はメソッド
-                                final boolean field = h.getTag() >= 1 && h.getTag() <= 4;
-                                final boolean ok = field ? hasField(h.getOwner(), h.getName(), h.getDesc())
-                                        : hasMethod(h.getOwner(), h.getName(), h.getDesc());
-
-                                if (!ok) {
-                                    missing.add(h.getOwner() + " " + h.getName() + " " + h.getDesc() + " " + internal + "." + method.name);
-                                }
+                                check(missing, internal, method.name, h.getOwner(), h.getName(), h.getDesc(),
+                                        h.getTag() >= 1 && h.getTag() <= 4);
                             }
                         }
                     }
@@ -124,76 +121,147 @@ public final class LinkCheck {
         }
 
         final Path file = root.resolve(internal + ".class");
+        byte[] bytes = null;
 
-        if (!Files.exists(file)) {
+        if (Files.exists(file)) {
+            bytes = Files.readAllBytes(file);
+        } else if (official != null && official.getEntry(internal + ".class") != null) {
+            try (var in = official.getInputStream(official.getEntry(internal + ".class"))) {
+                bytes = in.readAllBytes();
+            }
+        }
+
+        if (bytes == null) {
             missingClasses.add(internal);
             return null;
         }
 
         final ClassNode node = new ClassNode();
-        new ClassReader(Files.readAllBytes(file)).accept(node, ClassReader.SKIP_FRAMES);
+        new ClassReader(bytes).accept(node, ClassReader.SKIP_FRAMES);
         loaded.put(internal, node);
 
         return node;
     }
 
-    private static final Set<String> OBJECT_METHODS = Set.of(
-            "<init>", "getClass", "hashCode", "equals", "clone", "toString", "notify", "notifyAll", "wait", "finalize");
+    /**
+     * 参照先が無い、または参照元から見えない(private・パッケージ内・別パッケージからの protected)ものを記録する。
+     * 見えないものは、Paper が可視性を広げた宣言を Paper の版で compile したあと公式に戻ったときに
+     * {@code IllegalAccessError} になる(1.19.4 の {@code CompoundTag.tags} を CraftItemStack が読む)。
+     * 出力の 5 つめは {@code missing} か {@code access}。
+     */
+    private static void check(final Set<String> missing, final String from, final String fromMethod,
+                              final String owner, final String name, final String desc, final boolean field) throws IOException {
+        final int access = field ? fieldAccess(owner, name, desc) : methodAccess(owner, name, desc);
 
-    /** 置き場に無い型(JDK やライブラリ)まで辿ったら、あるものとみなす。java/lang/Object だけは中身を知っているので見る。 */
-    private static boolean hasField(final String owner, final String name, final String desc) throws IOException {
+        if (access < 0) {
+            missing.add(owner + " " + name + " " + desc + " " + from + "." + fromMethod + " missing");
+            return;
+        }
+
+        if (access == Integer.MAX_VALUE || (access & Opcodes.ACC_PUBLIC) != 0) {
+            return;
+        }
+
+        final String fromOuter = from.contains("$") ? from.substring(0, from.indexOf('$')) : from;
+        final String ownerOuter = owner.contains("$") ? owner.substring(0, owner.indexOf('$')) : owner;
+
+        if (fromOuter.equals(ownerOuter)) {
+            return;
+        }
+
+        final boolean samePackage = packageOf(from).equals(packageOf(owner));
+
+        if ((access & Opcodes.ACC_PRIVATE) != 0
+                || (!samePackage && ((access & Opcodes.ACC_PROTECTED) == 0 || !isSubclass(from, owner)))) {
+            missing.add(owner + " " + name + " " + desc + " " + from + "." + fromMethod + " access");
+        }
+    }
+
+    private static String packageOf(final String internal) {
+        final int at = internal.lastIndexOf('/');
+
+        return at < 0 ? "" : internal.substring(0, at);
+    }
+
+    private static boolean isSubclass(final String type, final String ancestor) throws IOException {
+        String current = type;
+
+        while (current != null) {
+            if (current.equals(ancestor)) {
+                return true;
+            }
+
+            final ClassNode node = load(current);
+            current = node == null ? null : node.superName;
+        }
+
+        return false;
+    }
+
+    /** 欄の修飾子。無ければ -1、置き場に無い型(JDK やライブラリ)まで辿ったら Integer.MAX_VALUE(あるものとみなす)。 */
+    // 親や interface を辿る途中で MAX_VALUE が返ると「ある」になる。vanilla の型は必ず置き場にあるので -1
+    private static int fieldAccess(final String owner, final String name, final String desc) throws IOException {
         if (owner.equals("java/lang/Object")) {
-            return false;
+            return -1;
         }
 
         final ClassNode node = load(owner);
 
         if (node == null) {
-            return true;
+            // vanilla の型は置き場か公式の jar にある。どちらにも無いのはライブラリ(JDK、netty、brigadier)の型
+            return owner.startsWith("net/minecraft/") ? -1 : Integer.MAX_VALUE;
         }
 
-        for (final FieldNode field : node.fields) {
-            if (field.name.equals(name) && field.desc.equals(desc)) {
-                return true;
+        for (final FieldNode f : node.fields) {
+            if (f.name.equals(name) && f.desc.equals(desc)) {
+                return f.access;
             }
         }
 
         for (final String itf : node.interfaces) {
-            if (hasField(itf, name, desc)) {
-                return true;
+            final int found = fieldAccess(itf, name, desc);
+
+            if (found >= 0) {
+                return found;
             }
         }
 
-        return node.superName != null && hasField(node.superName, name, desc);
+        return node.superName == null ? -1 : fieldAccess(node.superName, name, desc);
     }
 
-    private static boolean hasMethod(final String owner, final String name, final String desc) throws IOException {
+    private static int methodAccess(final String owner, final String name, final String desc) throws IOException {
         if (owner.equals("java/lang/Object")) {
-            return OBJECT_METHODS.contains(name);
+            return OBJECT_METHODS.contains(name) ? Opcodes.ACC_PUBLIC : -1;
         }
 
         final ClassNode node = load(owner);
 
         if (node == null) {
-            return true;
+            // vanilla の型は置き場か公式の jar にある。どちらにも無いのはライブラリ(JDK、netty、brigadier)の型
+            return owner.startsWith("net/minecraft/") ? -1 : Integer.MAX_VALUE;
         }
 
-        for (final MethodNode method : node.methods) {
-            if (method.name.equals(name) && method.desc.equals(desc)) {
-                return true;
+        for (final MethodNode m : node.methods) {
+            if (m.name.equals(name) && m.desc.equals(desc)) {
+                return m.access;
             }
         }
 
         if (name.equals("<init>")) {
-            return false;
+            return -1;
         }
 
         for (final String itf : node.interfaces) {
-            if (hasMethod(itf, name, desc)) {
-                return true;
+            final int found = methodAccess(itf, name, desc);
+
+            if (found >= 0) {
+                return found;
             }
         }
 
-        return node.superName != null && hasMethod(node.superName, name, desc);
+        return node.superName == null ? -1 : methodAccess(node.superName, name, desc);
     }
+
+    private static final Set<String> OBJECT_METHODS = Set.of(
+            "<init>", "getClass", "hashCode", "equals", "clone", "toString", "notify", "notifyAll", "wait", "finalize");
 }

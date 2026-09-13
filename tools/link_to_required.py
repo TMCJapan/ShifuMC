@@ -3,11 +3,12 @@
 
     python tools/link_to_required.py <link-missing.txt> <required-members.txt>
 
-LinkCheck は 1 行 1 件 `<持ち主> <名前> <記述子> <参照元>` を出す。持ち主の単純名を見出しに、
-欄は variable、メソッドは method として足す(make_classic_shim が Paper の宣言を写す鍵と同じ)。
+LinkCheck は 1 行 1 件 `<持ち主> <名前> <記述子> <参照元> <missing|access>` を出す。持ち主の単純名を見出しに、
+無いものは欄なら variable、メソッドなら method、見えないだけのものは access として足す(make_classic_shim が Paper の宣言を写す鍵と同じ)。
 既にある項目は足さない。足した数を出す。
 """
 import io
+import os
 import re
 import sys
 
@@ -46,6 +47,7 @@ def main():
     missing, required = sys.argv[1:3]
     owners, order = load(required)
     added = 0
+    access = []
 
     for line in io.open(missing, encoding="utf-8"):
         parts = line.split()
@@ -55,6 +57,13 @@ def main():
 
         owner, name, desc = parts[0], parts[1], parts[2]
         simple = owner.rsplit("/", 1)[-1].rsplit("$", 1)[-1]
+        # 5 つめが access なら宣言はあって見えないだけ。可視性は patches/access で広げるので、
+        # javac の誤りと同じ形にして書き出し、make_access_rules.py に渡す(要求一覧には入れない)
+        if len(parts) > 4 and parts[4] == "access":
+            args = "" if not desc.startswith("(") else "(" + ",".join(
+                t.rsplit("/", 1)[-1].rstrip(";") for t in desc[1:desc.index(")")].split(";") if t) + ")"
+            access.append(f"  {name}{args} has private access in {simple}")
+            continue
         kind = "variable" if not desc.startswith("(") else "method"
 
         if name == "<init>":
@@ -80,6 +89,11 @@ def main():
                 out.write(f"    {kind:<9} {name}\n")
 
     print(f"足した: {added} 件")
+
+    if access:
+        gap = os.path.join(os.path.dirname(missing), "link-access-gap.txt")
+        io.open(gap, "w", encoding="utf-8", newline="\n").write("\n".join(access) + "\n")
+        print(f"見えないだけのもの: {len(access)} 件 -> {gap}(make_access_rules.py に渡す)")
 
 
 if __name__ == "__main__":
