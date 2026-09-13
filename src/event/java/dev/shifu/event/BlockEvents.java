@@ -1556,15 +1556,20 @@ public final class BlockEvents {
      *   Paper-Server src/main/java/net/minecraft/world/level/block/grower/TreeGrower.java:175
      */
     public static void treeType(final Level level,
-                                final net.minecraft.core.Holder<
+                                final net.minecraft.core.Holder<? extends
                                         net.minecraft.world.level.levelgen.feature.ConfiguredFeature<?, ?>> holder) {
         if (!level.captureTreeGeneration) {
             return;
         }
 
+        // 1.18.2 の getConfiguredFeature は Holder<? extends ConfiguredFeature<?, ?>> を返すので、
+        // unwrapKey() の鍵も capture になる。raw を挟んで ConfiguredFeature<?, ?> の鍵に戻す。
+        @SuppressWarnings("unchecked")
         final net.minecraft.resources.ResourceKey<
                 net.minecraft.world.level.levelgen.feature.ConfiguredFeature<?, ?>> key =
-                        holder.unwrapKey().orElse(null);
+                        (net.minecraft.resources.ResourceKey<
+                                net.minecraft.world.level.levelgen.feature.ConfiguredFeature<?, ?>>)
+                                (net.minecraft.resources.ResourceKey<?>) holder.unwrapKey().orElse(null);
 
         net.minecraft.world.level.block.SaplingBlock.treeType = treeTypeOf(key);
     }

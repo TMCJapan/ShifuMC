@@ -42,7 +42,7 @@
         ItemStack current = this.getItemBySlot(slot);
         boolean canReplace = this.canReplaceCurrentItem(stack, current);
 
-        if (slot.isArmor() && !canReplace) {
+        if (slot.getType() == EquipmentSlot.Type.ARMOR && !canReplace) {
             slot = EquipmentSlot.MAINHAND;
             current = this.getItemBySlot(slot);
             canReplace = current.isEmpty();

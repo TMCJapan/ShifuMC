@@ -47,7 +47,7 @@ insert:
     org.bukkit.Server server = this.level.getCraftServer();
     org.bukkit.World bworld = this.level.getWorld();
 
-    org.bukkit.Location to = org.bukkit.craftbukkit.util.CraftLocation.toBukkit(this.position(), bworld, this.getYRot(), this.getXRot());
+    org.bukkit.Location to = new org.bukkit.Location(bworld, this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
     org.bukkit.entity.Vehicle vehicle = (org.bukkit.entity.Vehicle) this.getBukkitEntity();
 
     server.getPluginManager().callEvent(new org.bukkit.event.vehicle.VehicleUpdateEvent(vehicle));

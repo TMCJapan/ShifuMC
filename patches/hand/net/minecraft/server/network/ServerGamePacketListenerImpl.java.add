@@ -83,6 +83,17 @@
         this.teleport(x, y, z, yRot, xRot, relatives);
     }
 
+    // Paper は「乗り物から降ろすか」(ClientboundPlayerPositionPacket の最後の引数)も取る。
+    // vanilla の teleport にも同じ旗の版があるので、そこへ渡す。
+    public void internalTeleport(final double x, final double y, final double z,
+                                 final float yRot, final float xRot,
+                                 final java.util.Set<ClientboundPlayerPositionPacket.RelativeArgument> relatives,
+                                 final boolean shouldDismount) {
+        dev.shifu.event.ShifuEvents.silentTeleport(this);
+        this.justTeleported = true;
+        this.teleport(x, y, z, yRot, xRot, relatives, shouldDismount);
+    }
+
     // アダプタ層と発火層が呼ぶ短縮形。同じ目印の下に置く(別々に書くと後の方だけが残る)。
     public void internalTeleport(final org.bukkit.Location dest) {
         this.internalTeleport(dest.getX(), dest.getY(), dest.getZ(), dest.getYaw(), dest.getPitch(),

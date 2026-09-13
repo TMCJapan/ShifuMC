@@ -1,9 +1,12 @@
-# CompostItemEvent と EntityCompostItemEvent。中身が 1 段上がる直前。
-
-file: net/minecraft/world/level/block/ComposterBlock.java
-anchor:
-            int i = levelValue + 1;
-insert:
-    if (!dev.shifu.event.BlockEvents.compostItem(user, world, pos, stack)) {
-        return state;
-    }
+# 1.18.2 では外した。CompostItemEvent と EntityCompostItemEvent は Paper 1.18.2 に無く
+# (patches/api にも patches/server にも ComposterBlock の分は無い)、vanilla の
+# addItem(BlockState, LevelAccessor, BlockPos, ItemStack) は入れた相手も受け取らない
+# (1.19.4 は第 1 引数に @Nullable Entity user がある)。
+#
+# file: net/minecraft/world/level/block/ComposterBlock.java
+# anchor:
+#             int i = levelValue + 1;
+# insert:
+#     if (!dev.shifu.event.BlockEvents.compostItem(user, world, pos, stack)) {
+#         return state;
+#     }

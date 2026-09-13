@@ -67,13 +67,6 @@ file: net/minecraft/world/level/GameRules.java
 line:
         protected abstract void deserialize(String value);
 
-# Brigadier の API は CommandSourceStack が Bukkit 側の口を持っている前提で書かれている
-file: net/minecraft/commands/CommandSourceStack.java
-line:
-public class CommandSourceStack implements ExecutionCommandSource<CommandSourceStack>, SharedSuggestionProvider {
-implements:
-    io.papermc.paper.command.brigadier.PaperCommandSourceStack
-
 # CraftBukkit は看板と書見台をコマンドの送り手にする(/setblock などの実行元)
 file: net/minecraft/world/level/block/entity/SignBlockEntity.java
 line:
@@ -108,16 +101,11 @@ file: net/minecraft/world/item/ServerItemCooldowns.java
 line:
     private final ServerPlayer player;
 
-# getChunkFutureMainThread。CraftWorld.getChunkAtAsync を vanilla のチャンク供給に
-# 載せるのに要る。公開の getChunkFuture は main で managedBlock するので、
-# 非同期の要求に使うと main が止まる
-file: net/minecraft/server/level/ServerChunkCache.java
-line:
-    private CompletableFuture<ChunkResult<ChunkAccess>> getChunkFutureMainThread(int chunkX, int chunkZ, ChunkStatus leastStatus, boolean create) {
-
 # ---- 1.19.4 で Paper の書き換えに頼らずに閉じるための追加
 
-# ChunkSystem(patches/adapter)が main の上で呼ぶ
+# getChunkFutureMainThread。CraftWorld.getChunkAtAsync を vanilla のチャンク供給に
+# 載せるのに要る。公開の getChunkFuture は main で managedBlock するので、
+# 非同期の要求に使うと main が止まる。1.18.2 の宣言は折り返されている
 file: net/minecraft/server/level/ServerChunkCache.java
 line:
     private CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> getChunkFutureMainThread(
@@ -132,10 +120,11 @@ file: net/minecraft/server/level/ChunkMap.java
 line:
         final ServerEntity serverEntity;
 
-# PaperConfigurations と CraftWorldInfo が読む(LevelStorageSource.LevelStorageAccess)
+# PaperConfigurations と CraftWorldInfo が読む(LevelStorageSource.LevelStorageAccess)。
+# 1.19.4 は LevelDirectory をまとめた欄だったが、1.18.2 はパスを直に持つ
 file: net/minecraft/world/level/storage/LevelStorageSource.java
 line:
-        final LevelStorageSource.LevelDirectory levelDirectory;
+        final Path levelPath;
 
 # ActivationRange と CraftLivingEntity が読む
 file: net/minecraft/world/entity/LivingEntity.java
@@ -212,15 +201,15 @@ file: net/minecraft/world/inventory/AbstractContainerMenu.java
 unfinal:
     public final NonNullList<Slot> slots = NonNullList.create();
 
-# CraftMapView の setter が書く
+# CraftMapView の setter が書く。1.18.2 の欄の名前は x / z(1.19.4 は centerX / centerZ)
 file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
 unfinal:
-    public final int centerX;
+    public final int x;
 
 # CraftMapView の setter が書く
 file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
 unfinal:
-    public final int centerZ;
+    public final int z;
 
 # CraftMapView の setter が書く
 file: net/minecraft/world/level/saveddata/maps/MapItemSavedData.java
@@ -904,3 +893,41 @@ line:
 file: net/minecraft/world/entity/monster/ElderGuardian.java
 line:
     protected SoundEvent getDeathSound() {
+
+# PoiManager(patches/hand)の read と write が生の入出力を渡す先
+file: net/minecraft/world/level/chunk/storage/SectionStorage.java
+line:
+    private final IOWorker worker;
+
+# ---- make_access_rules.py が「宣言が 1 つに定まらない」と言うもの(同じ名前の局所変数が
+# 同じファイルに何度も出る)。行を手で選ぶ
+
+# CraftItemStack と CraftMetaItem が tag を直に読み書きする
+file: net/minecraft/world/item/ItemStack.java
+line:
+    private CompoundTag tag;
+
+# CraftMinecartContainer(setLootTable)が読み書きする
+file: net/minecraft/world/entity/vehicle/AbstractMinecartContainer.java
+line:
+    private ResourceLocation lootTable;
+
+# CraftServer が worlds を組み立てるときに console.levels を直に触る
+file: net/minecraft/server/MinecraftServer.java
+line:
+    private final Map<ResourceKey<Level>, ServerLevel> levels = Maps.newLinkedHashMap();
+
+# CraftWorld.getChunkAt の強制読み込みが ticket の表を直に見る
+file: net/minecraft/server/level/DistanceManager.java
+line:
+    final Long2ObjectOpenHashMap<SortedArraySet<Ticket<?>>> tickets = new Long2ObjectOpenHashMap<>();
+
+# CraftFurnace が調理時間を出すのに使う
+file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
+line:
+    private final RecipeType<? extends AbstractCookingRecipe> recipeType;
+
+# CraftWorld.getPlayers と ActivationRange が読む
+file: net/minecraft/server/level/ServerLevel.java
+line:
+    final List<ServerPlayer> players = Lists.newArrayList();

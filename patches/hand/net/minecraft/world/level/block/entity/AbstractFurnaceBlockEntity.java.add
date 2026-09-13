@@ -8,5 +8,5 @@
                                        final RecipeType<? extends AbstractCookingRecipe> recipeType,
                                        final AbstractFurnaceBlockEntity entity,
                                        final double cookSpeedMultiplier) {
-        return level == null ? 200 : AbstractFurnaceBlockEntity.getTotalCookTime(level, entity);
+        return level == null ? 200 : AbstractFurnaceBlockEntity.getTotalCookTime(level, recipeType, entity);
     }

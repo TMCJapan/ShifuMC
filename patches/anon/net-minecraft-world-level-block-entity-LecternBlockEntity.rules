@@ -47,7 +47,10 @@ insert-after:
     @Override
     public org.bukkit.Location getLocation() {
         if (LecternBlockEntity.this.level == null) return null;
-        return org.bukkit.craftbukkit.util.CraftLocation.toBukkit(LecternBlockEntity.this.worldPosition, LecternBlockEntity.this.level.getWorld());
+        return new org.bukkit.Location(LecternBlockEntity.this.level.getWorld(),
+                LecternBlockEntity.this.worldPosition.getX(),
+                LecternBlockEntity.this.worldPosition.getY(),
+                LecternBlockEntity.this.worldPosition.getZ());
     }
     // CraftBukkit end
 

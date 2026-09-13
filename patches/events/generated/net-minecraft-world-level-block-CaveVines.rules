@@ -1,13 +1,15 @@
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
-# 1.19.4 の use は戦利品表ではなく popResource で出す。Paper の
-# PlayerHarvestBlockEvent の分は無いので、EntityChangeBlockEvent だけ置く。
-# callEntityChangeBlockEvent
-file: net/minecraft/world/level/block/CaveVines.java
-anchor:
-            Block.popResource(world, pos, new ItemStack(Items.GLOW_BERRIES, 1));
-insert:
-    // CraftBukkit start - call entity change block event
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(picker, pos, state.setValue(CaveVines.BERRIES, false)).isCancelled()) {
-        return InteractionResult.sidedSuccess(world.isClientSide);
-    }
-    // CraftBukkit end - call entity change block event
+# 1.18.2 では外した。vanilla の CaveVines.use は (BlockState, Level, BlockPos) で、
+# 摘んだ相手を受け取らない(1.19.4 は第 1 引数に @Nullable Entity picker がある)。
+# CraftBukkit 1.18.2 は use に Entity を足した 4 引数の版を別に置き、CaveVinesBlock と
+# CaveVinesPlantBlock をそちらへ向けている。その版は shim が Paper の宣言ごと写すので、
+# EntityChangeBlockEvent と PlayerHarvestBlockEvent はそちらで出る。
+#
+# file: net/minecraft/world/level/block/CaveVines.java
+# anchor:
+#             Block.popResource(world, pos, new ItemStack(Items.GLOW_BERRIES, 1));
+# insert:
+#     // CraftBukkit start - call entity change block event
+#     if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(picker, pos, state.setValue(CaveVines.BERRIES, false)).isCancelled()) {
+#         return InteractionResult.sidedSuccess(world.isClientSide);
+#     }
+#     // CraftBukkit end - call entity change block event

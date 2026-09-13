@@ -2,13 +2,14 @@
 # 1.20.6 の縄付けは Mob.checkAndHandleImportantInteractions。
 
 # callPlayerLeashEntityEvent
+# 1.18.2 の CraftEventFactory は手(InteractionHand)を取らないので、発火層の口を通す。
 file: net/minecraft/world/entity/Mob.java
 anchor:
     this.setLeashedTo(player, true);
     itemInHand.shrink(1);
 insert:
     // CraftBukkit start - fire PlayerLeashEntityEvent
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerLeashEntityEvent(this, player, player, hand).isCancelled()) {
+    if (!dev.shifu.event.ItemEvents.leash(this, player, player)) {
         ((net.minecraft.server.level.ServerPlayer) player).connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityLinkPacket(this, this.getLeashHolder()));
         player.containerMenu.sendAllDataToRemote(); // Paper - Fix inventory desync
         return InteractionResult.PASS;

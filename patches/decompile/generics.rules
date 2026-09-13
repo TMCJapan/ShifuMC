@@ -4,38 +4,70 @@
 # 1.20.6 の decompileJar は paperweight 自身がコンパイルしないので、
 # 出力がそのままでは通らないファイルがある。
 
+# PiglinAi の行動の並び。逆コンパイラが構築子の型引数を落としているので、
+# 要素が raw になって ImmutableList が ImmutableList<Behavior> に推論される。
+# 並びの側に witness を書き、raw な構築子には型引数を戻す。
 file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
 replace:
             ImmutableList.of(
-                StopAttackingIfTargetInvalid.create(target -> !isNearestValidAttackTarget(piglin, target)),
+                new LookAtTargetSink(45, 90),
 with:
-            ImmutableList.<net.minecraft.world.entity.ai.behavior.BehaviorControl<? super Piglin>>of(
-                StopAttackingIfTargetInvalid.create(target -> !isNearestValidAttackTarget(piglin, target)),
-
-# 逆コンパイラが書いた witness が広すぎる。Piglin の brain なので Piglin に絞る
-file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
-replace:
-                BehaviorBuilder.triggerIf(piglin -> !piglin.isDancing(), GoToTargetLocation.create(MemoryModuleType.CELEBRATE_LOCATION, 2, 1.0F)),
-with:
-                BehaviorBuilder.<Piglin>triggerIf(piglin -> !piglin.isDancing(), GoToTargetLocation.create(MemoryModuleType.CELEBRATE_LOCATION, 2, 1.0F)),
+            ImmutableList.<net.minecraft.world.entity.ai.behavior.Behavior<? super Piglin>>of(
+                new LookAtTargetSink(45, 90),
 
 file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
 replace:
-                new RunOne<LivingEntity>(
+            ImmutableList.of(
+                avoidRepellent(),
 with:
-                new RunOne<Piglin>(
+            ImmutableList.<net.minecraft.world.entity.ai.behavior.Behavior<? super Piglin>>of(
+                avoidRepellent(),
 
 file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
 replace:
-                EraseMemoryIf.<PathfinderMob>create(PiglinAi::wantsToStopFleeing, MemoryModuleType.AVOID_TARGET)
+            ImmutableList.of(
+                new StopAttackingIfTargetInvalid<>(livingEntity -> !isNearestValidAttackTarget(piglin, livingEntity)),
 with:
-                EraseMemoryIf.<Piglin>create(PiglinAi::wantsToStopFleeing, MemoryModuleType.AVOID_TARGET)
+            ImmutableList.<net.minecraft.world.entity.ai.behavior.Behavior<? super Piglin>>of(
+                new StopAttackingIfTargetInvalid<>(livingEntity -> !isNearestValidAttackTarget(piglin, livingEntity)),
 
 file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
 replace:
-                DismountOrSkipMounting.<LivingEntity>create(8, PiglinAi::wantsToStopRiding)
+            ImmutableList.of(
+                new GoToWantedItem<>(PiglinAi::isNotHoldingLovedItemInOffHand, 1.0F, true, 9),
 with:
-                DismountOrSkipMounting.<Piglin>create(8, PiglinAi::wantsToStopRiding)
+            ImmutableList.<net.minecraft.world.entity.ai.behavior.Behavior<? super Piglin>>of(
+                new GoToWantedItem<>(PiglinAi::isNotHoldingLovedItemInOffHand, 1.0F, true, 9),
+
+file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
+replace:
+                new RunIf(Piglin::canHunt, new StartHuntingHoglin<>()),
+with:
+                new RunIf<Piglin>(Piglin::canHunt, new StartHuntingHoglin<>()),
+
+file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
+replace:
+                new RunIf(PiglinAi::hasCrossbow, new BackUpIfTooClose<>(5, 0.75F)),
+with:
+                new RunIf<Piglin>(PiglinAi::hasCrossbow, new BackUpIfTooClose<>(5, 0.75F)),
+
+file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
+replace:
+                new EraseMemoryIf(PiglinAi::isNearZombified, MemoryModuleType.ATTACK_TARGET)
+with:
+                new EraseMemoryIf<Piglin>(PiglinAi::isNearZombified, MemoryModuleType.ATTACK_TARGET)
+
+file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
+replace:
+                new RunIf(Entity::isPassenger, createIdleLookBehaviors()),
+with:
+                new RunIf<Piglin>(Entity::isPassenger, createIdleLookBehaviors()),
+
+file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
+replace:
+                new DismountOrSkipMounting(8, PiglinAi::wantsToStopRiding)
+with:
+                new DismountOrSkipMounting<Piglin, Entity>(8, PiglinAi::wantsToStopRiding)
 
 # 逆コンパイラが基本型を型変数に直接 cast している。javac は箱に入れないと通さない。
 # 箱に入れるのは元から起きていること(List<T> に入れている)なので、結果は変わらない
@@ -90,9 +122,9 @@ with:
 # toMap の K が Object に落ちて newEnumMap に渡らない
 file: net/minecraft/world/entity/animal/Sheep.java
 replace:
-        Arrays.stream(DyeColor.values()).collect(Collectors.toMap(color -> (DyeColor)color, Sheep::createSheepColor))
+        Arrays.stream(DyeColor.values()).collect(Collectors.toMap(dyeColor -> (DyeColor)dyeColor, Sheep::createSheepColor))
 with:
-        Arrays.stream(DyeColor.values()).collect(Collectors.<DyeColor, DyeColor, float[]>toMap(color -> color, Sheep::createSheepColor))
+        Arrays.stream(DyeColor.values()).collect(Collectors.<DyeColor, DyeColor, float[]>toMap(dyeColor -> dyeColor, Sheep::createSheepColor))
 
 # Either.right の左側が Object に落ちる
 file: net/minecraft/world/entity/Mob.java
@@ -101,12 +133,19 @@ replace:
 with:
             this.delayedLeashInfo = NbtUtils.readBlockPos(nbt, "leash").<Either<UUID, BlockPos>>map(Either::right).orElse(null);
 
-# Map<ResourceLocation, Recipe<?>> から Map<ResourceLocation, T> へは直に cast できない(公式は raw の Map に cast している)
+# Map<ResourceLocation, Recipe<?>> から Map<ResourceLocation, Recipe<C>> へは直に cast できない(公式は raw の Map に cast している)
 file: net/minecraft/world/item/crafting/RecipeManager.java
 replace:
-        return this.recipes.getOrDefault(type, Collections.emptyMap());
+        return (Map<ResourceLocation, Recipe<C>>)this.recipes.getOrDefault(type, Collections.emptyMap());
 with:
-        return (Map<ResourceLocation, T>)(Map)this.recipes.getOrDefault(type, Collections.emptyMap());
+        return (Map<ResourceLocation, Recipe<C>>)(Map)this.recipes.getOrDefault(type, Collections.emptyMap());
+
+# 逆コンパイラが要素の cast を raw な Recipe にしている。返り値の List<T> に届かない
+file: net/minecraft/world/item/crafting/RecipeManager.java
+replace:
+        return this.byType(type).values().stream().map(recipe -> (Recipe)recipe).collect(Collectors.toList());
+with:
+        return this.byType(type).values().stream().map(recipe -> (T)recipe).collect(Collectors.toList());
 
 # Stream.empty() の要素型が定まらず、joining に渡らない
 file: net/minecraft/commands/arguments/item/ItemInput.java

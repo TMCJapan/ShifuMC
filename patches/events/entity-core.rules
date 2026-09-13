@@ -275,7 +275,7 @@ anchor:
     damageBonus *= attackStrengthScale;
     this.resetAttackStrengthTicker();
 insert:
-    dev.shifu.event.EntityEvents.attacking(target, this.damageSources().playerAttack(this), f);
+    dev.shifu.event.EntityEvents.attacking(target, net.minecraft.world.damagesource.DamageSource.playerAttack(this), f);
 
 # PlayerAttackEntityCooldownResetEvent
 file: net/minecraft/world/entity/player/Player.java

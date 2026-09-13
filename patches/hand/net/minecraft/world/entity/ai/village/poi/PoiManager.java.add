@@ -1,0 +1,31 @@
+// 自前で書いた追加。Paper の非同期チャンク入出力(com.destroystokyo.paper.io.PaperFileIOThread)が
+// ServerLevel.poiDataController 越しに呼ぶ 4 つ。
+//
+// Paper は SectionStorage を RegionFileStorage の下に付け替えて(nuke IOWorker)、POI も
+// 領域ファイルを直に読み書きする。Shifu の SectionStorage は vanilla のままで IOWorker を挟むので、
+// 生の入出力は IOWorker に渡す。領域ファイルそのものを取る 2 つは IOWorker の中の
+// RegionFileStorage が private なので渡せない。
+//
+// この 4 つを呼ぶのは PaperFileIOThread だけで、それを動かすのは Paper のチャンク系
+// (com.destroystokyo.paper.io.chunk.ChunkTaskManager)。Shifu の ChunkMap と ServerChunkCache は
+// vanilla なので、そこからは 1 度も入らない。
+
+// PoiManager.read
+    public net.minecraft.nbt.CompoundTag read(net.minecraft.world.level.ChunkPos pos) throws java.io.IOException {
+        return this.worker.load(pos);
+    }
+
+// PoiManager.write
+    public void write(net.minecraft.world.level.ChunkPos pos, net.minecraft.nbt.CompoundTag nbt) throws java.io.IOException {
+        this.worker.store(pos, nbt);
+    }
+
+// PoiManager.getRegionFile
+    public net.minecraft.world.level.chunk.storage.RegionFile getRegionFile(net.minecraft.world.level.ChunkPos pos, boolean existingOnly) throws java.io.IOException {
+        throw new UnsupportedOperationException("Shifu の POI は vanilla の IOWorker 越しで、領域ファイルを直に出せない");
+    }
+
+// PoiManager.getRegionFileIfLoaded
+    public net.minecraft.world.level.chunk.storage.RegionFile getRegionFileIfLoaded(net.minecraft.world.level.ChunkPos pos) {
+        throw new UnsupportedOperationException("Shifu の POI は vanilla の IOWorker 越しで、領域ファイルを直に出せない");
+    }

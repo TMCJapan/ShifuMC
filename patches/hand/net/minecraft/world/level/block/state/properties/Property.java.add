@@ -1,0 +1,7 @@
+// 自前で書いた追加。Paper の宣言をそのまま写す。
+
+// Property.ID_GENERATOR
+    // Paper の状態引きの最適化(optimise iblockdata state lookup)が使う採番。
+    // shim は要求一覧に出た名前しか写さないので、id の初期化子から参照されるだけの
+    // この欄は写らない。Paper の宣言と同じものを置く。
+    private static final java.util.concurrent.atomic.AtomicInteger ID_GENERATOR = new java.util.concurrent.atomic.AtomicInteger();

@@ -114,3 +114,20 @@
         this.convertable = session;
         this.generator = generator;
     }
+
+// ServerLevel.findNearestMapFeature
+    // Paper は CraftWorld.locateNearestStructure のために、tag ではなく HolderSet を取る版を
+    // 使う(StructureType から作った並びは tag ではないので TagKey に詰められない)。
+    // vanilla の tag を取る版が tag を解いたあとに呼んでいるのと同じ ChunkGenerator の口へ渡す。
+    @Nullable
+    public BlockPos findNearestMapFeature(final HolderSet<ConfiguredStructureFeature<?, ?>> structures,
+                                          final BlockPos pos, final int radius, final boolean skipExistingChunks) {
+        if (!this.server.getWorldData().worldGenSettings().generateFeatures()) {
+            return null;
+        }
+
+        final Pair<BlockPos, Holder<ConfiguredStructureFeature<?, ?>>> pair = this.getChunkSource()
+                .getGenerator()
+                .findNearestMapFeature(this, structures, pos, radius, skipExistingChunks);
+        return pair != null ? pair.getFirst() : null;
+    }

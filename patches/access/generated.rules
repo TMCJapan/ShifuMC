@@ -1789,7 +1789,7 @@ line:
 # findExitPortal()
 file: net/minecraft/world/level/dimension/end/EndDragonFight.java
 line:
-    public BlockPattern.BlockPatternMatch findExitPortal() {
+    private BlockPattern.BlockPatternMatch findExitPortal() {
 
 # level
 file: net/minecraft/world/level/dimension/end/EndDragonFight.java

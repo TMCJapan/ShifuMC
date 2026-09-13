@@ -22,6 +22,14 @@
         return this.removeAllEffects();
     }
 
+// LivingEntity.removeEffect
+    // removeAllEffects と同じ形。CraftBukkit の版は本体を c(MobEffect, Cause) に切り出しているが、
+    // 生成器は 1 文字の名前を写さないので、理由を置いて vanilla の版へ渡す形で書く。
+    public boolean removeEffect(final MobEffect type, final org.bukkit.event.entity.EntityPotionEffectEvent.Cause cause) {
+        dev.shifu.event.EntityEvents.effectCause(cause);
+        return this.removeEffect(type);
+    }
+
 // LivingEntity.setItemSlot
     // silent は装備音を出さないための旗。vanilla の setItemSlot は音を出さないので渡さない。
     public void setItemSlot(final EquipmentSlot slot, final ItemStack itemStack, final boolean silent) {

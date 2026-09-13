@@ -1,0 +1,11 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// LevelChunkSection.write
+    // Paper の anti-xray。Paper は PalettedContainer.write を
+    // (FriendlyByteBuf, ChunkPacketInfo<T>, int) に**替えて**いるが、vanilla の版は
+    // FriendlyByteBuf だけを取る。Shifu は chunkPacketBlockController を
+    // NO_OPERATION_INSTANCE に配線している(patches/wire)ので chunkPacketInfo は常に null。
+    // 受け取って捨て、vanilla の版へ渡す。
+    public void write(FriendlyByteBuf buf, com.destroystokyo.paper.antixray.ChunkPacketInfo<BlockState> chunkPacketInfo) {
+        this.write(buf);
+    }

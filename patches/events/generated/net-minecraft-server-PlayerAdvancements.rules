@@ -18,7 +18,7 @@ insert:
     // Paper start - Add Adventure message to PlayerAdvancementDoneEvent
     net.kyori.adventure.text.Component message = null;
     if (advancement.getDisplay() != null && advancement.getDisplay().shouldAnnounceChat()) {
-        message = io.papermc.paper.adventure.PaperAdventure.asAdventure(net.minecraft.network.chat.Component.translatable(
+        message = io.papermc.paper.adventure.PaperAdventure.asAdventure(new net.minecraft.network.chat.TranslatableComponent(
                 "chat.type.advancement." + advancement.getDisplay().getFrame().getName(),
                 this.player.getDisplayName(),
                 advancement.getChatComponent()));

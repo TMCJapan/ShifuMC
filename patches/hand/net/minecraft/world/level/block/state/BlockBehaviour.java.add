@@ -1,0 +1,16 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は Paper の既定と同じ false を返す。
+//
+// Paper が同梱する Alternate Current の入口(Add-Alternate-Current-redstone-implementation.patch)。
+// 実装ごと外している(tools/env.sh が alternate/ を消す)ので誰も呼ばないが、Paper の版のまま組む
+// 10 個のブロック(DiodeBlock・ObserverBlock など)が @Override でこの 2 つを上書きしているので、
+// 親の宣言が要る。BlockStateBase の側の 2 つは呼ぶ側が居ないので写さない。
+
+// BlockBehaviour.isSignalSourceTo
+    public boolean isSignalSourceTo(Level level, BlockPos pos, BlockState state, Direction dir) {
+        return false;
+    }
+
+// BlockBehaviour.isDirectSignalSourceTo
+    public boolean isDirectSignalSourceTo(Level level, BlockPos pos, BlockState state, Direction dir) {
+        return false;
+    }

@@ -17,3 +17,27 @@
     public boolean isPositionTicking(net.minecraft.world.entity.Entity entity) {
         return this.isPositionTicking(net.minecraft.world.level.ChunkPos.asLong(entity.blockPosition()));
     }
+
+// ServerChunkCache.bringToStatusAsync
+    // Paper の非同期チャンク読み込み(CraftWorld.getChunkAtAsync の下)。Paper は
+    // getChunkFutureMainThread に「急ぎか」を渡すが、vanilla の版は受け取らない
+    // (Paper は急ぎの要求を別の待ち行列へ回す)。旗は捨てて vanilla の 4 引数へ渡す。
+    private CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> bringToStatusAsync(int x, int z, ChunkPos chunkPos, ChunkStatus status, boolean isUrgent) {
+        CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> future = this.getChunkFutureMainThread(x, z, status, true);
+        Long identifier = Long.valueOf(this.asyncLoadSeqCounter++);
+        int ticketLevel = net.minecraft.server.MCUtil.getTicketLevelFor(status);
+        this.addTicketAtLevel(TicketType.ASYNC_LOAD, chunkPos, ticketLevel, identifier);
+
+        return future.thenComposeAsync((Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure> either) -> {
+            this.removeTicketAtLevel(TicketType.ASYNC_LOAD, chunkPos, ticketLevel, identifier);
+            this.addTicketAtLevel(TicketType.UNKNOWN, chunkPos, ticketLevel, chunkPos);
+
+            Optional<ChunkHolder.ChunkLoadingFailure> failure = either.right();
+
+            if (failure.isPresent()) {
+                throw new IllegalStateException("Chunk failed to load: " + failure.get().toString());
+            }
+
+            return CompletableFuture.completedFuture(either);
+        }, this.mainThreadProcessor);
+    }

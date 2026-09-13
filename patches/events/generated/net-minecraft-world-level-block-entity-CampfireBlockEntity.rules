@@ -1,10 +1,13 @@
-# CampfireStartEvent。焚き火に載せた直後。登録があるときだけ時間を引き直す。
-
-file: net/minecraft/world/level/block/entity/CampfireBlockEntity.java
-anchor:
-                this.cookingTime[i] = cookTime;
-insert-after:
-    if (dev.shifu.event.BlockEvents.campfireStartListening()) {
-        this.cookingTime[i] = dev.shifu.event.BlockEvents.campfireStart(this.level, this.getBlockPos(), stack,
-                this.getCookableRecipe(stack).orElse(null), this.cookingTime[i]);
-    }
+# 1.18.2 では外した。Paper-API 1.18.2 に CampfireStartEvent が無く
+# (BlockEvents.campfireStartListening() は false を返す)、発火しない呼び出しが
+# vanilla の placeFood に残るだけになる。
+# vanilla 1.18.2 の placeFood の引数は item(1.19.4 は stack)。
+#
+# file: net/minecraft/world/level/block/entity/CampfireBlockEntity.java
+# anchor:
+#                 this.cookingTime[i] = cookTime;
+# insert-after:
+#     if (dev.shifu.event.BlockEvents.campfireStartListening()) {
+#         this.cookingTime[i] = dev.shifu.event.BlockEvents.campfireStart(this.level, this.getBlockPos(), item,
+#                 this.getCookableRecipe(item).orElse(null), this.cookingTime[i]);
+#     }

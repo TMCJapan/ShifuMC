@@ -1,8 +1,12 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # EntityToggleSitEvent
+# Paper-API 1.18.2 に io.papermc.paper.event.entity.EntityToggleSitEvent は無い。
+# TamableAnimal の分と同じく発火層の口(1.18.2 では常に true)を通す。
 file: net/minecraft/world/entity/animal/Panda.java
 anchor:
     this.setFlag(8, sitting);
 insert:
-    if (!new io.papermc.paper.event.entity.EntityToggleSitEvent(this.getBukkitEntity(), sitting).callEvent()) return; // Paper - Add EntityToggleSitEvent
+    if (!dev.shifu.event.AnimalEvents.toggleSit(this, sitting)) {
+        return;
+    }

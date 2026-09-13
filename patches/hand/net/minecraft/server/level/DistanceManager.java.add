@@ -20,3 +20,59 @@
             this.removeTicket(found.getLong(i), target);
         }
     }
+
+// DistanceManager.addRegionTicketAtDistance
+    // CraftBukkit は vanilla の addTicket の返り値を void から boolean(実際に増えたか)へ
+    // 替えて、それをそのまま返している。vanilla の返り値は替えられないので、
+    // 足す前に ticket の表を見て同じことを答える。
+    public <T> boolean addRegionTicketAtDistance(TicketType<T> ticketType, ChunkPos pos, int distance, T ticketIdentifier) {
+        final Ticket<T> ticket = new Ticket<>(ticketType, 33 - distance, ticketIdentifier);
+        final long key = pos.toLong();
+        final SortedArraySet<Ticket<?>> at = this.tickets.get(key);
+        final boolean had = at != null && at.contains(ticket);
+
+        this.addTicket(key, ticket);
+        return !had;
+    }
+
+// DistanceManager.removeRegionTicketAtDistance
+    // 同上。外す前に有ったかを答える。
+    public <T> boolean removeRegionTicketAtDistance(TicketType<T> ticketType, ChunkPos pos, int distance, T ticketIdentifier) {
+        final Ticket<T> ticket = new Ticket<>(ticketType, 33 - distance, ticketIdentifier);
+        final long key = pos.toLong();
+        final SortedArraySet<Ticket<?>> at = this.tickets.get(key);
+        final boolean had = at != null && at.contains(ticket);
+
+        this.removeTicket(key, ticket);
+        return had;
+    }
+
+// DistanceManager.addPriorityTicket
+    // Paper のチャンク優先度。本体は Paper のものと同じで、addTicket の返り値だけを
+    // 表を見る形に替えている。
+    private boolean addPriorityTicket(ChunkPos coords, TicketType<ChunkPos> ticketType, int priority) {
+        org.spigotmc.AsyncCatcher.catchOp("ChunkMapDistance::addPriorityTicket");
+        long pair = coords.toLong();
+        ChunkHolder chunk = this.chunkMap.getUpdatingChunkIfPresent(pair);
+        if ((chunk != null && chunk.isFullChunkReady())) {
+            return false;
+        }
+
+        boolean success;
+        if (!(success = this.updatePriorityTicket(coords, ticketType, priority))) {
+            Ticket<ChunkPos> ticket = new Ticket<ChunkPos>(ticketType, PRIORITY_TICKET_LEVEL, coords);
+            ticket.priority = priority;
+            final SortedArraySet<Ticket<?>> at = this.tickets.get(pair);
+            success = at == null || !at.contains(ticket);
+            this.addTicket(pair, ticket);
+        } else {
+            if (chunk == null) {
+                chunk = this.chunkMap.getUpdatingChunkIfPresent(pair);
+            }
+            this.chunkMap.queueHolderUpdate(chunk);
+        }
+
+        this.chunkMap.level.getChunkSource().runDistanceManagerUpdates();
+
+        return success;
+    }

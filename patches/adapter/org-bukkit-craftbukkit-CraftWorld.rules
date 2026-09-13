@@ -15,6 +15,18 @@ replace:
 with:
     ((net.minecraft.world.level.storage.PrimaryLevelData) world.serverLevelData).worldGenSettings()
 
+# 同上(setDifficulty も PrimaryLevelData の側にある)
+replace:
+    this.getHandle().serverLevelData.setDifficulty(
+with:
+    ((net.minecraft.world.level.storage.PrimaryLevelData) this.getHandle().serverLevelData).setDifficulty(
+
+# 同上
+replace:
+    this.getHandle().serverLevelData.worldGenSettings()
+with:
+    ((net.minecraft.world.level.storage.PrimaryLevelData) this.getHandle().serverLevelData).worldGenSettings()
+
 # 同上
 replace:
     world.serverLevelData.settings.hardcore = hardcore;

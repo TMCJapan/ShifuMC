@@ -14,7 +14,7 @@ insert:
             org.bukkit.craftbukkit.block.CraftBlock.at(world, pos),
             source,
             shifuRecipe,
-            getTotalCookTime(world, blockEntity)
+            getTotalCookTime(world, blockEntity.recipeType, blockEntity)
         );
         event.callEvent();
 

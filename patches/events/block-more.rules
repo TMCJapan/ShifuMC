@@ -456,7 +456,8 @@ anchor:
 insert:
     if (dev.shifu.event.BlockEvents.listeningCook()) {
         final ItemStack shifuCooked = dev.shifu.event.BlockEvents.cook(world, pos, itemStack, itemStack1,
-                (org.bukkit.inventory.CookingRecipe<?>) campfire.quickCheck.getRecipeFor(container, world)
+                (org.bukkit.inventory.CookingRecipe<?>) world.getRecipeManager()
+                        .getRecipeFor(net.minecraft.world.item.crafting.RecipeType.CAMPFIRE_COOKING, container, world)
                         .map(net.minecraft.world.item.crafting.CampfireCookingRecipe::toBukkitRecipe).orElse(null));
         if (shifuCooked == null) {
             return;

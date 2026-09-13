@@ -599,7 +599,8 @@ public final class ShifuEvents {
 
         if (replaced != null) {
             player.level.getServer().getPlayerList()
-                    .broadcastSystemMessage(PaperAdventure.asVanilla(replaced), false);
+                    .broadcastMessage(PaperAdventure.asVanilla(replaced),
+                            net.minecraft.network.chat.ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         }
 
         return false;
