@@ -1,0 +1,16 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+# CraftBukkit は ServerPlayer.nextContainerCounter() を void から int に変えて番号を受け取る。
+# vanilla の宣言(void)を変えると記述子が変わり、Fabric API(fabric-containers-v0)の @Shadow が当たらない。
+# vanilla の版を呼んでから containerCounter を読む patches/hand の shifuNextContainerCounter() を使う
+
+file: org/bukkit/craftbukkit/entity/CraftHumanEntity.java
+replace:
+        AbstractContainerMenu container = new CraftContainer(inventory, player, player.nextContainerCounter());
+with:
+        AbstractContainerMenu container = new CraftContainer(inventory, player, player.shifuNextContainerCounter());
+
+file: org/bukkit/craftbukkit/entity/CraftHumanEntity.java
+replace:
+            container = new CraftContainer(inventory, this.getHandle(), player.nextContainerCounter());
+with:
+            container = new CraftContainer(inventory, this.getHandle(), player.shifuNextContainerCounter());
