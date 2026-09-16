@@ -57,7 +57,7 @@ python tools/check_lambdas.py "$CLASSES_M" "$MOJANG" --list || true
 # --vars は try-with-resources の一時変数(frame では top)を生きている slot に重ねることがあり、
 # MOD 無しの起動で VerifyError(Inconsistent stackmap frames、DimensionDataStorage.readTagFromDisk)になる。
 # MOD 入りだと Mixin が frame を計算し直すので見えない。Mixin と同じことをここで行う(tools/lvtmatch の FrameFix)。
-"$JAVA_HOME/bin/java" -cp "$CP" dev.shifu.lvtmatch.FrameFix "$CLASSES_M" "$(cygpath -m "$PW/run-shifu/libraries")"
+"$JAVA_HOME/bin/java" -cp "$CP" dev.shifu.lvtmatch.FrameFix "$CLASSES_M" "$MOJANG" "$(cygpath -m "$PW/run-shifu/libraries")"
 
 python tools/keep_vanilla_classes.py "$CLASSES_M" "$MOJANG"
 

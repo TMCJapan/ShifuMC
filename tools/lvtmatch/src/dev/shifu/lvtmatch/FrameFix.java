@@ -133,6 +133,7 @@ public final class FrameFix {
     private static final class Hierarchy {
         private final ClassLoader loader;
         private final Map<String, String[]> parents = new HashMap<>();
+        private final Set<String> missing = new HashSet<>();
 
         Hierarchy(ClassLoader loader) {
             this.loader = loader;
@@ -150,6 +151,9 @@ public final class FrameFix {
 
             try (InputStream in = open(name)) {
                 if (in == null) {
+                    if (missing.add(name) && missing.size() <= 5) {
+                        System.err.println("FrameFix: class not found: " + name);
+                    }
                     result = new String[] {"java/lang/Object", "0"};
                 } else {
                     ClassReader reader = new ClassReader(in);
