@@ -85,6 +85,12 @@ for ($round = 1; $round -le $Rounds; $round++) {
     New-Item -ItemType Directory -Force (Join-Path $Adapter "dev\shifu\command") | Out-Null
     Copy-Item "$Shifu\src\event\java\dev\shifu\event\*.java" (Join-Path $Adapter "dev\shifu\event") -Force
     Copy-Item "$Shifu\src\event\java\dev\shifu\command\*.java" (Join-Path $Adapter "dev\shifu\command") -Force
+    New-Item -ItemType Directory -Force (Join-Path $Adapter "dev\shifu\remap") | Out-Null
+    Copy-Item "$Shifu\src\event\java\dev\shifu\remap\*.java" (Join-Path $Adapter "dev\shifu\remap") -Force
+    # Spigot 向けのプラグインを写す表(難読化のある版だけ。BuildData の cl.csrg が無ければ作らない)
+    if (Get-ChildItem (Join-Path $Paper "work\BuildData\mappings") -Filter "bukkit-*-cl.csrg" -ErrorAction SilentlyContinue) {
+        Py @("$Shifu\tools\make_plugin_mappings.py", $Paper, (Join-Path $PaperServer "src\main\resources\META-INF\mappings\shifu-plugin-remap.txt")) | Select-Object -Last 1
+    }
 
     Py (@("$Shifu\tools\apply_events.py", "$Shifu\patches\anon", ".", "anon") + $flags)
     Py (@("$Shifu\tools\apply_events.py", "$Shifu\patches\wire", ".", "wire") + $flags)

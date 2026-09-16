@@ -14,3 +14,66 @@
     // Paper の近くのプレイヤーの表。vanilla は持たないので何もしない
     public void updateGeneralAreaCache() {
     }
+
+// LevelChunk.setBlockState(BlockPos, BlockState, boolean, boolean)
+    // Paper が足した版。doPlace が false なら onPlace(隣への通知)を呼ばない。
+    // WorldEdit の Paper 向けアダプタ(PaperweightWorldNativeAccess)が副作用無しの設置で呼ぶ。
+    // vanilla の 3 引数の版はそのまま(doPlace が true の版と同じ)。
+    @Nullable
+    public BlockState setBlockState(BlockPos pos, BlockState state, boolean moved, boolean doPlace) {
+        int y = pos.getY();
+        LevelChunkSection section = this.getSection(this.getSectionIndex(y));
+        boolean hasOnlyAir = section.hasOnlyAir();
+        if (hasOnlyAir && state.isAir()) {
+            return null;
+        } else {
+            int i = pos.getX() & 15;
+            int i1 = y & 15;
+            int i2 = pos.getZ() & 15;
+            BlockState blockState = section.setBlockState(i, i1, i2, state);
+            if (blockState == state) {
+                return null;
+            } else {
+                Block block = state.getBlock();
+                this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING).update(i, y, i2, state);
+                this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES).update(i, y, i2, state);
+                this.heightmaps.get(Heightmap.Types.OCEAN_FLOOR).update(i, y, i2, state);
+                this.heightmaps.get(Heightmap.Types.WORLD_SURFACE).update(i, y, i2, state);
+                boolean hasOnlyAir1 = section.hasOnlyAir();
+                if (hasOnlyAir != hasOnlyAir1) {
+                    this.level.getChunkSource().getLightEngine().updateSectionStatus(pos, hasOnlyAir1);
+                }
+
+                boolean hasBlockEntity = blockState.hasBlockEntity();
+                if (!this.level.isClientSide) {
+                    blockState.onRemove(this.level, pos, state, moved);
+                } else if (!blockState.is(block) && hasBlockEntity) {
+                    this.removeBlockEntity(pos);
+                }
+
+                if (!section.getBlockState(i, i1, i2).is(block)) {
+                    return null;
+                } else {
+                    if (doPlace && !this.level.isClientSide) {
+                        state.onPlace(this.level, pos, blockState, moved);
+                    }
+
+                    if (state.hasBlockEntity()) {
+                        BlockEntity blockEntity = this.getBlockEntity(pos, LevelChunk.EntityCreationType.CHECK);
+                        if (blockEntity == null) {
+                            blockEntity = ((EntityBlock)block).newBlockEntity(pos, state);
+                            if (blockEntity != null) {
+                                this.addAndRegisterBlockEntity(blockEntity);
+                            }
+                        } else {
+                            blockEntity.setBlockState(state);
+                            this.updateBlockEntityTicker(blockEntity);
+                        }
+                    }
+
+                    this.unsaved = true;
+                    return blockState;
+                }
+            }
+        }
+    }

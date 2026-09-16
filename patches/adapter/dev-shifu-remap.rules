@@ -1,0 +1,23 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+#
+# Spigot 向けに組んだプラグイン(NMS を EntityPlayer の名前、欄とメソッドを難読化名で呼ぶ)を
+# 読み込むときに mojang 名へ写す(dev.shifu.remap.PluginRemapper、表は
+# tools/make_plugin_mappings.py)。Paper 1.18.2 / 1.19.4 はプラグインを写さないので、
+# 写さなければ ClassNotFoundException / NoSuchMethodError になる。
+
+# クラスを定義する直前。Commodore(古い API の書き換え)より前に写す。
+file: org/bukkit/craftbukkit/util/CraftMagicNumbers.java
+replace:
+            clazz = Commodore.convert(clazz, !CraftMagicNumbers.isLegacy(pdf));
+with:
+            clazz = dev.shifu.remap.PluginRemapper.remap(pdf, path, clazz); // Shifu - spigot 名 -> mojang 名
+            clazz = Commodore.convert(clazz, !CraftMagicNumbers.isLegacy(pdf));
+
+# 読み込む前に plugins の jar を走査して、プラグインのクラスの継承関係を控える
+# (親が NMS のクラスに宣言されたメソッドの名前を引くため)。
+file: org/bukkit/craftbukkit/CraftServer.java
+replace:
+            Plugin[] plugins = this.pluginManager.loadPlugins(pluginFolder, this.extraPluginJars());
+with:
+            dev.shifu.remap.PluginRemapper.index(pluginFolder, this.extraPluginJars()); // Shifu
+            Plugin[] plugins = this.pluginManager.loadPlugins(pluginFolder, this.extraPluginJars());
