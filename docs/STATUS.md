@@ -3,7 +3,7 @@
 このブランチは Minecraft 1.19.4。`ver/1.20.6` から切った。節ごとにどの版で測ったかを頭に書いてある。
 構成は [ARCHITECTURE.md](ARCHITECTURE.md)、開発の手順は [DEVELOPING.md](DEVELOPING.md)。
 
-## 1.19.4 の状態(2026-09-13)
+## 1.19.4 の状態(2026-09-16)
 
 コンパイル 0 件、公式に戻したクラスへの参照の欠落 0 件(`LinkCheck`)、プラグイン無しで起動(Done 4.8s、例外 0)。
 `shifu.jar`(Fabric Loader 0.19.5)+ プラグイン 19 個で起動し、bot が参加して drive の一連が通る。
@@ -21,11 +21,10 @@
 
 ### 通っていないもの
 
-* **spigot マッピング前提のプラグイン。** 1.19.4 の Paper はプラグインを実行時に写さないので、
-  NMS を `net.minecraft.server.level.EntityPlayer` の名前で呼ぶプラグイン(FancyNpcs、FancyHolograms、TAB、NBTAPI、InvSee++)は
-  mojmap の Shifu では `ClassNotFoundException`。WorldEdit 7.2.20 も同じ理由でアダプタが載らず(`does not fully support`)、
-  `//set` が何も返さない。避けられない。
 * Veinminer は 1.19.4 非対応で自分で disable する。QuickShop-Hikari は混成サーバーを止めるので試験から外している。
+* Multiverse-Core の `SpawnCategoryMapper` は `CraftSpawnCategory` を reflection で探して見つけない(1.19.4 の CraftBukkit に無いクラス)。
+  `worlds.yml` に古い走行の設定が残っていると `WorldConfig for world minecraft:the_nether already exists` で
+  世界の設定を読めない(Multiverse 側のキーの移行。ファイルを消せば通る)。
 * 世界生成の突き合わせ(同じシードで vanilla 4 回、Shifu 2 回、Done の 20 秒後に stop): ばらつきを両側から引いた
   残り **18 チャンクは 18 一致、不一致 0**。ただし 1.19.4 はこの測り方だとばらつきが大きい
   (vanilla 同士で 530 中 417 が違う。Shifu 同士も 532 中 458)ので、比べられる範囲が狭い。
@@ -39,6 +38,14 @@
 * 1.19.4 の Paper-API に無いイベントは発火層が何もしない(ShulkerDuplicate、BlockBreakProgressUpdate、SculkBloom、
   AsyncStructureGenerate、EntityRemove、PlayerFailMove、PlayerPickItem、PlayerRecipeBookSettingsChange、PlayerShieldDisable、
   PlayerOpenSign、PlayerFishEvent の LURED)。
+
+### 2026-09-16 に直したもの
+
+| | |
+|---|---|
+| Spigot 向けのプラグイン | Spigot のサーバーは NMS をクラスは Spigot の名前(`EntityPlayer`)、欄とメソッドは難読化名(`b`、`fr`)で持つ。Paper 1.19.4 はプラグインを写さないので、Shifu(mojang 名)では `ClassNotFoundException` / `NoSuchMethodError` だった。`dev.shifu.remap.PluginRemapper` がクラスを定義する直前(`CraftMagicNumbers.processClass`。Paper のプラグインは `PaperSimplePluginClassLoader.findClass`)で spigot 名 → mojang 名に写す。表は `tools/make_plugin_mappings.py` が BuildData の cl.csrg と paperweight の `official-mojang+yarn.tiny` から組んで jar の `META-INF/mappings/` に入れる。メソッド名は宣言したクラスで引くので、呼び出し箇所の所有クラスから親へ辿る(サーバーのクラスは reflection、プラグインのクラスは読み込む前に plugins の jar を走査して控えた継承関係)。reflection で名前を引く箇所(`Class.getDeclaredField("h")`)は `ReflectionProxy` に向け直して実行時に写す(DecentHolograms が `ServerGamePacketListenerImpl` の欄 `h` を引く)。manifest に `paperweight-mappings-namespace: mojang` があるプラグインは写さない。FancyNpcs 2.8.0、FancyHolograms 2.8.0、InvSee++ 0.31.15、DecentHolograms 2.10.1 が有効になり、WorldEdit 7.2.20 の Paper 向けアダプタが載って `//set stone` が 27 / 27、`//undo` が 27 / 27。そのアダプタが呼ぶ Paper の `LevelChunk.setBlockState(pos, state, moved, doPlace)` は hand で足した。mix の例外は 25 → 7(残りは Veinminer の CommandAPI と AuthMe の GeoLite の取得) |
+| Multiverse-Core | nether / end の `serverLevelData` は vanilla では `DerivedLevelData` なので、`PrimaryLevelData` への cast(CraftWorld、ChunkStatus、ScheduleCommand)で落ちる形だった。`PrimaryLevelData` でなければサーバーの `WorldData`(3 次元で 1 つ)を読む |
+| adventure の boss bar | Paper は `BossEvent` に欄 `adventure` を足して getter で先に見る。Shifu の `BossEvent` は vanilla なので、作ったときの値しか届かなかった。`HackyBossBarPlatformBridge` の listener で、変わった値を `ServerBossEvent` の setter(値が変わったときだけ packet を送る)に写す。drive の boss bar(0.25 BLUE → 0.75 / 名前 / RED)が bot に add → progress → name → style → remove の順で届く |
 
 ### 分かったこと
 
