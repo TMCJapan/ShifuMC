@@ -76,3 +76,11 @@
 
         return success;
     }
+
+// DistanceManager.shifuSetChunkMap
+    // Paper 1.18.2 は構築子で chunkMap を受け取る(vanilla の構築子は 2 引数)。生成器が写した欄 chunkMap は
+    // 誰も入れないので、Paper から写した addPriorityTicket / markAreaHighPriority(HuskHomes の teleportAsync →
+    // loadChunksForMoveAsync)が NPE になる。ChunkMap の構築子から入れる(patches/wire)。欄は private なのでここで。
+    public void shifuSetChunkMap(final ChunkMap chunkMap) {
+        this.chunkMap = chunkMap;
+    }

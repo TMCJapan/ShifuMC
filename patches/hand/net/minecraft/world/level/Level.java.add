@@ -20,3 +20,30 @@
     // io.papermc.paper.configuration.WorldConfiguration と paperConfig() は 1.19 からのものなので、
     // 型を戻して読み出しメソッドは消した。代入は patches/wire/net-minecraft-world-level-Level.rules。
     public com.destroystokyo.paper.PaperWorldConfig paperConfig; // Paper
+
+// Level.getHardCollidingEntities
+    // Paper のチャンク系(EntityLookup / entitySliceManager)は Shifu に無い(null)。生成器が写した本体はそこを読んで
+    // NPE になる(PlayerList.respawn の noCollision → Paper の CollisionUtil)。vanilla の getEntities で答える。
+    // 「硬い当たり」は Paper が Entity に足した hardCollides()(ボートなど)で絞る。
+    @Override
+    public List<Entity> getHardCollidingEntities(Entity except, AABB box, Predicate<? super Entity> predicate) {
+        final List<Entity> ret = new java.util.ArrayList<>();
+        this.getHardCollidingEntities(except, box, predicate, ret);
+        return ret;
+    }
+
+// Level.getEntities
+    @Override
+    public void getEntities(Entity except, AABB box, Predicate<? super Entity> predicate, List<Entity> into) {
+        into.addAll(this.getEntities(except, box, predicate));
+    }
+
+// Level.getHardCollidingEntities
+    @Override
+    public void getHardCollidingEntities(Entity except, AABB box, Predicate<? super Entity> predicate, List<Entity> into) {
+        for (final Entity other : this.getEntities(except, box, predicate)) {
+            if (other.hardCollides()) {
+                into.add(other);
+            }
+        }
+    }

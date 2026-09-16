@@ -887,3 +887,14 @@ line:
 file: net/minecraft/server/MinecraftServer.java
 line:
     protected void doRunTask(TickTask task) {
+
+# PlayerList.respawn は CraftBukkit の作りで同じ ServerPlayer を使い回す。vanilla の restoreFrom は
+# 自分自身へ recipeBook.copyOverData して落ちる(states を clear してから読む)ので、Shifu は
+# ShifuEvents.restoreSelf で「送り直しの印」だけを付け直す。その 2 つの欄は private
+file: net/minecraft/server/level/ServerPlayer.java
+line:
+    private float lastSentHealth = -1.0E8F;
+
+file: net/minecraft/server/level/ServerPlayer.java
+line:
+    private int lastSentFood = -99999999;

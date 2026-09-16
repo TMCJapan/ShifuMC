@@ -7,3 +7,11 @@
 # ここでは呼び出し側を囲んで分ける(vanilla の行を変えないため)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ChunkMap.java.patch
+
+# Paper 1.18.2 は DistanceManager の構築子で chunkMap を渡す。vanilla の構築子は 2 引数なので、作った直後に入れる
+# (patches/hand の DistanceManager.shifuSetChunkMap)。入れないと Paper から写した addPriorityTicket が NPE。
+file: net/minecraft/server/level/ChunkMap.java
+anchor:
+        this.distanceManager = new ChunkMap.DistanceManager(executor, mainThreadExecutor);
+insert-after:
+    this.distanceManager.shifuSetChunkMap(this); // Shifu

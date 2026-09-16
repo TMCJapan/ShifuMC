@@ -29,7 +29,6 @@
 
 * MOD 併用で落ちるプラグイン: Chunky / ChunkyBorder は同名の Fabric MOD とクラスを取り合う。Veinminer は CommandAPI が 1.18.2 非対応。どちらも版の組み合わせの問題。
 * TAB 6.1.3 は 1.18.2 を「もう対応しない」と自分で止める。GriefPrevention は 1.18.2 の API に無い `PlayerSignOpenEvent` を登録しようとして落ちる。
-* HuskHomes の `teleportAsync` は `ChunkMap` が null で落ちる(shim が `ServerLevel.chunkTaskScheduler` の宣言だけ持ち込んでいる。1.20.6 の項と同じ)。
 * Multiverse-Core の `SpawnCategoryMapper` は `CraftSpawnCategory` を reflection で探して見つけない(1.18.2 の CraftBukkit に無いクラス)。
 
 ### 2026-09-16 に確かめたこと(「まだ確かめていないこと」のうち 1.18.2 で通したもの)
@@ -40,6 +39,8 @@
 | 乗り物に乗っている間の `PlayerMoveEvent` | 1.18.2 には無かった(`handleMoveVehicle` の発火は 1.21.11 の `player-server.rules` にだけあった)。`ShifuEvents.vehicleMove` を `rootVehicle.absMoveTo(d, d1, d2, f, f1)` の直後に入れた。drive がボートに乗せて bot に `ServerboundMoveVehiclePacket` を送らせると届く: from=(42, 150, 46) to=(44, 150, 46)、イベントの中の `getLocation()` は (42, 149.6, 46)(動く前。1.21.11 と同じ) |
 | プラグインメッセージの本文 | 1.18.2 の `ServerboundCustomPayloadPacket` はチャンネルと生の bytes なので bot から送れる。`PluginMessages.handle` はあったが `handleCustomPayload`(vanilla は空)に繋がっていなかった。`player.rules` で繋いだ。bot が `shifu:test` に "hello from bot" を送ると drive の `registerIncomingPluginChannel` の listener に 15 バイトで届く |
 | 経済系のプラグイン | Vault 1.7.3 + EssentialsX 2.20.1(HuskHomes は `/home` が重なるので外す。scratchpad の run-mix18-eco.ps1)。Vault の `Economy` サービスが登録され、`getBalance` 0.0 → `depositPlayer` 100 → 100.0、bot の `/balance` に "$100" が返る。EssentialsX は「Fabric 混成では動かすな」と ERROR を 1 行出すが動く |
+| 別の世界へのテレポート | `CraftPlayer.teleport` の cross-world は `PlayerList.respawn`(CraftBukkit は同じ ServerPlayer を使い回す)を通る。3 つ足りなかった: vanilla の `restoreFrom(自分)` が `recipeBook.copyOverData(自分)` で NPE(CraftBukkit はその行をコメントアウト)→ `patches/narrow` で `ShifuEvents.restoreSelf` に向けた。Paper の `noCollision(entity, box, loadChunks)`(CollisionGetter に足したもので、Shifu は公式に戻す)→ hand で `ServerLevel` に 2 引数へ渡す版。`Level.getHardCollidingEntities`(生成器が写した本体は Paper の entitySliceManager を読む。Shifu では null)→ hand で vanilla の `getEntities` から答える。drive の the_end への teleport → true、`Bukkit.getPlayer(uuid) == bot`、戻りも通る |
+| HuskHomes の `teleportAsync` | `MinecraftServer.scheduleOnMain`(Paper が `BlockableEventLoop` に足したもの。LinkCheck は所有クラスが戻していないクラスなので見落とす)を hand で足し、`DistanceManager.chunkMap`(Paper 1.18.2 は構築子で渡す。生成器が写した欄は誰も入れない)を ChunkMap の構築子から入れる(hand の `shifuSetChunkMap` + wire)。`/home` が届く(distance 0.0)。mix の例外 19 → 15 |
 | 局所変数・ラムダの数 | `run-server.ps1` の後処理の出力: LvtMatch reverted 2 / left alone 2634、LambdaMatch args moved 2・renumbered 20・rewritten 3・left alone 4、公式に戻したクラス 636、Shifu が触って残したクラス 891、公式 jar に無いクラス 18、LinkCheck missing 0、名前の違う無名クラス 29 |
 
 確かめられなかったもの: 独自 packet を使う MOD(Fabric のクライアントが要る。bot は vanilla の packet しか話さない)。

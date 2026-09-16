@@ -139,3 +139,10 @@
     public boolean addFreshEntity(final Entity entity, final org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason reason) {
         return this.addEntity(entity, reason);
     }
+
+// ServerLevel.noCollision
+    // Paper が CollisionGetter に足した 3 引数の版(loadChunks)。CollisionGetter は公式のバイトコードに戻るので
+    // ServerLevel に置く。呼び手は PlayerList.respawn(cross-world のテレポート)。Shifu は vanilla の 2 引数へ渡す。
+    public boolean noCollision(final net.minecraft.world.entity.Entity entity, final net.minecraft.world.phys.AABB box, final boolean loadChunks) {
+        return this.noCollision(entity, box);
+    }

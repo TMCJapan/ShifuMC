@@ -100,3 +100,15 @@ replace:
         protected boolean pollTask() {
 with:
         public boolean pollTask() {
+
+# PlayerList.respawn(Paper から写した本体)。CraftBukkit の respawn は新しい ServerPlayer を作らず
+# 同じオブジェクトを使い回す(entityplayer1 = entityplayer)。vanilla の restoreFrom(自分) は
+# recipeBook.copyOverData(自分) で states を clear してから読んで NPE になる(CraftBukkit は
+# ServerPlayer.restoreFrom のその 1 行をコメントアウトしている。Shifu の ServerPlayer は vanilla)。
+# 別の世界へのテレポート(CraftPlayer.teleport → respawn)が "Failed to teleport entity" で止まっていた。
+# 同じオブジェクトなら欄の写しは no-op なので、効果のある分だけ ShifuEvents.restoreSelf で行う。
+file: net/minecraft/server/players/PlayerList.java
+replace:
+        entityplayer1.restoreFrom(entityplayer, flag);
+with:
+        if (entityplayer1 != entityplayer) { entityplayer1.restoreFrom(entityplayer, flag); } else { dev.shifu.event.ShifuEvents.restoreSelf(entityplayer); } // Shifu

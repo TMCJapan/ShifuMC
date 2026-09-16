@@ -146,6 +146,11 @@ public final class PluginDrive extends JavaPlugin implements Listener {
                 this.note("plugin message " + channel + " " + message.length + " bytes: "
                         + new String(message, 1, message.length - 1, java.nio.charset.StandardCharsets.UTF_8)));
         this.itemRoundTrip();
+        // 世界の名前・UID・鍵。/home の行き先が別の世界と判定される(cross-world の respawn を通る)原因を見る
+        for (final org.bukkit.World world : Bukkit.getWorlds()) {
+            this.note("world " + world.getName() + " uid=" + world.getUID() + " key=" + world.getKey()
+                    + " env=" + world.getEnvironment() + " handle=" + handleOf(world));
+        }
         this.getLogger().info("[drive] waiting for the bot");
     }
 
@@ -173,6 +178,15 @@ public final class PluginDrive extends JavaPlugin implements Listener {
                     + " metaEquals=" + item.getItemMeta().equals(backBukkit.getItemMeta()));
         } catch (final Throwable broken) {
             this.note("item roundtrip broken: " + broken);
+        }
+    }
+
+    /** CraftWorld の handle(ServerLevel)の identity。CraftBukkit のパッケージ名は版で違うので reflection で読む。 */
+    private static int handleOf(final org.bukkit.World world) {
+        try {
+            return System.identityHashCode(world.getClass().getMethod("getHandle").invoke(world));
+        } catch (final ReflectiveOperationException broken) {
+            return -1;
         }
     }
 
@@ -224,6 +238,8 @@ public final class PluginDrive extends JavaPlugin implements Listener {
             this.note("moved away to " + brief(bot.getLocation()));
         });
         this.later(100, () -> this.tell(bot, "!bot cmd home shifu"));
+        this.later(130, () -> this.note("after /home: bot world uid=" + bot.getWorld().getUID() + " home world uid=" + this.origin.getWorld().getUID()
+                + " same=" + (bot.getWorld() == this.origin.getWorld())));
         this.later(130, () -> this.note("after /home: " + brief(bot.getLocation())
                 + " (home was " + brief(this.origin) + ", distance "
                 + String.format("%.1f", bot.getLocation().distance(this.origin)) + ")"));
@@ -445,6 +461,22 @@ public final class PluginDrive extends JavaPlugin implements Listener {
         this.later(290, () -> this.note("CreatureSpawnEvent = " + this.creatureSpawns
                 + ", ItemSpawnEvent = " + this.itemSpawns));
 
+        // 別の世界へのテレポート。CraftPlayer.teleport の cross-world は PlayerList.respawn(同じオブジェクト)を通る
+        this.later(348, () -> {
+            final org.bukkit.World end = Bukkit.getWorld(bot.getWorld().getName() + "_the_end");
+            if (end == null) {
+                this.note("cross-world: no _the_end world (worlds=" + Bukkit.getWorlds().size() + ")");
+                return;
+            }
+            final Location back = bot.getLocation().clone();
+            final boolean ok = bot.teleport(new Location(end, 0.5, 80.0, 0.5));
+            this.note("cross-world teleport -> " + ok + " now in " + bot.getWorld().getName()
+                    + " same object=" + (Bukkit.getPlayer(bot.getUniqueId()) == bot));
+            this.later(12, () -> {
+                bot.teleport(back);
+                this.note("cross-world back -> " + bot.getWorld().getName() + " " + brief(bot.getLocation()));
+            });
+        });
         this.later(370, () -> {
             this.note("---- done ----");
             this.tell(bot, "!bot quit");

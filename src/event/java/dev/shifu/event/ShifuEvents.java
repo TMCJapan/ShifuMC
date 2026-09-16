@@ -767,6 +767,20 @@ public final class ShifuEvents {
                 targetX, targetY, targetZ, targetYRot, targetXRot);
     }
 
+    /**
+     * PlayerList.respawn の restoreFrom の代わり。CraftBukkit の respawn は新しい ServerPlayer を作らず
+     * 同じオブジェクトを使い回すので、vanilla の {@code restoreFrom(自分)} は
+     * {@code recipeBook.copyOverData(自分)} で states を clear してから読んで NPE になる
+     * (CraftBukkit はその 1 行をコメントアウトしている。Shifu は vanilla の行を触らない)。
+     * 同じオブジェクトなら欄の写しは全部 no-op なので、効果のある 4 つだけを行う。
+     */
+    public static void restoreSelf(final ServerPlayer player) {
+        player.onUpdateAbilities();
+        player.lastSentExp = -1;
+        player.lastSentHealth = -1.0F;
+        player.lastSentFood = -1;
+    }
+
     // ------------------------------------------------------------ テレポート
 
     /** 次に {@code connection.teleport} を通る相手のうち、発火しないもの。 */
