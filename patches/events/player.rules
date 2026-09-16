@@ -56,6 +56,28 @@ insert:
         return;
     }
 
+# PlayerMoveEvent(乗り物に乗っている間)。vanilla が乗り物を動かしたあと。
+# 1.21.11 の player-server.rules と同じ形(1.18.2 / 1.19.4 は absSnapTo ではなく absMoveTo)。
+#
+# 読んだ位置: Paper-Server ServerGamePacketListenerImpl.handleMoveVehicle の "CraftBukkit start - fire PlayerMoveEvent"
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    rootVehicle.absMoveTo(d, d1, d2, f, f1);
+insert-after:
+    if (!dev.shifu.event.ShifuEvents.vehicleMove(this, d, d1, d2, f, f1)) {
+        return;
+    }
+
+# プラグインメッセージ(Bukkit の Messenger)。vanilla の handleCustomPayload は空。
+# minecraft:register / unregister はチャンネルの登録、それ以外は Messenger へ渡す(dev.shifu.event.PluginMessages)。
+#
+# 読んだ位置: Paper-Server ServerGamePacketListenerImpl.handleCustomPayload(dispatchIncomingMessage)
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    public void handleCustomPayload(ServerboundCustomPayloadPacket packet) {
+insert-after:
+    dev.shifu.event.PluginMessages.handle(this, packet);
+
 # PlayerTeleportEvent(同じ世界の中)
 #
 # connection.teleport(destination, relatives) の中。vanilla が位置を確定させて

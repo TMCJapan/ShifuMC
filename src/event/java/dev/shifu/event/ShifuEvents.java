@@ -749,6 +749,24 @@ public final class ShifuEvents {
         return from.equals(player.getBukkitEntity().getLocation()) || !connection.shifuTakeJustTeleported();
     }
 
+    /**
+     * PlayerMoveEvent(乗り物に乗っている間)。vanilla が乗り物を動かしたあと({@code handleMoveVehicle})。
+     * 中身は {@link #playerMove} と同じ。Paper がプレイヤーを乗り物の位置へ動かす細工は使わないので、
+     * イベントの中で {@code player.getLocation()} を読むと動く前の位置。
+     */
+    public static boolean vehicleMove(final net.minecraft.server.network.ServerGamePacketListenerImpl connection,
+                                      final double targetX, final double targetY, final double targetZ,
+                                      final float targetYRot, final float targetXRot) {
+        if (!listening(org.bukkit.event.player.PlayerMoveEvent.getHandlerList())) {
+            return true;
+        }
+
+        final ServerPlayer player = connection.player;
+
+        return playerMove(connection, player.getX(), player.getY(), player.getZ(),
+                targetX, targetY, targetZ, targetYRot, targetXRot);
+    }
+
     // ------------------------------------------------------------ テレポート
 
     /** 次に {@code connection.teleport} を通る相手のうち、発火しないもの。 */

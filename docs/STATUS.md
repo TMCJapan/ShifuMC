@@ -32,6 +32,18 @@
 * HuskHomes の `teleportAsync` は `ChunkMap` が null で落ちる(shim が `ServerLevel.chunkTaskScheduler` の宣言だけ持ち込んでいる。1.20.6 の項と同じ)。
 * Multiverse-Core の `SpawnCategoryMapper` は `CraftSpawnCategory` を reflection で探して見つけない(1.18.2 の CraftBukkit に無いクラス)。
 
+### 2026-09-16 に確かめたこと(「まだ確かめていないこと」のうち 1.18.2 で通したもの)
+
+| | |
+|---|---|
+| プレイヤーが遊ぶ範囲の処理順 | bot を op にして参加直後に `/tp 0 120 0` へ飛ばし(参加の位置は spawnRadius の乱数で毎回違う。agent は `java.util.Random` を固定しない)、空中を 0.2 / 0.1 ブロックずつ 900 歩(45 秒、x 180 / z 90)歩かせながら tickstop で 1200 tick で止める(scratchpad の walk18-all.ps1)。vanilla 4 回、Shifu 2 回。**vanilla-1 vs Shifu-1(控え vanilla-2・3・4、Shifu-2)は 1887 チャンク中 1879 一致、不一致 8。同じ方法の vanilla-1 vs vanilla-3(控え vanilla-2・4)は 1946 中 1920 一致、不一致 26**。Shifu の差は vanilla 同士の幅の中。不一致のチャンクの中身は木・草・シダの配置(装飾)で、生成順の差と同じ種類 |
+| 乗り物に乗っている間の `PlayerMoveEvent` | 1.18.2 には無かった(`handleMoveVehicle` の発火は 1.21.11 の `player-server.rules` にだけあった)。`ShifuEvents.vehicleMove` を `rootVehicle.absMoveTo(d, d1, d2, f, f1)` の直後に入れた。drive がボートに乗せて bot に `ServerboundMoveVehiclePacket` を送らせると届く: from=(42, 150, 46) to=(44, 150, 46)、イベントの中の `getLocation()` は (42, 149.6, 46)(動く前。1.21.11 と同じ) |
+| プラグインメッセージの本文 | 1.18.2 の `ServerboundCustomPayloadPacket` はチャンネルと生の bytes なので bot から送れる。`PluginMessages.handle` はあったが `handleCustomPayload`(vanilla は空)に繋がっていなかった。`player.rules` で繋いだ。bot が `shifu:test` に "hello from bot" を送ると drive の `registerIncomingPluginChannel` の listener に 15 バイトで届く |
+| 経済系のプラグイン | Vault 1.7.3 + EssentialsX 2.20.1(HuskHomes は `/home` が重なるので外す。scratchpad の run-mix18-eco.ps1)。Vault の `Economy` サービスが登録され、`getBalance` 0.0 → `depositPlayer` 100 → 100.0、bot の `/balance` に "$100" が返る。EssentialsX は「Fabric 混成では動かすな」と ERROR を 1 行出すが動く |
+| 局所変数・ラムダの数 | `run-server.ps1` の後処理の出力: LvtMatch reverted 2 / left alone 2634、LambdaMatch args moved 2・renumbered 20・rewritten 3・left alone 4、公式に戻したクラス 636、Shifu が触って残したクラス 891、公式 jar に無いクラス 18、LinkCheck missing 0、名前の違う無名クラス 29 |
+
+確かめられなかったもの: 独自 packet を使う MOD(Fabric のクライアントが要る。bot は vanilla の packet しか話さない)。
+
 ### 2026-09-16 に直したもの
 
 | | |

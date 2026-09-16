@@ -90,6 +90,11 @@ public final class PluginDrive extends JavaPlugin implements Listener {
     @EventHandler
     public void onMove(final org.bukkit.event.player.PlayerMoveEvent event) {
         this.moves++;
+        if (event.getPlayer().isInsideVehicle()) {
+            this.note("vehicle PlayerMoveEvent from=" + brief(event.getFrom()) + " to=" + brief(event.getTo())
+                    + " getLocation=" + brief(event.getPlayer().getLocation())
+                    + " vehicle=" + brief(event.getPlayer().getVehicle().getLocation()));
+        }
     }
 
     @EventHandler
@@ -136,6 +141,10 @@ public final class PluginDrive extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         this.getServer().getPluginManager().registerEvents(this, this);
+        // プラグインメッセージの本文。bot が shifu:test に文を送る
+        this.getServer().getMessenger().registerIncomingPluginChannel(this, "shifu:test", (channel, who, message) ->
+                this.note("plugin message " + channel + " " + message.length + " bytes: "
+                        + new String(message, 1, message.length - 1, java.nio.charset.StandardCharsets.UTF_8)));
         this.itemRoundTrip();
         this.getLogger().info("[drive] waiting for the bot");
     }
@@ -393,6 +402,46 @@ public final class PluginDrive extends JavaPlugin implements Listener {
         this.later(285, () -> this.note("explode events = " + this.explodes));
 
         this.later(288, () -> this.note("PlayerMoveEvent = " + this.moves));
+        // プラグインメッセージの本文
+        this.later(292, () -> this.tell(bot, "!bot payload shifu:test hello from bot"));
+
+        // 乗り物に乗せて、bot に乗り物の位置を送らせる。PlayerMoveEvent の中で getLocation() が動く前の位置になるか
+        this.later(294, () -> {
+            final Location at = bot.getLocation().clone();
+            at.clone().subtract(0, 1, 0).getBlock().setType(Material.STONE);
+            final org.bukkit.entity.Boat boat = (org.bukkit.entity.Boat) bot.getWorld().spawnEntity(at, org.bukkit.entity.EntityType.BOAT);
+            boat.addPassenger(bot);
+            this.note("boarded boat at " + brief(at) + " passenger=" + boat.getPassengers().size());
+            this.later(10, () -> this.tell(bot, "!bot vehicle " + (at.getX() + 2.0) + " " + at.getY() + " " + at.getZ()));
+            this.later(30, () -> {
+                this.note("after vehicle move: bot=" + brief(bot.getLocation()) + " boat=" + brief(boat.getLocation()));
+                bot.leaveVehicle();
+                boat.remove();
+            });
+        });
+
+        // 経済(Vault の Economy)。入っていれば残高を読んで 100 足す
+        this.later(300, () -> {
+            for (final Class<?> service : this.getServer().getServicesManager().getKnownServices()) {
+                if (!service.getName().equals("net.milkbowl.vault.economy.Economy")) {
+                    continue;
+                }
+                try {
+                    final Object economy = this.getServer().getServicesManager().getRegistration(service).getProvider();
+                    final java.lang.reflect.Method balance = service.getMethod("getBalance", org.bukkit.OfflinePlayer.class);
+                    final java.lang.reflect.Method deposit = service.getMethod("depositPlayer", org.bukkit.OfflinePlayer.class, double.class);
+                    final Object before = balance.invoke(economy, bot);
+                    final Object result = deposit.invoke(economy, bot, 100.0);
+                    final Object after = balance.invoke(economy, bot);
+                    this.note("economy " + economy.getClass().getSimpleName() + " balance " + before + " -> " + after + " (" + result + ")");
+                    this.tell(bot, "!bot cmd balance");
+                } catch (final Throwable broken) {
+                    this.note("economy broken: " + broken);
+                }
+                return;
+            }
+            this.note("economy: no Vault Economy service");
+        });
         this.later(290, () -> this.note("CreatureSpawnEvent = " + this.creatureSpawns
                 + ", ItemSpawnEvent = " + this.itemSpawns));
 

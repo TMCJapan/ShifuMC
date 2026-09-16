@@ -88,6 +88,8 @@ public final class Bot {
     private volatile float yaw;
     private volatile float pitch;
     private volatile int teleports;
+    /** 自走の指示("dx,dz,steps,ms")。無人のサーバーでプレイヤーの範囲を作るための決まった歩き方。 */
+    private static String walk;
 
     private Bot(final String name) {
         this.name = name;
@@ -98,6 +100,7 @@ public final class Bot {
         final int port = args.length > 1 ? Integer.parseInt(args[1]) : 25599;
         final String name = args.length > 2 ? args[2] : "ShifuBot";
         final long seconds = args.length > 3 ? Long.parseLong(args[3]) : 90;
+        walk = args.length > 4 && args[4].startsWith("walk=") ? args[4].substring(5) : null;
 
         SharedConstants.tryDetectVersion();
         Bootstrap.bootStrap();
@@ -240,8 +243,42 @@ public final class Bot {
         this.pitch = relatives.contains(ClientboundPlayerPositionPacket.RelativeArgument.X_ROT) ? this.pitch + packet.getXRot() : packet.getXRot();
         this.teleports++;
         log(String.format("teleport #%d to %.2f %.2f %.2f", this.teleports, this.x, this.y, this.z));
+        if (walk != null && this.teleports == 1) {
+            // 参加の位置は毎回違う(spawnRadius の乱数は agent が固定しない)。op にしてある前提で決まった場所へ飛び、
+            // その受け入れ(2 回目のテレポート)から歩く
+            this.connection.send(new ServerboundChatPacket("/tp 0 120 0"));
+        } else if (walk != null && this.teleports == 2) {
+            this.startWalk();
+        }
         this.connection.send(new ServerboundAcceptTeleportationPacket(packet.getId()));
         this.move();
+    }
+
+    /** 最初のテレポート(参加)のあと、決まった歩き方で位置を送り続ける。drive のいないサーバー(vanilla)でも同じ範囲を読み込ませる。 */
+    private void startWalk() {
+        if (walk == null) {
+            return;
+        }
+        final String[] parts = walk.split(",");
+        final double dx = Double.parseDouble(parts[0]);
+        final double dz = Double.parseDouble(parts[1]);
+        final int steps = Integer.parseInt(parts[2]);
+        final long ms = Long.parseLong(parts[3]);
+        final Thread walker = new Thread(() -> {
+            try {
+                for (int i = 0; i < steps && this.connection.isConnected(); i++) {
+                    this.x += dx;
+                    this.z += dz;
+                    this.move();
+                    Thread.sleep(ms);
+                }
+                log(String.format("walked to %.2f %.2f %.2f", this.x, this.y, this.z));
+            } catch (final InterruptedException stop) {
+                Thread.currentThread().interrupt();
+            }
+        }, "walker");
+        walker.setDaemon(true);
+        walker.start();
     }
 
     /** いまの位置を送る。 */
@@ -318,6 +355,25 @@ public final class Bot {
                 final FriendlyByteBuf data = new FriendlyByteBuf(Unpooled.buffer());
                 data.writeUtf(rest);
                 this.connection.send(new ServerboundCustomPayloadPacket(ServerboundCustomPayloadPacket.BRAND, data));
+            }
+            // 乗り物を動かす(ServerboundMoveVehiclePacket)。乗せるのはサーバー側(drive)
+            case "vehicle" -> {
+                final String[] parts = rest.trim().split("[,\s]+");
+                final FriendlyByteBuf data = new FriendlyByteBuf(Unpooled.buffer());
+                data.writeDouble(Double.parseDouble(parts[0]));
+                data.writeDouble(Double.parseDouble(parts[1]));
+                data.writeDouble(Double.parseDouble(parts[2]));
+                data.writeFloat(0.0f);
+                data.writeFloat(0.0f);
+                this.connection.send(new net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket(data));
+            }
+            // プラグインメッセージの本文。1.18.2 はチャンネルと生の bytes の組なので、知らないチャンネルでも送れる
+            case "payload" -> {
+                final String[] parts = rest.trim().split(" ", 2);
+                final FriendlyByteBuf data = new FriendlyByteBuf(Unpooled.buffer());
+                data.writeUtf(parts.length > 1 ? parts[1] : "");
+                this.connection.send(new ServerboundCustomPayloadPacket(
+                        new net.minecraft.resources.ResourceLocation(parts[0]), data));
             }
             case "where" -> log(String.format("at %.2f %.2f %.2f", this.x, this.y, this.z));
             case "quit" -> {
