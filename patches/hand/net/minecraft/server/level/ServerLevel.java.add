@@ -146,3 +146,12 @@
     public boolean noCollision(final net.minecraft.world.entity.Entity entity, final net.minecraft.world.phys.AABB box, final boolean loadChunks) {
         return this.noCollision(entity, box);
     }
+
+// ServerLevel.shifuSpawn
+    // Bukkit の世界ごとのスポーン。vanilla の nether / end の LevelData は主世界のものを包んでいる(DerivedLevelData)ので、
+    // そのまま書くと主世界のスポーンが変わる(Multiverse が世界ごとに setSpawnLocation する)。
+    // 主世界以外は CraftWorld.setSpawnLocation がここに置き、getSpawnLocation がここから読む(patches/adapter)。
+    public BlockPos shifuSpawn;
+
+// ServerLevel.shifuSpawnAngle
+    public float shifuSpawnAngle;
