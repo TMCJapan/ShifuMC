@@ -2,7 +2,7 @@
 
 このブランチは Minecraft 1.18.2。`ver/1.19.4` から切った。節ごとにどの版で測ったかを頭に書いてある。
 
-## 1.18.2 の状態(2026-09-14)
+## 1.18.2 の状態(2026-09-16)
 
 コンパイル 0 件、公式に戻したクラスへの参照の欠落 0 件(`LinkCheck`)、プラグイン無しで起動(Done 1.5s、例外 0)。
 `shifu.jar`(Fabric Loader 0.19.5)+ MOD 16 個(fabric-api の中身を含めて 95)+ プラグイン 25 個で起動し
@@ -23,15 +23,22 @@
 | launcher | fabric-loader は開発経路(`fabric.development=true`、MOD を intermediary から写すために使っている)で MOD の順を毎回シャッフルする。Mixin の同順位の適用順がそれに従うので、同じ呼び出しを @Redirect する krypton と lithium(`ChunkMap.TrackedEntity` の `Sets.newIdentityHashSet()`)は後になった方が外れ、`defaultRequire: 1` の krypton が起動の半分で落ちた。`-Dfabric.debug.disableModShuffle=true` で本番と同じ id 順に固定(1.20.6 / 1.21.11 / 1.19.4 にも入れた) |
 | MOTD | Paper は MOTD を AdventureComponent のまま ServerStatus に入れ、書き換えた Serializer で JSON にする。Shifu は Serializer が vanilla なので `PaperAdventure.asVanilla` に変換して入れる adapter。サーバー一覧 ping で MiniMOTD の装飾付きの文が返る |
 | 世界生成の突き合わせ | 同じシードで vanilla 4 回、Shifu 2 回(Done の 20 秒後に stop)。ばらつきを両側から引いた残り **18 チャンクは 17 一致、不一致 1**(ブロック配列の 1 バイト)。1.18.2 も vanilla 同士で 532 中 478 が違い、比べられる範囲が狭い |
-| 処理順の突き合わせ | tickstop の agent で 1200 tick ちょうどで止める。vanilla 4 回と Shifu 2 回でばらつきを引いた残り **1374 チャンクのうち 1371 一致、不一致 3**(r.-1.-1 の (19,29) (19,30) (20,29)、隣り合う 3 チャンクのブロック配列)。同じ方法で vanilla 同士を比べると 1 回目 vs 4 回目で不一致 8、1 回目 vs 3 回目で 10。3 チャンクの中身を NBT で読むと、チャンク境界(z=14〜15)の閃緑岩の塊が安山岩になっている 89 ブロックと、水がシーグラスになっている 9 ブロックで、block_entities / block_ticks / Heightmaps は同じ。どれも隣のチャンクの装飾が重なる場所で、後から置いた方が残る種類の差(ore の置換対象は互いを含む)。この 3 チャンクは起動時のスポーン範囲の外で 1200 tick の間に生成されたもので、隣同士のどちらが先に装飾されるか(チャンクの生成順)が vanilla と Shifu で違う。生成順は Paper のチャンクの仕組み(CraftBukkit 側)が決めるので、vanilla のバイトコードの差ではない |
+| 処理順の突き合わせ | tickstop の agent で 1200 tick ちょうどで止める。vanilla 4 回と Shifu 2 回でばらつきを引いた残り **1374 チャンクのうち 1371 一致、不一致 3**(r.-1.-1 の (19,29) (19,30) (20,29)、隣り合う 3 チャンクのブロック配列)。同じ方法で vanilla 同士を比べると 1 回目 vs 4 回目で不一致 8、1 回目 vs 3 回目で 10。3 チャンクの中身を NBT で読むと、チャンク境界(z=14〜15)の閃緑岩の塊が安山岩になっている 89 ブロックと、水がシーグラスになっている 9 ブロックで、block_entities / block_ticks / Heightmaps は同じ。どれも隣のチャンクの装飾が重なる場所で、後から置いた方が残る種類の差(ore の置換対象は互いを含む)。この 3 チャンクは起動時のスポーン範囲の外で 1200 tick の間に生成されたもので、隣同士のどちらが先に装飾されるか(生成順)の差。tickstop の `trace=` で装飾の順を書かせて比べると(2026-09-16、乱数固定、worker 1 本、スポーンの 625 チャンクは全部 tick 0)、**vanilla 同士でも 625 中 603 の位置が違い**、vanilla と Shifu の差(567〜607)と同じ幅。生成順は vanilla 自身が走行ごとに変えるもの(server thread と worker のタイミング)で、Shifu 側で揃えるものは無い |
 
 ### 通っていないもの
 
-* spigot マッピング前提のプラグイン(InvSee++、DecentHolograms、TAB、FancyNpcs)は `ClassNotFoundException` / `NoSuchMethodError`。WorldEdit のアダプタも載らない。避けられない。
-* Multiverse-Core: nether / end の `DerivedLevelData` を `PrimaryLevelData` に cast して落ちる(CraftBukkit は世界ごとに PrimaryLevelData を持たせるが Shifu は vanilla のまま)。
-* adventure の boss bar は作ったときの名前・色しか届かない(BossEvent の getter が vanilla のまま)。
 * MOD 併用で落ちるプラグイン: Chunky / ChunkyBorder は同名の Fabric MOD とクラスを取り合う。Veinminer は CommandAPI が 1.18.2 非対応。どちらも版の組み合わせの問題。
-* 処理順の 3 チャンクの差(上の表)は生成順の違い。生成順まで vanilla に揃えるならチャンクの仕組みから。
+* TAB 6.1.3 は 1.18.2 を「もう対応しない」と自分で止める。GriefPrevention は 1.18.2 の API に無い `PlayerSignOpenEvent` を登録しようとして落ちる。
+* HuskHomes の `teleportAsync` は `ChunkMap` が null で落ちる(shim が `ServerLevel.chunkTaskScheduler` の宣言だけ持ち込んでいる。1.20.6 の項と同じ)。
+* Multiverse-Core の `SpawnCategoryMapper` は `CraftSpawnCategory` を reflection で探して見つけない(1.18.2 の CraftBukkit に無いクラス)。
+
+### 2026-09-16 に直したもの
+
+| | |
+|---|---|
+| Spigot 向けのプラグイン | Spigot のサーバーは NMS をクラスは Spigot の名前(`EntityPlayer`)、欄とメソッドは難読化名(`b`、`fr`)で持つ(1.18.2 の BuildData に members.csrg は無い)。Paper 1.18.2 はプラグインを写さないので、Shifu(mojang 名)では `ClassNotFoundException` / `NoSuchMethodError` だった。`dev.shifu.remap.PluginRemapper` が `CraftMagicNumbers.processClass`(クラスを定義する直前)で spigot 名 → mojang 名に写す。表は `tools/make_plugin_mappings.py` が BuildData の cl.csrg と paperweight の `official-mojang+yarn.tiny` から組んで jar の `META-INF/mappings/` に入れる(クラス 4046、欄 21203、メソッド 32932)。メソッド名は宣言したクラスで引くので、呼び出し箇所の所有クラスから親へ辿る(サーバーのクラスは reflection、プラグインのクラスは読み込む前に plugins の jar を走査して控えた継承関係)。manifest に `paperweight-mappings-namespace: mojang` があるプラグインは写さない。InvSee++ 0.31.15、DecentHolograms 2.10.1 が有効になり、WorldEdit 7.2.20 の Paper 向けアダプタ(`PaperweightWorldNativeAccess`)が載って `//set stone` が 27 / 27、`//undo` が 27 / 27。そのアダプタが呼ぶ Paper の `LevelChunk.setBlockState(pos, state, moved, doPlace)` は hand で足した。mix の例外は 27 → 19 |
+| Multiverse-Core | nether / end の `serverLevelData` は vanilla では `DerivedLevelData` なので、`PrimaryLevelData` への cast(CraftWorld 4 か所、ChunkStatus、ScheduleCommand)で落ちていた。`PrimaryLevelData` でなければサーバーの `WorldData`(3 次元で 1 つ)を読む。Bukkit の `createWorld` で作った世界は CraftServer が `PrimaryLevelData` を持たせるのでそのまま。nether の region は一度も作られていなかったので、ChunkStatus の cast も nether の生成で落ちる形だった |
+| adventure の boss bar | Paper は `BossEvent` に欄 `adventure` を足して getter で先に見る。Shifu の `BossEvent` は vanilla なので、作ったときの値しか届かなかった。`HackyBossBarPlatformBridge` の listener で、変化のたびに adventure 側の値を `ServerBossEvent` の setter(値が変わったときだけ packet を送る)に写す。drive の boss bar(0.25 BLUE → 0.75 / 名前 / RED)が bot に add → progress → name → style → remove の順で届く |
 
 ---
 
