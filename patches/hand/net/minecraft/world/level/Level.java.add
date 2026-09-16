@@ -39,13 +39,14 @@
 // Level.getEntities
     @Override
     public void getEntities(Entity except, AABB box, Predicate<? super Entity> predicate, List<Entity> into) {
-        into.addAll(this.getEntities(except, box, predicate));
+        // Paper の CollisionUtil は predicate に null を渡す(EntityLookup は null を通す)。vanilla の getEntities は test() を呼ぶ
+        into.addAll(this.getEntities(except, box, predicate == null ? e -> true : predicate));
     }
 
 // Level.getHardCollidingEntities
     @Override
     public void getHardCollidingEntities(Entity except, AABB box, Predicate<? super Entity> predicate, List<Entity> into) {
-        for (final Entity other : this.getEntities(except, box, predicate)) {
+        for (final Entity other : this.getEntities(except, box, predicate == null ? e -> true : predicate)) {
             if (other.hardCollides()) {
                 into.add(other);
             }

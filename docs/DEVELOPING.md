@@ -536,6 +536,7 @@ jvm-args            = -Xmx4G
 | `tools/check_extra_locals.py` | 差し込みが公式にもある型の局所変数を作っている場所を出す |
 | `tools/make_decompile_rules.py` | 逆コンパイルで消えた局所変数を戻す規則を作り直す |
 | `tools/keep_vanilla_classes.py` | 触っていないクラスを公式のバイトコードに差し替える |
+| `tools/lvtmatch` の `FrameFix` | 後処理で slot やラムダを書き換えたクラスの stackmap frame を `COMPUTE_FRAMES` で計算し直す。MOD 無しの起動で `VerifyError` にならないため(MOD 入りは Mixin が計算し直すので見えない) |
 | `tools/missing_members.py` | プラグインが呼ぶメンバーのうち、サーバーに無いものを出す |
 | `tools/compare_worlds.py` | 同じシードで作った世界を突き合わせる |
 | `tools/compare-worldgen.sh` | vanilla を 2 回、Shifu を 1 回走らせて世界生成を突き合わせる |
