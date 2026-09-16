@@ -10,17 +10,20 @@ with:
 
 # vanilla の ServerLevel.serverLevelData は ServerLevelData 型。Paper は PrimaryLevelData に
 # 狭めているので、worldGenOptions と settings は素の型では見えない。呼ぶ側で戻す。
+# vanilla の nether / end は DerivedLevelData を持つ(Multiverse-Core が canGenerateStructures で
+# ClassCastException)。PrimaryLevelData でなければサーバーの WorldData(3 次元で 1 つ)を読む。
+# Bukkit の createWorld で作った世界は CraftServer が PrimaryLevelData を持たせるのでそのまま。
 count: 1
 replace:
     world.serverLevelData.worldGenOptions()
 with:
-    ((net.minecraft.world.level.storage.PrimaryLevelData) world.serverLevelData).worldGenOptions()
+    ((world.serverLevelData instanceof net.minecraft.world.level.storage.PrimaryLevelData) ? (net.minecraft.world.level.storage.PrimaryLevelData) world.serverLevelData : (net.minecraft.world.level.storage.PrimaryLevelData) world.getServer().getWorldData()).worldGenOptions()
 
 # 同上。1.21.11 の vanilla は LevelSettings.hardcore が public な欄なので、そのまま書ける
 replace:
     world.serverLevelData.settings.hardcore = hardcore;
 with:
-    ((net.minecraft.world.level.storage.PrimaryLevelData) world.serverLevelData).settings.hardcore = hardcore;
+    ((world.serverLevelData instanceof net.minecraft.world.level.storage.PrimaryLevelData) ? (net.minecraft.world.level.storage.PrimaryLevelData) world.serverLevelData : (net.minecraft.world.level.storage.PrimaryLevelData) world.getServer().getWorldData()).settings.hardcore = hardcore;
 
 # vanilla の PrimaryLevelData は 3 つの次元で 1 つなので、getLevelName() は 3 つとも同じ。
 # Bukkit の世界は名前で引くので、次元ごとに分けた名前を返す(ServerLevel.bukkitName)。

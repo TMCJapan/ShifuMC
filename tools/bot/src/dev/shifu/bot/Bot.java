@@ -196,6 +196,24 @@ public final class Bot {
                         "en_us", 8, ChatVisiblity.FULL, true, 0, HumanoidArm.RIGHT, false, true));
             }
             case "handleMovePlayer" -> this.accept((ClientboundPlayerPositionPacket) packet);
+            case "handleBossUpdate" -> ((net.minecraft.network.protocol.game.ClientboundBossEventPacket) packet).dispatch(
+                    new net.minecraft.network.protocol.game.ClientboundBossEventPacket.Handler() {
+                        @Override
+                        public void add(final java.util.UUID id, final net.minecraft.network.chat.Component name, final float percent,
+                                final net.minecraft.world.BossEvent.BossBarColor color, final net.minecraft.world.BossEvent.BossBarOverlay style,
+                                final boolean darkenSky, final boolean dragonMusic, final boolean thickenFog) {
+                            log("bossbar add name=" + name.getString() + " progress=" + percent + " color=" + color + " overlay=" + style);
+                        }
+                        @Override
+                        public void remove(final java.util.UUID id) { log("bossbar remove"); }
+                        @Override
+                        public void updateProgress(final java.util.UUID id, final float percent) { log("bossbar progress=" + percent); }
+                        @Override
+                        public void updateName(final java.util.UUID id, final net.minecraft.network.chat.Component name) { log("bossbar name=" + name.getString()); }
+                        @Override
+                        public void updateStyle(final java.util.UUID id, final net.minecraft.world.BossEvent.BossBarColor color,
+                                final net.minecraft.world.BossEvent.BossBarOverlay style) { log("bossbar color=" + color + " overlay=" + style); }
+                    });
             case "handleSetHealth" -> log("health " + ((ClientboundSetHealthPacket) packet).getHealth());
             case "handlePlayerCombatKill" -> {
                 log("died: " + ((ClientboundPlayerCombatKillPacket) packet).getMessage().getString());
