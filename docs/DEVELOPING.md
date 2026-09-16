@@ -609,6 +609,7 @@ jvm-args            = -Xmx4G
 | `tools/lvtmatch` の `LinkCheck` | 公式に戻したクラスに、残りのクラスが参照している欄やメソッドが無いものを数える |
 | `tools/link_to_required.py` | `LinkCheck` の出力を `required-members.txt` の項目にする |
 | `tools/missing_members.py` | プラグインが呼ぶメンバーのうち、サーバーに無いものを出す |
+| `tools/make_plugin_mappings.py` | Spigot 向けのプラグインを読み込むときに写す表(spigot 名 → mojang 名)。BuildData の cl.csrg と paperweight の tiny から組み、jar の `META-INF/mappings/` に入る。読むのは `dev.shifu.remap.PluginRemapper` |
 | `tools/compare_worlds.py` | 同じシードで作った世界を突き合わせる |
 | `tools/compare-worldgen.sh` | vanilla を 2 回、Shifu を 1 回走らせて世界生成を突き合わせる |
 | `tools/tickstop` + `tools/compare-ticks.sh` | 測定用 agent。乱数を決定的にして N tick で止め、世界を突き合わせる |

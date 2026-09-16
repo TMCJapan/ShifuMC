@@ -51,6 +51,12 @@ for round in 1 2 3 4 5 6 7 8 9 10; do
     cp "$SHIFU/src/event/java/dev/shifu/event/"*.java        "$ADAPTER/dev/shifu/event/"
     mkdir -p "$ADAPTER/dev/shifu/command"
     cp "$SHIFU/src/event/java/dev/shifu/command/"*.java      "$ADAPTER/dev/shifu/command/"
+    mkdir -p "$ADAPTER/dev/shifu/remap"
+    cp "$SHIFU/src/event/java/dev/shifu/remap/"*.java        "$ADAPTER/dev/shifu/remap/"
+    # Spigot 向けのプラグインを写す表(難読化のある版だけ。BuildData の cl.csrg が無ければ作らない)
+    if ls "$PW/work/BuildData/mappings/"bukkit-*-cl.csrg >/dev/null 2>&1; then
+        python "$SHIFU/tools/make_plugin_mappings.py" "$PW" "$PW/Paper-Server/src/main/resources/META-INF/mappings/shifu-plugin-remap.txt" | tail -1
+    fi
     # vanilla の中の無名クラスへの追加。型の名前が無いので hand では届かない。
     python "$SHIFU/tools/apply_events.py" "$SHIFU/patches/anon" . 無名クラスへの追加 $EVENTS_FLAGS
     # Paper が vanilla のメソッドの中で行う代入。Bukkit 層の配線。
