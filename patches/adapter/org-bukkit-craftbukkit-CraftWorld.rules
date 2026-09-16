@@ -34,3 +34,20 @@ replace:
         return world.serverLevelData.getLevelName();
 with:
         return world.bukkitName; // Shifu - vanilla は次元でフォルダを分けないので、名前は ServerLevel が持つ
+
+# 世界ごとのスポーン。vanilla の nether / end の serverLevelData は DerivedLevelData で、setSpawn / getSharedSpawnPos が
+# 主世界のものへ通る。主世界以外は ServerLevel.shifuSpawn(hand)に置いて読む。
+replace:
+        BlockPos spawn = this.world.getSharedSpawnPos();
+with:
+        BlockPos spawn = this.world.shifuSpawn != null ? this.world.shifuSpawn : this.world.getSharedSpawnPos(); // Shifu
+
+replace:
+        float yaw = this.world.getSharedSpawnAngle();
+with:
+        float yaw = this.world.shifuSpawn != null ? this.world.shifuSpawnAngle : this.world.getSharedSpawnAngle(); // Shifu
+
+replace:
+            world.setDefaultSpawnPos(new BlockPos(x, y, z), angle); // Paper - use ServerLevel#setDefaultSpawnPos
+with:
+            if (world.serverLevelData instanceof net.minecraft.world.level.storage.PrimaryLevelData) { world.setDefaultSpawnPos(new BlockPos(x, y, z), angle); } else { world.shifuSpawn = new BlockPos(x, y, z); world.shifuSpawnAngle = angle; } // Shifu - 主世界以外は世界ごとの欄へ
