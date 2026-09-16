@@ -153,6 +153,14 @@ MOD 側が悪いように見えて、全部 Shifu 側だった。公式の jar �
 | Alternate Current が `WireHandler` の構築子で落ちる | Paper 1.20.6 が同名パッケージの Alternate Current を同梱していて、サーバー側のクラスが MOD を隠していた | Paper の同梱分を外す。`RedStoneWireBlock` は `redstoneImplementation == VANILLA` で分岐するだけで `alternate.current` を呼ばず、`WireHandler` を作る Paper の `ServerLevel` の配線も Shifu は取っていない。`ALTERNATE_CURRENT` の設定値は外す前から何もしていない |
 | MOD を入れると NMS 側のログが 1 行も出ない | Paper の `SpigotLibraryLoader` が `libraries/` へ落としたプラグインの slf4j-api 1.7.36 が、Paper の 2.0.9 より先にクラスパスへ載って SLF4J が NOP になっていた | bundler の `META-INF/libraries.list` に載っている分だけを載せる |
 
+### 2026-09-16 に直したもの(1.20.6)
+
+| | |
+|---|---|
+| adventure の boss bar | Paper は `BossEvent` に欄 `adventure` を足して getter で先に見る。Shifu は欄はあるが getter が vanilla なので、`BossBarImplementationImpl` が送る packet は作ったときの名前・色、割合 1.0 のままだった。listener で変わった値を `ServerBossEvent` の setter に写す(`io-papermc-paper-adventure-BossBarImplementationImpl.rules`)。drive の boss bar(0.25 BLUE → 0.75 / 名前 / RED)が bot に add → progress → name → style → remove の順で届く |
+| nether / end の `serverLevelData` | vanilla では `DerivedLevelData` なので、CraftWorld の `PrimaryLevelData` への cast(worldGenOptions、settings.hardcore)は nether / end で落ちる形だった。`PrimaryLevelData` でなければサーバーの `WorldData` を読む(1.18.2 / 1.19.4 と同じ) |
+| ビルドの後処理 | `tools/run-server.ps1` の後処理は `LvtMatch --vars` の段を飛ばす(1.19.4 の公式 jar の名前が理由)。1.20.6 をそれで組むと `ServerPlayerGameMode.destroyBlock` の局所変数の並びが公式と合わず、Fabric API の mixin(`fabric-events-interaction-v0`)が LVT の不一致で落ちて起動しない。1.20.6 は `sh tools/dist.sh --build`(`postcompile.sh`。`--slots` のあと `--vars`)で組む。`tools/build/lvtmatch` は `ClassCheck` が無い古い版だったので `sh tools/lvtmatch/build.sh` で組み直した |
+
 ### 残っている食い違い(1.20.6)
 
 `tools/check_lambdas.py` が 4 クラス、`tools/compare_lvt.py` が 15 変数を挙げる

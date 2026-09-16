@@ -225,6 +225,21 @@ public final class PluginDrive extends JavaPlugin implements Listener {
             bot.setPlayerListName("ShifuTab");
             this.note("player list name = " + bot.getPlayerListName());
         });
+        // adventure の boss bar。作ったあとに変えた割合・名前・色が client に届くか(bot が packet を書く)
+        this.later(153, () -> {
+            final net.kyori.adventure.bossbar.BossBar bar = net.kyori.adventure.bossbar.BossBar.bossBar(
+                    Component.text("shifu bar"), 0.25f,
+                    net.kyori.adventure.bossbar.BossBar.Color.BLUE,
+                    net.kyori.adventure.bossbar.BossBar.Overlay.PROGRESS);
+            bot.showBossBar(bar);
+            this.later(2, () -> {
+                bar.progress(0.75f);
+                bar.name(Component.text("shifu bar 2"));
+                bar.color(net.kyori.adventure.bossbar.BossBar.Color.RED);
+                this.note("boss bar changed: progress=" + bar.progress() + " name=shifu bar 2 color=RED");
+            });
+            this.later(6, () -> bot.hideBossBar(bar));
+        });
         this.later(155, () -> this.tell(bot, "!bot cmd gamemode survival"));
         this.later(158, () -> {
             this.note("gamemode after /gamemode survival = " + bot.getGameMode());
