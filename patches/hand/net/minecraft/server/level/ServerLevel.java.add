@@ -151,3 +151,12 @@
     public void addWorldGenChunkEntities(final Stream<Entity> entities, final ChunkPos forChunk) {
         this.addLegacyChunkEntities(entities);
     }
+
+// ServerLevel.shifuSpawn
+    // Bukkit の世界ごとのスポーン。vanilla の nether / end の LevelData は主世界のものを包んでいる(DerivedLevelData)ので、
+    // そのまま書くと主世界のスポーンが変わる(Multiverse が世界ごとに setSpawnLocation する)。
+    // 主世界以外は CraftWorld.setSpawnLocation がここに置き、getSpawnLocation がここから読む(patches/adapter)。
+    public BlockPos shifuSpawn;
+
+// ServerLevel.shifuSpawnAngle
+    public float shifuSpawnAngle;

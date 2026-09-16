@@ -393,6 +393,19 @@ public final class PluginDrive extends JavaPlugin implements Listener {
         this.later(290, () -> this.note("CreatureSpawnEvent = " + this.creatureSpawns
                 + ", ItemSpawnEvent = " + this.itemSpawns));
 
+        // 世界ごとのスポーン。vanilla の nether / end の LevelData は主世界のものに包まれているので、
+        // nether の setSpawnLocation が主世界のスポーン(1.21.11 では次元も)を書き換える形だった
+        this.later(340, () -> {
+            final org.bukkit.World over = bot.getWorld();
+            final org.bukkit.World nether = Bukkit.getWorld(over.getName() + "_nether");
+            if (nether == null) {
+                this.note("spawn: no _nether world");
+                return;
+            }
+            final Location before = over.getSpawnLocation();
+            nether.setSpawnLocation(10, 64, 10);
+            this.note("spawn: nether set -> " + brief(nether.getSpawnLocation()) + ", overworld " + brief(before) + " -> " + brief(over.getSpawnLocation()));
+        });
         // 別の世界へのテレポート。CraftPlayer.teleport の cross-world は PlayerList.respawn(同じオブジェクト)を通る
         this.later(348, () -> {
             final org.bukkit.World end = Bukkit.getWorld(bot.getWorld().getName() + "_the_end");
