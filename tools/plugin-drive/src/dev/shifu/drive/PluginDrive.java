@@ -393,6 +393,22 @@ public final class PluginDrive extends JavaPlugin implements Listener {
         this.later(290, () -> this.note("CreatureSpawnEvent = " + this.creatureSpawns
                 + ", ItemSpawnEvent = " + this.itemSpawns));
 
+        // 別の世界へのテレポート。CraftPlayer.teleport の cross-world は PlayerList.respawn(同じオブジェクト)を通る
+        this.later(348, () -> {
+            final org.bukkit.World end = Bukkit.getWorld(bot.getWorld().getName() + "_the_end");
+            if (end == null) {
+                this.note("cross-world: no _the_end world (worlds=" + Bukkit.getWorlds().size() + ")");
+                return;
+            }
+            final Location back = bot.getLocation().clone();
+            final boolean ok = bot.teleport(new Location(end, 0.5, 80.0, 0.5));
+            this.note("cross-world teleport -> " + ok + " now in " + bot.getWorld().getName()
+                    + " same object=" + (Bukkit.getPlayer(bot.getUniqueId()) == bot));
+            this.later(12, () -> {
+                bot.teleport(back);
+                this.note("cross-world back -> " + bot.getWorld().getName() + " " + brief(bot.getLocation()));
+            });
+        });
         this.later(370, () -> {
             this.note("---- done ----");
             this.tell(bot, "!bot quit");
