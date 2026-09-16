@@ -33,6 +33,13 @@
 | bot が 1.21.11 の packet で組めない | `tools/bot` は版ごとに packet の署名が違う | この枝の bot に 1.20.6 の追加(break / slot、`OUT`、カンマ区切り)だけを移した |
 | bot の切れた理由が出ない | `Connection.tick()` を回していないと `onDisconnect` が届かない | 1 秒ごとに `tick()` する |
 
+### 2026-09-16 に直したもの(1.21.11)
+
+| | |
+|---|---|
+| adventure の boss bar | Paper は `BossEvent` に欄 `adventure` を足して getter で先に見る。Shifu の getter は vanilla なので、`BossBarImplementationImpl` が送る packet は作ったときの名前・色、割合 1.0 のままになる形だった。listener で変わった値を `ServerBossEvent` の setter に写す(`io-papermc-paper-adventure-BossBarImplementationImpl.rules`)。drive の boss bar(0.25 BLUE → 0.75 / 名前 / RED)が bot に add → progress → name → style → remove の順で届く(MOD 125 個 + プラグイン 26 個の mix で確認) |
+| nether / end の `serverLevelData` | vanilla では `DerivedLevelData` なので、CraftWorld の `PrimaryLevelData` への cast(worldGenOptions、settings.hardcore)は nether / end で落ちる形だった。`PrimaryLevelData` でなければサーバーの `WorldData` を読む(他の版と同じ) |
+
 ### 数(1.21.11)
 
 | | 件数 |

@@ -1,0 +1,38 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: io/papermc/paper/adventure/BossBarImplementationImpl.java
+
+# Paper は BossEvent に欄 adventure を足し、getName / getProgress / getColor / getOverlay の
+# 先頭でそれを見て adventure の BossBar の今の値を返す。Shifu の BossEvent の getter は vanilla なので、
+# 欄に入れても読まれず、packet は ServerBossEvent の欄の値(作ったときの名前・色、割合 1.0)のまま送られる。
+# 代わりに、変化を受ける listener で変わった値を ServerBossEvent の setter に写す
+# (値が変わったときだけ packet を送る)。作った直後には割合と旗を写す(構築子で渡せない)。
+replace:
+            this.vanilla.adventure = this.bar;
+with:
+            this.vanilla.setProgress(this.bar.progress()); // Shifu - getter が vanilla なので値を写す
+            this.vanilla.setDarkenScreen(this.bar.hasFlag(BossBar.Flag.DARKEN_SCREEN));
+            this.vanilla.setPlayBossMusic(this.bar.hasFlag(BossBar.Flag.PLAY_BOSS_MUSIC));
+            this.vanilla.setCreateWorldFog(this.bar.hasFlag(BossBar.Flag.CREATE_WORLD_FOG));
+
+replace:
+        this.maybeBroadcast(ClientboundBossEventPacket::createUpdateNamePacket);
+with:
+        if (this.vanilla != null) this.vanilla.setName(PaperAdventure.asVanilla(newName)); // Shifu
+
+replace:
+        this.maybeBroadcast(ClientboundBossEventPacket::createUpdateProgressPacket);
+with:
+        if (this.vanilla != null) this.vanilla.setProgress(newProgress); // Shifu
+
+# 色と形。2 つのメソッドが同じ行なので、2 か所を置き換える(どちらも両方の setter を呼ぶ。変わったときだけ送る)
+count: 2
+replace:
+        this.maybeBroadcast(ClientboundBossEventPacket::createUpdateStylePacket);
+with:
+        if (this.vanilla != null) { this.vanilla.setColor(PaperAdventure.asVanilla(bar.color())); this.vanilla.setOverlay(PaperAdventure.asVanilla(bar.overlay())); } // Shifu
+
+replace:
+        this.maybeBroadcast(ClientboundBossEventPacket::createUpdatePropertiesPacket);
+with:
+        if (this.vanilla != null) { this.vanilla.setDarkenScreen(bar.hasFlag(BossBar.Flag.DARKEN_SCREEN)); this.vanilla.setPlayBossMusic(bar.hasFlag(BossBar.Flag.PLAY_BOSS_MUSIC)); this.vanilla.setCreateWorldFog(bar.hasFlag(BossBar.Flag.CREATE_WORLD_FOG)); } // Shifu
