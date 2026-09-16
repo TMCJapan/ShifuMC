@@ -727,6 +727,38 @@ public final class ShifuEvents {
         return from.equals(player.getBukkitEntity().getLocation()) || !connection.shifuTakeJustTeleported();
     }
 
+    /**
+     * PlayerMoveEvent(乗り物に乗っている間)。vanilla が乗り物を動かしたあと({@code handleMoveVehicle})。
+     * 中身は {@link #playerMove} と同じ。Paper がプレイヤーを乗り物の位置へ動かす細工は使わないので、
+     * イベントの中で {@code player.getLocation()} を読むと動く前の位置。
+     */
+    public static boolean vehicleMove(final net.minecraft.server.network.ServerGamePacketListenerImpl connection,
+                                      final double targetX, final double targetY, final double targetZ,
+                                      final float targetYRot, final float targetXRot) {
+        if (!listening(org.bukkit.event.player.PlayerMoveEvent.getHandlerList())) {
+            return true;
+        }
+
+        final ServerPlayer player = connection.player;
+
+        return playerMove(connection, player.getX(), player.getY(), player.getZ(),
+                targetX, targetY, targetZ, targetYRot, targetXRot);
+    }
+
+    /**
+     * PlayerList.respawn の restoreFrom の代わり。CraftBukkit の respawn は新しい ServerPlayer を作らず
+     * 同じオブジェクトを使い回すので、vanilla の {@code restoreFrom(自分)} は
+     * {@code recipeBook.copyOverData(自分)} で states を clear してから読んで NPE になる
+     * (CraftBukkit はその 1 行をコメントアウトしている。Shifu は vanilla の行を触らない)。
+     * 同じオブジェクトなら欄の写しは全部 no-op なので、効果のある 4 つだけを行う。
+     */
+    public static void restoreSelf(final ServerPlayer player) {
+        player.onUpdateAbilities();
+        player.lastSentExp = -1;
+        player.lastSentHealth = -1.0F;
+        player.lastSentFood = -1;
+    }
+
     // ------------------------------------------------------------ テレポート
 
     /** 次に {@code connection.teleport} を通る相手のうち、発火しないもの。 */

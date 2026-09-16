@@ -39,6 +39,19 @@
   AsyncStructureGenerate、EntityRemove、PlayerFailMove、PlayerPickItem、PlayerRecipeBookSettingsChange、PlayerShieldDisable、
   PlayerOpenSign、PlayerFishEvent の LURED)。
 
+### 2026-09-16 に確かめたこと(「まだ確かめていないこと」のうち 1.19.4 で通したもの)
+
+| | |
+|---|---|
+| 世界の名前 | `CraftWorld.getName()` の規則が `this.` 付きで書かれていて 1.19.4 の行(`this.` 無し)に当たらず、3 つの次元が全部 level-name で登録されて `Bukkit.getWorld("world")` が the_end を返していた(HuskHomes の `/home` が the_end へ飛んで cross-world の respawn で落ち、Multiverse の "WorldConfig for world minecraft:the_end already exists" も同じ原因)。直して `world` / `world_nether` / `world_the_end` が別々の UID・鍵で並ぶ |
+| 乗り物に乗っている間の `PlayerMoveEvent` | 1.18.2 と同じ形で `ShifuEvents.vehicleMove` を入れた。from=(-3, 150, 9) to=(-1, 150, 9)、イベントの中の `getLocation()` は動く前の位置 |
+| プラグインメッセージの本文 | `PluginMessages.handle` を `handleCustomPayload` に繋いだ。bot の `shifu:test` "hello from bot" が 15 バイトで届く |
+| 経済系のプラグイン | Vault 1.7.3 + EssentialsX 2.20.1。`getBalance` 100 → `depositPlayer` → 200、`/balance` が返る。最初は EssentialsX の `/home`(PaperLib の `getChunkAtAsync`)が `MinecraftServer.scheduleOnMain` の NoSuchMethodError で tick loop ごと落ちた。Paper が `BlockableEventLoop` に足したメソッドで、Shifu はそのクラスを公式に戻す。LinkCheck は所有クラス(MinecraftServer)が戻していないクラスなので見落とす。hand で `MinecraftServer.scheduleOnMain` を足した |
+| 別の世界へのテレポート | `CraftPlayer.teleport` の cross-world は `PlayerList.respawn`(CraftBukkit は同じ ServerPlayer を使い回す)を通る。vanilla の `restoreFrom(自分)` が `recipeBook.copyOverData(自分)` で NPE(CraftBukkit はその行をコメントアウト)→ `patches/narrow` で `ShifuEvents.restoreSelf` に向けた。次に Paper の `noCollision` が `Level.getHardCollidingEntities`(生成器が写した本体は Paper の EntityLookup を読む。Shifu では null)で NPE → hand で vanilla の `getEntities` から答える。drive の the_end への teleport → true、`Bukkit.getPlayer(uuid) == bot`、戻りも通る |
+| 局所変数・ラムダの数 | LvtMatch reverted 2 / left alone 2894、LambdaMatch args moved 2・renumbered 20・rewritten 3・left alone 6、公式に戻したクラス 785、Shifu が触って残したクラス 996、公式 jar に無いクラス 9、LinkCheck missing 0、名前の違う無名クラス 29 |
+
+確かめられなかったもの: プレイヤーが遊ぶ範囲の処理順(1.18.2 で測った。1.19.4 の agent は乱数の入口が残っている)、独自 packet を使う MOD(Fabric のクライアントが要る)。
+
 ### 2026-09-16 に直したもの
 
 | | |

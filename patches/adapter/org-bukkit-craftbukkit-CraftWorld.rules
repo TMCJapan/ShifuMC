@@ -27,7 +27,10 @@ with:
 
 # vanilla の PrimaryLevelData は 3 つの次元で 1 つなので、getLevelName() は 3 つとも同じ。
 # Bukkit の世界は名前で引くので、次元ごとに分けた名前を返す(ServerLevel.bukkitName)。
+# 1.19.4 の CraftWorld.getName() は this. 無しで書いてある。this. 付きの規則は当たらず、3 つの次元が全部
+# level-name で登録されて最後(the_end)だけが Bukkit.getWorld("world") で返っていた(HuskHomes の /home が
+# the_end へ飛び、cross-world の respawn で落ちる。Multiverse の "WorldConfig ... already exists" も同じ原因)。
 replace:
-        return this.world.serverLevelData.getLevelName();
+        return world.serverLevelData.getLevelName();
 with:
-        return this.world.bukkitName; // Shifu - vanilla は次元でフォルダを分けないので、名前は ServerLevel が持つ
+        return world.bukkitName; // Shifu - vanilla は次元でフォルダを分けないので、名前は ServerLevel が持つ

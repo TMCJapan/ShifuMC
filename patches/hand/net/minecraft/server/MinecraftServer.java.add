@@ -139,3 +139,13 @@
     public void removeLevel(final ServerLevel level) {
         this.levels.remove(level.dimension());
     }
+
+// MinecraftServer.scheduleOnMain
+    // Paper が BlockableEventLoop に足したもの(TickTask に包んでサーバースレッドの列に置く)。
+    // Shifu の BlockableEventLoop は公式のバイトコードに戻るので、呼び手が名指す MinecraftServer に置く。
+    // 呼び手は CraftWorld.getChunkAtAsync、CraftEntity.teleportAsync、antixray。
+    // LinkCheck は所有クラス(MinecraftServer)が戻していないクラスなので見落とす(親にしか無い宣言)。
+    // EssentialsX の /home(PaperLib の getChunkAtAsync)で NoSuchMethodError になり、tick loop ごと落ちていた。
+    public void scheduleOnMain(final Runnable task) {
+        this.tell(this.wrapRunnable(task));
+    }
