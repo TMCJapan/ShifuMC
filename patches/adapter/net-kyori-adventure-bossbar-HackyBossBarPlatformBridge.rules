@@ -8,8 +8,50 @@ file: net/kyori/adventure/bossbar/HackyBossBarPlatformBridge.java
 # NoSuchFieldError になる(LinkCheck の
 # `net/minecraft/server/level/ServerBossEvent adventure ... missing`)。代入を落とす。
 #
-# showBossBar で送る表題・色・形・割合は ServerBossEvent を作るときの値。
-# そのあと adventure の BossBar 側で変えた分は client に届かない。
+# 代わりに、adventure の BossBar の変化を受ける listener で、変わった値を ServerBossEvent の
+# setter に写す(setName / setProgress / setColor / setOverlay / setDarkenScreen /
+# setPlayBossMusic / setCreateWorldFog。値が変わったときだけ packet を送る)。
+# 作った直後には割合と旗を写す(構築子で渡せない)。
+replace:
+    private VanillaBossBarListener vanilla$listener;
+with:
+    private BossBar.Listener vanilla$listener; // Shifu - 変化ごとに vanilla の setter へ写す
+
+replace:
+            this.vanilla$listener = new VanillaBossBarListener(this.vanilla$bar::broadcast);
+            $this.addListener(this.vanilla$listener);
+with:
+            final ServerBossEvent vanilla = this.vanilla$bar;
+            vanilla.setProgress($this.progress());
+            vanilla.setDarkenScreen($this.hasFlag(BossBar.Flag.DARKEN_SCREEN));
+            vanilla.setPlayBossMusic($this.hasFlag(BossBar.Flag.PLAY_BOSS_MUSIC));
+            vanilla.setCreateWorldFog($this.hasFlag(BossBar.Flag.CREATE_WORLD_FOG));
+            this.vanilla$listener = new BossBar.Listener() {
+                @Override
+                public void bossBarNameChanged(final BossBar bar, final net.kyori.adventure.text.Component oldName, final net.kyori.adventure.text.Component newName) {
+                    vanilla.setName(PaperAdventure.asVanilla(newName));
+                }
+                @Override
+                public void bossBarProgressChanged(final BossBar bar, final float oldProgress, final float newProgress) {
+                    vanilla.setProgress(newProgress);
+                }
+                @Override
+                public void bossBarColorChanged(final BossBar bar, final BossBar.Color oldColor, final BossBar.Color newColor) {
+                    vanilla.setColor(PaperAdventure.asVanilla(newColor));
+                }
+                @Override
+                public void bossBarOverlayChanged(final BossBar bar, final BossBar.Overlay oldOverlay, final BossBar.Overlay newOverlay) {
+                    vanilla.setOverlay(PaperAdventure.asVanilla(newOverlay));
+                }
+                @Override
+                public void bossBarFlagsChanged(final BossBar bar, final java.util.Set<BossBar.Flag> added, final java.util.Set<BossBar.Flag> removed) {
+                    vanilla.setDarkenScreen(bar.hasFlag(BossBar.Flag.DARKEN_SCREEN));
+                    vanilla.setPlayBossMusic(bar.hasFlag(BossBar.Flag.PLAY_BOSS_MUSIC));
+                    vanilla.setCreateWorldFog(bar.hasFlag(BossBar.Flag.CREATE_WORLD_FOG));
+                }
+            };
+            $this.addListener(this.vanilla$listener);
+
 replace:
             this.vanilla$bar.adventure = $this;
 with:

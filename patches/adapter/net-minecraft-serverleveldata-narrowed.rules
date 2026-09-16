@@ -3,14 +3,15 @@
 # vanilla の ServerLevel.serverLevelData は ServerLevelData 型。1.18.2 の ServerLevelData は
 # getLevelName() しか持たないので、worldGenSettings は PrimaryLevelData へ戻して読む。
 # (1.19.4 では worldGenOptions().generateStructures() という名前だった)
+# nether / end の serverLevelData は DerivedLevelData なので、cast の前に見てサーバーの WorldData に落とす。
 file: net/minecraft/world/level/chunk/ChunkStatus.java
 replace:
             if (worldserver.serverLevelData.worldGenSettings().generateFeatures()) { // CraftBukkit
 with:
-            if (((net.minecraft.world.level.storage.PrimaryLevelData) worldserver.serverLevelData).worldGenSettings().generateFeatures()) { // CraftBukkit
+            if (((worldserver.serverLevelData instanceof net.minecraft.world.level.storage.PrimaryLevelData) ? (net.minecraft.world.level.storage.PrimaryLevelData) worldserver.serverLevelData : (net.minecraft.world.level.storage.PrimaryLevelData) worldserver.getServer().getWorldData()).worldGenSettings().generateFeatures()) { // CraftBukkit
 
 file: net/minecraft/server/commands/ScheduleCommand.java
 replace:
             TimerQueue<MinecraftServer> customfunctioncallbacktimerqueue = source.getLevel().serverLevelData.overworldData().getScheduledEvents(); // CraftBukkit - SPIGOT-6667: Use world specific function timer
 with:
-            TimerQueue<MinecraftServer> customfunctioncallbacktimerqueue = ((net.minecraft.world.level.storage.PrimaryLevelData) source.getLevel().serverLevelData).overworldData().getScheduledEvents(); // CraftBukkit - SPIGOT-6667: Use world specific function timer
+            TimerQueue<MinecraftServer> customfunctioncallbacktimerqueue = ((source.getLevel().serverLevelData instanceof net.minecraft.world.level.storage.PrimaryLevelData) ? (net.minecraft.world.level.storage.PrimaryLevelData) source.getLevel().serverLevelData : (net.minecraft.world.level.storage.PrimaryLevelData) source.getLevel().getServer().getWorldData()).overworldData().getScheduledEvents(); // CraftBukkit - SPIGOT-6667: Use world specific function timer
