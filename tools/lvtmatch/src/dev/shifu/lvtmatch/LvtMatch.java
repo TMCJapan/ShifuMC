@@ -203,12 +203,12 @@ public final class LvtMatch {
         }
 
         wanted.sort((a, b) -> Integer.compare(span(mine, b), span(mine, a)));
-        Map<String, Integer> used = new HashMap<>();
+        Set<LocalVariableNode> usedVars = new HashSet<>();
         Map<Long, Integer> weight = new HashMap<>();
         Set<Long> wide = new HashSet<>();
 
         for (LocalVariableNode lv : wanted) {
-            Integer target = officialSlot(moj, lv, used);
+            Integer target = officialSlot(mine, moj, lv, usedVars);
 
             if (target == null || target >= size || target < fixed) {
                 continue;
@@ -456,7 +456,7 @@ public final class LvtMatch {
         // 分岐の先で slot が食い違って `Inconsistent stackmap frames` になる。
         List<Local> wanted = new ArrayList<>(locals);
         wanted.sort((a, b) -> Integer.compare(b.to - b.from, a.to - a.from));
-        Map<String, Integer> used = new HashMap<>();
+        Set<LocalVariableNode> used = new HashSet<>();
         Map<Local, Integer> target = new IdentityHashMap<>();
         Map<String, Integer> group = new HashMap<>();
 
@@ -465,7 +465,7 @@ public final class LvtMatch {
             Integer slot = group.get(key);
 
             if (slot == null) {
-                slot = officialSlot(moj, local.node, used);
+                slot = officialSlot(mine, moj, local.node, used);
 
                 if (slot != null) {
                     group.put(key, slot);
@@ -731,24 +731,70 @@ public final class LvtMatch {
         return true;
     }
 
-    private static Integer officialSlot(MethodNode moj, LocalVariableNode lv, Map<String, Integer> used) {
-        String key = lv.name + lv.desc;
-        int skip = used.getOrDefault(key, 0);
-        int seen = 0;
+    /**
+     * 公式の変数のうち、こちらの変数に当たるものの slot。
+     * 名前と型だけで合わせると、たまたま同じ名前の別の変数に当たる
+     * (1.19.4 の Entity.updateFluidHeightAndDoFluidPushing: こちらの数え上げの {@code i} が
+     * 公式の {@code i}(床の座標)に当たり、slot 5 と 16 が入れ替わって MOD の LVT 捕捉が落ちた)。
+     * 型が同じで、宣言の位置(LVT の start の命令の番号)が近いものの中から、名前も同じものを優先する。
+     * 名前が同じものが無ければ位置の近さで決める(codebook が付けた名前は公式と違うことが多い)。
+     */
+    private static Integer officialSlot(MethodNode mine, MethodNode moj, LocalVariableNode lv, Set<LocalVariableNode> used) {
+        int myStart = opcodeIndex(mine.instructions, lv.start);
+        LocalVariableNode best = null;
+        int bestDistance = Integer.MAX_VALUE;
+        boolean bestNamed = false;
 
         for (LocalVariableNode other : moj.localVariables) {
-            if (other.name.equals(lv.name) && other.desc.equals(lv.desc)) {
-                if (seen++ < skip) {
-                    continue;
-                }
+            if (used.contains(other) || !other.desc.equals(lv.desc)) {
+                continue;
+            }
 
-                used.put(key, seen);
+            int distance = Math.abs(opcodeIndex(moj.instructions, other.start) - myStart);
 
-                return other.index;
+            if (distance > START_TOLERANCE) {
+                continue;
+            }
+
+            boolean named = other.name.equals(lv.name);
+
+            if (best == null || (named && !bestNamed) || (named == bestNamed && distance < bestDistance)) {
+                best = other;
+                bestDistance = distance;
+                bestNamed = named;
             }
         }
 
-        return null;
+        if (best == null) {
+            return null;
+        }
+
+        used.add(best);
+
+        return best.index;
+    }
+
+    /** 宣言の位置のずれの許容(opcode の数)。差し込んだ発火の分だけずれる。 */
+    private static final int START_TOLERANCE = 40;
+
+    /**
+     * ラベルの位置を、そこまでの opcode の数で表す。InsnList の番号は Label・行番号・frame も数えるので、
+     * 行番号を持つこちらと持たない公式では大きく違う。opcode の数なら差し込んだ分しかずれない。
+     */
+    private static int opcodeIndex(InsnList insns, LabelNode label) {
+        int count = 0;
+
+        for (AbstractInsnNode insn = insns.getFirst(); insn != null; insn = insn.getNext()) {
+            if (insn == label) {
+                return count;
+            }
+
+            if (insn.getOpcode() >= 0) {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     private static int maxSlot(MethodNode method) {

@@ -93,3 +93,15 @@ replace:
         return this.world.serverLevelData.getLevelName();
 with:
         return this.world.bukkitName; // Shifu - vanilla は次元でフォルダを分けないので、名前は ServerLevel が持つ
+
+# 世界ごとのスポーン。vanilla の nether / end の serverLevelData は DerivedLevelData で、setSpawn / getRespawnData が
+# 主世界のものへ通る(次元ごと書き換わり、新しいプレイヤーが nether に参加した)。主世界以外は ServerLevel.shifuSpawn(hand)。
+replace:
+        final LevelData.RespawnData respawnData = this.world.serverLevelData.getRespawnData();
+with:
+        final LevelData.RespawnData respawnData = this.world.shifuSpawn != null ? this.world.shifuSpawn : this.world.serverLevelData.getRespawnData(); // Shifu
+
+replace:
+            this.world.serverLevelData.setSpawn(LevelData.RespawnData.of(this.world.dimension(), new BlockPos(x, y, z), yaw, pitch));
+with:
+            if (this.world.serverLevelData instanceof net.minecraft.world.level.storage.PrimaryLevelData) { this.world.serverLevelData.setSpawn(LevelData.RespawnData.of(this.world.dimension(), new BlockPos(x, y, z), yaw, pitch)); } else { this.world.shifuSpawn = LevelData.RespawnData.of(this.world.dimension(), new BlockPos(x, y, z), yaw, pitch); } // Shifu - 主世界以外は世界ごとの欄へ

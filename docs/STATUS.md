@@ -37,6 +37,9 @@
 
 | | |
 |---|---|
+| 新しいプレイヤーが nether に参加する | vanilla の nether / end の `serverLevelData` は `DerivedLevelData` で、`CraftWorld.setSpawnLocation` の `setSpawn` が主世界の `PrimaryLevelData` へ通る。1.21.9 以降の `RespawnData` は次元を持つので、Multiverse が nether の spawn を置いた時点でサーバーの `effectiveRespawnData` が nether になり、新しいプレイヤーが `world_nether` の (0.5, 1.0, 0.5) に参加していた。主世界以外は `ServerLevel.shifuSpawn`(hand)に置いて `getSpawnLocation` もそこから読む。drive で nether を (10, 64, 10) にしても主世界は (0, 91, 0) のまま、参加は `world` |
+| MOD 無しで参加の直後に落ちる | `VerifyError: Inconsistent stackmap frames`(`ServerGamePacketListenerImpl.handleUseItem`、次に `DimensionDataStorage.readTagFromDisk`)。後処理の `LvtMatch` が slot を入れ替えるが frame を並べ替えない古い版だった(`main` / `ver/1.19.4` の版へ揃えた)のと、`--vars` が try-with-resources の一時変数(frame では top)を生きている slot に重ねるため。MOD 入りだと Mixin が frame を計算し直すので見えず、9-14 の検証(MOD 125 個)では通っていた。`--vars` を外すと MOD 入りの起動が `Environment` の直後で黙って止まる(戻した)。代わりに `tools/lvtmatch` の `FrameFix` を後処理に足し、全クラスの frame を `ClassWriter.COMPUTE_FRAMES` で計算し直す(`ClassWriter(reader, ...)` だと触っていないメソッドは元の bytes を写すので frame が残る。reader を渡さない)。MOD 無し・MOD 125 個の両方で drive の一連が通る |
+| 別の世界へのテレポート | drive の the_end への teleport → true、`Bukkit.getPlayer(uuid) == bot`、戻りも通る(1.21.11 の respawn は vanilla が新しい ServerPlayer を作るので、1.20.6 以前の restoreFrom の直しは要らない) |
 | adventure の boss bar | Paper は `BossEvent` に欄 `adventure` を足して getter で先に見る。Shifu の getter は vanilla なので、`BossBarImplementationImpl` が送る packet は作ったときの名前・色、割合 1.0 のままになる形だった。listener で変わった値を `ServerBossEvent` の setter に写す(`io-papermc-paper-adventure-BossBarImplementationImpl.rules`)。drive の boss bar(0.25 BLUE → 0.75 / 名前 / RED)が bot に add → progress → name → style → remove の順で届く(MOD 125 個 + プラグイン 26 個の mix で確認) |
 | nether / end の `serverLevelData` | vanilla では `DerivedLevelData` なので、CraftWorld の `PrimaryLevelData` への cast(worldGenOptions、settings.hardcore)は nether / end で落ちる形だった。`PrimaryLevelData` でなければサーバーの `WorldData` を読む(他の版と同じ) |
 

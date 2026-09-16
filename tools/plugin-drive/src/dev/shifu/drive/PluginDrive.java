@@ -137,6 +137,11 @@ public final class PluginDrive extends JavaPlugin implements Listener {
     public void onEnable() {
         this.getServer().getPluginManager().registerEvents(this, this);
         this.itemRoundTrip();
+        // 世界の名前・UID・鍵・環境。参加した世界が world_nether と出たので、並びを見る
+        for (final org.bukkit.World world : Bukkit.getWorlds()) {
+            this.note("world " + world.getName() + " uid=" + world.getUID() + " key=" + world.getKey()
+                    + " env=" + world.getEnvironment() + " handle=" + handleOf(world));
+        }
         this.getLogger().info("[drive] waiting for the bot");
     }
 
@@ -167,6 +172,16 @@ public final class PluginDrive extends JavaPlugin implements Listener {
         }
     }
 
+    /** CraftWorld の handle(ServerLevel)の identity。CraftBukkit のパッケージ名は版で違うので reflection で読む。 */
+    private static int handleOf(final org.bukkit.World world) {
+        try {
+            final Object handle = world.getClass().getMethod("getHandle").invoke(world);
+            return System.identityHashCode(handle);
+        } catch (final ReflectiveOperationException broken) {
+            return -1;
+        }
+    }
+
     private void note(final String text) {
         this.getLogger().info("[drive] " + text);
     }
@@ -182,7 +197,8 @@ public final class PluginDrive extends JavaPlugin implements Listener {
     @EventHandler
     public void onJoin(final PlayerJoinEvent event) {
         final Player bot = event.getPlayer();
-        this.note("join " + bot.getName());
+        this.note("join " + bot.getName() + " in " + bot.getWorld().getName() + " env=" + bot.getWorld().getEnvironment()
+                + " key=" + bot.getWorld().getKey() + " at " + brief(bot.getLocation()));
         bot.setOp(true);
         bot.setGameMode(org.bukkit.GameMode.CREATIVE);
 
@@ -393,6 +409,35 @@ public final class PluginDrive extends JavaPlugin implements Listener {
         this.later(290, () -> this.note("CreatureSpawnEvent = " + this.creatureSpawns
                 + ", ItemSpawnEvent = " + this.itemSpawns));
 
+        // 世界ごとのスポーン。vanilla の nether / end の LevelData は主世界のものに包まれているので、
+        // nether の setSpawnLocation が主世界のスポーン(1.21.11 では次元も)を書き換える形だった
+        this.later(340, () -> {
+            final org.bukkit.World over = bot.getWorld();
+            final org.bukkit.World nether = Bukkit.getWorld(over.getName() + "_nether");
+            if (nether == null) {
+                this.note("spawn: no _nether world");
+                return;
+            }
+            final Location before = over.getSpawnLocation();
+            nether.setSpawnLocation(10, 64, 10);
+            this.note("spawn: nether set -> " + brief(nether.getSpawnLocation()) + ", overworld " + brief(before) + " -> " + brief(over.getSpawnLocation()));
+        });
+        // 別の世界へのテレポート。CraftPlayer.teleport の cross-world は PlayerList.respawn(同じオブジェクト)を通る
+        this.later(348, () -> {
+            final org.bukkit.World end = Bukkit.getWorld(bot.getWorld().getName() + "_the_end");
+            if (end == null) {
+                this.note("cross-world: no _the_end world (worlds=" + Bukkit.getWorlds().size() + ")");
+                return;
+            }
+            final Location back = bot.getLocation().clone();
+            final boolean ok = bot.teleport(new Location(end, 0.5, 80.0, 0.5));
+            this.note("cross-world teleport -> " + ok + " now in " + bot.getWorld().getName()
+                    + " same object=" + (Bukkit.getPlayer(bot.getUniqueId()) == bot));
+            this.later(12, () -> {
+                bot.teleport(back);
+                this.note("cross-world back -> " + bot.getWorld().getName() + " " + brief(bot.getLocation()));
+            });
+        });
         this.later(370, () -> {
             this.note("---- done ----");
             this.tell(bot, "!bot quit");

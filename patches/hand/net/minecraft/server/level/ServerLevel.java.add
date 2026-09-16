@@ -156,3 +156,9 @@
         // CraftWorldBorder が読む。世界ごとの境界はどれも自分の世界を指す
         this.getWorldBorder().world = this;
     }
+
+// ServerLevel.shifuSpawn
+    // Bukkit の世界ごとのスポーン。vanilla の nether / end の LevelData は主世界のものを包んでいる(DerivedLevelData)ので、
+    // そのまま書くと主世界のスポーンが次元ごと変わり、新しいプレイヤーが nether に参加する
+    // (Multiverse が世界ごとに setSpawnLocation する)。主世界以外は CraftWorld がここに置いて読む(patches/adapter)。
+    public net.minecraft.world.level.storage.LevelData.RespawnData shifuSpawn;
