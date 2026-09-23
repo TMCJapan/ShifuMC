@@ -7,7 +7,8 @@ anchor:
             setLit(world, state, hit.getBlockPos(), true);
 insert:
     // CraftBukkit start
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(world, hit.getBlockPos(), projectile).isCancelled()) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockIgniteEvent.class)
+            && org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(world, hit.getBlockPos(), projectile).isCancelled()) {
         return;
     }
     // CraftBukkit end

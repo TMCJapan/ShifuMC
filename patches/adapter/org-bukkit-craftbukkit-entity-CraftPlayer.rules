@@ -2,8 +2,19 @@
 
 file: org/bukkit/craftbukkit/entity/CraftPlayer.java
 
-# vanilla の DiscardedPayload は成分が ResourceLocation 1 つで、record の成分は足せない
+# ServerPlayer.shifuClientWorldBorder(patches/hand)を、仮想の境界(Player.setWorldBorder)の
+# 入れ外しと同じところで書く。ServerPlayer.tick は Paper の hasClientWorldBorder() の代わりに
+# この欄を見て境界を進める(patches/events/generated の ServerPlayer)。
+# clientWorldBorder を書き換えるのは setWorldBorder の 2 か所だけ。
+# 読んだ位置: Paper-Server HEAD src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java:1125,1128
 replace:
-    new DiscardedPayload(id, Unpooled.wrappedBuffer(message))
+            this.clientWorldBorder = null;
 with:
-    new DiscardedPayload(id)
+            this.clientWorldBorder = null;
+            this.getHandle().shifuClientWorldBorder = false;
+
+replace:
+            this.clientWorldBorder = craftBorder;
+with:
+            this.clientWorldBorder = craftBorder;
+            this.getHandle().shifuClientWorldBorder = true;

@@ -7,7 +7,8 @@ anchor:
             dropResources(state, world, pos);
 insert:
     // CraftBukkit start
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(world, pos, Blocks.AIR.defaultBlockState()).isCancelled()) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockFadeEvent.class)
+            && org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(world, pos, Blocks.AIR.defaultBlockState()).isCancelled()) {
         return;
     }
     // CraftBukkit end

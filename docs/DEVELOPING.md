@@ -60,7 +60,7 @@ java -Xmx4G -jar vineflower-1.11.1.jar -dgs=1 -hdc=0 -asc=1 -udv=0 -rsy=1 -aoa=1
 classic のコンパイルループは `tools/closure.ps1`(MSYS を通らない)。
 
 ```
-powershell -File tools\closure.ps1 -Paper D:\.pw194 -JavaHome "C:\Program Files\Java\jdk-17" -Rounds 10 -Report -TouchedOnly
+powershell -File tools\closure.ps1 -Paper D:\.pw194 -JavaHome "C:\Program Files\Java\jdk-17" -Rounds 10 -TouchedOnly
 ```
 
 `-TouchedOnly` は Shifu が触ったファイルだけを vanilla の木から写す。Paper が持つだけのファイルは
@@ -74,7 +74,7 @@ vanilla のクラスと噛み合わない。そういうファイルは `patches
 
 Paper の版のまま組んだクラスは公式のバイトコードに戻るので、Paper がそのクラスに足した欄や
 メソッド(1.19.4 の `TicketType.PLUGIN`)を別のクラスが参照していると、compile は通るのに起動時に
-`NoSuchFieldError` になる。`tools/run-server.ps1` は公式に戻したあとに `LinkCheck` でそれを数え、
+`NoSuchFieldError` になる。`tools/postcompile.sh`(`run-server.ps1` もこれを呼ぶ)は公式に戻したあとに `LinkCheck` でそれを数え、
 `tools/build/link-missing.txt` に書く。`-TouchedOnly` では触っていないクラスは置き場にも無いので、
 `LinkCheck` に公式の jar(`minecraft.jar`)も渡して親や interface をそこから読む。渡さないと、
 親が置き場に無い参照(`Shulker.getEntityData` のような継承した欄・メソッド)が「無い」と数えられる。
@@ -163,7 +163,7 @@ sh tools/postcompile.sh        # コンパイル後・jar 前の後処理(番号
 sh tools/run-server.sh         # 組んで起動
 ```
 
-`test-all.sh` は `tools/test_*.py` 5 本と、`tools/**/*.sh` の `sh -n` をまとめて回す。
+`test-all.sh` は `tools/test_*.py` 6 本と、`tools/**/*.sh` の `sh -n` をまとめて回す。
 Paper のクローンが要らないので、CI でも同じものが走る。
 
 発火層(`src/event`)は Gradle にも登録してある。IDE で開くための登録が主で、
@@ -488,6 +488,13 @@ invokedynamic の method handle だけを直す。参照を 1 つでも取りこ
 この変数を `@Local` で捕まえるので、`Found 0 candidate variables` で起動しなかった。
 規則は `python tools/make_decompile_rules.py <クラスの置き場> <Mojang の jar>` が作り直す。
 
+**逆コンパイラが意味を変えた式は、証明を付けて戻す**(`patches/decompile/exprs.rules`)。
+逆コンパイラは `(double)` の cast を落とし(int + float が float で計算される)、do-while の条件を
+`while (!(a < b))` と書き(`iflt` が `ifge` になる)、case の並びを入れ替える(`val$` の並びが変わる)。
+規則には `method: <クラス> <名前><記述子>` を書く。`verify_additive.py` は書き換えがそのメソッドの
+本体に収まっていることだけを見て、`postcompile.sh` の SemDiff がコンパイルした結果を公式と比べる。
+比べるのは命令列(分岐の飛び先を含む)と、局所変数を読む命令ごとの値の出どころ。違えば組むのを止める。
+
 **触っていないクラスは公式のバイトコードをそのまま置く**(`tools/keep_vanilla_classes.py`)。
 差し替えないのは Shifu が手を入れたファイルと、Paper の AT が可視性を広げたファイル。
 `run-server.sh` と `dist.sh` にコンパイル → 差し替え → jar の順で入れてある。
@@ -552,7 +559,7 @@ MOD は `mods/`、プラグインは `plugins/` に置く。サーバーの Java
 minecraft-version   = 26.2
 paper-build         = latest
 server-paperclip    = shifu-server.jar   # パスか URL
-fabric-loader-version = 0.19.3
+fabric-loader-version = 0.19.5
 vanilla-parity      = true
 jvm-args            = -Xmx4G
 ```
@@ -605,6 +612,7 @@ jvm-args            = -Xmx4G
 | `tools/check_lambdas.py` | ラムダの番号が公式とずれたクラスを出す |
 | `tools/check_extra_locals.py` | 差し込みが公式にもある型の局所変数を作っている場所を出す |
 | `tools/make_decompile_rules.py` | 逆コンパイルで消えた局所変数を戻す規則を作り直す |
+| `tools/lvtmatch` の `SemDiff` | `patches/decompile/exprs.rules` が名指ししたメソッドが公式と同じ命令列にコンパイルされたかを確かめる。違えば exit 1 |
 | `tools/keep_vanilla_classes.py` | 触っていないクラスを公式のバイトコードに差し替える |
 | `tools/lvtmatch` の `LinkCheck` | 公式に戻したクラスに、残りのクラスが参照している欄やメソッドが無いものを数える |
 | `tools/link_to_required.py` | `LinkCheck` の出力を `required-members.txt` の項目にする |

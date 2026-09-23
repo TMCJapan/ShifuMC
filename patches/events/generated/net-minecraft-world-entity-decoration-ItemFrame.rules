@@ -8,9 +8,17 @@ anchor:
     this.playSound(this.getRotateItemSound(), 1.0F, 1.0F);
 insert:
     // Paper start - Add PlayerItemFrameChangeEvent
-    io.papermc.paper.event.player.PlayerItemFrameChangeEvent event = new io.papermc.paper.event.player.PlayerItemFrameChangeEvent((org.bukkit.entity.Player) player.getBukkitEntity(), (org.bukkit.entity.ItemFrame) this.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(this.getItem()), io.papermc.paper.event.player.PlayerItemFrameChangeEvent.ItemFrameChangeAction.ROTATE);
-    if (!event.callEvent()) {
-        return InteractionResult.FAIL;
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.player.PlayerItemFrameChangeEvent.class)) {
+        org.bukkit.inventory.ItemStack shifuFramed = org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(this.getItem());
+        io.papermc.paper.event.player.PlayerItemFrameChangeEvent event = new io.papermc.paper.event.player.PlayerItemFrameChangeEvent((org.bukkit.entity.Player) player.getBukkitEntity(), (org.bukkit.entity.ItemFrame) this.getBukkitEntity(), shifuFramed, io.papermc.paper.event.player.PlayerItemFrameChangeEvent.ItemFrameChangeAction.ROTATE);
+        if (!event.callEvent()) {
+            return InteractionResult.FAIL;
+        }
+
+        // hand の 3 引数の setItem は vanilla の 2 引数の版へ通すので、入れたときの音が鳴る。
+        // 同じ中身を書き戻すと回すたびに鳴るので、差し替えられたときだけ書き戻す。
+        if (!shifuFramed.equals(event.getItemStack())) {
+            setItem(org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItemStack()), false, false);
+        }
     }
-    setItem(org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItemStack()), false, false);
     // Paper end - Add PlayerItemFrameChangeEvent

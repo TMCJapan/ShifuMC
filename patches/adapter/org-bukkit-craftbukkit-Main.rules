@@ -5,20 +5,6 @@
 
 file: org/bukkit/craftbukkit/Main.java
 replace:
-                this.acceptsAll(Main.asList("nogui"), "Disables the graphical console");
-with:
-                // Paper start
-                this.acceptsAll(Main.asList("server-name"), "Name of the server")
-                        .withRequiredArg()
-                        .ofType(String.class)
-                        .defaultsTo("Unknown Server")
-                        .describedAs("Name");
-                // Paper end
-
-                this.acceptsAll(Main.asList("nogui"), "Disables the graphical console");
-
-file: org/bukkit/craftbukkit/Main.java
-replace:
                 // Paper start
                 acceptsAll(asList("server-name"), "Name of the server")
                         .withRequiredArg()
@@ -27,6 +13,21 @@ replace:
                         .describedAs("Name");
                 // Paper end
 with:
+
+# 外してから入れる。入れる行は Paper の行と同じなので、先に入れると外す側が 2 件に当たる
+file: org/bukkit/craftbukkit/Main.java
+replace:
+                acceptsAll(Main.asList("nogui"), "Disables the graphical console");
+with:
+                // Paper start
+                acceptsAll(asList("server-name"), "Name of the server")
+                        .withRequiredArg()
+                        .ofType(String.class)
+                        .defaultsTo("Unknown Server")
+                        .describedAs("Name");
+                // Paper end
+
+                acceptsAll(Main.asList("nogui"), "Disables the graphical console");
 
 # vanilla の Main は String[] を自分で解析する。Bukkit の Main が解析済みの
 # OptionSet から、vanilla が受け付ける名前だけを引数列へ戻す(1.21.11 の

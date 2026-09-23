@@ -25,6 +25,8 @@ Minecraft や Paper の更新で行が変わったら、黙って通さずに止
 `replace` と `with` は複数行書ける。`count` を省くと 1 回だけ。
 `replace` が 1 行のときは行の一部としても照合する(部分一致)。
 複数行のときは行の並びとして照合する。
+`method: <クラス> <名前><記述子>` は次の `replace` が書き換えるメソッドを名指しする
+(`patches/decompile/exprs.rules` で使う。当て方は変わらない。tools/lvtmatch の SemDiff が見る)。
 
     python tools/patch_adapter.py <patches/adapter> <src/main/java>
 """
@@ -42,6 +44,7 @@ class Rule:
         self.old = []
         self.new = []
         self.where = f"{source}:{number}"
+        self.methods = []
 
 
 def parse(text, source="<rules>"):
@@ -51,6 +54,7 @@ def parse(text, source="<rules>"):
     count = 1
     rule = None
     section = None
+    methods = []
 
     for number, raw in enumerate(text.split("\n"), 1):
         stripped = raw.strip()
@@ -64,13 +68,20 @@ def parse(text, source="<rules>"):
             count = int(stripped[len("count:"):].strip())
             continue
 
+        if stripped.startswith("method:"):
+            methods.append(stripped[len("method:"):].strip())
+            section = None
+            continue
+
         if stripped == "replace:":
             if target is None:
                 raise SystemExit(f"{source}:{number}: file: が先に要る")
 
             rule = Rule(target, count, source, number)
+            rule.methods = methods
             rules.append(rule)
             count = 1
+            methods = []
             section = "old"
             continue
 

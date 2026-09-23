@@ -8,29 +8,36 @@ anchor:
 insert:
     // Paper start
     // Pack plugins
-    java.util.List<com.destroystokyo.paper.event.server.GS4QueryEvent.QueryResponse.PluginInformation> plugins = java.util.Collections.emptyList();
-    org.bukkit.plugin.Plugin[] bukkitPlugins;
-    if (((net.minecraft.server.dedicated.DedicatedServer) this.serverInterface).server.getQueryPlugins() && (bukkitPlugins = org.bukkit.Bukkit.getPluginManager().getPlugins()).length > 0) {
-        plugins = java.util.stream.Stream.of(bukkitPlugins)
-            .map(plugin -> com.destroystokyo.paper.event.server.GS4QueryEvent.QueryResponse.PluginInformation.of(plugin.getName(), plugin.getDescription().getVersion()))
-            .collect(java.util.stream.Collectors.toList());
-    }
+    // Stream の map にラムダを渡すと、このクラスの vanilla のラムダの番号がずれるので、
+    // 繰り返しで書く。
+    if (dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.server.GS4QueryEvent.class)) {
+        java.util.List<com.destroystokyo.paper.event.server.GS4QueryEvent.QueryResponse.PluginInformation> plugins = java.util.Collections.emptyList();
+        org.bukkit.plugin.Plugin[] bukkitPlugins;
+        if (((net.minecraft.server.dedicated.DedicatedServer) this.serverInterface).server.getQueryPlugins() && (bukkitPlugins = org.bukkit.Bukkit.getPluginManager().getPlugins()).length > 0) {
+            plugins = new java.util.ArrayList<>(bukkitPlugins.length);
 
-    com.destroystokyo.paper.event.server.GS4QueryEvent.QueryResponse queryResponse = com.destroystokyo.paper.event.server.GS4QueryEvent.QueryResponse.builder()
-        .motd(this.serverName)
-        .map(this.worldName)
-        .currentPlayers(this.serverInterface.getPlayerCount())
-        .maxPlayers(this.maxPlayers)
-        .port(this.serverPort)
-        .hostname(this.hostIp)
-        .plugins(plugins)
-        .players(this.serverInterface.getPlayerNames())
-        .gameVersion(this.serverInterface.getServerVersion())
-        .serverVersion(org.bukkit.Bukkit.getServer().getName() + " on " + org.bukkit.Bukkit.getServer().getBukkitVersion())
-        .build();
-    com.destroystokyo.paper.event.server.GS4QueryEvent.QueryType queryType =
-        com.destroystokyo.paper.event.server.GS4QueryEvent.QueryType.FULL;
-    com.destroystokyo.paper.event.server.GS4QueryEvent queryEvent =
-        new com.destroystokyo.paper.event.server.GS4QueryEvent(queryType, packet.getAddress(), queryResponse);
-    queryEvent.callEvent();
-    queryResponse = queryEvent.getResponse();
+            for (org.bukkit.plugin.Plugin shifuPlugin : bukkitPlugins) {
+                plugins.add(com.destroystokyo.paper.event.server.GS4QueryEvent.QueryResponse.PluginInformation.of(
+                        shifuPlugin.getName(), shifuPlugin.getDescription().getVersion()));
+            }
+        }
+
+        com.destroystokyo.paper.event.server.GS4QueryEvent.QueryResponse queryResponse = com.destroystokyo.paper.event.server.GS4QueryEvent.QueryResponse.builder()
+            .motd(this.serverName)
+            .map(this.worldName)
+            .currentPlayers(this.serverInterface.getPlayerCount())
+            .maxPlayers(this.maxPlayers)
+            .port(this.serverPort)
+            .hostname(this.hostIp)
+            .plugins(plugins)
+            .players(this.serverInterface.getPlayerNames())
+            .gameVersion(this.serverInterface.getServerVersion())
+            .serverVersion(org.bukkit.Bukkit.getServer().getName() + " on " + org.bukkit.Bukkit.getServer().getBukkitVersion())
+            .build();
+        com.destroystokyo.paper.event.server.GS4QueryEvent.QueryType queryType =
+            com.destroystokyo.paper.event.server.GS4QueryEvent.QueryType.FULL;
+        com.destroystokyo.paper.event.server.GS4QueryEvent queryEvent =
+            new com.destroystokyo.paper.event.server.GS4QueryEvent(queryType, packet.getAddress(), queryResponse);
+        queryEvent.callEvent();
+        queryResponse = queryEvent.getResponse();
+    }

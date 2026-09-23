@@ -23,40 +23,46 @@ insert-after:
 
 # EntityDamageEvent
 #
-# vanilla の actuallyHurt を囲む。2 箇所ある(無敵時間中の差分と、通常)。
-# 登録が無ければ null が返り、vanilla の行がそのまま走る。
+# 発火は眠りを覚ます行の手前(ShifuEvents.entityDamageBefore)。vanilla と同じ式で
+# actuallyHurt に渡る量を先に求め(盾は防いだ量だけを見て、耐久や反動は通さない)、
+# 取り消されたら何もせずに false を返す。actuallyHurt の手前で発火していたときは、
+# 取り消しても眠りの解除・盾の耐久・盾で弾いた攻撃者への反動が済んでいた。
+# Paper も盾を dryRun で見てから発火し、取り消しで抜ける。
 #
-# 取り消したときは false を返す。この時点で vanilla は既に lastHurt と
-# invulnerableTime を書いているので、その 2 つは元に戻らない。Paper は
-# もっと手前で取り消すが、そこは vanilla の行の書き換えになるので入れない。
+# 通れば actuallyHurt を囲んだ所でイベントを受け取り、setDamage の値で呼ぶ。
+# 2 箇所ある(無敵時間中の差分と、通常)。登録が無ければ null で、vanilla の行がそのまま走る。
 #
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch:537,551
+# 読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/world/entity/LivingEntity.java(hurt)
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    if (this.isSleeping() && !this.level.isClientSide) {
+    this.stopSleeping();
+    }
+insert:
+    if (!dev.shifu.event.ShifuEvents.entityDamageBefore(this, source, amount)) {
+        return false;
+    }
+
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
     this.actuallyHurt(source, amount - this.lastHurt);
 insert:
-    final org.bukkit.event.entity.EntityDamageEvent shifuHurtPartial =
-            dev.shifu.event.ShifuEvents.entityDamage(this, source, amount - this.lastHurt);
+    final org.bukkit.event.entity.EntityDamageEvent shifuHurtPartial = dev.shifu.event.ShifuEvents.takeDamage(this);
     if (shifuHurtPartial == null) {
 insert-after:
-    } else if (!shifuHurtPartial.isCancelled()) {
-        this.actuallyHurt(source, (float) shifuHurtPartial.getDamage());
     } else {
-        return false;
+        this.actuallyHurt(source, (float) shifuHurtPartial.getDamage());
     }
 
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
     this.actuallyHurt(source, amount);
 insert:
-    final org.bukkit.event.entity.EntityDamageEvent shifuHurt =
-            dev.shifu.event.ShifuEvents.entityDamage(this, source, amount);
+    final org.bukkit.event.entity.EntityDamageEvent shifuHurt = dev.shifu.event.ShifuEvents.takeDamage(this);
     if (shifuHurt == null) {
 insert-after:
-    } else if (!shifuHurt.isCancelled()) {
-        this.actuallyHurt(source, (float) shifuHurt.getDamage());
     } else {
-        return false;
+        this.actuallyHurt(source, (float) shifuHurt.getDamage());
     }
 
 # EntityDeathEvent

@@ -5,7 +5,8 @@ file: net/minecraft/world/level/border/WorldBorder.java
 anchor:
             return (WorldBorder.BorderExtent)(this.getLerpRemainingTime() <= 0L ? WorldBorder.this.new StaticBorderExtent(this.to) : this);
 insert:
-    if (this.getLerpRemainingTime() <= 0L) {
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.world.border.WorldBorderBoundsChangeFinishEvent.class)
+            && this.getLerpRemainingTime() <= 0L) {
         dev.shifu.event.BlockEvents.borderFinish(WorldBorder.this.world, this.from, this.to, this.lerpDuration);
     }
 

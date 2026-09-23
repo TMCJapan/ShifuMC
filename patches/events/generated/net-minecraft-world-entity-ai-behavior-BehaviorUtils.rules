@@ -7,9 +7,11 @@ anchor:
         entity.level.addFreshEntity(itemEntity);
 insert:
     // CraftBukkit start
-    org.bukkit.event.entity.EntityDropItemEvent event = new org.bukkit.event.entity.EntityDropItemEvent(entity.getBukkitEntity(), (org.bukkit.entity.Item) itemEntity.getBukkitEntity());
-    itemEntity.level.getCraftServer().getPluginManager().callEvent(event);
-    if (event.isCancelled()) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityDropItemEvent.class)) {
+        org.bukkit.event.entity.EntityDropItemEvent event = new org.bukkit.event.entity.EntityDropItemEvent(entity.getBukkitEntity(), (org.bukkit.entity.Item) itemEntity.getBukkitEntity());
+        itemEntity.level.getCraftServer().getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }
     }
     // CraftBukkit end

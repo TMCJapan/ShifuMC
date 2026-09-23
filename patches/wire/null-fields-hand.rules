@@ -1,4 +1,16 @@
 
+# Connection.protocolVersion / virtualHost。Paper は handleIntention の switch のあとで入れる。
+# 読むのは CraftPlayer.getProtocolVersion / getVirtualHost(プラグインの API)で、イベントの登録の
+# 有無では絞れない。登録が無くても接続ごとに 1 度、この 2 つの代入が走る。
+# 1.20.6 と同じくこのファイルに置く(以前は patches/events/player-server.rules にあった)。
+file: net/minecraft/server/network/ServerHandshakePacketListenerImpl.java
+anchor:
+    default:
+    throw new UnsupportedOperationException("Invalid intention " + packet.getIntention());
+    }
+insert-after:
+    this.connection.protocolVersion = packet.getProtocolVersion();
+    this.connection.virtualHost = com.destroystokyo.paper.network.PaperNetworkClient.prepareVirtualHost(packet.getHostName(), packet.getPort());
 
 # ServerPlayer.loginTime(placeNewPlayer の先頭。OfflinePlayer#getLastPlayed が読む)
 # 読んだ位置: patches/sources/net/minecraft/server/players/PlayerList.java.patch(Replace OfflinePlayer#getLastPlayed)

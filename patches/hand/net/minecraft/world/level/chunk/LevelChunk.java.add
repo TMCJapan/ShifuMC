@@ -15,12 +15,29 @@
     public void updateGeneralAreaCache() {
     }
 
-// LevelChunk.setBlockState(BlockPos, BlockState, boolean, boolean)
-    // Paper が足した版。doPlace が false なら onPlace(隣への通知)を呼ばない。
-    // WorldEdit の Paper 向けアダプタ(PaperweightWorldNativeAccess)が副作用無しの設置で呼ぶ。
-    // vanilla の 3 引数の版はそのまま(doPlace が true の版と同じ)。
+// LevelChunk.setBlockState
+    // Paper が足した 4 引数の版。4 つめ(doPlace)が false のときだけ onPlace を飛ばす。
+    // WorldEdit の PaperweightWorldNativeAccess が
+    // sideEffectSet.shouldApply(SideEffect.UPDATE) を渡して呼ぶ。無いと //set が
+    // NoSuchMethodError で落ちる。
+    //
+    // **doPlace が true のときは vanilla の 3 引数の版へそのまま渡す。**
+    // 普段の経路(サーバー自身とプラグインの大半)は vanilla の命令列のまま動く。
+    // false のときだけ、vanilla の本体から onPlace の 1 行を抜いたものを通る。
+    // 中身は vanilla の setBlockState(pos, state, moved) の写しなので、
+    // バージョンを移すときは向こうと突き合わせる。
+    //
+    // 目印は `// <型>.<名前>` の形でないと apply_shim_adds の MARK に当たらない。
+    // 引数を書いていたときは塊が 1 つ前の updateGeneralAreaCache に吸われていて、
+    // 生成器が同じ名前の shim を出すと宣言が 2 つになる。
+    //
+    // 読んだ位置: Paper-Server d24de6212 src/main/java/net/minecraft/world/level/chunk/LevelChunk.java:549
     @Nullable
     public BlockState setBlockState(BlockPos pos, BlockState state, boolean moved, boolean doPlace) {
+        if (doPlace) {
+            return this.setBlockState(pos, state, moved);
+        }
+
         int y = pos.getY();
         LevelChunkSection section = this.getSection(this.getSectionIndex(y));
         boolean hasOnlyAir = section.hasOnlyAir();
@@ -54,10 +71,6 @@
                 if (!section.getBlockState(i, i1, i2).is(block)) {
                     return null;
                 } else {
-                    if (doPlace && !this.level.isClientSide) {
-                        state.onPlace(this.level, pos, blockState, moved);
-                    }
-
                     if (state.hasBlockEntity()) {
                         BlockEntity blockEntity = this.getBlockEntity(pos, LevelChunk.EntityCreationType.CHECK);
                         if (blockEntity == null) {

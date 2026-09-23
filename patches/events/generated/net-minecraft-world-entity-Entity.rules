@@ -7,8 +7,10 @@ anchor:
         this.entityData.set(DATA_POSE, pose);
 insert:
     // CraftBukkit start
-    if (pose == this.getPose()) {
-        return;
+    // Shifu - CraftBukkit は同じ姿勢なら先に return するが、そのときの vanilla の set は値が同じで
+    // 何も変えない。return は登録があるときの発火を飛ばすだけにする
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityPoseChangeEvent.class)
+            && pose != this.getPose()) {
+        this.level.getCraftServer().getPluginManager().callEvent(new org.bukkit.event.entity.EntityPoseChangeEvent(this.getBukkitEntity(), org.bukkit.entity.Pose.values()[pose.ordinal()]));
     }
-    this.level.getCraftServer().getPluginManager().callEvent(new org.bukkit.event.entity.EntityPoseChangeEvent(this.getBukkitEntity(), org.bukkit.entity.Pose.values()[pose.ordinal()]));
     // CraftBukkit end

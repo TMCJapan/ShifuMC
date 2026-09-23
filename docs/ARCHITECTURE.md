@@ -72,13 +72,14 @@ vanilla の文を囲む形、式の末尾に `&& …` を足す形。
 Paper が使っているブロックキャプチャ(`Level.captureBlockStates`)は入れない。
 あれは更新順そのものを変えるので、条件を満たせない。
 
-## vanilla の行に触っている 3 か所
+## vanilla の行に触っている 4 か所
 
 | | 件数 | 中身 |
 |---|---|---|
 | `patches/access` | 21 件 / 16 ファイル | 宣言の可視性を広げる。修飾子 1 語だけ |
 | `patches/decompile` | 60 件 / 43 ファイル | 逆コンパイラが 1 行にまとめた局所変数を戻す |
 | `patches/expr` | 1 件 | 式の末尾に発火を足す |
+| `patches/decompile/exprs.rules` | 版ごとに 2〜4 件 | 逆コンパイラが意味を変えた式を、公式と同じ命令列に戻す。規則ごとに証明を付ける |
 
 `patches/decompile` は `X v = E; if (v instanceof T p)` を `if (E instanceof T p)` に
 まとめられたものを戻す。評価の回数も順序も変わらない。MOD の mixin が `@Local` で
@@ -87,7 +88,22 @@ Paper が使っているブロックキャプチャ(`Level.captureBlockStates`)�
 `patches/expr` は式の最後に足すので、vanilla の判定が全て通ったあとにしか呼ばれない。
 登録が無ければ true を返す。
 
-`python tools/verify_additive.py` が、変更がこの 3 つの形に収まっているかを確かめる。
+`patches/decompile/exprs.rules` は、逆コンパイラが式の意味を変えたところ(落ちた `(double)` の cast、
+do-while の条件の向き、case の並び)を戻す。書き換えの形では挙動が同じと言えないので、規則ごとに
+`method: <クラス> <名前><記述子>` で直すメソッドを名指しする。`tools/verify_additive.py` は書き換えが
+そのメソッドの本体に収まっていることを見る。`tools/postcompile.sh` の SemDiff が、そのメソッド
+(中で作る無名クラスと lambda を含む)をコンパイルした結果を公式と比べ、命令列か局所変数の値の出どころが
+違えば組むのを止める。1.20.6 以前の馬から降りる位置の探索(do-while の条件が逆)は、命令の数も種類も
+同じだったので `CodeDiff` の数には出なかった。
+
+`tools/verify_additive.py` が、vanilla の行の書き換えがこの 4 つの規則から出た形に収まっているか、
+足した行が差し込みの形(途中で抜ける・囲む・発火の呼び出し)と宣言の追加に収まっているかを見る。
+`closure.sh` / `closure.ps1` が不動点まで回したあとの木に対して呼び、1 件でも外れればそこで止まる。
+Paper の access transformer もこの表の外で vanilla の修飾子を変えている
+(mache は `Mache` と `paper ATs` のあいだ、classic は AT の前後の jar)。
+修飾子を広げる向きだけかを同じ道具が見る。
+2026-09-23 に当てた木では、形に収まらないものが 1.20.6 で 46 件、26.2 で 29 件、1.21.11 で 24 件、
+1.19.4 と 1.18.2 で各 46 件ある。一覧は道具の出力。
 
 ## アダプタ層が NMS に要求するもの
 

@@ -5,4 +5,6 @@ file: net/minecraft/world/level/block/DaylightDetectorBlock.java
 anchor:
     world.setBlock(pos, state.setValue(POWER, i), 3);
 insert:
-    i = org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(world, pos, state.getValue(DaylightDetectorBlock.POWER), i).getNewCurrent(); // CraftBukkit - Call BlockRedstoneEvent
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)) {
+        i = org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(world, pos, state.getValue(DaylightDetectorBlock.POWER), i).getNewCurrent(); // CraftBukkit - Call BlockRedstoneEvent
+    }

@@ -16,13 +16,15 @@ anchor:
     if (advancement.getDisplay() != null
 insert:
     // Paper start - Add Adventure message to PlayerAdvancementDoneEvent
-    net.kyori.adventure.text.Component message = null;
-    if (advancement.getDisplay() != null && advancement.getDisplay().shouldAnnounceChat()) {
-        message = io.papermc.paper.adventure.PaperAdventure.asAdventure(net.minecraft.network.chat.Component.translatable(
-                "chat.type.advancement." + advancement.getDisplay().getFrame().getName(),
-                this.player.getDisplayName(),
-                advancement.getChatComponent()));
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerAdvancementDoneEvent.class)) {
+        net.kyori.adventure.text.Component message = null;
+        if (advancement.getDisplay() != null && advancement.getDisplay().shouldAnnounceChat()) {
+            message = io.papermc.paper.adventure.PaperAdventure.asAdventure(net.minecraft.network.chat.Component.translatable(
+                    "chat.type.advancement." + advancement.getDisplay().getFrame().getName(),
+                    this.player.getDisplayName(),
+                    advancement.getChatComponent()));
+        }
+        final org.bukkit.event.player.PlayerAdvancementDoneEvent event = new org.bukkit.event.player.PlayerAdvancementDoneEvent(this.player.getBukkitEntity(), advancement.bukkit, message);
+        this.player.level.getCraftServer().getPluginManager().callEvent(event); // CraftBukkit
     }
-    final org.bukkit.event.player.PlayerAdvancementDoneEvent event = new org.bukkit.event.player.PlayerAdvancementDoneEvent(this.player.getBukkitEntity(), advancement.bukkit, message);
-    this.player.level.getCraftServer().getPluginManager().callEvent(event); // CraftBukkit
     // Paper end

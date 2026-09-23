@@ -87,8 +87,8 @@ def test_widened():
     found = asa.widened(root)
     # 欄も拾えること。挙げる名前は patches/access の中身なので枝ごとに違う
     check("可視性: 欄を拾う",
-          ("net/minecraft/server/network/ServerCommonPacketListenerImpl.java",
-           "connection") in found, True)
+          ("net/minecraft/world/level/entity/LevelEntityGetterAdapter.java",
+           "sectionStorage") in found, True)
     check("可視性: メソッドも拾う",
           ("net/minecraft/world/entity/player/Player.java", "isImmobile") in found, True)
     check("可視性: 無い場所では空", asa.widened(None), set())

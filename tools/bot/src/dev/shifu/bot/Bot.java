@@ -362,7 +362,7 @@ public final class Bot {
             }
             // 乗り物を動かす(ServerboundMoveVehiclePacket)。乗せるのはサーバー側(drive)
             case "vehicle" -> {
-                final String[] parts = rest.trim().split("[,\s]+");
+                final String[] parts = rest.trim().split("[,\\s]+");
                 final FriendlyByteBuf data = new FriendlyByteBuf(Unpooled.buffer());
                 data.writeDouble(Double.parseDouble(parts[0]));
                 data.writeDouble(Double.parseDouble(parts[1]));

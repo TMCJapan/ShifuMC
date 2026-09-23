@@ -16,14 +16,18 @@
 # vanilla の判定は getRandom().nextInt() を消費するので 2 回評価もできない。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/animal/turtle/Turtle.java.patch
+#   Paper-Server 1.19.4 src/main/java/net/minecraft/world/entity/animal/Turtle.java:582
+#   Paper-Server 1.18.2 src/main/java/net/minecraft/world/entity/animal/Turtle.java:563
+#
+# 1.19.4 / 1.18.2 の vanilla は `… != 0 ? false : !…closerToCenterThan(…);` の三項。
+# && は ?: より強く結び付くので、末尾に足すと else の側だけに付く。
+# true の側は false なので、Paper の `(…) && event` と同じ値で、発火も同じときだけ。
 
 file: net/minecraft/world/entity/animal/Turtle.java
 replace:
-                            && !this.turtle.getHomePos().closerToCenterThan(this.turtle.position(), 64.0)
-                );
+                    : !this.turtle.getHomePos().closerToCenterThan(this.turtle.position(), 64.0);
 with:
-                            && !this.turtle.getHomePos().closerToCenterThan(this.turtle.position(), 64.0)
-                ) && dev.shifu.event.AnimalEvents.turtleGoHome(this.turtle);
+                    : !this.turtle.getHomePos().closerToCenterThan(this.turtle.position(), 64.0) && dev.shifu.event.AnimalEvents.turtleGoHome(this.turtle);
 
 # PlayerReadyArrowEvent
 #
@@ -31,8 +35,21 @@ with:
 # 前に出すと、持ち物の枠を 1 つ見るたびに出てしまう。
 #
 # 読んだ位置: Paper-Server 1.20.6 src/main/java/net/minecraft/world/entity/player/Player.java(tryReadyArrow)
+#   Paper-Server 1.19.4 src/main/java/net/minecraft/world/entity/player/Player.java:2276
+#   Paper-Server 1.18.2 src/main/java/net/minecraft/world/entity/player/Player.java:2238
+# 1.19.4 / 1.18.2 の getProjectile では持ち物を回す判定の名前が違う(supportedHeldProjectiles / item)
 file: net/minecraft/world/entity/player/Player.java
 replace:
-                    if (predicate.test(itemStack2)) {
+                    if (supportedHeldProjectiles.test(item)) {
 with:
-                    if (predicate.test(itemStack2) && dev.shifu.event.PlayerEvents.readyArrow(this, stack, itemStack2)) {
+                    if (supportedHeldProjectiles.test(item) && dev.shifu.event.PlayerEvents.readyArrow(this, stack, item)) {
+
+# 手に持った矢(左手、次に右手)。Paper は getHeldProjectile に渡す判定にも発火を足している。
+# 判定を包んで渡す。登録が無ければ同じ判定がそのまま渡る。
+# 包む式は第 1 引数に置く(verify_additive が認める expr の形)。
+# 読んだ位置: Paper-Server 1.19.4 src/main/java/net/minecraft/world/entity/player/Player.java:2289
+file: net/minecraft/world/entity/player/Player.java
+replace:
+            ItemStack heldProjectile = ProjectileWeaponItem.getHeldProjectile(this, supportedHeldProjectiles);
+with:
+            ItemStack heldProjectile = ProjectileWeaponItem.getHeldProjectile(this, dev.shifu.event.PlayerEvents.readyArrowHeld(supportedHeldProjectiles, this, stack));

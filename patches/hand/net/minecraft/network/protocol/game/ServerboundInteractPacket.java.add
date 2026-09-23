@@ -10,3 +10,10 @@
     public boolean isAttack() {
         return this.action.getType() == ServerboundInteractPacket.ActionType.ATTACK;
     }
+
+// ServerboundInteractPacket.getActionType
+    // FancyNpcs の版一致アダプタが呼ぶ。
+    // 読んだ位置: D:/.pw194/Paper-Server(HEAD)src/main/java/net/minecraft/network/protocol/game/ServerboundInteractPacket.java:14
+    public final ServerboundInteractPacket.ActionType getActionType() {
+        return this.action.getType();
+    }

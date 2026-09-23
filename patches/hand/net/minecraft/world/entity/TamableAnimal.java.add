@@ -1,0 +1,21 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// TamableAnimal.setInSittingPose
+    // FancyNpcs の版一致アダプタが呼ぶ。callEvent が真なら vanilla の版へ渡す
+    // (EntityToggleSitEvent は vanilla の版の先頭に差し込んだ発火で出る)。
+    // 偽のときは発火せずに旗だけを立てる。本体は vanilla の版の中身と同じ。
+    // 引数の数が違うので、vanilla の呼び出しがこちらへ来ることは無い。
+    // 読んだ位置: D:/.pw194/Paper-Server(HEAD)src/main/java/net/minecraft/world/entity/TamableAnimal.java:131
+    public void setInSittingPose(boolean inSittingPose, boolean callEvent) {
+        if (callEvent) {
+            this.setInSittingPose(inSittingPose);
+            return;
+        }
+
+        byte b = this.entityData.get(DATA_FLAGS_ID);
+        if (inSittingPose) {
+            this.entityData.set(DATA_FLAGS_ID, (byte)(b | 1));
+        } else {
+            this.entityData.set(DATA_FLAGS_ID, (byte)(b & -2));
+        }
+    }

@@ -13,15 +13,20 @@ with:
             clazz = dev.shifu.remap.PluginRemapper.remap(pdf, path, clazz); // Shifu - spigot 名 -> mojang 名
             clazz = Commodore.convert(clazz, !CraftMagicNumbers.isLegacy(pdf));
 
-# 読み込む前に plugins の jar を走査して、プラグインのクラスの継承関係を控える
-# (親が NMS のクラスに宣言されたメソッドの名前を引くため)。1.19.4 の Paper は
-# 読み込みを io.papermc.paper.plugin に移していて、CraftServer.loadPlugins は入口を呼ぶだけ。
-file: org/bukkit/craftbukkit/CraftServer.java
+# 継承関係の控え。CraftServer.loadPlugins では遅い: paper-plugin.yml のプラグインの
+# bootstrapper は Bootstrap.bootStrap の中の LaunchEntryPointHandler.enterBootstrappers で
+# PaperSimplePluginClassLoader が定義するので、そこまでに控えが無いと親を辿れないまま写る
+# (読んだ位置: Paper-Server src/main/java/net/minecraft/server/Bootstrap.java の
+# BuiltInRegistries.bootStrap のラムダ)。
+# PluginInitializerManager.load は Main が bootStrap より先に呼ぶ。update フォルダの入れ替えは
+# registerProvidersFromSource の中の FileProviderSource.checkUpdate が済ませているので、
+# plugins フォルダの jar が実際に読まれる jar になっている。
+file: io/papermc/paper/plugin/PluginInitializerManager.java
 replace:
-        io.papermc.paper.plugin.entrypoint.LaunchEntryPointHandler.INSTANCE.enter(io.papermc.paper.plugin.entrypoint.Entrypoint.PLUGIN); // Paper - replace implementation
+        io.papermc.paper.plugin.util.EntrypointUtil.registerProvidersFromSource(io.papermc.paper.plugin.provider.source.PluginFlagProviderSource.INSTANCE, files);
 with:
-        dev.shifu.remap.PluginRemapper.index(this.getPluginsFolder(), this.extraPluginJars()); // Shifu
-        io.papermc.paper.plugin.entrypoint.LaunchEntryPointHandler.INSTANCE.enter(io.papermc.paper.plugin.entrypoint.Entrypoint.PLUGIN); // Paper - replace implementation
+        io.papermc.paper.plugin.util.EntrypointUtil.registerProvidersFromSource(io.papermc.paper.plugin.provider.source.PluginFlagProviderSource.INSTANCE, files);
+        dev.shifu.remap.PluginRemapper.index(pluginSystem.pluginDirectoryPath().toFile(), null, files); // Shifu
 
 # Paper のプラグイン(paper-plugin.yml。FancyNpcs / FancyHolograms)は PaperSimplePluginClassLoader が
 # 定義する。processClass を通らないので、同じ場所で写す。

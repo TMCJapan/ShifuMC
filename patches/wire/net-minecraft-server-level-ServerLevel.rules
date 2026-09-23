@@ -29,8 +29,31 @@ insert-after:
 
 # 死亡の落とし物と経験値オーブを控えに移す。控えている最中でなければ何もしないので、
 # プラグインを入れていないときに増える仕事は参照 1 つの比較。
+# 4c9fae4 で消えていた。無いと、PlayerDeathEvent に登録があるときに落とし物が控えに入らず
+# 世界に出たまま、keepInventory や取り消しで持ち物も戻るので複製になる。
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    private boolean addEntity(Entity entity) {
+insert-after:
+    if (dev.shifu.event.ShifuEvents.catchDrop(entity)) {
+        return true;
+    }
+
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
         this.gameEventDispatcher = new GameEventDispatcher(this);
 insert-after:
     this.getWorldBorder().world = this;
+
+# Entity.valid。CraftEntity.isValid() と、Paper の teleportTo(ServerLevel, PositionImpl) が見る。
+# 4c9fae4 で `entity.inWorld = true;` と一緒に消えていた(inWorld は Paper 1.19.4 に無い)ので、
+# 全エンティティで false のままになり、プラグインからの別世界へのテレポートが必ず失敗し、
+# EntityEvents.mount も先頭で return していた。
+# Paper は onTrackingStart の末尾で立てて、EntityAddToWorldEvent をその後に出す(生きている間に出す)。
+# 同じ行の後ろには generated の entityAddToWorld が入るので、前に置いて順を保つ。
+# 読んだ位置: D:/.pw194/Paper-Server の HEAD:src/main/java/net/minecraft/server/level/ServerLevel.java(onTrackingStart の `entity.valid = true; // CraftBukkit`)
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    entity.updateDynamicGameEventListener(DynamicGameEventListener::add);
+insert:
+    entity.valid = true;

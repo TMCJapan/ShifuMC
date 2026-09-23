@@ -5,7 +5,7 @@
 
 ## 1.19.4 の状態(2026-09-16)
 
-コンパイル 0 件、公式に戻したクラスへの参照の欠落 0 件(`LinkCheck`)、プラグイン無しで起動(Done 4.8s、例外 0)。
+コンパイル 0 件、公式に戻したクラスへの参照の欠落 0 件(`LinkCheck`。読めない型を「ある」とみなしていたころの数で、2026-09-21 のレビューでは同じ jar に 26 件あった)、プラグイン無しで起動(Done 4.8s、例外 0)。
 `shifu.jar`(Fabric Loader 0.19.5)+ プラグイン 19 個で起動し、bot が参加して drive の一連が通る。
 
 ### 済んだこと
@@ -46,10 +46,10 @@
 | 世界の名前 | `CraftWorld.getName()` の規則が `this.` 付きで書かれていて 1.19.4 の行(`this.` 無し)に当たらず、3 つの次元が全部 level-name で登録されて `Bukkit.getWorld("world")` が the_end を返していた(HuskHomes の `/home` が the_end へ飛んで cross-world の respawn で落ち、Multiverse の "WorldConfig for world minecraft:the_end already exists" も同じ原因)。直して `world` / `world_nether` / `world_the_end` が別々の UID・鍵で並ぶ |
 | 乗り物に乗っている間の `PlayerMoveEvent` | 1.18.2 と同じ形で `ShifuEvents.vehicleMove` を入れた。from=(-3, 150, 9) to=(-1, 150, 9)、イベントの中の `getLocation()` は動く前の位置 |
 | プラグインメッセージの本文 | `PluginMessages.handle` を `handleCustomPayload` に繋いだ。bot の `shifu:test` "hello from bot" が 15 バイトで届く |
-| 経済系のプラグイン | Vault 1.7.3 + EssentialsX 2.20.1。`getBalance` 100 → `depositPlayer` → 200、`/balance` が返る。最初は EssentialsX の `/home`(PaperLib の `getChunkAtAsync`)が `MinecraftServer.scheduleOnMain` の NoSuchMethodError で tick loop ごと落ちた。Paper が `BlockableEventLoop` に足したメソッドで、Shifu はそのクラスを公式に戻す。LinkCheck は所有クラス(MinecraftServer)が戻していないクラスなので見落とす。hand で `MinecraftServer.scheduleOnMain` を足した |
+| 経済系のプラグイン | Vault 1.7.3 + EssentialsX 2.20.1。`getBalance` 100 → `depositPlayer` → 200、`/balance` が返る。最初は EssentialsX の `/home`(PaperLib の `getChunkAtAsync`)が `MinecraftServer.scheduleOnMain` の NoSuchMethodError で tick loop ごと落ちた。Paper が `BlockableEventLoop` に足したメソッドで、Shifu はそのクラスを公式に戻す。LinkCheck は親を辿って読めない型(`BlockableEventLoop` が実装する `Executor`)に当たると「ある」と答えていたので見落とした。hand で `MinecraftServer.scheduleOnMain` を足した |
 | 別の世界へのテレポート | `CraftPlayer.teleport` の cross-world は `PlayerList.respawn`(CraftBukkit は同じ ServerPlayer を使い回す)を通る。vanilla の `restoreFrom(自分)` が `recipeBook.copyOverData(自分)` で NPE(CraftBukkit はその行をコメントアウト)→ `patches/narrow` で `ShifuEvents.restoreSelf` に向けた。次に Paper の `noCollision` が `Level.getHardCollidingEntities`(生成器が写した本体は Paper の EntityLookup を読む。Shifu では null)で NPE → hand で vanilla の `getEntities` から答える。drive の the_end への teleport → true、`Bukkit.getPlayer(uuid) == bot`、戻りも通る |
 | 世界ごとのスポーン | vanilla の nether / end の `serverLevelData` は `DerivedLevelData` で、`setSpawn` / `getSharedSpawnPos` が主世界のものへ通る。Multiverse のように世界ごとに `setSpawnLocation` すると主世界のスポーンが変わる形だった。主世界以外は `ServerLevel.shifuSpawn`(hand)に置いて `CraftWorld` が読む。drive で nether を (10, 64, 10) にしても主世界は (0, 64, 0) のまま |
-| 局所変数・ラムダの数 | LvtMatch reverted 2 / left alone 2894、LambdaMatch args moved 2・renumbered 20・rewritten 3・left alone 6、公式に戻したクラス 785、Shifu が触って残したクラス 996、公式 jar に無いクラス 9、LinkCheck missing 0、名前の違う無名クラス 29 |
+| 局所変数・ラムダの数 | LvtMatch reverted 2 / left alone 2894、LambdaMatch args moved 2・renumbered 20・rewritten 3・left alone 6、公式に戻したクラス 785、Shifu が触って残したクラス 996、公式 jar に無いクラス 9、LinkCheck missing 0(読めない型を「ある」とみなしていたころの数。2026-09-21 のレビューでは 26 件)、名前の違う無名クラス 29 |
 
 確かめられなかったもの: プレイヤーが遊ぶ範囲の処理順(1.18.2 で測った。1.19.4 の agent は乱数の入口が残っている)、独自 packet を使う MOD(Fabric のクライアントが要る)。
 
@@ -252,7 +252,7 @@ Chunky と ChunkyBorder は、Chunky の Fabric MOD と Bukkit プラグイン�
 |---|---|
 | コンパイル | エラー 0(`once.sh`) |
 | 差し込み | 発火 828 箇所 / 337 ファイル、配線 75 箇所 / 38 ファイル、落ちた規則 0 |
-| 追加だけであること | `verify_additive.py` が通る(消えた 23 行は可視性のみ) |
+| 追加だけであること | closure の最後に `verify_additive.py` が走る。2026-09-23 に当てた木では 46 件が決めた形に収まらず、closure はそこで止まる |
 | 起動 | `Done (0.440s)!`。例外 0 |
 | Bukkit の世界 | 3 つ(`world` / `world_nether` / `world_the_end`)。環境と UUID は別々 |
 | スケジューラ | 毎 tick 走る。`MinecraftServer.currentTick` も進む |
@@ -317,8 +317,8 @@ MOD とプラグインが同じサーバーで同時に動き、プレイヤー�
 | 1200 tick 走らせた世界の一致 | vanilla 同士 17 チャンク、それを引いた Shifu との差は 2 |
 | 公式の局所変数が公式の番号に座っていないメソッド | 182 → 21 |
 
-触った vanilla の行は 3 種類だけで、`python tools/verify_additive.py` が形を確かめる。
-内訳は [ARCHITECTURE.md](ARCHITECTURE.md) の「vanilla の行に触っている 3 か所」。
+vanilla の行を書き換えてよいのは 4 種類で、`tools/verify_additive.py` が closure の最後に形を確かめる(2026-09-23 は形に収まらないものが 46 件残っていて、closure はそこで止まる)。
+内訳は [ARCHITECTURE.md](ARCHITECTURE.md) の「vanilla の行に触っている 4 か所」。
 
 ## プレイヤー経路(実測、2026-09-03)
 
@@ -377,8 +377,9 @@ EssentialsX が知っているバージョンの一覧に 26.2 が無いため�
 
 `plugins` と `version` は通らない。この 2 つは Bukkit ではなく Paper 独自のコマンド
 (`io.papermc.paper.command.PaperCommands.registerCommands`)で、vanilla に無いので
-入れていない。Bukkit の `SimpleCommandMap.setFallbackCommands` が登録するのは
-`/bukkit:help` だけ。
+入れていない。Bukkit が自分で登録するコマンド(`SimpleCommandMap` の構築子と `setFallbackCommands` が
+登録するもの)は、`patches/adapter/org-bukkit-craftbukkit-command-CraftCommandMap.rules` で
+`bukkit:` の付いた名前(`/bukkit:help` など)だけにしている。`/help` と `/reload` は vanilla のもの。
 
 ## MOD とプラグインを同時に(実測、2026-09-04)
 

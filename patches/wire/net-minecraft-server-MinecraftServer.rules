@@ -95,14 +95,10 @@ anchor:
 insert:
     org.spigotmc.WatchdogThread.doStop();
 
-# EntityMoveEvent に登録があるかを、世界を回す前に控える(Paper と同じ位置)
-file: net/minecraft/server/MinecraftServer.java
-anchor:
-    this.profiler.push("commandFunctions");
-insert:
-    for (net.minecraft.server.level.ServerLevel shifuLevel : this.getAllLevels()) {
-        shifuLevel.hasEntityMoveEvent = io.papermc.paper.event.entity.EntityMoveEvent.getHandlerList().getRegisteredListeners().length > 0;
-    }
+# ServerLevel.hasEntityMoveEvent(EntityMoveEvent に登録があるかを世界ごとに控える欄)は入れない。
+# 読むのは LivingEntity の EntityMoveEvent の差し込みだけで、そちらは登録の有無を直に見る
+# (patches/events/generated/net-minecraft-world-entity-LivingEntity.rules)。Paper と同じく
+# tick ごとに全部の世界を回して入れていたので、登録が無くても毎 tick ループが 1 つ増えていた。
 
 
 # CraftServer.setVanillaCommands が読む Paper の欄。Paper は構築子で dataPackResources().commands を入れる。
@@ -118,3 +114,20 @@ anchor:
     this.resources = resourceManagerHolder;
 insert-after:
     this.vanillaCommandDispatcher = resourceManagerHolder.managers().commands; // CraftBukkit
+
+# データパックを読み直すと Commands が作り直される。Paper はその直前にプラグインの
+# コマンドのノードを新しい dispatcher へ移し、読み直しのあとで COMMANDS(RELOAD) を出して
+# syncCommands している。
+# 読んだ位置: D:/.pw206/Paper-Server の HEAD:src/main/java/net/minecraft/server/MinecraftServer.java:2301, 2325-2330
+#
+# どれも入っていなかったときは、/datapack enable と /reload のあと、plugin.yml のコマンドも
+# Brigadier API のコマンドも dispatcher と CommandMap の両方から消えて、再起動まで戻らなかった。
+
+# 1.19.4 / 1.18.2 の CraftServer.syncCommands は dispatcher を組み直す側なので、
+# 読み直しのあとに 1 回呼ぶ(CraftBukkit の SPIGOT-5884 と同じ位置)。
+# 読んだ位置: D:/.pw194/Paper-Server の HEAD:src/main/java/net/minecraft/server/MinecraftServer.java:2062
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    this.resources = resourceManagerHolder;
+insert-after:
+    this.server.syncCommands();

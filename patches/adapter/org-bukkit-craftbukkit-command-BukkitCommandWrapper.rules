@@ -1,0 +1,24 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+#
+# BukkitBrigadierCommand<S> と CommandRegisteredEvent<S> は S が BukkitBrigadierCommandSource で
+# あることを求める。Paper は NMS の CommandSourceStack にそれを実装させているが、Shifu は
+# vanilla のクラス宣言に interface を足さない(docs/ARCHITECTURE.md の「Paper の brigadier API」)。
+# イベントに渡す実行の口とノードの組み直しは dev.shifu.command.LegacySource が受け持つ。
+
+file: org/bukkit/craftbukkit/command/BukkitCommandWrapper.java
+
+replace:
+public class BukkitCommandWrapper implements com.mojang.brigadier.Command<CommandSourceStack>, Predicate<CommandSourceStack>, SuggestionProvider<CommandSourceStack>, com.destroystokyo.paper.brigadier.BukkitBrigadierCommand<CommandSourceStack> { // Paper
+with:
+public class BukkitCommandWrapper implements com.mojang.brigadier.Command<CommandSourceStack>, Predicate<CommandSourceStack>, SuggestionProvider<CommandSourceStack> { // Shifu - BukkitBrigadierCommand は LegacySource が別に作る
+
+replace:
+        com.destroystokyo.paper.event.brigadier.CommandRegisteredEvent<CommandSourceStack> event = new com.destroystokyo.paper.event.brigadier.CommandRegisteredEvent<>(label, this, this.command, root, literal, defaultArgs);
+with:
+        final com.destroystokyo.paper.event.brigadier.CommandRegisteredEvent<?> event = dev.shifu.command.LegacySource.registeredEvent(label, this, this.command, root, literal, defaultArgs); // Shifu - 旧 API の型で見せる
+
+# プラグインが組んだノードは旧 API の source を受ける形で書かれている。dispatcher に入れる前に組み直す
+replace:
+        literal = event.getLiteral();
+with:
+        literal = dev.shifu.command.LegacySource.toNms(event.getLiteral(), root, literal, defaultArgs); // Shifu - プラグインのノードを NMS の source を受ける形に

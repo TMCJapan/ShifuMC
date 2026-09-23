@@ -42,3 +42,27 @@
 
         return this.craftAttributes;
     }
+
+// LivingEntity.startUsingItem
+    // FancyNpcs の版一致アダプタが呼ぶ。forceUpdate が偽なら vanilla の版と同じなので渡す。
+    // 真のときは、手の品が空でも使用中でも使い始める(Paper の条件は `!empty && !using || forceUpdate`)。
+    // その本体は vanilla の版の中身と同じ。Paper が足した食事の時間の補正(totalEatTimeTicks /
+    // eatStartTime)は vanilla の tick が読まないので入れない。
+    // 引数の数が違うので、vanilla の呼び出しがこちらへ来ることは無い。
+    // 読んだ位置: D:/.pw194/Paper-Server(HEAD)src/main/java/net/minecraft/world/entity/LivingEntity.java:3778
+    public void startUsingItem(InteractionHand hand, boolean forceUpdate) {
+        if (!forceUpdate) {
+            this.startUsingItem(hand);
+            return;
+        }
+
+        ItemStack itemInHand = this.getItemInHand(hand);
+        this.useItem = itemInHand;
+        this.useItemRemaining = itemInHand.getUseDuration();
+
+        if (!this.level.isClientSide) {
+            this.setLivingEntityFlag(1, true);
+            this.setLivingEntityFlag(2, hand == InteractionHand.OFF_HAND);
+            this.gameEvent(GameEvent.ITEM_INTERACT_START);
+        }
+    }

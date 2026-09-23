@@ -11,8 +11,14 @@ spigot 名 → mojang 名の表にする。
 読むもの:
   <Paper>/work/BuildData/mappings/bukkit-*-cl.csrg          official → spigot(クラスだけ)
   <Paper>/.gradle/caches/paperweight/mappings/official-mojang+yarn.tiny  official → mojang
-cl.csrg に無いクラスは official のまま(内部クラスは外側の名前から導く。
-BuildData の .exclude にある `a` などは難読化名のまま残る)。
+cl.csrg に無いクラスは official のまま(内部クラスは外側の名前から導く)。
+
+BuildData の .exclude にあるクラス(data ジェネレータ、gametest、package-info など)は
+cl.csrg に無いので、spigot 側は既定パッケージの難読化名(`a`、`jh$1`)のまま残る。
+Spigot はその .exclude のクラスを server jar から外すのでプラグインは呼べない。
+一方、難読化したプラグインは既定パッケージに `a`、`b` を持つ。表に残すと
+プラグイン自身の `a` を com/mojang/math/Constants に書き換えて NoClassDefFoundError に
+なるので、所有クラスがパッケージに入っていない行は書かない。
 
 出力(tab 区切り。名前が同じものは書かない):
   c  <spigot クラス>  <mojang クラス>
@@ -20,6 +26,10 @@ BuildData の .exclude にある `a` などは難読化名のまま残る)。
   m  <spigot 所有クラス>  <spigot メソッド名>  <spigot 記述子>  <mojang メソッド名>
 記述子は spigot 名で書く(プラグインの呼び出し箇所と同じ形)。
 読むのは dev.shifu.remap.PluginRemapper。
+
+CRAFTBUKKIT_METHODS の行も足す。CraftBukkit が戻り値の型を変えた vanilla のメソッドで、
+Shifu では同じ名前・同じ引数で型だけ違うメソッドを Java で宣言できないので、
+patches/hand の別名へ向ける。記述子で引くので vanilla の版(型が違う)の呼び出しは写らない。
 """
 import glob
 import os
@@ -27,6 +37,13 @@ import re
 import sys
 
 CLASS_IN_DESC = re.compile(r"L([^;]+);")
+
+# (mojang 所有クラス, CraftBukkit のメソッド名, mojang 記述子, patches/hand の名前)
+# nextContainerCounter: vanilla は ()V、CraftBukkit は ()I に変えて番号を返す。
+# InvSee++ の impl_1_18_2_R2 / impl_1_19_4_R3 が ()I の版を呼び、NoSuchMethodError になっていた。
+CRAFTBUKKIT_METHODS = [
+    ("net/minecraft/server/level/ServerPlayer", "nextContainerCounter", "()I", "shifuNextContainerCounter"),
+]
 
 
 def read_tiny(path):
@@ -81,8 +98,12 @@ def main():
 
     lines = []
     counts = {"c": 0, "f": 0, "m": 0}
+    skipped = 0
     for official, (mojang_name, fields, methods) in mojang.items():
         spigot_name = spigot_class(official)
+        if "/" not in spigot_name:
+            skipped += 1
+            continue
         if spigot_name != mojang_name:
             lines.append(f"c\t{spigot_name}\t{mojang_name}")
             counts["c"] += 1
@@ -95,10 +116,17 @@ def main():
                 lines.append(f"m\t{spigot_name}\t{name}\t{spigot_desc(desc)}\t{mapped}")
                 counts["m"] += 1
 
+    to_spigot = {mojang_name: spigot_class(official) for official, (mojang_name, _, _) in mojang.items()}
+    for owner, name, desc, mapped in CRAFTBUKKIT_METHODS:
+        spigot_desc_ = CLASS_IN_DESC.sub(lambda m: "L" + to_spigot.get(m.group(1), m.group(1)) + ";", desc)
+        lines.append(f"m	{to_spigot[owner]}	{name}	{spigot_desc_}	{mapped}")
+        counts["m"] += 1
+
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lines) + "\n")
-    print(f"{out}: {counts['c']} classes, {counts['f']} fields, {counts['m']} methods")
+    print(f"{out}: {counts['c']} classes, {counts['f']} fields, {counts['m']} methods"
+          f" ({skipped} classes outside a package skipped)")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,16 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// Fox.setSitting
+    // FancyNpcs の版一致アダプタが呼ぶ。vanilla の 1 引数の setSitting には EntityToggleSitEvent の
+    // 発火を差し込んである(patches/events/entity-animal.rules)ので、fireEvent が真ならそちらへ渡す。
+    // 偽なら vanilla の本体(setFlag(1, sitting))だけを行い、発火しない。
+    // ここで発火してから 1 引数の版を呼ぶと、同じ操作でイベントが 2 回出る。
+    // 引数の数が違うので、vanilla の呼び出しがこちらへ来ることは無い。
+    // 読んだ位置: D:/.pw194/Paper-Server(HEAD)src/main/java/net/minecraft/world/entity/animal/Fox.java:446
+    public void setSitting(boolean sitting, boolean fireEvent) {
+        if (fireEvent) {
+            this.setSitting(sitting);
+        } else {
+            this.setFlag(1, sitting);
+        }
+    }

@@ -4,7 +4,8 @@ file: net/minecraft/world/level/BaseSpawner.java
 anchor:
                         Entity entity = EntityType.loadEntityRecursive(entityToSpawn, world, entity1 -> {
 insert:
-    if (optional.isPresent()
+    if (dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.entity.PreSpawnerSpawnEvent.class)
+            && optional.isPresent()
             && !dev.shifu.event.EntityEvents.preSpawnerSpawn(world, optional.get(), d, d1, d2, pos)) {
         continue;
     }

@@ -7,7 +7,9 @@ anchor:
                         player.push(f, f1, f2);
 insert:
     // CraftBukkit start
-    org.bukkit.event.player.PlayerRiptideEvent shifuRiptide = new org.bukkit.event.player.PlayerRiptideEvent(
-            (org.bukkit.entity.Player) player.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack));
-    shifuRiptide.callEvent();
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerRiptideEvent.class)) {
+        org.bukkit.event.player.PlayerRiptideEvent shifuRiptide = new org.bukkit.event.player.PlayerRiptideEvent(
+                (org.bukkit.entity.Player) player.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack));
+        shifuRiptide.callEvent();
+    }
     // CraftBukkit end

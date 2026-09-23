@@ -4,5 +4,9 @@
 file: net/minecraft/world/level/block/entity/SculkCatalystBlockEntity.java
 anchor:
     blockEntity.sculkSpreader.updateCursors(world, pos, world.getRandom(), true);
+# CraftBukkit は毎 tick 登録の有無に関係なく入れて外す。読むのは BlockSpreadEvent の登録があるときの
+# ShifuEvents.blockSpread だけなので、発火層で登録を見てから入れる。pos は blockEntity.getBlockPos() と同じ位置
 insert:
-    org.bukkit.craftbukkit.event.CraftEventFactory.sourceBlockOverride = blockEntity.getBlockPos(); // CraftBukkit - SPIGOT-7068: Add source block override, not the most elegant way but better than passing down a BlockPosition up to five methods deep.
+    dev.shifu.event.BlockEvents.sculkSourceArm(pos); // CraftBukkit - SPIGOT-7068: Add source block override
+insert-after:
+    dev.shifu.event.BlockEvents.sculkSourceDone(); // CraftBukkit

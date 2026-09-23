@@ -7,10 +7,12 @@ anchor:
             dropResources(state, world, pos);
 insert:
     // CraftBukkit start
-    org.bukkit.event.block.LeavesDecayEvent event = new org.bukkit.event.block.LeavesDecayEvent(org.bukkit.craftbukkit.block.CraftBlock.at(world, pos));
-    world.getCraftServer().getPluginManager().callEvent(event);
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.LeavesDecayEvent.class)) {
+        org.bukkit.event.block.LeavesDecayEvent event = new org.bukkit.event.block.LeavesDecayEvent(org.bukkit.craftbukkit.block.CraftBlock.at(world, pos));
+        world.getCraftServer().getPluginManager().callEvent(event);
 
-    if (event.isCancelled() || !world.getBlockState(pos).is(this)) {
-        return;
+        if (event.isCancelled() || !world.getBlockState(pos).is(this)) {
+            return;
+        }
     }
     // CraftBukkit end

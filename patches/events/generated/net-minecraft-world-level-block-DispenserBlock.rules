@@ -1,8 +1,2 @@
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
-
-# handleBlockPreDispenseEvent
-file: net/minecraft/world/level/block/DispenserBlock.java
-anchor:
-    dispenserBlockEntity.setItem(randomSlot, dispenseMethod.dispense(blockSourceImpl, item));
-insert:
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockPreDispenseEvent(world, pos, item, randomSlot)) return; // Paper - Add BlockPreDispenseEvent
+# BlockPreDispenseEvent は外した。patches/events/block-more.rules が同じアンカーに
+# dev.shifu.event.BlockEvents.preDispense を置いている。

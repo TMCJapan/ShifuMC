@@ -11,7 +11,6 @@
             final Potion kind = PotionUtils.getPotion(stack);
             final List<MobEffectInstance> effects = PotionUtils.getMobEffects(stack);
             final boolean isWater = kind == Potions.WATER && effects.isEmpty();
-            dev.shifu.event.EntityEvents.splashHit(hitResult);
             if (isWater) {
                 this.applyWater();
             } else if (!effects.isEmpty()) {

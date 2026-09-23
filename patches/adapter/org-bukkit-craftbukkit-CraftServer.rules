@@ -12,3 +12,14 @@ replace:
     io.papermc.paper.configuration.GlobalConfiguration.get().misc.loadPermissionsYmlBeforePlugins
 with:
     true /* Shifu - Paper の設定は読まないので既定値を書く */
+
+# データパックの読み直しのあとに MinecraftServer が syncCommands を呼ぶ(patches/wire)。
+# dispatcher の組み直しはプラグインが無くても要る(Bukkit の bukkit: のコマンドが消える)が、
+# vanilla は読み直しでコマンドの木を送り直さない(sendCommands の呼び手は参加時と op の変更だけ)ので、
+# 送るところはプラグインが 1 つも無いときは飛ばす。
+replace:
+        // Refresh commands
+with:
+        if (this.getPluginManager().getPlugins().length == 0) { return; } // Shifu - vanilla は読み直しで送り直さない
+
+        // Refresh commands

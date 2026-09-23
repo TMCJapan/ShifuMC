@@ -9,10 +9,7 @@
 # アンカーは vanilla のソースそのまま。Minecraft が更新されて宣言が変わったら
 # widen_access.py が失敗するので、黙って通ることはない。
 
-# CraftPlayer と Paper の接続ラッパーが接続に直に触る
-file: net/minecraft/server/network/ServerCommonPacketListenerImpl.java
-line:
-    protected final Connection connection;
+# ServerCommonPacketListenerImpl.connection は 1.19.4 に無い(ServerGamePacketListenerImpl.connection は generated.rules で広げる)
 
 # CraftLlama が隊列の後続と強さを読み書きする
 file: net/minecraft/world/entity/animal/horse/Llama.java
@@ -56,10 +53,7 @@ file: net/minecraft/world/item/context/UseOnContext.java
 line:
     protected final BlockHitResult getHitResult() {
 
-# CraftEntity.teleportAsync がチケットの段を直に指定する
-file: net/minecraft/server/level/ChunkLevel.java
-line:
-    private static final int FULL_CHUNK_LEVEL = 33;
+# ChunkLevel.FULL_CHUNK_LEVEL は 1.19.4 に無く、1.19.4 の CraftEntity も触らない
 
 # CraftWorld が gamerule の値を直に入れる。
 # 上書きしている 2 つは行が同じで 1 つに定まらないので patches/narrow で広げる。
@@ -67,36 +61,11 @@ file: net/minecraft/world/level/GameRules.java
 line:
         protected abstract void deserialize(String value);
 
-# Brigadier の API は CommandSourceStack が Bukkit 側の口を持っている前提で書かれている
-file: net/minecraft/commands/CommandSourceStack.java
-line:
-public class CommandSourceStack implements ExecutionCommandSource<CommandSourceStack>, SharedSuggestionProvider {
-implements:
-    io.papermc.paper.command.brigadier.PaperCommandSourceStack
+# CommandSourceStack に PaperCommandSourceStack を足す規則は、1.19.4 の Paper に io.papermc.paper.command.brigadier が無いので置かない
 
-# CraftBukkit は看板と書見台をコマンドの送り手にする(/setblock などの実行元)
-file: net/minecraft/world/level/block/entity/SignBlockEntity.java
-line:
-public class SignBlockEntity extends BlockEntity {
-implements:
-    net.minecraft.commands.CommandSource
+# ArrayVoxelShape の構築子は、1.19.4 の Paper では同じパッケージからしか呼ばれない
 
-file: net/minecraft/world/level/block/entity/LecternBlockEntity.java
-line:
-public class LecternBlockEntity extends BlockEntity implements Clearable, MenuProvider {
-implements:
-    net.minecraft.commands.CommandSource
-
-# Paper の当たり判定の道具が別のパッケージから作る
-file: net/minecraft/world/phys/shapes/ArrayVoxelShape.java
-line:
-    ArrayVoxelShape(DiscreteVoxelShape shape, DoubleList xPoints, DoubleList yPoints, DoubleList zPoints) {
-
-# ServerLevel の中に入る EntityRegionFileStorage が super で呼ぶ。
-# 同じパッケージの外からは見えないので public にする
-file: net/minecraft/world/level/chunk/storage/RegionFileStorage.java
-line:
-    RegionFileStorage(RegionStorageInfo storageKey, Path directory, boolean dsync) {
+# RegionFileStorage の構築子は、1.19.4 では EntityRegionFileStorage を写さない(ServerLevel.java.add の entityDataControllerNew)ので広げない
 
 # DATA_TICKS_FROZEN。resendPossiblyDesyncedDataValues に渡す(EntityPortalEvent の発火)
 file: net/minecraft/world/entity/Entity.java
@@ -108,12 +77,7 @@ file: net/minecraft/world/item/ServerItemCooldowns.java
 line:
     private final ServerPlayer player;
 
-# getChunkFutureMainThread。CraftWorld.getChunkAtAsync を vanilla のチャンク供給に
-# 載せるのに要る。公開の getChunkFuture は main で managedBlock するので、
-# 非同期の要求に使うと main が止まる
-file: net/minecraft/server/level/ServerChunkCache.java
-line:
-    private CompletableFuture<ChunkResult<ChunkAccess>> getChunkFutureMainThread(int chunkX, int chunkZ, ChunkStatus leastStatus, boolean create) {
+# getChunkFutureMainThread は 1.19.4 の宣言(Either を返す)を下の「1.19.4 で閉じるための追加」で広げる
 
 # ---- 1.19.4 で Paper の書き換えに頼らずに閉じるための追加
 
@@ -242,19 +206,6 @@ file: net/minecraft/world/entity/LivingEntity.java
 unfinal:
     public final int invulnerableDuration = 20;
 
-# Paper の brigadier API は CommandSourceStack を BukkitBrigadierCommandSource として扱う
-file: net/minecraft/commands/CommandSourceStack.java
-line:
-public class CommandSourceStack implements SharedSuggestionProvider {
-implements:
-    com.destroystokyo.paper.brigadier.BukkitBrigadierCommandSource
-
-# Paper は Component を Iterable<Component> にしている(iterator() の @Override)
-file: net/minecraft/network/chat/Component.java
-line:
-public interface Component extends Message, FormattedText {
-implements:
-    Iterable<Component>
 
 # CraftSpellcaster と発火層(AnimalEvents.spellCast)が外から使う。1.19.4 は protected
 file: net/minecraft/world/entity/monster/SpellcasterIllager.java
@@ -345,10 +296,7 @@ file: net/minecraft/world/entity/player/Player.java
 line:
     protected SoundEvent getDeathSound() {
 
-# doRunTask(): Paper が親を public にしている
-file: net/minecraft/server/MinecraftServer.java
-line:
-    protected void doRunTask(TickTask task) {
+# doRunTask(): 上の「Paper は BlockableEventLoop.doRunTask を public にしている」で広げてある
 
 # getSoundVolume(): Paper が親を public にしている
 file: net/minecraft/world/entity/animal/horse/AbstractHorse.java
@@ -620,10 +568,7 @@ file: net/minecraft/world/entity/projectile/FishingHook.java
 line:
     protected boolean canHitEntity(Entity entity) {
 
-# CraftVillager が評判を読む(GossipContainer の内部クラス)
-file: net/minecraft/world/entity/ai/gossip/GossipContainer.java
-line:
-    static class EntityGossips {
+# GossipContainer.EntityGossips(CraftVillager が評判を読む)は generated.rules で広げてある
 
 # ---- unfinal(generated.rules は作り直しで消えるのでここに置く)
 
@@ -756,10 +701,7 @@ file: net/minecraft/world/flag/FeatureFlagRegistry.java
 line:
     private final Map<ResourceLocation, FeatureFlag> names;
 
-# CraftFeatureFlag が読む。LinkCheck(access)で見つけた
-file: net/minecraft/world/flag/FeatureFlag.java
-line:
-    final FeatureFlagUniverse universe;
+# FeatureFlag.universe(CraftFeatureFlag が読む)は generated.rules で広げてある
 
 # ---- 親を public にしたので、上書きしている子も public にする(1.19.4 の木から)
 
@@ -903,3 +845,33 @@ line:
 file: net/minecraft/server/level/ServerPlayer.java
 line:
     private int lastSentFood = -99999999;
+
+# ---- patches/hand が触ったので公式の版ではなく vanilla の木から組まれるクラス。Paper の AT と同じだけ広げる
+
+# ChatFormatting を触ると公式(Paper の AT 済み)の版ではなく vanilla の木から組まれる。
+# CraftChatMessage.getColor が code を読む
+file: net/minecraft/ChatFormatting.java
+line:
+    private final char code;
+
+# Ingredient を触ると同じく vanilla の木から組まれる。CraftRecipe が直に作る・読む
+file: net/minecraft/world/item/crafting/Ingredient.java
+line:
+    private Ingredient(Stream<? extends Ingredient.Value> entries) {
+
+file: net/minecraft/world/item/crafting/Ingredient.java
+line:
+    private ItemStack[] itemStacks;
+
+file: net/minecraft/world/item/crafting/Ingredient.java
+line:
+    static class ItemValue implements Ingredient.Value {
+
+file: net/minecraft/world/item/crafting/Ingredient.java
+line:
+        ItemValue(ItemStack stack) {
+
+# FancyNpcs の版一致アダプタが getActionType() の値を ActionType の定数と比べる
+file: net/minecraft/network/protocol/game/ServerboundInteractPacket.java
+line:
+    static enum ActionType {

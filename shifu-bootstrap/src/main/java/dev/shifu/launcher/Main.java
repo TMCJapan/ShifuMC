@@ -23,8 +23,8 @@ import java.util.List;
  * <p>Paper と Minecraft のバイナリは配布物に含まれず、実行時に公式ソースから取得する。
  */
 public final class Main {
-	private static final String DEFAULT_MINECRAFT_VERSION = "26.2";
-	private static final String DEFAULT_LOADER_VERSION = "0.19.3";
+	private static final String DEFAULT_MINECRAFT_VERSION = "1.19.4";
+	private static final String DEFAULT_LOADER_VERSION = "0.19.5";
 
 	private Main() {
 	}
@@ -50,10 +50,15 @@ public final class Main {
 		Namespace namespace = Namespace.prepare(downloader, serverDir, config.minecraftVersion(),
 				paper, fabric, ownJar());
 
+		if (namespace != null) {
+			fabric = Namespace.productionAnswer(fabric, ownJar());
+		}
+
 		if (config.vanillaParity()) {
-			VanillaParity.apply(serverDir);
+			VanillaParity.apply(serverDir, config.minecraftVersion());
 		} else {
-			Log.warn("vanilla-parity is off - Paper's own behaviour changes are left in place");
+			VanillaParity.disable(serverDir, config.minecraftVersion());
+			Log.info("vanilla-parity is off - using Paper's own behaviour settings");
 		}
 
 		int exit = ServerLaunch.run(serverDir, config, paper, fabric, namespace, ownJar(), List.of(args));

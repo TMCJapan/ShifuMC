@@ -1,0 +1,13 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// CollisionGetter.noCollision
+    // Paper が足した 3 引数の版。呼び手は PlayerList.respawn(cross-world のテレポート)だけ。
+    // 生成器が写した Paper の本体は CollisionUtil へ通るが、その走査は
+    // LevelChunkSection.knownBlockCollisionData を読む。Paper が setBlockState で入れる欄で、
+    // 生成器は宣言しか写さないので誰も割り当てず、ブロックに 1 つも当たらなかった。
+    // vanilla の 2 引数へ渡す。loadChunks は vanilla に無い(vanilla の
+    // Level.getChunkForCollisions は getChunk(x, z, FULL, false) で読み込まない)ので落とす。
+    // 1.18.2 は CollisionGetter を触らない(公式のバイトコードに戻る)ので ServerLevel 側に同じものがある。
+    default boolean noCollision(Entity entity, AABB box, boolean loadChunks) {
+        return this.noCollision(entity, box);
+    }

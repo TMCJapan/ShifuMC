@@ -1,0 +1,72 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+#
+# CraftBukkit はチャットの種類に raw(装飾が "%s" で本文だけ)を足し、プラグインが ChatRenderer を
+# 差し替えたときは描いた結果をその種類で送る。Shifu は vanilla の ChatType を使うので ChatType.RAW が無く、
+# 表示を差し替えた発言(AsyncChatEvent の renderer、AsyncPlayerChatEvent の setFormat)のたびに
+# complete が NoSuchFieldError で落ちていた。
+# raw を登録すると、プラグインが無くてもクライアントへ送るチャットの種類の一覧が vanilla と変わるので足さない。
+# vanilla の 7 種類(ChatType.bootstrap)はどれも送り手の名前か定型文を付けるので、描いた結果をそのまま出せない。
+# 描き替えたときは、描いた結果をシステムメッセージとして送る。
+#
+# Paper との違い(プラグインとクライアントから見えるもの):
+# - クライアントには ClientboundPlayerChatPacket ではなく ClientboundSystemChatPacket で届く。
+#   送り手の UUID と署名が付かないので、クライアントはプレイヤーの発言として扱わない。
+# - チャットの表示を「コマンドのみ」にしている人には送らない(vanilla の sendChatMessage と同じく FULL だけ)。
+# - 表示を差し替えなかったチャット(ChatRenderer.Default)は今までどおり vanilla の chat の種類で送る。
+# - Player でも console でもない Audience には、署名付きの形ではなく Audience.sendMessage(Component) で送る。
+#
+# 読んだ位置: D:/.pw194/Paper-Server(HEAD)src/main/java/io/papermc/paper/adventure/ChatProcessor.java:211-346、
+# src/main/java/net/minecraft/network/chat/ChatType.java:31,45、
+# D:/.pw194/vanilla-src/minecraft/java/net/minecraft/server/level/ServerPlayer.java:1352,1388、
+# Paper-API src/main/java/io/papermc/paper/chat/ChatRenderer.java
+
+file: io/papermc/paper/adventure/ChatProcessor.java
+
+replace:
+        final ResourceKey<ChatType> chatTypeKey = renderer instanceof ChatRenderer.Default ? ChatType.CHAT : ChatType.RAW;
+with:
+        if (!(renderer instanceof ChatRenderer.Default)) {
+            this.shifuSendRendered(player, displayName, message, renderer, viewers); // Shifu - ChatType.RAW の代わり
+            return;
+        }
+        final ResourceKey<ChatType> chatTypeKey = ChatType.CHAT; // Shifu - RAW の場合は上で抜ける
+
+# Paper の complete が RAW で送る 3 通り(表示の差し替え、本文の差し替え、どちらも無し)を、
+# 同じ本文のシステムメッセージにする。ViewerUnaware は Paper と同じく 1 度だけ描く。
+# console は Paper と同じく logChatMessage で残す。装飾は RAW と同じ "%s" で、登録はしない
+# (サーバーの中で本文を組むだけで、クライアントへは送らない)。
+# with の中に空行があるので、字下げはクラスの中の宣言(4)を 0 として書く。
+replace:
+    interface OutgoingChat {
+with:
+// Shifu - ChatType.RAW の代わり
+private void shifuSendRendered(final CraftPlayer player, final Component displayName, final Component message,
+                               final ChatRenderer renderer, final Set<Audience> viewers) {
+    final boolean changed = this.flags.get(FORMAT_CHANGED) || this.flags.get(MESSAGE_CHANGED);
+    final Component unaware = !changed ? PaperAdventure.asAdventure(this.message.decoratedContent())
+        : renderer instanceof ChatRenderer.ViewerUnaware u ? u.render(player, displayName, message) : null;
+    for (final Audience viewer : viewers) {
+        this.shifuSendRendered(viewer, unaware != null ? unaware : renderer.render(player, displayName, message, viewer));
+    }
+}
+
+private void shifuSendRendered(final Audience viewer, final Component shown) {
+    if (viewer instanceof ConsoleCommandSender) {
+        final net.minecraft.network.chat.ChatTypeDecoration raw = new net.minecraft.network.chat.ChatTypeDecoration("%s",
+            java.util.List.of(net.minecraft.network.chat.ChatTypeDecoration.Parameter.CONTENT), net.minecraft.network.chat.Style.EMPTY);
+        this.server.logChatMessage(PaperAdventure.asVanilla(shown), new ChatType(raw, raw).bind(net.minecraft.network.chat.Component.empty()),
+            this.server.getPlayerList().verifyChatTrusted(this.message) ? null : "Not Secure");
+    } else if (viewer instanceof CraftPlayer craftPlayer) {
+        final ServerPlayer handle = craftPlayer.getHandle();
+        if (handle.getChatVisibility() == net.minecraft.world.entity.player.ChatVisiblity.FULL
+                && !(this.player.shouldFilterMessageTo(handle) && this.message.isFullyFiltered())) {
+            handle.sendSystemMessage(PaperAdventure.asVanilla(shown));
+        }
+    } else if (viewer instanceof ForwardingAudience.Single single) {
+        this.shifuSendRendered(single.audience(), shown);
+    } else {
+        viewer.sendMessage(shown);
+    }
+}
+
+interface OutgoingChat {

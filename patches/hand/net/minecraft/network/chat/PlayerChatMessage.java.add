@@ -1,0 +1,62 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+// Paper の ChatProcessor(ShifuEvents.playerChat が作る)がここを呼ぶ。公式のバイトコードの
+// PlayerChatMessage には無いので、足す前はチャットに登録があると発言のたびに NoSuchMethodError になった。
+
+// PlayerChatMessage.requireResult
+    // Paper は装飾の結果を record の 6 つめの成分(result)に持つ。vanilla の record に成分は足せないので持たない。
+    // Paper の装飾は AsyncChatDecorateEvent / AsyncPlayerChatPreviewEvent に登録が無ければ
+    // ModernResult(元の文, true, false) を返す。Shifu の装飾は vanilla の ChatDecorator.PLAIN なので、
+    // 装飾したあとの文から同じ形を作る。Paper の requireNonNull は結果の無い文で落ちるが、ここは落ちない。
+    // 読んだ位置: D:/.pw194/Paper-Server(HEAD)src/main/java/io/papermc/paper/adventure/ChatDecorationProcessor.java:53
+    public ChatDecorator.Result requireResult() {
+        return new ChatDecorator.ModernResult(io.papermc.paper.adventure.PaperAdventure.asAdventure(this.decoratedContent()), true, false);
+    }
+
+// PlayerChatMessage.withResult
+    // 結果は持たない(requireResult)。Paper と同じく装飾した文を unsignedContent に入れる。
+    // 呼んでいるのは CraftPlayer.chat の 1 か所で、渡すのは ModernResult(literal(msg), true, false)。
+    // requireResult はこの文から同じ結果を作り直す。
+    // 読んだ位置: D:/.pw194/Paper-Server(HEAD)src/main/java/net/minecraft/network/chat/PlayerChatMessage.java:23
+    public PlayerChatMessage withResult(ChatDecorator.Result result) {
+        return this.withUnsignedContent(result.component());
+    }
+
+// PlayerChatMessage.AdventureView
+    // Paper の宣言をそのまま写す。
+    // 読んだ位置: D:/.pw194/Paper-Server(HEAD)src/main/java/net/minecraft/network/chat/PlayerChatMessage.java:30
+    public final class AdventureView implements net.kyori.adventure.chat.SignedMessage {
+        private AdventureView() {
+        }
+        @Override
+        public @org.jetbrains.annotations.NotNull Instant timestamp() {
+            return PlayerChatMessage.this.timeStamp();
+        }
+        @Override
+        public long salt() {
+            return PlayerChatMessage.this.salt();
+        }
+        @Override
+        public @org.jetbrains.annotations.Nullable Signature signature() {
+            return PlayerChatMessage.this.signature == null ? null : PlayerChatMessage.this.signature.adventure();
+        }
+        @Override
+        public net.kyori.adventure.text.@org.jetbrains.annotations.Nullable Component unsignedContent() {
+            return PlayerChatMessage.this.unsignedContent() == null ? null : io.papermc.paper.adventure.PaperAdventure.asAdventure(PlayerChatMessage.this.unsignedContent());
+        }
+        @Override
+        public @org.jetbrains.annotations.NotNull String message() {
+            return PlayerChatMessage.this.signedContent();
+        }
+        @Override
+        public @org.jetbrains.annotations.NotNull net.kyori.adventure.identity.Identity identity() {
+            return net.kyori.adventure.identity.Identity.identity(PlayerChatMessage.this.sender());
+        }
+        public PlayerChatMessage playerChatMessage() {
+            return PlayerChatMessage.this;
+        }
+    }
+
+// PlayerChatMessage.adventureView
+    public AdventureView adventureView() {
+        return new AdventureView();
+    }

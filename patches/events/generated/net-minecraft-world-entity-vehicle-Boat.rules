@@ -1,33 +1,16 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
-# VehicleEntityCollisionEvent(舟どうし)
+# VehicleEntityCollisionEvent。Paper は push(Entity) の 2 つの枝それぞれで、
+# super.push の手前に置いている。後ろに置くと取り消しても押した分が戻らず、
+# 舟どうしのときは 2 つの枝の分が両方出る。
 file: net/minecraft/world/entity/vehicle/Boat.java
 anchor:
-            if (entity.getBoundingBox().minY < this.getBoundingBox().maxY) {
-                super.push(entity);
-            }
-insert-after:
+    super.push(entity);
+count: 2
+insert:
     // CraftBukkit start
-    if (!this.isPassengerOfSameVehicle(entity)) {
-        org.bukkit.event.vehicle.VehicleEntityCollisionEvent event = new org.bukkit.event.vehicle.VehicleEntityCollisionEvent(
-            (org.bukkit.entity.Vehicle) this.getBukkitEntity(), entity.getBukkitEntity());
-        this.level.getCraftServer().getPluginManager().callEvent(event);
-
-        if (event.isCancelled()) {
-            return;
-        }
-    }
-    // CraftBukkit end
-
-# VehicleEntityCollisionEvent(舟以外)
-file: net/minecraft/world/entity/vehicle/Boat.java
-anchor:
-        } else if (entity.getBoundingBox().minY <= this.getBoundingBox().minY) {
-            super.push(entity);
-        }
-insert-after:
-    // CraftBukkit start
-    if (!this.isPassengerOfSameVehicle(entity)) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.vehicle.VehicleEntityCollisionEvent.class)
+            && !this.isPassengerOfSameVehicle(entity)) {
         org.bukkit.event.vehicle.VehicleEntityCollisionEvent event = new org.bukkit.event.vehicle.VehicleEntityCollisionEvent(
             (org.bukkit.entity.Vehicle) this.getBukkitEntity(), entity.getBukkitEntity());
         this.level.getCraftServer().getPluginManager().callEvent(event);
@@ -44,17 +27,20 @@ anchor:
     this.tickBubbleColumn();
 insert:
     // CraftBukkit start
-    org.bukkit.Server server = this.level.getCraftServer();
-    org.bukkit.World bworld = this.level.getWorld();
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.vehicle.VehicleUpdateEvent.class)
+            || dev.shifu.event.EventGuard.listening(org.bukkit.event.vehicle.VehicleMoveEvent.class)) {
+        org.bukkit.Server server = this.level.getCraftServer();
+        org.bukkit.World bworld = this.level.getWorld();
 
-    org.bukkit.Location to = org.bukkit.craftbukkit.util.CraftLocation.toBukkit(this.position(), bworld, this.getYRot(), this.getXRot());
-    org.bukkit.entity.Vehicle vehicle = (org.bukkit.entity.Vehicle) this.getBukkitEntity();
+        org.bukkit.Location to = org.bukkit.craftbukkit.util.CraftLocation.toBukkit(this.position(), bworld, this.getYRot(), this.getXRot());
+        org.bukkit.entity.Vehicle vehicle = (org.bukkit.entity.Vehicle) this.getBukkitEntity();
 
-    server.getPluginManager().callEvent(new org.bukkit.event.vehicle.VehicleUpdateEvent(vehicle));
+        server.getPluginManager().callEvent(new org.bukkit.event.vehicle.VehicleUpdateEvent(vehicle));
 
-    if (this.lastLocation != null && !this.lastLocation.equals(to)) {
-        org.bukkit.event.vehicle.VehicleMoveEvent event = new org.bukkit.event.vehicle.VehicleMoveEvent(vehicle, this.lastLocation, to);
-        server.getPluginManager().callEvent(event);
+        if (this.lastLocation != null && !this.lastLocation.equals(to)) {
+            org.bukkit.event.vehicle.VehicleMoveEvent event = new org.bukkit.event.vehicle.VehicleMoveEvent(vehicle, this.lastLocation, to);
+            server.getPluginManager().callEvent(event);
+        }
+        this.lastLocation = vehicle.getLocation();
     }
-    this.lastLocation = vehicle.getLocation();
     // CraftBukkit end

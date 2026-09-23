@@ -9,11 +9,13 @@ anchor:
                 level.removeBlock(posWithBlock, false);
 insert:
     // CraftBukkit start - Step on eggs
-    org.bukkit.event.entity.EntityInteractEvent shifuStep = new org.bukkit.event.entity.EntityInteractEvent(
-            this.removerMob.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, posWithBlock));
-    level.getCraftServer().getPluginManager().callEvent(shifuStep);
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityInteractEvent.class)) {
+        org.bukkit.event.entity.EntityInteractEvent shifuStep = new org.bukkit.event.entity.EntityInteractEvent(
+                this.removerMob.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, posWithBlock));
+        level.getCraftServer().getPluginManager().callEvent(shifuStep);
 
-    if (shifuStep.isCancelled()) {
-        return;
+        if (shifuStep.isCancelled()) {
+            return;
+        }
     }
     // CraftBukkit end

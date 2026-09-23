@@ -5,4 +5,5 @@ file: net/minecraft/world/level/block/BaseFireBlock.java
 anchor:
     public void entityInside(BlockState state, Level world, BlockPos pos, Entity entity) {
 insert-after:
-    if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(world, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.EntityInsideBlockEvent.class)
+            && !new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(world, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent

@@ -1,0 +1,15 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+#
+# /paper fixlight は ThreadedLevelLightEngine.relight(Starlight)を呼ぶ。vanilla の ThreadedLevelLightEngine に
+# relight は無く、実行すると NoSuchMethodError になっていた。1.19.4 の /paper は起動時には登録されないが、
+# CraftServer.reload(/reload)が PaperCommands.registerCommands で登録する。
+# 光を計算し直さずに、使えないことを返す。
+# 読んだ位置: D:/.pw194/Paper-Server(HEAD)src/main/java/io/papermc/paper/command/subcommands/FixLightCommand.java、
+# src/main/java/org/bukkit/craftbukkit/CraftServer.java の reload
+
+file: io/papermc/paper/command/subcommands/FixLightCommand.java
+
+replace:
+        this.doFixLight(sender, args);
+with:
+        sender.sendMessage(text("/paper fixlight is not available: the vanilla light engine has no relight", RED)); // Shifu

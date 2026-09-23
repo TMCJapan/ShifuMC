@@ -26,7 +26,7 @@ file: net/minecraft/world/entity/vehicle/AbstractMinecart.java
 anchor:
     entity.startRiding(this);
 insert:
-    if (dev.shifu.event.EntityEvents.vehicleCollisionCancelled(this, entity)) {
+    if (!dev.shifu.event.EntityEvents.vehicleCollision(this, entity)) {
         continue;
     }
 
@@ -35,8 +35,9 @@ file: net/minecraft/world/entity/vehicle/AbstractMinecart.java
 anchor:
     entity.push(this);
 insert:
-    if (!this.isPassengerOfSameVehicle(entity)
-            && dev.shifu.event.EntityEvents.vehicleCollisionCancelled(this, entity)) {
+    if (dev.shifu.event.EntityEvents.vehicleCollideListening()
+            && !this.isPassengerOfSameVehicle(entity)
+            && !dev.shifu.event.EntityEvents.vehicleCollision(this, entity)) {
         continue;
     }
 
@@ -45,7 +46,7 @@ file: net/minecraft/world/entity/vehicle/AbstractMinecart.java
 anchor:
     entity.startRiding(this);
 insert:
-    if (dev.shifu.event.EntityEvents.vehicleCollisionCancelled(this, entity)) {
+    if (!dev.shifu.event.EntityEvents.vehicleCollision(this, entity)) {
         continue;
     }
 
@@ -53,6 +54,6 @@ file: net/minecraft/world/entity/vehicle/AbstractMinecart.java
 anchor:
     entity1.push(this);
 insert:
-    if (dev.shifu.event.EntityEvents.vehicleCollisionCancelled(this, entity1)) {
+    if (!dev.shifu.event.EntityEvents.vehicleCollision(this, entity1)) {
         continue;
     }

@@ -2,10 +2,13 @@
 
 file: org/bukkit/craftbukkit/entity/CraftLivingEntity.java
 
+# vanilla の addEffect は 2 つめが「誰が掛けたか」の Entity。CraftBukkit は
+# EntityPotionEffectEvent.Cause に替えている。理由は落として null を渡す。
+# 1.19.4 は MobEffectInstance をその場で組み立てる行(CraftLivingEntity.java:459)
 replace:
-    addEffect(org.bukkit.craftbukkit.potion.CraftPotionUtil.fromBukkit(effect), EntityPotionEffectEvent.Cause.PLUGIN)
+    effect.hasIcon()), EntityPotionEffectEvent.Cause.PLUGIN)
 with:
-    addEffect(org.bukkit.craftbukkit.potion.CraftPotionUtil.fromBukkit(effect), (net.minecraft.world.entity.Entity) null)
+    effect.hasIcon()), dev.shifu.event.EntityEvents.causedBy(EntityPotionEffectEvent.Cause.PLUGIN)) /* Shifu - 理由を PLUGIN にしてから vanilla の版へ渡す */
 
 # craftAttributes は vanilla の構築子で作れないので、初回に作る読み出しへ向ける
 count: 2

@@ -1,5 +1,8 @@
 # InventoryClickEvent(作業台・鍛冶台・製図台では CraftItemEvent /
 # SmithItemEvent / CartographyItemEvent)。vanilla の clicked の直前。
+# 取り消しで飛ばすのは clicked の 1 文だけ。そのあとの setRemoteSlotNoCopy・
+# setRemoteCarried・resumeRemoteUpdates・broadcast は取り消しでも通す(Paper と同じ)。
+# return で抜けると resumeRemoteUpdates が走らず、そのメニューの同期が止まったままになる。
 
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
@@ -7,12 +10,12 @@ anchor:
 insert:
     org.bukkit.event.inventory.InventoryClickEvent shifuClick =
             dev.shifu.event.ShifuEvents.inventoryClick(this.player, packet, slotNum);
-    if (shifuClick != null && shifuClick.isCancelled()) {
-        dev.shifu.event.ShifuEvents.cancelledInventoryClick(this.player, shifuClick);
-        return;
-    }
+    if (shifuClick == null || !shifuClick.isCancelled()) {
 insert-after:
-    if (dev.shifu.event.ShifuEvents.containerChanged(this.player, shifuClick)) {
-        return;
+        if (dev.shifu.event.ShifuEvents.containerChanged(this.player, shifuClick)) {
+            return;
+        }
+        dev.shifu.event.ShifuEvents.afterInventoryClick(this.player, shifuClick);
+    } else {
+        dev.shifu.event.ShifuEvents.cancelledInventoryClick(this.player, shifuClick);
     }
-    dev.shifu.event.ShifuEvents.afterInventoryClick(this.player, shifuClick);

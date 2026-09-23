@@ -8,7 +8,8 @@ anchor:
             this.mob.level.removeBlock(this.doorPos, false);
 insert:
     // CraftBukkit start
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityBreakDoorEvent(this.mob, this.doorPos).isCancelled()) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityBreakDoorEvent.class)
+            && org.bukkit.craftbukkit.event.CraftEventFactory.callEntityBreakDoorEvent(this.mob, this.doorPos).isCancelled()) {
         this.start();
         return;
     }

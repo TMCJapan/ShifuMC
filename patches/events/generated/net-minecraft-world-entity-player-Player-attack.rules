@@ -1,13 +1,14 @@
 
 
+# 攻撃の溜めを戻す 1 行だけを囲む。前の行の g *= h(エンチャントの上乗せに溜めを掛ける)
+# まで囲むと、取り消したときに上乗せが減らないまま通る。
+# resetAttackStrengthTicker は tick() にも同じ行があるので、続く行までアンカーに入れる。
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-    damageBonus *= attackStrengthScale;
     this.resetAttackStrengthTicker();
+    if (f > 0.0F || damageBonus > 0.0F) {
 insert:
-    if (dev.shifu.event.PlayerEvents.attackCooldownReset(this, target)) {
-insert-after:
-    }
+    if (dev.shifu.event.PlayerEvents.attackCooldownReset(this, target))
 
 # PrePlayerAttackEntityEvent。殴る手前。
 file: net/minecraft/world/entity/player/Player.java

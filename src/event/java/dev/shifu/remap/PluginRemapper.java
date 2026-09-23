@@ -26,8 +26,10 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.MethodRemapper;
 import org.objectweb.asm.commons.Remapper;
@@ -44,14 +46,21 @@ import org.yaml.snakeyaml.Yaml;
  * 1.19.4 では PaperSimplePluginClassLoader.findClass)。
  *
  * <p>表は tools/make_plugin_mappings.py が組んで、jar の META-INF/mappings/shifu-plugin-remap.txt
- * に入る。無ければ何もしない(難読化の無い版)。
+ * に入る。無いときは何も写さず、SEVERE を 1 行出す。
  *
  * <p>メソッド名は宣言したクラスで引く必要がある(EntityPlayer.fr() の fr は Player の宣言)。
  * 呼び出し箇所の所有クラスから親へ辿る。親がサーバーのクラスなら reflection で、
- * プラグインのクラスなら jar を先に走査して控えた継承関係で辿る(index)。
+ * プラグインのクラスなら jar を先に走査して控えた継承関係で辿る(index)。控えるのは
+ * plugins フォルダ・update フォルダ・-add-plugin の jar 全部で、親が別のプラグインの
+ * クラスでも辿れるようにしてある。
  *
- * <p>reflection で欄やメソッドを名前で引くところ(Class.getDeclaredField("h") など)は、
- * 呼び出しを {@link ReflectionProxy} に向け直して、実行時のクラスで名前を写す。
+ * <p>lambda が実装する interface のメソッド名(invokedynamic の名前)も写す。
+ * ClassRemapper は写さないので、難読化名の関数型 interface を実装した lambda が
+ * AbstractMethodError になっていた。
+ *
+ * <p>reflection で欄やメソッドを名前で引くところ(Class.getDeclaredField("h")、
+ * MethodHandles.Lookup.findVirtual、Class.forName など)は、呼び出しを
+ * {@link ReflectionProxy} に向け直して、実行時のクラスで名前を写す。
  *
  * <p>manifest に paperweight-mappings-namespace: mojang とあるプラグインは写さない
  * (Paper と同じ印)。
@@ -71,11 +80,28 @@ public final class PluginRemapper {
     /** reflection 用。"所有クラス 名前" → mojang 名(欄)、"所有クラス 名前 (引数)" → mojang 名(メソッド)。 */
     static final Map<String, String> FIELDS_BY_NAME = new HashMap<>();
     static final Map<String, String> METHODS_BY_PARAMS = new HashMap<>();
+    /**
+     * 実行時の Field / Method から spigot 名を引く。鍵は "mojang 所有クラス mojang 名" と
+     * "mojang 所有クラス mojang 名 (spigot 引数)"。getDeclaredFields() で並べた欄の名前を
+     * 難読化名と突き合わせるプラグインのため。
+     */
+    static final Map<String, String> FIELDS_BACK = new HashMap<>();
+    static final Map<String, String> METHODS_BACK = new HashMap<>();
     static final boolean ENABLED = load();
 
-    /** プラグイン名 → その jar の中身(クラス → 親と interface)。 */
+    /** プラグイン名(PluginDescriptionFile.getName() と同じ形)→ その jar の中身。 */
     private static final Map<String, JarIndex> INDEX = new ConcurrentHashMap<>();
+    /** 走査した jar 全部のクラス → 親と interface。親が別のプラグインのクラスのときに引く。 */
+    private static final Map<String, String[]> SHARED_SUPERS = new ConcurrentHashMap<>();
+    /** 走査済みの jar("道 更新時刻 大きさ")。同じ jar を二度読まないため。 */
+    private static final Set<String> SCANNED = ConcurrentHashMap.newKeySet();
+    /** 走査し直しても見つからなかったプラグイン名。クラスごとに走査し直さないため。 */
+    private static final Set<String> RESCANNED = ConcurrentHashMap.newKeySet();
+    /** 控えが無いプラグインの分。自分の jar が無いだけで、他の jar とサーバーは辿れる。 */
+    private static final Hierarchy UNINDEXED = new Hierarchy(Collections.emptyMap());
     private static volatile File pluginFolder;
+    private static volatile File updateFolder;
+    private static volatile List<File> extraJars = List.of();
 
     private PluginRemapper() {
     }
@@ -83,6 +109,9 @@ public final class PluginRemapper {
     private static boolean load() {
         try (InputStream in = PluginRemapper.class.getResourceAsStream(RESOURCE)) {
             if (in == null) {
+                LOGGER.severe("[Shifu] plugin remap table " + RESOURCE + " is not in the server jar;"
+                        + " every plugin built for Spigot will fail with ClassNotFoundException /"
+                        + " NoSuchMethodError. tools/make_plugin_mappings.py did not run (tools/closure.sh)");
                 return false;
             }
             final BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
@@ -97,10 +126,13 @@ public final class PluginRemapper {
                     case "f" -> {
                         FIELDS.put(parts[1] + ' ' + parts[2] + ' ' + parts[3], parts[4]);
                         FIELDS_BY_NAME.put(parts[1] + ' ' + parts[2], parts[4]);
+                        FIELDS_BACK.put(CLASSES.getOrDefault(parts[1], parts[1]) + ' ' + parts[4], parts[2]);
                     }
                     case "m" -> {
+                        final String params = parts[3].substring(0, parts[3].indexOf(')') + 1);
                         METHODS.put(parts[1] + ' ' + parts[2] + ' ' + parts[3], parts[4]);
-                        METHODS_BY_PARAMS.put(parts[1] + ' ' + parts[2] + ' ' + parts[3].substring(0, parts[3].indexOf(')') + 1), parts[4]);
+                        METHODS_BY_PARAMS.put(parts[1] + ' ' + parts[2] + ' ' + params, parts[4]);
+                        METHODS_BACK.put(CLASSES.getOrDefault(parts[1], parts[1]) + ' ' + parts[4] + ' ' + params, parts[2]);
                     }
                     default -> {
                     }
@@ -117,30 +149,55 @@ public final class PluginRemapper {
 
     // ------------------------------------------------------------ jar の走査
 
-    /** plugins フォルダ(と -add-plugin の jar)を走査して、プラグインごとの継承関係を控える。 */
-    public static void index(final File folder, final List<File> extra) {
+    /**
+     * plugins フォルダ・update フォルダ・-add-plugin の jar を走査して、
+     * プラグインごとの継承関係を控える。update フォルダの jar は plugins の同名を置き換える
+     * ので、あとから読んで控えを上書きする(読んだ位置: Paper-API
+     * src/main/java/org/bukkit/plugin/SimplePluginManager.java の checkUpdate)。
+     */
+    public static void index(final File folder, final File update, final List<File> extra) {
         if (!ENABLED) {
             return;
         }
         pluginFolder = folder;
+        updateFolder = update;
+        extraJars = extra == null ? List.of() : List.copyOf(extra);
+        scan();
+    }
+
+    /** まだ読んでいない jar だけを読む。 */
+    private static void scan() {
         final List<File> jars = new ArrayList<>();
-        final File[] listed = folder.listFiles((dir, name) -> name.endsWith(".jar"));
-        if (listed != null) {
-            Collections.addAll(jars, listed);
-        }
-        if (extra != null) {
-            jars.addAll(extra);
-        }
+        jars.addAll(listJars(pluginFolder));
+        jars.addAll(extraJars);
+        jars.addAll(listJars(updateFolder));
+        boolean added = false;
         for (final File jar : jars) {
-            indexJar(jar);
+            if (SCANNED.add(jar.getAbsolutePath() + ' ' + jar.lastModified() + ' ' + jar.length())) {
+                added |= indexJar(jar);
+            }
+        }
+        if (added) {
+            UNINDEXED.forget();
+            for (final JarIndex index : INDEX.values()) {
+                index.hierarchy.forget();
+            }
         }
     }
 
-    private static void indexJar(final File file) {
+    private static List<File> listJars(final File folder) {
+        if (folder == null) {
+            return List.of();
+        }
+        final File[] listed = folder.listFiles((dir, name) -> name.endsWith(".jar"));
+        return listed == null ? List.of() : List.of(listed);
+    }
+
+    private static boolean indexJar(final File file) {
         try (JarFile jar = new JarFile(file)) {
             final String name = pluginName(jar);
             if (name == null) {
-                return;
+                return false;
             }
             final Manifest manifest = jar.getManifest();
             final boolean mojang = manifest != null
@@ -165,9 +222,12 @@ public final class PluginRemapper {
                     }
                 }
             }
-            INDEX.put(name, new JarIndex(mojang, supers));
+            SHARED_SUPERS.putAll(supers);
+            INDEX.put(key(name), new JarIndex(mojang, supers));
+            return true;
         } catch (final IOException unreadable) {
             // 開けない jar は Bukkit 側が断る
+            return false;
         }
     }
 
@@ -190,6 +250,17 @@ public final class PluginRemapper {
         return null;
     }
 
+    /**
+     * 控えの鍵。yml の name そのままではなく、PluginDescriptionFile と同じ形に直す
+     * (読んだ位置: Paper-API src/main/java/org/bukkit/plugin/PluginDescriptionFile.java の
+     * loadMap、name.replace(' ', '_'))。直さないと、名前に空白のあるプラグイン
+     * ("Multiverse-Core" ではなく "My Plugin" のような yml)の控えが引けず、
+     * 継承関係が空のまま写してしまう。
+     */
+    private static String key(final String name) {
+        return name.replace(' ', '_');
+    }
+
     // ------------------------------------------------------------ クラスの書き換え
 
     /** CraftMagicNumbers.processClass から(Bukkit のプラグイン)。 */
@@ -202,10 +273,11 @@ public final class PluginRemapper {
         if (!ENABLED) {
             return bytes;
         }
-        JarIndex index = INDEX.get(plugin);
-        if (index == null && pluginFolder != null) {
-            index(pluginFolder, null); // あとから置かれた jar(reload、PlugMan)
-            index = INDEX.get(plugin);
+        final String key = key(plugin);
+        JarIndex index = INDEX.get(key);
+        if (index == null && pluginFolder != null && RESCANNED.add(key)) {
+            scan(); // あとから置かれた jar(reload、PlugMan)。見つからなければもう走査し直さない
+            index = INDEX.get(key);
         }
         if (index != null && index.mojang) {
             return bytes;
@@ -213,7 +285,7 @@ public final class PluginRemapper {
         try {
             final ClassReader reader = new ClassReader(bytes);
             final ClassWriter writer = new ClassWriter(reader, 0);
-            final Hierarchy hierarchy = new Hierarchy(index == null ? Collections.emptyMap() : index.supers);
+            final Hierarchy hierarchy = index == null ? UNINDEXED : index.hierarchy;
             reader.accept(new ReflectionAwareRemapper(writer, new SpigotToMojang(hierarchy)), 0);
             return writer.toByteArray();
         } catch (final Exception broken) {
@@ -222,16 +294,28 @@ public final class PluginRemapper {
         }
     }
 
-    private record JarIndex(boolean mojang, Map<String, String[]> supers) {
+    private static final class JarIndex {
+        private final boolean mojang;
+        private final Hierarchy hierarchy;
+
+        JarIndex(final boolean mojang, final Map<String, String[]> supers) {
+            this.mojang = mojang;
+            this.hierarchy = new Hierarchy(supers);
+        }
     }
 
     /** 所有クラス(spigot 内部名)から、自分と親をすべて spigot 内部名で並べる。 */
     static final class Hierarchy {
-        private final Map<String, String[]> pluginSupers;
-        private final Map<String, List<String>> cache = new HashMap<>();
+        private final Map<String, String[]> ownSupers;
+        private final Map<String, List<String>> cache = new ConcurrentHashMap<>();
 
-        Hierarchy(final Map<String, String[]> pluginSupers) {
-            this.pluginSupers = pluginSupers;
+        Hierarchy(final Map<String, String[]> ownSupers) {
+            this.ownSupers = ownSupers;
+        }
+
+        /** 新しい jar を控えたあと。前に「親を辿れなかった」と答えた分を捨てる。 */
+        void forget() {
+            this.cache.clear();
         }
 
         List<String> of(final String owner) {
@@ -247,7 +331,10 @@ public final class PluginRemapper {
                 if (current == null || !seen.add(current) || current.startsWith("java/")) {
                     continue;
                 }
-                final String[] fromPlugin = this.pluginSupers.get(current);
+                String[] fromPlugin = this.ownSupers.get(current);
+                if (fromPlugin == null) {
+                    fromPlugin = SHARED_SUPERS.get(current);
+                }
                 if (fromPlugin != null) {
                     Collections.addAll(queue, fromPlugin);
                     continue;
@@ -343,12 +430,11 @@ public final class PluginRemapper {
     }
 
     /**
-     * ClassRemapper に、Class.getDeclaredField / getField / getDeclaredMethod / getMethod の
-     * 呼び出しを {@link ReflectionProxy} の static メソッドへ向け直す処理を足したもの。
-     * 名前の文字列は実行時にしか分からないので、写すのは呼ばれたときに行う。
+     * ClassRemapper に、reflection で名前を引く呼び出しを {@link ReflectionProxy} の
+     * static メソッドへ向け直す処理と、invokedynamic の名前を写す処理を足したもの。
+     * reflection の名前は実行時にしか分からないので、写すのは呼ばれたときに行う。
      */
     private static final class ReflectionAwareRemapper extends ClassRemapper {
-        private static final String CLASS = "java/lang/Class";
         private static final String PROXY = "dev/shifu/remap/ReflectionProxy";
 
         ReflectionAwareRemapper(final ClassVisitor next, final Remapper remapper) {
@@ -360,11 +446,31 @@ public final class PluginRemapper {
             return new MethodRemapper(this.api, next, this.remapper) {
                 @Override
                 public void visitMethodInsn(final int opcode, final String owner, final String name, final String descriptor, final boolean isInterface) {
-                    if (opcode == Opcodes.INVOKEVIRTUAL && CLASS.equals(owner) && ReflectionProxy.handles(name, descriptor)) {
-                        super.visitMethodInsn(Opcodes.INVOKESTATIC, PROXY, name, "(Ljava/lang/Class;" + descriptor.substring(1), false);
+                    final String proxy = ReflectionProxy.redirect(opcode, owner, name, descriptor);
+                    if (proxy != null) {
+                        super.visitMethodInsn(Opcodes.INVOKESTATIC, PROXY, name, proxy, false);
                         return;
                     }
                     super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+                }
+
+                /**
+                 * lambda が実装する interface のメソッド名。MethodRemapper は
+                 * mapInvokeDynamicMethodName を呼ぶが、既定は名前をそのまま返すので写らない
+                 * (読んだ位置: org.ow2.asm:asm-commons の
+                 * org/objectweb/asm/commons/MethodRemapper.java の visitInvokeDynamicInsn と
+                 * Remapper.java の mapInvokeDynamicMethodName)。
+                 * LambdaMetafactory の第 1 引数が消去後の SAM の型なので、それを記述子に使う。
+                 */
+                @Override
+                public void visitInvokeDynamicInsn(final String name, final String descriptor, final Handle bootstrap, final Object... arguments) {
+                    String sam = name;
+                    final Type owner = Type.getReturnType(descriptor);
+                    if (owner.getSort() == Type.OBJECT && arguments.length > 0
+                            && arguments[0] instanceof Type erased && erased.getSort() == Type.METHOD) {
+                        sam = this.remapper.mapMethodName(owner.getInternalName(), name, erased.getDescriptor());
+                    }
+                    super.visitInvokeDynamicInsn(sam, descriptor, bootstrap, arguments);
                 }
             };
         }

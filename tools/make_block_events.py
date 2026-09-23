@@ -21,6 +21,17 @@ vanilla の行を足して定まるまで広げる(`apply_events.py` は `insert
 アンカーの最後の行の後ろに置くので、後ろへは広げない)。
 発火の引数に Paper が足した変数(木に無い名前)が入っているもの、ラムダの中の setBlock、
 それでも定まらないものは出さずに数える。
+
+Paper が発火を `if (!handle...(...)) { return X; }` の形で置いて、取り消しでそこから
+抜けているものは、Shifu も発火のあとに同じ文で抜ける(発火の関数は通ったかを返す)。
+抜けないと、取り消しで戻したあとにも vanilla の続きが走る。StemBlock は実を戻したあとに
+茎だけ「実つき」に変わって空を向いていた。
+
+大釜で、Paper の発火と消えた setBlock のあいだに vanilla の `setItemInHand` があるものは、
+置いたあとに戻す形にできない(手持ちの入れ替えが戻らず、水入り瓶が増えたり
+バケツの中身が消えたりした)。これは Paper と同じく入れ替えの手前で発火する
+(`ShifuEvents.cauldronLevelChangeBefore`)。`--covered <規則の置き場>` を渡すと、
+そこにある規則と同じアンカーのものは出さない(generated の規則が同じ位置で出しているため)。
 """
 import io
 import os
@@ -29,6 +40,9 @@ import subprocess
 import sys
 
 import paths
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import apply_events
 
 HANDLERS = {
     "handleBlockGrowEvent": "grow",
@@ -45,6 +59,9 @@ ALIAS = re.compile(r"^\s*(?:final\s+)?BlockPos\s+(\w+)\s*=\s*([^;]+);\s*(?://.*)
 IDENT = re.compile(r"[A-Za-z_]\w*")
 UPDATE_ALL = "net.minecraft.world.level.block.Block.UPDATE_ALL"
 MAX_CONTEXT = 6
+GATE_HEAD = re.compile(r"^\s*if \(!\s*(?:org\.bukkit\.craftbukkit\.event\.)?CraftEventFactory\.\w+\(.*\{\s*(?://.*)?$")
+GATE_STMT = re.compile(r"^\s*(return\b[^;]*|continue|break);\s*(?://.*)?$")
+COMMENT = re.compile(r"^\s*//")
 BASE = paths.BASE
 
 
@@ -207,9 +224,50 @@ def known_names(expr, tree_text):
     return True
 
 
+def gate_of(hunk, call_at):
+    """Paper の発火が `if (!...) { 文; }` なら、その文(return X / continue / break)。違えば None。"""
+    if not GATE_HEAD.match(hunk[call_at][1:]):
+        return None
+
+    body = [l[1:] for l in hunk[call_at + 1:] if l[:1] == "+" and not COMMENT.match(l[1:])]
+
+    if len(body) < 2 or body[1].strip() != "}":
+        return None
+
+    match = GATE_STMT.match(body[0])
+
+    return match.group(1).strip() + ";" if match else None
+
+
+def downward_anchor(hunk, first, tree_lines):
+    """ハンクの first 行から下へ vanilla の行を足していき、木の中で 1 箇所に定まるアンカー。"""
+    anchor = []
+    at = first
+
+    while at < len(hunk) and len(anchor) <= MAX_CONTEXT:
+        if hunk[at][:1] in " -" and hunk[at][1:].strip():
+            anchor.append(hunk[at][1:])
+            want = [l.strip() for l in anchor]
+            hits = sum(1 for i in range(len(tree_lines) - len(want) + 1)
+                       if tree_lines[i:i + len(want)] == want)
+
+            if hits == 1:
+                return anchor
+
+            if hits == 0:
+                return None
+        elif hunk[at][:1] == "+":
+            return None
+
+        at += 1
+
+    return None
+
+
 class Generator:
-    def __init__(self, tree):
+    def __init__(self, tree, covered=None):
         self.tree = tree
+        self.covered = covered or {}
         self.rules = []
         self.skipped = {}
         self.number = 0
@@ -248,7 +306,7 @@ class Generator:
 
         return self.cache[key]
 
-    def emit(self, target, hunk, index, name, args, aliases, start):
+    def emit(self, target, hunk, index, name, args, aliases, start, call_at):
         """消えた setBlock 1 行と発火 1 つの対から、規則を 1 つ出す。"""
         vanilla = hunk[index][1:]
         # Paper が足した別名を中身に戻し、Paper の getMinecraftWorld() は外す
@@ -320,6 +378,19 @@ class Generator:
                 return
 
         tree_lines = [l.strip() for l in text.split("\n")]
+        gate = gate_of(hunk, call_at)
+
+        if gate and gate.startswith("return") and not known_names(gate[len("return"):-1], vanilla_text):
+            self.skip("取り消しで抜ける文に木に無い名前がある(抜けずに出した)", target, vanilla)
+            gate = None
+
+        between = [l[1:] for l in hunk[call_at + 1:index] if l[:1] in " -"]
+
+        if kind == "cauldron" and call_at < index and any("setItemInHand(" in l for l in between):
+            self.emit_cauldron_before(target, hunk, call_at, args, level, pos, entity, reason,
+                                      gate, vanilla, vanilla_text, tree_lines)
+            return
+
         anchor = unique_anchor(hunk, index, tree_lines)
 
         if anchor is None:
@@ -349,7 +420,49 @@ class Generator:
             after = "dev.shifu.event.ShifuEvents.cauldronLevelChange(%s, %s, %s, %s, %s);" % (level, pos, var, entity, reason)
 
         before = "dev.shifu.event.ShifuEvents.blockChangeBefore(%s, %s, %s)" % (level, pos, handlers)
+
+        if gate:
+            after = ["if (!%s) {" % after[:-1], "    " + gate, "}"]
+        else:
+            after = [after]
+
         self.rules.append((target, anchor, var, before, after, name))
+
+    def emit_cauldron_before(self, target, hunk, call_at, args, level, pos, entity, reason,
+                             gate, vanilla, vanilla_text, tree_lines):
+        """手持ちを入れ替える大釜。Paper と同じく入れ替えの手前で発火する。"""
+        if gate is None or len(args) < 3:
+            self.skip("大釜: 入れ替えの手前で抜ける形が読めない", target, vanilla)
+            return
+
+        state = args[2]
+
+        if not known_names(state, vanilla_text):
+            self.skip("発火の引数に木に無い名前がある(Paper が足した変数)", target, vanilla)
+            return
+
+        first = call_at + 1
+
+        while first < len(hunk) and hunk[first][:1] == "+":
+            first += 1
+
+        anchor = downward_anchor(hunk, first, tree_lines)
+
+        if anchor is None:
+            self.skip("大釜: 入れ替えの手前の行が木の中で 1 箇所に定まらない", target, vanilla)
+            return
+
+        if [l.strip() for l in anchor] in self.covered.get(target, []):
+            self.skip("generated の規則が同じ位置で出している", target, vanilla)
+            return
+
+        insert = ["if (dev.shifu.event.ShifuEvents.cauldronListening()",
+                  "        && !dev.shifu.event.ShifuEvents.cauldronLevelChangeBefore(%s, %s," % (level, pos),
+                  "                %s, %s," % (state, entity),
+                  "                %s)) {" % reason,
+                  "    " + gate,
+                  "}"]
+        self.rules.append((target, anchor, None, insert, None, "handleCauldronLevelChangeEvent"))
 
     def scan(self, root):
         for base, _, names in sorted(os.walk(root)):
@@ -377,20 +490,34 @@ class Generator:
                             aliases[match.group(1)] = match.group(2).strip()
 
                     removed = [i for i, l in enumerate(hunk) if l[:1] == "-" and SET_BLOCK.match(l[1:])]
+                    call_at = [i for i, l in enumerate(hunk) if l[:1] == "+"
+                               for m in CALL_HEAD.finditer(l[1:]) if m.group("name") in HANDLERS]
 
                     if not removed or len(calls) != len(removed):
                         self.skip("消えた setBlock %d 件、発火 %d 件で対にならない" % (len(removed), len(calls)),
                                   target, hunk[removed[0]][1:] if removed else added[0])
                         continue
 
-                    for index, (name, args) in zip(removed, calls):
-                        self.emit(target, hunk, index, name, args, aliases, start)
+                    for index, (name, args), at in zip(removed, calls, call_at):
+                        self.emit(target, hunk, index, name, args, aliases, start, at)
 
 
 def main():
     root, tree, out_path = sys.argv[1:4]
     report = "--report" in sys.argv
-    generator = Generator(tree)
+    covered = {}
+
+    if "--covered" in sys.argv:
+        where = sys.argv[sys.argv.index("--covered") + 1]
+
+        for base, _, names in os.walk(where):
+            for name in sorted(names):
+                if name.endswith(".rules"):
+                    with io.open(os.path.join(base, name), encoding="utf-8") as handle:
+                        for rule in apply_events.parse(handle.read(), name):
+                            covered.setdefault(rule.target, []).append([l.strip() for l in rule.anchor])
+
+    generator = Generator(tree, covered)
     generator.scan(root)
 
     with io.open(out_path, "w", encoding="utf-8", newline="\n") as handle:
@@ -399,6 +526,11 @@ def main():
         handle.write("#\n# vanilla の setBlock の行は残す。置く前に控えを取り(登録が無ければ null)、\n")
         handle.write("# 置いたあとに発火して、取り消されたら控えに戻す。通る経路は vanilla のまま。\n")
         handle.write("# アンカーが 2 行以上のものは、setBlock の行だけでは定まらないので直前の行を足してある。\n")
+        handle.write("#\n# Paper が発火を if (!...) { return; } で置いて抜けているものは、発火のあとに同じ文で抜ける。\n")
+        handle.write("# 大釜で vanilla が setBlock より先に手持ちを入れ替えるものは、入れ替えの手前で発火する\n")
+        handle.write("# (置いたあとに戻す形では手持ちが戻らない)。--covered に渡した規則と同じ位置のものは出さない。\n")
+        handle.write("#\n#     python tools/make_block_events.py <patches/sources> <木> patches/events/block-change.rules \\\n")
+        handle.write("#         --covered patches/events/generated\n")
 
         for target, anchor, var, before, after, name in generator.rules:
             handle.write("\n# %s\n" % name)
@@ -408,8 +540,19 @@ def main():
             for line in anchor:
                 handle.write("    %s\n" % line.strip())
 
+            if var is None:
+                handle.write("insert:\n")
+
+                for line in before:
+                    handle.write("    %s\n" % line)
+
+                continue
+
             handle.write("insert:\n    final org.bukkit.craftbukkit.block.CraftBlockState %s = %s;\n" % (var, before))
-            handle.write("insert-after:\n    %s\n" % after)
+            handle.write("insert-after:\n")
+
+            for line in after:
+                handle.write("    %s\n" % line)
 
     print("出した規則: %d 件 -> %s" % (len(generator.rules), out_path))
 

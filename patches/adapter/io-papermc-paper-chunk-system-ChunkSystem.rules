@@ -8,11 +8,7 @@ replace:
 with:
         ((net.minecraft.server.level.ServerLevel) chunk.level).getChunkSource()
 
-file: io/papermc/paper/chunk/system/ChunkSystem.java
-replace:
-        chunk.level.chunkSource.chunkMap.tickingGenerated.incrementAndGet();
-with:
-        ((net.minecraft.server.level.ServerLevel) chunk.level).chunkSource.chunkMap.tickingGenerated.incrementAndGet();
+# 1.19.4 の ChunkSystem は chunkMap.tickingGenerated を数えない(chunk.level を読むのは上の 4 行だけ)
 
 # Paper の書き直したチャンク系(ServerLevel.chunkTaskScheduler)へ通しているところ。
 # Shifu は vanilla のチャンク系のままなので、そこに繋ぎ直す。

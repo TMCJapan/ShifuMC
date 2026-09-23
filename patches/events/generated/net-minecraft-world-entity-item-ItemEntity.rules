@@ -5,7 +5,8 @@ anchor:
         merge(targetEntity, targetStack, sourceStack);
 insert:
     // CraftBukkit start
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callItemMergeEvent(sourceEntity, targetEntity).isCancelled()) { // 1.19.4 はイベントを返す
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.ItemMergeEvent.class)
+            && org.bukkit.craftbukkit.event.CraftEventFactory.callItemMergeEvent(sourceEntity, targetEntity).isCancelled()) { // 1.19.4 はイベントを返す
         return;
     }
     // CraftBukkit end

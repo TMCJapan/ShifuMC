@@ -1,16 +1,20 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # EndermanAttackPlayerEvent
+#
+# Paper は isLookingAtMe の本体を isBeingStaredBy0 へ移し、isLookingAtMe を発火だけにしている。
+# 以前はそれを写して、メソッドの頭で vanilla の { を差し込みの } で閉じ、残りの vanilla の行を
+# 新しいメソッドの本体にしていた。登録が無くても呼び出しが 1 段増え、vanilla の本体は
+# isLookingAtMe の外に出るので、そこを狙う mixin も当たらない。
+#
+# 登録があるときだけ、同じ isLookingAtMe をもう 1 度呼んで vanilla の本体の答えを受け、発火する。
+# 2 度目の呼び出しでは endermanAttackEnter が false を返すので、この if を素通りして vanilla の本体が走る。
+# isLookingAtMe は package-private なので、発火層からは呼べない。
 file: net/minecraft/world/entity/monster/EnderMan.java
 anchor:
     boolean isLookingAtMe(Player player) {
 insert-after:
-        // Paper start - EndermanAttackPlayerEvent
-        final boolean shouldAttack = this.isBeingStaredBy0(player);
-        final com.destroystokyo.paper.event.entity.EndermanAttackPlayerEvent event = new com.destroystokyo.paper.event.entity.EndermanAttackPlayerEvent((org.bukkit.entity.Enderman) getBukkitEntity(), (org.bukkit.entity.Player) player.getBukkitEntity());
-        event.setCancelled(!shouldAttack);
-        return event.callEvent();
+    if (dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.entity.EndermanAttackPlayerEvent.class)
+            && dev.shifu.event.AnimalEvents.endermanAttackEnter()) {
+        return dev.shifu.event.AnimalEvents.endermanAttack(this, player, this.isLookingAtMe(player));
     }
-
-    boolean isBeingStaredBy0(Player player) {
-        // Paper end - EndermanAttackPlayerEvent

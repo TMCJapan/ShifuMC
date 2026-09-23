@@ -7,5 +7,7 @@ anchor:
 insert:
     // Paper start - PlayerRecipeDiscoverEvent event
     // 1.19.4 の CraftEventFactory は鍵を受けて真偽値を返す
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handlePlayerRecipeListUpdateEvent(player, id)) continue;
+    // Shifu - 登録が無ければ組み立てない
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerRecipeDiscoverEvent.class)
+            && !org.bukkit.craftbukkit.event.CraftEventFactory.handlePlayerRecipeListUpdateEvent(player, id)) continue;
     // Paper end - PlayerRecipeDiscoverEvent event
