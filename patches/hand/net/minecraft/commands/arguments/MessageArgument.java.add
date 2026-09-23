@@ -1,10 +1,19 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
 
 // MessageArgument.resolveChatMessage
-    // Paper の版は文を引数で受けるが、vanilla の版は context から読み直す。
-    // 渡された message は使われない。
-    public static void resolveChatMessage(final MessageArgument.Message message,
-                                          final CommandContext<CommandSourceStack> context, final String name,
-                                          final Consumer<PlayerChatMessage> task) throws CommandSyntaxException {
-        MessageArgument.resolveChatMessage(context, name, task);
+    // SignedMessageResolverImpl.resolveSignedMessage が呼ぶ。プラグインの引数の文脈には Message ではなく
+    // SignedMessageResolverImpl が入っているので、vanilla の 3 引数の版(1 行目で context から Message を読む)へ渡すと
+    // brigadier の getArgument が IllegalArgumentException で落ちる。Paper と同じく、vanilla の本体から 1 行目を除き、
+    // 渡された message を使う。signed / disguised の処理は vanilla の private メソッドのまま。
+    // 読んだ位置: patches/sources/net/minecraft/commands/arguments/MessageArgument.java.patch:4-14
+    public static void resolveChatMessage(final MessageArgument.Message message, final CommandContext<CommandSourceStack> context, final String name, final Consumer<PlayerChatMessage> task) throws CommandSyntaxException {
+        CommandSourceStack sender = context.getSource();
+        Component formatted = message.resolveComponent(sender);
+        CommandSigningContext signingContext = sender.getSigningContext();
+        PlayerChatMessage signedArgument = signingContext.getArgument(name);
+        if (signedArgument != null) {
+            resolveSignedMessage(task, sender, signedArgument.withUnsignedContent(formatted));
+        } else {
+            resolveDisguisedMessage(task, sender, PlayerChatMessage.system(message.text).withUnsignedContent(formatted));
+        }
     }

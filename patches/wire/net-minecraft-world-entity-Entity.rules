@@ -1,0 +1,34 @@
+# Bukkit 層の配線。vanilla の行は変えない。
+
+# エンティティの PersistentDataContainer(BukkitValues)。
+#
+# Paper は saveWithoutId と load の中で CraftEntity の storeBukkitValues /
+# readBukkitValues を呼ぶ。Shifu にはその呼び出しがどこにも無く、プラグインが
+# getPersistentDataContainer() に書いた値が、ログアウト・チャンクのアンロード・再起動で
+# 消えていた。
+#
+# 保存は Paper と同じく CraftEntity が既にあるときだけ見る。読み込みは BukkitValues が
+# 付いている tag のときだけ CraftEntity を作る(Paper は毎回 getBukkitEntity() を呼ぶ。
+# BlockEntity の PublicBukkitValues と同じく、要るときに作る)。
+# storeBukkitValues は中身が空なら何も書かないので、値が無ければ NBT は vanilla と同じ。
+#
+# 読んだ位置:
+#   paper-server patches/sources/net/minecraft/world/entity/Entity.java.patch の
+#     「CraftBukkit start - stores eventually existing bukkit values」と
+#     「Paper - move world parsing/loading to PlayerList#placeNewPlayer」
+#   paper-server src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java:1069,1075
+file: net/minecraft/world/entity/Entity.java
+anchor:
+    this.addAdditionalSaveData(output);
+insert-after:
+    if (this.bukkitEntity != null) {
+        this.bukkitEntity.storeBukkitValues(output);
+    }
+
+file: net/minecraft/world/entity/Entity.java
+anchor:
+    this.readAdditionalSaveData(input);
+insert-after:
+    if (input.child("BukkitValues").isPresent()) {
+        this.getBukkitEntity().readBukkitValues(input);
+    }

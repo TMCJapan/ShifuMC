@@ -7,11 +7,13 @@ anchor:
 insert:
     if (this.fixedPose) return; // Paper - Expand Pose API
     // CraftBukkit start
-    if (pose == this.getPose()) {
-        return;
-    }
-    if (!this.generation) {
-        this.level.getCraftServer().getPluginManager().callEvent(new org.bukkit.event.entity.EntityPoseChangeEvent(this.getBukkitEntity(), org.bukkit.entity.Pose.values()[pose.ordinal()]));
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityPoseChangeEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        if (pose == this.getPose()) {
+            return;
+        }
+        if (!this.generation) {
+            this.level.getCraftServer().getPluginManager().callEvent(new org.bukkit.event.entity.EntityPoseChangeEvent(this.getBukkitEntity(), org.bukkit.entity.Pose.values()[pose.ordinal()]));
+        }
     }
     // CraftBukkit end
 
@@ -25,43 +27,48 @@ insert:
         !new io.papermc.paper.event.entity.EntityCollideWithEntityEvent(this.getBukkitEntity(), entity.getBukkitEntity()).callEvent()) return;
     // Paper end - Add EntityCollideWithEntity Event
 
-
 # callPlayerLeashEntityEvent
 file: net/minecraft/world/entity/Entity.java
 anchor:
     mob.setLeashedTo(this, true);
 insert:
-    // Paper start - PlayerLeashEvent
-    final org.bukkit.event.entity.PlayerLeashEntityEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerLeashEntityEvent(
-        mob,
-        this,
-        player,
-        hand
-    );
-    if (event != null && event.isCancelled()) continue; // If the event was called and cancelled, skip this.
-    // Paper end - PlayerLeashEvent
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.PlayerLeashEntityEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - PlayerLeashEvent
+        final org.bukkit.event.entity.PlayerLeashEntityEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerLeashEntityEvent(
+            mob,
+            this,
+            player,
+            hand
+        );
+        if (event != null && event.isCancelled()) continue; // If the event was called and cancelled, skip this.
+        // Paper end - PlayerLeashEvent
+    }
 
 # callPlayerLeashEntityEvent
 file: net/minecraft/world/entity/Entity.java
 anchor:
     leashable.setLeashedTo(player, true);
 insert:
-    // Paper start - EntityLeashEvent
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerLeashEntityEvent(this, player, player, hand).isCancelled()) {
-        ((ServerPlayer) player).connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityLinkPacket(this, leashable.getLeashHolder()));
-        return InteractionResult.PASS;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.PlayerLeashEntityEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - EntityLeashEvent
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerLeashEntityEvent(this, player, player, hand).isCancelled()) {
+            ((ServerPlayer) player).connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityLinkPacket(this, leashable.getLeashHolder()));
+            return InteractionResult.PASS;
+        }
+        // Paper end - EntityLeashEvent
     }
-    // Paper end - EntityLeashEvent
 
 # callToggleSwimEvent
 file: net/minecraft/world/entity/Entity.java
 anchor:
     this.setSharedFlag(FLAG_SWIMMING, swimming);
 insert:
-    // CraftBukkit start
-    if (this.valid && this.isSwimming() != swimming && this instanceof net.minecraft.world.entity.LivingEntity) {
-        if (org.bukkit.craftbukkit.event.CraftEventFactory.callToggleSwimEvent((net.minecraft.world.entity.LivingEntity) this, swimming).isCancelled()) {
-            return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityToggleSwimEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        if (this.valid && this.isSwimming() != swimming && this instanceof net.minecraft.world.entity.LivingEntity) {
+            if (org.bukkit.craftbukkit.event.CraftEventFactory.callToggleSwimEvent((net.minecraft.world.entity.LivingEntity) this, swimming).isCancelled()) {
+                return;
+            }
         }
+        // CraftBukkit end
     }
-    // CraftBukkit end

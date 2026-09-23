@@ -5,12 +5,14 @@ file: net/minecraft/world/level/block/LeverBlock.java
 anchor:
     this.pull(stateBefore, level, pos, null);
 insert:
-    // Paper start - Call BlockRedstoneEvent
-    boolean wasPowered = stateBefore.getValue(POWERED);
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, !wasPowered)) {
-        return InteractionResult.SUCCESS;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - Call BlockRedstoneEvent
+        boolean wasPowered = stateBefore.getValue(POWERED);
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, !wasPowered)) {
+            return InteractionResult.SUCCESS;
+        }
+        // Paper end - Call BlockRedstoneEvent
     }
-    // Paper end - Call BlockRedstoneEvent
 
 # callBinaryRedstoneChange
 file: net/minecraft/world/level/block/LeverBlock.java
@@ -18,8 +20,7 @@ anchor:
     this.pull(state, level, pos, null);
 insert:
     // Paper start - Call BlockRedstoneEvent
-    boolean wasPowered = state.getValue(POWERED);
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, !wasPowered)) {
+    if (!dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class) || org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, !state.getValue(POWERED))) {
     // Paper end - Call BlockRedstoneEvent
 insert-after:
     } // Paper - Call BlockRedstoneEvent

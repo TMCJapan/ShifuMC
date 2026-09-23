@@ -102,3 +102,28 @@ anchor:
     LOGGER.info("Stopping server");
 insert:
     org.spigotmc.WatchdogThread.doStop();
+
+# データパックを読み直すと Commands が作り直される。Paper はその直前にプラグインの
+# コマンドのノードを新しい dispatcher へ移し、読み直しのあとで COMMANDS(RELOAD) を出して
+# syncCommands している。
+# 読んだ位置: D:/.pw206/Paper-Server の HEAD:src/main/java/net/minecraft/server/MinecraftServer.java:2301, 2325-2330
+#
+# どれも入っていなかったときは、/datapack enable と /reload のあと、plugin.yml のコマンドも
+# Brigadier API のコマンドも dispatcher と CommandMap の両方から消えて、再起動まで戻らなかった。
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    this.resources.close();
+    this.resources = newResources;
+insert:
+    io.papermc.paper.command.brigadier.PaperBrigadier.moveBukkitCommands(this.resources.managers().getCommands(), newResources.managers().getCommands());
+
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    this.structureTemplateManager.onResourceManagerReload(this.resources.resourceManager);
+insert-after:
+    io.papermc.paper.command.brigadier.PaperCommands.INSTANCE.setValid();
+    io.papermc.paper.plugin.lifecycle.event.LifecycleEventRunner.INSTANCE.callReloadableRegistrarEvent(io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents.COMMANDS, io.papermc.paper.command.brigadier.PaperCommands.INSTANCE, org.bukkit.plugin.Plugin.class, io.papermc.paper.plugin.lifecycle.event.registrar.ReloadableRegistrarEvent.Cause.RELOAD);
+    ((org.bukkit.craftbukkit.help.SimpleHelpMap) this.server.getHelpMap()).clear();
+    ((org.bukkit.craftbukkit.help.SimpleHelpMap) this.server.getHelpMap()).initializeGeneralTopics();
+    ((org.bukkit.craftbukkit.help.SimpleHelpMap) this.server.getHelpMap()).initializeCommands();
+    this.server.syncCommands();

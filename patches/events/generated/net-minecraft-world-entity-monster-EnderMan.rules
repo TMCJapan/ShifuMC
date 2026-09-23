@@ -1,16 +1,15 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # EndermanAttackPlayerEvent
+# Paper は判定を isBeingStaredBy0 へ移してメソッドを 2 つに割っていた。割ると登録が無くても呼び出しが 1 段増え、
+# isBeingStaredBy の中の isLookingAtMe を狙う mixin も外れる。vanilla の return はそのまま残し、
+# 登録があるときだけ発火層が同じ判定を組み直して発火する(EnderMan の中に isLookingAtMe の呼び出しを増やさない)。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/EnderMan.java.patch(EndermanAttackPlayerEvent)
 file: net/minecraft/world/entity/monster/EnderMan.java
 anchor:
     return LivingEntity.PLAYER_NOT_WEARING_DISGUISE_ITEM.test(player) && this.isLookingAtMe(player, 0.025, true, false, this.getEyeY());
 insert:
-        // Paper start - EndermanAttackPlayerEvent
-        final boolean shouldAttack = this.isBeingStaredBy0(player);
-        final com.destroystokyo.paper.event.entity.EndermanAttackPlayerEvent event = new com.destroystokyo.paper.event.entity.EndermanAttackPlayerEvent((org.bukkit.entity.Enderman) getBukkitEntity(), (org.bukkit.entity.Player) player.getBukkitEntity());
-        event.setCancelled(!shouldAttack);
-        return event.callEvent();
+    if (dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.entity.EndermanAttackPlayerEvent.class)) {
+        return dev.shifu.event.EntityEvents.endermanAttack(this, player);
     }
-
-    boolean isBeingStaredBy0(Player player) {
-        // Paper end - EndermanAttackPlayerEvent

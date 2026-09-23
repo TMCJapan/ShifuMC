@@ -1244,8 +1244,12 @@ public final class BlockEvents {
         return event.isBurning() ? event.getBurnTime() : 0;
     }
 
+    /**
+     * 燃料を減らしてよいか。登録が無ければ見ない(1.21.11 の呼ぶ側は登録があるときだけ
+     * {@link #furnaceBurn} を呼ぶので、前にイベントが false にした値が残っていることがある)。
+     */
     public static boolean furnaceConsumesFuel() {
-        return furnaceConsumesFuel;
+        return !listening(org.bukkit.event.inventory.FurnaceBurnEvent.getHandlerList()) || furnaceConsumesFuel;
     }
 
     public static boolean listeningFurnaceStart() {
@@ -1660,6 +1664,42 @@ public final class BlockEvents {
 
     private static Entity cauldronEntity;
     private static org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason cauldronReason;
+    /** 手前で出し終えた。次の {@code lowerFillLevel} では出さない。 */
+    private static boolean cauldronFired;
+
+    /**
+     * CauldronLevelChangeEvent(水位が 1 段下がる)を、vanilla が手持ちを書き換える手前で出す。
+     * 瓶に汲む・シュルカーボックス / 旗 / 防具を洗うの 4 箇所。
+     *
+     * <p>vanilla はこの 4 箇所で瓶や防具を書き換えてから {@code lowerFillLevel} を呼ぶので、
+     * 下げたあとに出して戻す形では、取り消しても手元の物が戻らなかった(水入り瓶が増える、
+     * 染料が落ちる)。Paper も書き換えの手前で出している。
+     * 通ったら、続く {@code lowerFillLevel} の中では出さない({@link #cauldronBefore})。
+     *
+     * <p>新しい状態は vanilla の {@code lowerFillLevel} と同じ式で求める。
+     *
+     * <p>読んだ位置: paper-server
+     * patches/sources/net/minecraft/core/cauldron/CauldronInteractions.java.patch(SHULKER_WASH / BANNER_WASH / ARMOR_WASH / BOTTLE_FILL)、
+     * patches/sources/net/minecraft/world/level/block/LayeredCauldronBlock.java.patch(lowerFillLevel)
+     *
+     * @return vanilla の続きへ進んでよいか
+     */
+    public static boolean cauldronLowerBefore(final Level level, final BlockPos pos, final BlockState state,
+                                              final Entity entity,
+                                              final org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason reason) {
+        final int newLevel = state.getValue(net.minecraft.world.level.block.LayeredCauldronBlock.LEVEL) - 1;
+        final BlockState newState = newLevel == 0
+                ? net.minecraft.world.level.block.Blocks.CAULDRON.defaultBlockState()
+                : state.setValue(net.minecraft.world.level.block.LayeredCauldronBlock.LEVEL, newLevel);
+
+        if (!ShifuEvents.cauldronLevelChangeBefore(level, pos, newState, entity, reason)) {
+            return false;
+        }
+
+        cauldronFired = true;
+
+        return true;
+    }
 
     /**
      * 次の {@code LayeredCauldronBlock.lowerFillLevel} の理由と主を置く。Paper は
@@ -1678,8 +1718,8 @@ public final class BlockEvents {
      * CauldronLevelChangeEvent(水位が 1 段下がる)。vanilla が置いたあと。
      * 理由が置かれていなければ UNKNOWN。
      *
-     * <p>ただし: vanilla は瓶や防具の書き換えを先に済ませてから水位を下げるので、
-     * 取り消しても手元の物は戻らない(Paper は下げる判定を先に行う)。
+     * <p>瓶に汲む・洗うの 4 箇所は {@link #cauldronLowerBefore} で手前に出し終えているので、
+     * ここに来るのはそれ以外(燃えている生き物が入って火が消えるなど)。
      */
     public static void cauldronLowered(final Level level, final BlockPos pos, final CraftBlockState before) {
         final Entity entity = cauldronEntity;
@@ -1693,6 +1733,12 @@ public final class BlockEvents {
 
     /** 大釜の水位のイベントの控えを取る。{@link ShifuEvents#blockChangeBefore} の言い換え。 */
     public static CraftBlockState cauldronBefore(final Level level, final BlockPos pos) {
+        if (cauldronFired) {
+            cauldronFired = false;
+
+            return null;
+        }
+
         return ShifuEvents.blockChangeBefore(level, pos, org.bukkit.event.block.CauldronLevelChangeEvent.getHandlerList());
     }
 

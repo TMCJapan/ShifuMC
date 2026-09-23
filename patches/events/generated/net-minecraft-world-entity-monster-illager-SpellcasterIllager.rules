@@ -5,8 +5,10 @@ file: net/minecraft/world/entity/monster/illager/SpellcasterIllager.java
 anchor:
     this.performSpellCasting();
 insert:
-    // CraftBukkit start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleEntitySpellCastEvent(SpellcasterIllager.this, this.getSpell())) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntitySpellCastEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleEntitySpellCastEvent(SpellcasterIllager.this, this.getSpell())) {
+            return;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

@@ -37,6 +37,7 @@ final class ServerLaunch {
 		command.add("-Dfabric.skipMcProvider=true");
 		command.add("-Dshifu.paperJar=" + paper.serverJar().toAbsolutePath());
 		command.add("-Dshifu.librariesDir=" + paper.librariesDir().toAbsolutePath());
+		command.add("-Dshifu.librariesList=" + paper.librariesList().toAbsolutePath());
 		command.add("-Dshifu.vanillaJar=" + paper.vanillaJar().toAbsolutePath());
 		command.add("-Dshifu.vanillaParity=" + config.vanillaParity());
 		command.add("-cp");
@@ -51,7 +52,27 @@ final class ServerLaunch {
 				.inheritIO()
 				.start();
 
+		forwardStop(process);
+
 		return process.waitFor();
+	}
+
+	/**
+	 * {@code docker stop} や {@code kill} は親にしか SIGTERM を送らないので、
+	 * 転送しないと子のサーバーが保存されないまま残る。
+	 * 転送したあと終わるまで待つのは、親が先に終わると docker がコンテナごと止めて、
+	 * 子の保存を途中で切るため。
+	 */
+	private static void forwardStop(Process process) {
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			process.destroy();
+
+			try {
+				process.waitFor();
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		}, "shifu-forward-stop"));
 	}
 
 }

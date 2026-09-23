@@ -5,14 +5,16 @@ file: net/minecraft/world/entity/vehicle/minecart/MinecartTNT.java
 anchor:
     level.explode(
 insert:
-    // CraftBukkit start
-    org.bukkit.event.entity.ExplosionPrimeEvent event = new org.bukkit.event.entity.ExplosionPrimeEvent(
-        this.getBukkitEntity(),
-        (float) (this.explosionPowerBase + this.explosionSpeedFactor * this.random.nextDouble() * 1.5 * speed),
-        this.isIncendiary
-    );
-    if (!event.callEvent()) {
-        this.fuse = net.minecraft.world.entity.item.PrimedTnt.NO_FUSE;
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.ExplosionPrimeEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        org.bukkit.event.entity.ExplosionPrimeEvent event = new org.bukkit.event.entity.ExplosionPrimeEvent(
+            this.getBukkitEntity(),
+            (float) (this.explosionPowerBase + this.explosionSpeedFactor * this.random.nextDouble() * 1.5 * speed),
+            this.isIncendiary
+        );
+        if (!event.callEvent()) {
+            this.fuse = net.minecraft.world.entity.item.PrimedTnt.NO_FUSE;
+            return;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

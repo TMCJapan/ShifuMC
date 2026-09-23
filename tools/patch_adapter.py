@@ -25,6 +25,8 @@ Minecraft や Paper の更新で行が変わったら、黙って通さずに止
 `replace` と `with` は複数行書ける。`count` を省くと 1 回だけ。
 `replace` が 1 行のときは行の一部としても照合する(部分一致)。
 複数行のときは行の並びとして照合する。
+`method: <クラス> <名前><記述子>` は次の `replace` が書き換えるメソッドを名指しする
+(`patches/decompile/exprs.rules` で使う。当て方は変わらない。tools/lvtmatch の SemDiff が見る)。
 
     python tools/patch_adapter.py <patches/adapter> <src/main/java>
 """
@@ -42,6 +44,7 @@ class Rule:
         self.old = []
         self.new = []
         self.where = f"{source}:{number}"
+        self.methods = []
 
 
 def parse(text, source="<rules>"):
@@ -51,6 +54,7 @@ def parse(text, source="<rules>"):
     count = 1
     rule = None
     section = None
+    methods = []
 
     for number, raw in enumerate(text.split("\n"), 1):
         stripped = raw.strip()
@@ -64,13 +68,20 @@ def parse(text, source="<rules>"):
             count = int(stripped[len("count:"):].strip())
             continue
 
+        if stripped.startswith("method:"):
+            methods.append(stripped[len("method:"):].strip())
+            section = None
+            continue
+
         if stripped == "replace:":
             if target is None:
                 raise SystemExit(f"{source}:{number}: file: が先に要る")
 
             rule = Rule(target, count, source, number)
+            rule.methods = methods
             rules.append(rule)
             count = 1
+            methods = []
             section = "old"
             continue
 
@@ -171,6 +182,9 @@ def apply(lines, rule):
 
 def main():
     rule_root, tree = sys.argv[1:3]
+    # 版を移した直後は当たらない規則が並ぶ。止めずに全部を並べる
+    report = "--report" in sys.argv
+    missed = []
     rules = []
 
     if os.path.isdir(rule_root):
@@ -193,18 +207,35 @@ def main():
         path = os.path.join(tree, target.replace("/", os.sep))
 
         if not os.path.exists(path):
-            raise SystemExit(f"{group[0].where}: 元のファイルが無い: {target}")
+            if not report:
+                raise SystemExit(f"{group[0].where}: 元のファイルが無い: {target}")
+
+            missed.append(f"{group[0].where}: 元のファイルが無い: {target}")
+            continue
 
         with open(path, encoding="utf-8") as handle:
             lines = handle.read().split("\n")
 
         for rule in group:
-            lines = apply(lines, rule)
+            if not report:
+                lines = apply(lines, rule)
+                continue
+
+            try:
+                lines = apply(lines, rule)
+            except SystemExit as stop:
+                missed.append(str(stop))
 
         with open(path, "w", encoding="utf-8", newline="\n") as handle:
             handle.write("\n".join(lines))
 
-    print(f"直したアダプタ層: {len(rules)} 件 / {len(by_file)} ファイル")
+    print(f"直したアダプタ層: {len(rules) - len(missed)} 件 / {len(by_file)} ファイル")
+
+    if missed:
+        print(f"当たらなかった規則: {len(missed)} 件", file=sys.stderr)
+
+        for line in missed:
+            print(f"  {line}", file=sys.stderr)
 
 
 if __name__ == "__main__":

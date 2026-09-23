@@ -1034,11 +1034,13 @@ file: net/minecraft/world/level/block/entity/trialspawner/TrialSpawner.java
 anchor:
     if (!lootDrops.isEmpty()) {
 insert-after:
-    final java.util.List<ItemStack> shifuLoot = dev.shifu.event.BlockEvents.dispenseLoot(level, pos, null, lootDrops, ejectingLootTable);
-    if (shifuLoot == null) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockDispenseLootEvent.class)) {
+        final java.util.List<ItemStack> shifuLoot = dev.shifu.event.BlockEvents.dispenseLoot(level, pos, null, lootDrops, ejectingLootTable);
+        if (shifuLoot == null) {
+            return;
+        }
+        lootDrops = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(shifuLoot);
     }
-    lootDrops = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(shifuLoot);
 
 # BlockDispenseLootEvent(宝物庫)
 file: net/minecraft/world/level/block/entity/vault/VaultBlockEntity.java
@@ -1078,36 +1080,61 @@ insert:
 
 # ------------------------------------------------------------ 大釜の水位が 1 段下がる
 #
-# Paper は lowerFillLevel に (entity, reason) を足して渡す。Shifu は呼ぶ直前に置く。
+# Paper は lowerFillLevel に (entity, reason) を足して渡す。
+#
+# 瓶に汲む・シュルカーボックス / 旗 / 防具を洗うの 4 箇所は、vanilla が手持ちを書き換えてから
+# lowerFillLevel を呼ぶ。下げたあとに出して戻す形では、取り消しても手元の物が戻らなかった
+# (水入り瓶が増える、染料が落ちる)。Paper と同じく書き換えの手前(isClientSide の枝の先頭)で出す。
+# 通ったら、続く lowerFillLevel の中では出さない(BlockEvents.cauldronBefore が null を返す)。
+# 登録が無いときに新しい状態を組まないように、cauldronListening() を && の左に置く。
+#
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/level/block/LayeredCauldronBlock.java.patch
 #            paper-server patches/sources/net/minecraft/core/cauldron/CauldronInteractions.java.patch
-file: net/minecraft/core/cauldron/CauldronInteractions.java
-anchor:
-    player.awardStat(Stats.ITEM_USED.get(usedItem));
-    LayeredCauldronBlock.lowerFillLevel(state, level, pos);
-insert:
-    dev.shifu.event.BlockEvents.cauldronCause(player, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.BOTTLE_FILL);
 
+# 空き瓶で汲む
 file: net/minecraft/core/cauldron/CauldronInteractions.java
 anchor:
-    player.awardStat(Stats.CLEAN_SHULKER_BOX);
-    LayeredCauldronBlock.lowerFillLevel(state, level, pos);
+    Item usedItem = itemInHand.getItem();
+    player.setItemInHand(hand, ItemUtils.createFilledResult(itemInHand, player, PotionContents.createItemStack(Items.POTION, Potions.WATER)));
 insert:
-    dev.shifu.event.BlockEvents.cauldronCause(player, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.SHULKER_WASH);
+    if (dev.shifu.event.ShifuEvents.cauldronListening()
+            && !dev.shifu.event.BlockEvents.cauldronLowerBefore(level, pos, state, player,
+                    org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.BOTTLE_FILL)) {
+        return InteractionResult.SUCCESS;
+    }
 
+# シュルカーボックスを洗う
 file: net/minecraft/core/cauldron/CauldronInteractions.java
 anchor:
-    player.awardStat(Stats.CLEAN_BANNER);
-    LayeredCauldronBlock.lowerFillLevel(state, level, pos);
+    ItemStack cleanedShulkerBox = itemInHand.transmuteCopy(Blocks.SHULKER_BOX, 1);
 insert:
-    dev.shifu.event.BlockEvents.cauldronCause(player, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.BANNER_WASH);
+    if (dev.shifu.event.ShifuEvents.cauldronListening()
+            && !dev.shifu.event.BlockEvents.cauldronLowerBefore(level, pos, state, player,
+                    org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.SHULKER_WASH)) {
+        return InteractionResult.SUCCESS;
+    }
 
+# 旗を洗う
 file: net/minecraft/core/cauldron/CauldronInteractions.java
 anchor:
-    player.awardStat(Stats.CLEAN_ARMOR);
-    LayeredCauldronBlock.lowerFillLevel(state, level, pos);
+    ItemStack cleanedBanner = itemInHand.copyWithCount(1);
 insert:
-    dev.shifu.event.BlockEvents.cauldronCause(player, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.ARMOR_WASH);
+    if (dev.shifu.event.ShifuEvents.cauldronListening()
+            && !dev.shifu.event.BlockEvents.cauldronLowerBefore(level, pos, state, player,
+                    org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.BANNER_WASH)) {
+        return InteractionResult.SUCCESS;
+    }
+
+# 染めた防具を洗う
+file: net/minecraft/core/cauldron/CauldronInteractions.java
+anchor:
+    itemInHand.remove(DataComponents.DYED_COLOR);
+insert:
+    if (dev.shifu.event.ShifuEvents.cauldronListening()
+            && !dev.shifu.event.BlockEvents.cauldronLowerBefore(level, pos, state, player,
+                    org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.ARMOR_WASH)) {
+        return InteractionResult.SUCCESS;
+    }
 
 # 燃えている生き物が入って火が消える。e はラムダの引数
 file: net/minecraft/world/level/block/LayeredCauldronBlock.java

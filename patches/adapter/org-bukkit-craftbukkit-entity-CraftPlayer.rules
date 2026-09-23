@@ -2,8 +2,45 @@
 
 file: org/bukkit/craftbukkit/entity/CraftPlayer.java
 
-# vanilla の DiscardedPayload は成分が Identifier 1 つで、record の成分は足せない
+# vanilla の DiscardedPayload は成分が Identifier 1 つで、record の成分は足せない。
+# 送る側は Shifu の payload に載せ替える。本文は
+# patches/wire/net-minecraft-network-protocol-common-custom-CustomPacketPayload.rules が書く。
+# sendPluginMessage と sendSupportedChannels(minecraft:register)は両方ここを通る。
 replace:
     new DiscardedPayload(id, message)
 with:
-    new DiscardedPayload(id)
+    new dev.shifu.event.PluginMessages.Outgoing(id, message)
+
+# ServerPlayer.shifuClientWorldBorder(patches/hand)を、仮想の境界(Player.setWorldBorder)の
+# 入れ外しと同じところで書く。ServerPlayer.tick は Paper の hasClientWorldBorder() の代わりに
+# この欄を見て境界を進める(patches/events/generated の ServerPlayer)。
+# clientWorldBorder を書き換えるのは setWorldBorder の 2 か所だけ。
+# 読んだ位置: paper-server HEAD src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java:1152,1155
+replace:
+            this.clientWorldBorder = null;
+with:
+            this.clientWorldBorder = null;
+            this.getHandle().shifuClientWorldBorder = false;
+
+replace:
+            this.clientWorldBorder = craftBorder;
+with:
+            this.clientWorldBorder = craftBorder;
+            this.getHandle().shifuClientWorldBorder = true;
+
+# リスポーンでは ShifuEvents.playerRespawned がこの CraftPlayer を新しい ServerPlayer へ
+# 付け替える(craft.setHandle(fresh))。clientWorldBorder は CraftPlayer に残るので、新しい方の欄にも写す。
+# 写さないと、仮想の境界を入れたまま死んだプレイヤーの境界がリスポーン後に進まなくなる。
+# CraftPlayer は setHandle を持たず、CraftHumanEntity.setHandle(Player) が呼ばれる。
+# 読んだ位置: paper-server HEAD src/main/java/org/bukkit/craftbukkit/entity/CraftHumanEntity.java:100
+replace:
+    @Override
+    public WorldBorder getWorldBorder() {
+with:
+    @Override
+    public void setHandle(final net.minecraft.world.entity.player.Player entity) {
+        super.setHandle(entity);
+        ((ServerPlayer) entity).shifuClientWorldBorder = this.clientWorldBorder != null;
+    }
+    @Override
+    public WorldBorder getWorldBorder() {

@@ -31,6 +31,7 @@
 
 // BlockEntity.persistentDataContainer
     // Paper は構築子で作る。vanilla の構築子は触らないので初期化子で作る。
-    // Paper が NBT(PublicBukkitValues)に保存・復元する分は入れていない(データ形式が vanilla と変わるため)。
+    // NBT(PublicBukkitValues)との出入りは patches/wire/net-minecraft-world-level-block-entity-BlockEntity.rules。
+    // 中身が空なら何も書かないので、プラグインが触らなければ NBT は vanilla と同じ。
     // 読んだ位置: patches/sources/net/minecraft/world/level/block/entity/BlockEntity.java.patch
     public org.bukkit.craftbukkit.persistence.CraftPersistentDataContainer persistentDataContainer = new org.bukkit.craftbukkit.persistence.CraftPersistentDataContainer(DATA_TYPE_REGISTRY);

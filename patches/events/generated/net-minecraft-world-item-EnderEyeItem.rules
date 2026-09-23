@@ -5,8 +5,10 @@ file: net/minecraft/world/item/EnderEyeItem.java
 anchor:
     Block.pushEntitiesUp(targetState, newState, level, pos);
 insert:
-    // Paper start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(context.getPlayer(), pos, newState)) {
-        return InteractionResult.PASS;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityChangeBlockEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(context.getPlayer(), pos, newState)) {
+            return InteractionResult.PASS;
+        }
+        // Paper end
     }
-    // Paper end

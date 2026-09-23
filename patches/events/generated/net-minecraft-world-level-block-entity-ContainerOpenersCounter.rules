@@ -5,50 +5,53 @@ file: net/minecraft/world/level/block/entity/ContainerOpenersCounter.java
 anchor:
     if (previous == 0) {
 insert:
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)) { // Shifu - 登録が無ければ組み立てない
 
-    // Paper start - Call BlockRedstoneEvent
-    if (blockState.is(net.minecraft.world.level.block.Blocks.TRAPPED_CHEST)) {
-        int oldCurrent = Math.clamp(previous, 0, 15);
-        int newCurrent = Math.clamp(this.openCount, 0, 15);
+        // Paper start - Call BlockRedstoneEvent
+        if (blockState.is(net.minecraft.world.level.block.Blocks.TRAPPED_CHEST)) {
+            int oldCurrent = Math.clamp(previous, 0, 15);
+            int newCurrent = Math.clamp(this.openCount, 0, 15);
 
-        if (oldCurrent != newCurrent) {
-            org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, oldCurrent, newCurrent);
+            if (oldCurrent != newCurrent) {
+                org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, oldCurrent, newCurrent);
+            }
         }
+        // Paper end - Call BlockRedstoneEvent
     }
-    // Paper end - Call BlockRedstoneEvent
-
 
 # callRedstoneChange
 file: net/minecraft/world/level/block/entity/ContainerOpenersCounter.java
 anchor:
     if (this.openCount == 0) {
 insert:
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)) { // Shifu - 登録が無ければ組み立てない
 
-    // Paper start - Call BlockRedstoneEvent
-    if (blockState.is(net.minecraft.world.level.block.Blocks.TRAPPED_CHEST)) {
-        int oldCurrent = Math.clamp(previous, 0, 15);
-        int newCurrent = Math.clamp(this.openCount, 0, 15);
+        // Paper start - Call BlockRedstoneEvent
+        if (blockState.is(net.minecraft.world.level.block.Blocks.TRAPPED_CHEST)) {
+            int oldCurrent = Math.clamp(previous, 0, 15);
+            int newCurrent = Math.clamp(this.openCount, 0, 15);
 
-        if (oldCurrent != newCurrent) {
-            org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, oldCurrent, newCurrent);
+            if (oldCurrent != newCurrent) {
+                org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, oldCurrent, newCurrent);
+            }
         }
+        // Paper end - Call BlockRedstoneEvent
     }
-    // Paper end - Call BlockRedstoneEvent
-
 
 # callRedstoneChange
 file: net/minecraft/world/level/block/entity/ContainerOpenersCounter.java
 anchor:
     boolean isOpen = openCount != 0;
 insert:
-    // Paper start - Call BlockRedstoneEvent
-    if (blockState.is(net.minecraft.world.level.block.Blocks.TRAPPED_CHEST)) {
-        int oldCurrent = Math.clamp(prevCount, 0, 15);
-        int newCurrent = Math.clamp(openCount, 0, 15);
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - Call BlockRedstoneEvent
+        if (blockState.is(net.minecraft.world.level.block.Blocks.TRAPPED_CHEST)) {
+            int oldCurrent = Math.clamp(prevCount, 0, 15);
+            int newCurrent = Math.clamp(openCount, 0, 15);
 
-        if (oldCurrent != newCurrent) {
-            org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, oldCurrent, newCurrent);
+            if (oldCurrent != newCurrent) {
+                org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, oldCurrent, newCurrent);
+            }
         }
+        // Paper end - Call BlockRedstoneEvent
     }
-    // Paper end - Call BlockRedstoneEvent
-

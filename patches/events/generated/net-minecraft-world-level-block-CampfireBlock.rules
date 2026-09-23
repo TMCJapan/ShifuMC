@@ -5,15 +5,19 @@ file: net/minecraft/world/level/block/CampfireBlock.java
 anchor:
     if (state.getValue(LIT) && entity instanceof LivingEntity) {
 insert:
-    if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.EntityInsideBlockEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+    }
 
 # callBlockIgniteEvent
 file: net/minecraft/world/level/block/CampfireBlock.java
 anchor:
     level.setBlock(pos, state.setValue(BlockStateProperties.LIT, true), Block.UPDATE_ALL_IMMEDIATE);
 insert:
-    // CraftBukkit start
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, pos, projectile).isCancelled()) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockIgniteEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, pos, projectile).isCancelled()) {
+            return;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

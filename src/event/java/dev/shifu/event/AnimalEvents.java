@@ -717,11 +717,6 @@ public final class AnimalEvents {
 
     // ------------------------------------------------------------ 硫黄キューブ
 
-    /** ExplosionPrimeEvent に登録が無いか。 */
-    public static boolean silentExplosionPrime() {
-        return !listening(org.bukkit.event.entity.ExplosionPrimeEvent.getHandlerList());
-    }
-
     /**
      * ExplosionPrimeEvent。{@code SulfurCube.tickFuse} で導火線が尽きたとき、リードを外す前。
      * 呼ぶ側が Paper と同じ条件(ServerLevel かつ TNT_EXPLODES)を見てから呼ぶ。

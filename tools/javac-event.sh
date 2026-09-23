@@ -33,5 +33,6 @@ fi
     "$SHIFU/src/event/java/dev/shifu/event/InventoryClicks.java" \
     "$SHIFU/src/event/java/dev/shifu/event/DeathInventory.java" \
     "$SHIFU/src/event/java/dev/shifu/event/ShifuBootstrap.java" \
+    "$SHIFU/src/event/java/dev/shifu/event/EventGuard.java" \
     "$@"
 echo "javac: OK"

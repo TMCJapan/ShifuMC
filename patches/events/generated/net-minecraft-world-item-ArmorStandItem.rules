@@ -5,9 +5,11 @@ file: net/minecraft/world/item/ArmorStandItem.java
 anchor:
     serverLevel.addFreshEntityWithPassengers(entity);
 insert:
-    // CraftBukkit start
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPlaceEvent(context, entity).isCancelled()) {
-        if (context.getPlayer() != null) context.getPlayer().containerMenu.sendAllDataToRemote(); // Paper - Fix inventory desync
-        return InteractionResult.FAIL;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityPlaceEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPlaceEvent(context, entity).isCancelled()) {
+            if (context.getPlayer() != null) context.getPlayer().containerMenu.sendAllDataToRemote(); // Paper - Fix inventory desync
+            return InteractionResult.FAIL;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

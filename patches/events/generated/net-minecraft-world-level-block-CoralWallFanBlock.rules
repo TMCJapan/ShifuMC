@@ -5,8 +5,10 @@ file: net/minecraft/world/level/block/CoralWallFanBlock.java
 anchor:
     level.setBlock(pos, this.deadBlock.defaultBlockState().setValue(WATERLOGGED, false).setValue(FACING, state.getValue(FACING)), Block.UPDATE_CLIENTS);
 insert:
-    // CraftBukkit start
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralWallFanBlock.WATERLOGGED, false).setValue(CoralWallFanBlock.FACING, state.getValue(CoralWallFanBlock.FACING))).isCancelled()) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockFadeEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, this.deadBlock.defaultBlockState().setValue(CoralWallFanBlock.WATERLOGGED, false).setValue(CoralWallFanBlock.FACING, state.getValue(CoralWallFanBlock.FACING))).isCancelled()) {
+            return;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

@@ -5,8 +5,10 @@ file: net/minecraft/world/level/block/AbstractCandleBlock.java
 anchor:
     setLit(level, state, blockHit.getBlockPos(), true);
 insert:
-    // CraftBukkit start
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, blockHit.getBlockPos(), projectile).isCancelled()) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockIgniteEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, blockHit.getBlockPos(), projectile).isCancelled()) {
+            return;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

@@ -15,7 +15,7 @@ file: net/minecraft/core/dispenser/ShearsDispenseItemBehavior.java
 replace:
     for (Entity entity : level.getEntitiesOfClass(Entity.class, new AABB(pos), EntitySelector.NO_SPECTATORS)) {
 with:
-    var entities = level.getEntitiesOfClass(Entity.class, new AABB(pos), EntitySelector.NO_SPECTATORS);
+    java.util.List<? extends Entity> entities = level.getEntitiesOfClass(Entity.class, new AABB(pos), EntitySelector.NO_SPECTATORS);
     for (Entity entity : entities) {
 
 file: net/minecraft/core/dispenser/ShulkerBoxDispenseBehavior.java
@@ -29,7 +29,7 @@ file: net/minecraft/server/MinecraftServer.java
 replace:
     for (ServerPlayer player : Lists.newArrayList(playerList.getPlayers())) {
 with:
-    var players = Lists.newArrayList(playerList.getPlayers());
+    java.util.List<? extends ServerPlayer> players = Lists.newArrayList(playerList.getPlayers());
     for (ServerPlayer player : players) {
 
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
@@ -82,14 +82,14 @@ file: net/minecraft/server/players/PlayerList.java
 replace:
     for (Packet<?> packet : scoreboard.getStartTrackingPackets(objective)) {
 with:
-    var packets = scoreboard.getStartTrackingPackets(objective);
+    java.util.List<? extends Packet<?>> packets = scoreboard.getStartTrackingPackets(objective);
     for (Packet<?> packet : packets) {
 
 file: net/minecraft/server/players/PlayerList.java
 replace:
     for (String name : team.getPlayers()) {
 with:
-    var teamPlayers = team.getPlayers();
+    java.util.Collection<? extends String> teamPlayers = team.getPlayers();
     for (String name : teamPlayers) {
 
 file: net/minecraft/world/RandomizableContainer.java
@@ -110,7 +110,7 @@ file: net/minecraft/world/entity/ExperienceOrb.java
 replace:
     for (ExperienceOrb orb : this.level().getEntities(EntityTypeTest.forClass(ExperienceOrb.class), this.getBoundingBox().inflate(0.5), this::canMerge)) {
 with:
-    var orbs = this.level().getEntities(EntityTypeTest.forClass(ExperienceOrb.class), this.getBoundingBox().inflate(0.5), this::canMerge);
+    java.util.List<? extends ExperienceOrb> orbs = this.level().getEntities(EntityTypeTest.forClass(ExperienceOrb.class), this.getBoundingBox().inflate(0.5), this::canMerge);
     for (ExperienceOrb orb : orbs) {
 
 file: net/minecraft/world/entity/LivingEntity.java
@@ -131,14 +131,14 @@ file: net/minecraft/world/entity/animal/feline/Cat.java
 replace:
     for (Cat otherCat : this.cat.level().getEntitiesOfClass(Cat.class, new AABB(this.goalPos).inflate(2.0))) {
 with:
-    var cats = this.cat.level().getEntitiesOfClass(Cat.class, new AABB(this.goalPos).inflate(2.0));
+    java.util.List<? extends Cat> cats = this.cat.level().getEntitiesOfClass(Cat.class, new AABB(this.goalPos).inflate(2.0));
     for (Cat otherCat : cats) {
 
 file: net/minecraft/world/entity/animal/feline/Cat.java
 replace:
     for (Player player : this.level().getEntitiesOfClass(Player.class, new AABB(catPos).inflate(2.0, 2.0, 2.0))) {
 with:
-    var players = this.level().getEntitiesOfClass(Player.class, new AABB(catPos).inflate(2.0, 2.0, 2.0));
+    java.util.List<? extends Player> players = this.level().getEntitiesOfClass(Player.class, new AABB(catPos).inflate(2.0, 2.0, 2.0));
     for (Player player : players) {
 
 file: net/minecraft/world/entity/animal/nautilus/AbstractNautilus.java
@@ -152,49 +152,49 @@ file: net/minecraft/world/entity/animal/polarbear/PolarBear.java
 replace:
     for (PolarBear bear : PolarBear.this.level().getEntitiesOfClass(PolarBear.class, PolarBear.this.getBoundingBox().inflate(8.0, 4.0, 8.0))) {
 with:
-    var bears = PolarBear.this.level().getEntitiesOfClass(PolarBear.class, PolarBear.this.getBoundingBox().inflate(8.0, 4.0, 8.0));
+    java.util.List<? extends PolarBear> bears = PolarBear.this.level().getEntitiesOfClass(PolarBear.class, PolarBear.this.getBoundingBox().inflate(8.0, 4.0, 8.0));
     for (PolarBear bear : bears) {
 
 file: net/minecraft/world/entity/decoration/ArmorStand.java
 replace:
     for (Entity entity : this.level().getEntities(this, this.getBoundingBox(), RIDABLE_MINECARTS)) {
 with:
-    var entities = this.level().getEntities(this, this.getBoundingBox(), RIDABLE_MINECARTS);
+    java.util.List<? extends Entity> entities = this.level().getEntities(this, this.getBoundingBox(), RIDABLE_MINECARTS);
     for (Entity entity : entities) {
 
 file: net/minecraft/world/entity/decoration/LeashFenceKnotEntity.java
 replace:
     for (Leashable mob : Leashable.leashableLeashedTo(this)) {
 with:
-    var knotLeashable = Leashable.leashableLeashedTo(this);
+    java.util.List<? extends Leashable> knotLeashable = Leashable.leashableLeashedTo(this);
     for (Leashable mob : knotLeashable) {
 
 file: net/minecraft/world/entity/decoration/LeashFenceKnotEntity.java
 replace:
     for (LeashFenceKnotEntity knot : level.getEntitiesOfClass(LeashFenceKnotEntity.class, new AABB(x - 1.0, y - 1.0, z - 1.0, x + 1.0, y + 1.0, z + 1.0))) {
 with:
-    var knots = level.getEntitiesOfClass(LeashFenceKnotEntity.class, new AABB(x - 1.0, y - 1.0, z - 1.0, x + 1.0, y + 1.0, z + 1.0));
+    java.util.List<? extends LeashFenceKnotEntity> knots = level.getEntitiesOfClass(LeashFenceKnotEntity.class, new AABB(x - 1.0, y - 1.0, z - 1.0, x + 1.0, y + 1.0, z + 1.0));
     for (LeashFenceKnotEntity knot : knots) {
 
 file: net/minecraft/world/entity/monster/EnderMan.java
 replace:
     for (ItemStack itemStack : carryingBlock.getDrops(params)) {
 with:
-    var blockDrops = carryingBlock.getDrops(params);
+    java.util.List<? extends ItemStack> blockDrops = carryingBlock.getDrops(params);
     for (ItemStack itemStack : blockDrops) {
 
 file: net/minecraft/world/entity/monster/Ravager.java
 replace:
     for (LivingEntity entity : this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0), targetSelector)) {
 with:
-    var entities = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0), targetSelector);
+    java.util.List<? extends LivingEntity> entities = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0), targetSelector);
     for (LivingEntity entity : entities) {
 
 file: net/minecraft/world/entity/monster/Ravager.java
 replace:
     for (LivingEntity entity : this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0), ROAR_TARGET_ON_CLIENT)) {
 with:
-    var entities = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0), ROAR_TARGET_ON_CLIENT);
+    java.util.List<? extends LivingEntity> entities = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0), ROAR_TARGET_ON_CLIENT);
     for (LivingEntity entity : entities) {
 
 file: net/minecraft/world/entity/monster/Silverfish.java
@@ -208,7 +208,7 @@ file: net/minecraft/world/entity/projectile/FireworkRocketEntity.java
 replace:
     for (LivingEntity target : this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(5.0))) {
 with:
-    var targets = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(5.0));
+    java.util.List<? extends LivingEntity> targets = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(5.0));
     for (LivingEntity target : targets) {
 
 file: net/minecraft/world/entity/projectile/FireworkRocketEntity.java
@@ -222,7 +222,7 @@ file: net/minecraft/world/entity/projectile/throwableitemprojectile/AbstractThro
 replace:
     for (LivingEntity entity : this.level().getEntitiesOfClass(LivingEntity.class, aabb, WATER_SENSITIVE_OR_ON_FIRE)) {
 with:
-    var burningOrWaterSensitiveEntities = this.level().getEntitiesOfClass(LivingEntity.class, aabb, WATER_SENSITIVE_OR_ON_FIRE);
+    java.util.List<? extends LivingEntity> burningOrWaterSensitiveEntities = this.level().getEntitiesOfClass(LivingEntity.class, aabb, WATER_SENSITIVE_OR_ON_FIRE);
     for (LivingEntity entity : burningOrWaterSensitiveEntities) {
 
 file: net/minecraft/world/entity/vehicle/ContainerEntity.java
@@ -236,7 +236,7 @@ file: net/minecraft/world/item/MinecartItem.java
 replace:
     for (Entity entity : level.getEntities(null, cart.getBoundingBox())) {
 with:
-    var entities = level.getEntities(null, cart.getBoundingBox());
+    java.util.List<? extends Entity> entities = level.getEntities(null, cart.getBoundingBox());
     for (Entity entity : entities) {
 
 file: net/minecraft/world/item/enchantment/EnchantmentHelper.java
@@ -250,7 +250,7 @@ file: net/minecraft/world/level/ServerExplosion.java
 replace:
     for (Entity entity : this.level.getEntities(this.source, new AABB(x0, y0, z0, x1, y1, z1))) {
 with:
-    var entities = this.level.getEntities(this.source, new AABB(x0, y0, z0, x1, y1, z1));
+    java.util.List<? extends Entity> entities = this.level.getEntities(this.source, new AABB(x0, y0, z0, x1, y1, z1));
     for (Entity entity : entities) {
 
 file: net/minecraft/world/level/block/BeehiveBlock.java
@@ -264,7 +264,7 @@ file: net/minecraft/world/level/block/Block.java
 replace:
     for (Entity collidingEntity : level.getEntities(null, offsetShape.bounds())) {
 with:
-    var collidingEntities = level.getEntities(null, offsetShape.bounds());
+    java.util.List<? extends Entity> collidingEntities = level.getEntities(null, offsetShape.bounds());
     for (Entity collidingEntity : collidingEntities) {
 
 file: net/minecraft/world/level/block/CampfireBlock.java
@@ -310,7 +310,7 @@ file: net/minecraft/world/level/block/DetectorRailBlock.java
 replace:
     for (BlockPos connectionPos : rail.getConnections()) {
 with:
-    var connections = rail.getConnections();
+    java.util.List<? extends BlockPos> connections = rail.getConnections();
     for (BlockPos connectionPos : connections) {
 
 file: net/minecraft/world/level/block/EnchantingTableBlock.java
@@ -419,7 +419,7 @@ file: net/minecraft/world/level/dimension/end/EnderDragonFight.java
 replace:
     for (EndCrystal crystal : this.level.getEntitiesOfClass(EndCrystal.class, spike.getTopBoundingBox())) {
 with:
-    var spikeCrystals = this.level.getEntitiesOfClass(EndCrystal.class, spike.getTopBoundingBox());
+    java.util.List<? extends EndCrystal> spikeCrystals = this.level.getEntitiesOfClass(EndCrystal.class, spike.getTopBoundingBox());
     for (EndCrystal crystal : spikeCrystals) {
 
 file: net/minecraft/world/level/levelgen/structure/StructurePiece.java

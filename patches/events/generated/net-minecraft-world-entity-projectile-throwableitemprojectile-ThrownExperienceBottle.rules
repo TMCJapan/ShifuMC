@@ -5,7 +5,9 @@ file: net/minecraft/world/entity/projectile/throwableitemprojectile/ThrownExperi
 anchor:
     if (hitResult instanceof BlockHitResult blockHitResult) {
 insert:
-    // Paper start - exp bottle event
-    org.bukkit.event.entity.ExpBottleEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callExpBottleEvent(this, hitResult, xpCount);
-    xpCount = event.getExperience();
-    // Paper end - exp bottle event
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.ExpBottleEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - exp bottle event
+        org.bukkit.event.entity.ExpBottleEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callExpBottleEvent(this, hitResult, xpCount);
+        xpCount = event.getExperience();
+        // Paper end - exp bottle event
+    }

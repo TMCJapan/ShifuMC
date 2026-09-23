@@ -5,11 +5,13 @@ file: net/minecraft/world/level/block/LeavesBlock.java
 anchor:
     dropResources(state, level, pos);
 insert:
-    // CraftBukkit start
-    org.bukkit.event.block.LeavesDecayEvent event = new org.bukkit.event.block.LeavesDecayEvent(org.bukkit.craftbukkit.block.CraftBlock.at(level, pos));
-    level.getCraftServer().getPluginManager().callEvent(event);
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.LeavesDecayEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        org.bukkit.event.block.LeavesDecayEvent event = new org.bukkit.event.block.LeavesDecayEvent(org.bukkit.craftbukkit.block.CraftBlock.at(level, pos));
+        level.getCraftServer().getPluginManager().callEvent(event);
 
-    if (event.isCancelled() || !level.getBlockState(pos).is(this)) {
-        return;
+        if (event.isCancelled() || !level.getBlockState(pos).is(this)) {
+            return;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

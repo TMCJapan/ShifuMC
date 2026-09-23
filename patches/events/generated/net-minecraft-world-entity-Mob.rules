@@ -1,18 +1,12 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # EntityUnleashEvent
+# Paper - Expand EntityUnleashEvent(startRiding)。登録が無ければ vanilla の dropLeash() だけが走る。取り消しと、落とさない指定は
+# EntityEvents.dropLeash が受ける
 file: net/minecraft/world/entity/Mob.java
 anchor:
     this.dropLeash();
 insert:
-    // Paper start - Expand EntityUnleashEvent
-    EntityUnleashEvent event = new EntityUnleashEvent(this.getBukkitEntity(), EntityUnleashEvent.UnleashReason.UNKNOWN, true);
-    if (!event.callEvent()) {
-        return result;
-    }
-    if (event.isDropLeash()) {
+    if (dev.shifu.event.EntityEvents.dropLeash(this, org.bukkit.event.entity.EntityUnleashEvent.UnleashReason.UNKNOWN, true)) {
 insert-after:
-    } else {
-        this.removeLeash();
     }
-    // Paper end - Expand EntityUnleashEvent

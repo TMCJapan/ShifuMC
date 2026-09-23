@@ -5,11 +5,13 @@ file: net/minecraft/world/item/HoneycombItem.java
 anchor:
     if (player instanceof ServerPlayer serverPlayer) {
 insert:
-    // Paper start - EntityChangeBlockEvent
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(player, pos, waxedState)) {
-        if (!player.isCreative()) {
-            player.containerMenu.forceHeldSlot(context.getHand());
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityChangeBlockEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - EntityChangeBlockEvent
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(player, pos, waxedState)) {
+            if (!player.isCreative()) {
+                player.containerMenu.forceHeldSlot(context.getHand());
+            }
+            return InteractionResult.PASS;
         }
-        return InteractionResult.PASS;
+        // Paper end
     }
-    // Paper end

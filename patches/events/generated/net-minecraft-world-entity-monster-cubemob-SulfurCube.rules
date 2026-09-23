@@ -5,9 +5,11 @@ file: net/minecraft/world/entity/monster/cubemob/SulfurCube.java
 anchor:
     this.setInvulnerable(true);
 insert:
-    // Paper start - call EntityIgniteEvent
-    fuseTime = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityIgniteEvent(this, fuseTime);
-    if (fuseTime == PrimedTnt.NO_FUSE) {
-        return false;
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.EntityIgniteEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - call EntityIgniteEvent
+        fuseTime = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityIgniteEvent(this, fuseTime);
+        if (fuseTime == PrimedTnt.NO_FUSE) {
+            return false;
+        }
+        // Paper end - call EntityIgniteEvent
     }
-    // Paper end - call EntityIgniteEvent

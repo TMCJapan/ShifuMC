@@ -5,8 +5,10 @@ file: net/minecraft/world/entity/animal/frog/Tadpole.java
 anchor:
     AgeableMob.setAgeLocked(this, this::isAgeLocked, player, itemStack, mob -> this.setAgeLockedData());
 insert:
-    // Paper start - call PlayerToggleEntityAgeLockEvent
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerToggleEntityAgeLockEvent(player, this, itemStack, hand, !this.isAgeLocked(), AGE_LOCKED)) {
-        return InteractionResult.SUCCESS;
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.player.PlayerToggleEntityAgeLockEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - call PlayerToggleEntityAgeLockEvent
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerToggleEntityAgeLockEvent(player, this, itemStack, hand, !this.isAgeLocked(), AGE_LOCKED)) {
+            return InteractionResult.SUCCESS;
+        }
+        // Paper end - call PlayerToggleEntityAgeLockEvent
     }
-    // Paper end - call PlayerToggleEntityAgeLockEvent

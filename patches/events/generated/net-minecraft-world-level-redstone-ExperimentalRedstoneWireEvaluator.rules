@@ -5,8 +5,10 @@ file: net/minecraft/world/level/redstone/ExperimentalRedstoneWireEvaluator.java
 anchor:
     if (state.is(this.wireBlock) && !state.getValue(RedStoneWireBlock.POWER).equals(newLevel)) {
 insert:
-    // Paper start - Call BlockRedstoneEvent
-    if (state.is(this.wireBlock) && !state.getValue(RedStoneWireBlock.POWER).equals(newLevel)) {
-        newLevel = org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, state.getValue(RedStoneWireBlock.POWER), newLevel).getNewCurrent();
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - Call BlockRedstoneEvent
+        if (state.is(this.wireBlock) && !state.getValue(RedStoneWireBlock.POWER).equals(newLevel)) {
+            newLevel = org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, state.getValue(RedStoneWireBlock.POWER), newLevel).getNewCurrent();
+        }
+        // Paper end - Call BlockRedstoneEvent
     }
-    // Paper end - Call BlockRedstoneEvent

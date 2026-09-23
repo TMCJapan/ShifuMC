@@ -9,9 +9,11 @@ insert:
     if (io.papermc.paper.event.entity.EntityCollideWithEntityEvent.getHandlerList().getRegisteredListeners().length != 0 &&
             !new io.papermc.paper.event.entity.EntityCollideWithEntityEvent(this.getBukkitEntity(), entity.getBukkitEntity()).callEvent()) return;
 
-    org.bukkit.event.vehicle.VehicleEntityCollisionEvent collisionEvent = new org.bukkit.event.vehicle.VehicleEntityCollisionEvent(
-        (org.bukkit.entity.Vehicle) this.getBukkitEntity(),
-        entity.getBukkitEntity()
-    );
-    if (!collisionEvent.callEvent()) return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.vehicle.VehicleEntityCollisionEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        org.bukkit.event.vehicle.VehicleEntityCollisionEvent collisionEvent = new org.bukkit.event.vehicle.VehicleEntityCollisionEvent(
+            (org.bukkit.entity.Vehicle) this.getBukkitEntity(),
+            entity.getBukkitEntity()
+        );
+        if (!collisionEvent.callEvent()) return;
+    }
     // Paper end - Collision Events

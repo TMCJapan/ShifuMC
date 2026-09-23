@@ -6,16 +6,18 @@ anchor:
     if (!player.level().isClientSide()) {
         player.awardStat(Stats.ITEM_USED.get(inHand.getItem()));
 insert:
-    // Paper start
-    final io.papermc.paper.event.player.PlayerSwapWithEquipmentSlotEvent event = new io.papermc.paper.event.player.PlayerSwapWithEquipmentSlotEvent(
-        (org.bukkit.entity.Player) player.getBukkitEntity(),
-        org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(inHand),
-        org.bukkit.craftbukkit.CraftEquipmentSlot.getSlot(this.slot),
-        org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(inEquipmentSlot)
-    );
-    event.callEvent();
-    if (event.isCancelled()) {
-        ((org.bukkit.entity.Player) player.getBukkitEntity()).updateInventory();
-        return InteractionResult.FAIL;
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.player.PlayerSwapWithEquipmentSlotEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start
+        final io.papermc.paper.event.player.PlayerSwapWithEquipmentSlotEvent event = new io.papermc.paper.event.player.PlayerSwapWithEquipmentSlotEvent(
+            (org.bukkit.entity.Player) player.getBukkitEntity(),
+            org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(inHand),
+            org.bukkit.craftbukkit.CraftEquipmentSlot.getSlot(this.slot),
+            org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(inEquipmentSlot)
+        );
+        event.callEvent();
+        if (event.isCancelled()) {
+            ((org.bukkit.entity.Player) player.getBukkitEntity()).updateInventory();
+            return InteractionResult.FAIL;
+        }
+        // Paper end
     }
-    // Paper end

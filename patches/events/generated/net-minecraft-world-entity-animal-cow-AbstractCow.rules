@@ -5,10 +5,12 @@ file: net/minecraft/world/entity/animal/cow/AbstractCow.java
 anchor:
     player.playSound(SoundEvents.COW_MILK, 1.0F, 1.0F);
 insert:
-    // CraftBukkit start - Got milk?
-    org.bukkit.event.player.PlayerBucketFillEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerBucketFillEvent(player.level(), player, this.blockPosition(), this.blockPosition(), null, itemStack, Items.MILK_BUCKET, hand);
-    if (event.isCancelled()) {
-        player.containerMenu.sendAllDataToRemote(); // Paper - Fix inventory desync
-        return InteractionResult.PASS;
+    if ((dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerBucketEmptyEvent.class) || dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerBucketFillEvent.class))) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start - Got milk?
+        org.bukkit.event.player.PlayerBucketFillEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerBucketFillEvent(player.level(), player, this.blockPosition(), this.blockPosition(), null, itemStack, Items.MILK_BUCKET, hand);
+        if (event.isCancelled()) {
+            player.containerMenu.sendAllDataToRemote(); // Paper - Fix inventory desync
+            return InteractionResult.PASS;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

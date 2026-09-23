@@ -5,14 +5,16 @@ file: net/minecraft/world/level/ServerExplosion.java
 anchor:
     entity.push(knockback);
 insert:
-    // CraftBukkit start - Call EntityKnockbackEvent
-    if (entity instanceof LivingEntity) {
-        // Paper start - knockback events
-        io.papermc.paper.event.entity.EntityKnockbackEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityKnockbackEvent((org.bukkit.craftbukkit.entity.CraftLivingEntity) entity.getBukkitEntity(), this.source, this.damageSource.getEntity() != null ? this.damageSource.getEntity() : this.source, io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.EXPLOSION, knockbackPower, knockback);
-        knockback = event.isCancelled() ? Vec3.ZERO : org.bukkit.craftbukkit.util.CraftVector.toVec3(event.getKnockback());
-        // Paper end - knockback events
+    if ((dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.entity.EntityKnockbackByEntityEvent.class) || dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.EntityKnockbackEvent.class) || dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityKnockbackByEntityEvent.class) || dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityKnockbackEvent.class))) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start - Call EntityKnockbackEvent
+        if (entity instanceof LivingEntity) {
+            // Paper start - knockback events
+            io.papermc.paper.event.entity.EntityKnockbackEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityKnockbackEvent((org.bukkit.craftbukkit.entity.CraftLivingEntity) entity.getBukkitEntity(), this.source, this.damageSource.getEntity() != null ? this.damageSource.getEntity() : this.source, io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.EXPLOSION, knockbackPower, knockback);
+            knockback = event.isCancelled() ? Vec3.ZERO : org.bukkit.craftbukkit.util.CraftVector.toVec3(event.getKnockback());
+            // Paper end - knockback events
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end
 
 # callTNTPrimeEvent
 file: net/minecraft/world/level/ServerExplosion.java
@@ -20,18 +22,12 @@ anchor:
     this.level.getBlockState(pos).onExplosionHit(this.level, pos, this, (stackx, position) -> addOrAppendStack(stacks, stackx, position));
 insert:
     // CraftBukkit start - TNTPrimeEvent
-    BlockState state = this.level.getBlockState(pos);
-    Block block = state.getBlock();
-    if (level.getGameRules().get(GameRules.TNT_EXPLODES) && block instanceof net.minecraft.world.level.block.TntBlock) {
-        Entity sourceEntity = this.source == null ? null : this.source;
-        BlockPos sourceBlock = sourceEntity == null ? BlockPos.containing(this.center) : null;
-        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callTNTPrimeEvent(this.level, pos, org.bukkit.event.block.TNTPrimeEvent.PrimeCause.EXPLOSION, sourceEntity, sourceBlock)) {
-            this.level.sendBlockUpdated(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), state, Block.UPDATE_ALL); // Update the block on the client
-            continue;
-        }
+    // 登録の判定と、ゲームルール・ブロックを見るのは ShifuEvents.tntPrimeByExplosion がやる。
+    // Paper の形のままだと、登録が無くても壊れる位置ごとに getBlockState とゲームルールを引いていた
+    if (!dev.shifu.event.ShifuEvents.tntPrimeByExplosion(this.level, pos, this)) {
+        continue;
     }
     // CraftBukkit end
-
 
 # callBlockIgniteEvent
 file: net/minecraft/world/level/ServerExplosion.java
@@ -39,7 +35,7 @@ anchor:
     this.level.setBlockAndUpdate(pos, BaseFireBlock.getState(this.level, pos));
 insert:
     // CraftBukkit start - Ignition by explosion
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(this.level, pos, this).isCancelled()) {
+    if (!dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockIgniteEvent.class) || (!org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(this.level, pos, this).isCancelled())) { // Shifu - 登録が無ければ組み立てない
 insert-after:
     }
     // CraftBukkit end

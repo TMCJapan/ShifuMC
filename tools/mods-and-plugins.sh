@@ -54,7 +54,7 @@ fi
 cp "$DIST/shifu.jar" "$RUN/"
 [ -f "$RUN/eula.txt" ] || printf 'eula=true\n' > "$RUN/eula.txt"
 [ -f "$RUN/server.properties" ] || printf 'online-mode=false\nserver-port=25593\nlevel-seed=1234567890\n' > "$RUN/server.properties"
-printf 'minecraft-version = 26.2\npaper-build = latest\nserver-paperclip = %s\nfabric-loader-version = 0.19.3\nvanilla-parity = true\njvm-args = -Xmx4G\n' \
+printf 'minecraft-version = 26.2\npaper-build = latest\nserver-paperclip = %s\nfabric-loader-version = 0.19.5\nvanilla-parity = true\njvm-args = -Xmx4G\n' \
     "$(cygpath -m "$DIST/shifu-server.jar")" > "$RUN/shifu.properties"
 
 # 前に組んだサーバーが残っていると、新しい jar で組み直さない

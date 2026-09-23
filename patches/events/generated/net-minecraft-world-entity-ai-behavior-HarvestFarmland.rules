@@ -5,6 +5,6 @@ file: net/minecraft/world/entity/ai/behavior/HarvestFarmland.java
 anchor:
     level.destroyBlock(this.aboveFarmlandPos, true, body);
 insert:
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(body, this.aboveFarmlandPos, blockState.getFluidState().createLegacyBlock())) { // CraftBukkit // Paper - fix wrong block state
+    if (!dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityChangeBlockEvent.class) || (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(body, this.aboveFarmlandPos, blockState.getFluidState().createLegacyBlock()))) { // CraftBukkit // Paper - fix wrong block state
 insert-after:
     } // CraftBukkit

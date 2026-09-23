@@ -7,7 +7,12 @@ anchor:
     player.setItemInHand(hand, ItemUtils.createFilledResult(itemInHand, player, new ItemStack(Items.GLASS_BOTTLE)));
 insert:
     // CraftBukkit start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleCauldronLevelChangeEvent(level, pos, Blocks.WATER_CAULDRON.defaultBlockState(), player, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.BOTTLE_EMPTY)) { // Paper - Call CauldronLevelChangeEvent
+    // 登録が無いときに新しい状態を組まないように、cauldronListening() を && の左に置く。
+    // handleCauldronLevelChangeEvent は通ったときに自分で置くので、vanilla の setBlockAndUpdate と 2 度置いていた
+    if (dev.shifu.event.ShifuEvents.cauldronListening()
+            && !dev.shifu.event.ShifuEvents.cauldronLevelChangeBefore(level, pos,
+                    Blocks.WATER_CAULDRON.defaultBlockState(), player,
+                    org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.BOTTLE_EMPTY)) { // Paper - Call CauldronLevelChangeEvent
         return InteractionResult.SUCCESS;
     }
     // CraftBukkit end
@@ -20,7 +25,12 @@ anchor:
     player.awardStat(Stats.ITEM_USED.get(itemInHand.getItem()));
 insert:
     // CraftBukkit start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleCauldronLevelChangeEvent(level, pos, state.cycle(LayeredCauldronBlock.LEVEL), player, org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.BOTTLE_EMPTY)) { // Paper - Call CauldronLevelChangeEvent
+    // 登録が無いときに新しい状態を組まないように、cauldronListening() を && の左に置く。
+    // handleCauldronLevelChangeEvent は通ったときに自分で置くので、vanilla の setBlockAndUpdate と 2 度置いていた
+    if (dev.shifu.event.ShifuEvents.cauldronListening()
+            && !dev.shifu.event.ShifuEvents.cauldronLevelChangeBefore(level, pos,
+                    state.cycle(LayeredCauldronBlock.LEVEL), player,
+                    org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason.BOTTLE_EMPTY)) { // Paper - Call CauldronLevelChangeEvent
         return InteractionResult.SUCCESS;
     }
     // CraftBukkit end

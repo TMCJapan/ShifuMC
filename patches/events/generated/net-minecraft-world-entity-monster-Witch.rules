@@ -5,22 +5,26 @@ file: net/minecraft/world/entity/monster/Witch.java
 anchor:
     if (itemStack.is(Items.POTION) && potion != null) {
 insert:
-    // Paper start - WitchConsumePotionEvent
-    if (itemStack.is(Items.POTION)) {
-        com.destroystokyo.paper.event.entity.WitchConsumePotionEvent event = new com.destroystokyo.paper.event.entity.WitchConsumePotionEvent((org.bukkit.entity.Witch) this.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(itemStack));
-        potion = event.callEvent() ? org.bukkit.craftbukkit.inventory.CraftItemStack.unwrap(event.getPotion()).get(DataComponents.POTION_CONTENTS) : null;
+    if (dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.entity.WitchConsumePotionEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - WitchConsumePotionEvent
+        if (itemStack.is(Items.POTION)) {
+            com.destroystokyo.paper.event.entity.WitchConsumePotionEvent event = new com.destroystokyo.paper.event.entity.WitchConsumePotionEvent((org.bukkit.entity.Witch) this.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(itemStack));
+            potion = event.callEvent() ? org.bukkit.craftbukkit.inventory.CraftItemStack.unwrap(event.getPotion()).get(DataComponents.POTION_CONTENTS) : null;
+        }
+        // Paper end - WitchConsumePotionEvent
     }
-    // Paper end - WitchConsumePotionEvent
 
 # WitchThrowPotionEvent
 file: net/minecraft/world/entity/monster/Witch.java
 anchor:
     Projectile.spawnProjectileUsingShoot(
 insert:
-    // Paper start - WitchThrowPotionEvent
-    com.destroystokyo.paper.event.entity.WitchThrowPotionEvent event = new com.destroystokyo.paper.event.entity.WitchThrowPotionEvent((org.bukkit.entity.Witch) this.getBukkitEntity(), (org.bukkit.entity.LivingEntity) target.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(itemStack));
-    if (!event.callEvent()) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.entity.WitchThrowPotionEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - WitchThrowPotionEvent
+        com.destroystokyo.paper.event.entity.WitchThrowPotionEvent event = new com.destroystokyo.paper.event.entity.WitchThrowPotionEvent((org.bukkit.entity.Witch) this.getBukkitEntity(), (org.bukkit.entity.LivingEntity) target.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(itemStack));
+        if (!event.callEvent()) {
+            return;
+        }
+        itemStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getPotion());
+        // Paper end - WitchThrowPotionEven
     }
-    itemStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getPotion());
-    // Paper end - WitchThrowPotionEven

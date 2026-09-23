@@ -1,27 +1,12 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # EntityUnleashEvent
+# Paper - Expand EntityUnleashEvent。登録が無ければ vanilla の dropLeash() だけが走る。取り消しと、落とさない指定は
+# EntityEvents.dropLeash が受ける
 file: net/minecraft/world/entity/Leashable.java
 anchor:
     this.dropLeash();
 insert:
-    // CraftBukkit start
-    boolean dropLeash = true; // Paper
-    if (this instanceof Entity entity) {
-        // Paper start - Expand EntityUnleashEvent
-        Entity leashHolder = this.getLeashHolder();
-        Level level = leashHolder.level();
-
-        final org.bukkit.event.entity.EntityUnleashEvent event = new org.bukkit.event.entity.EntityUnleashEvent(entity.getBukkitEntity(), org.bukkit.event.entity.EntityUnleashEvent.UnleashReason.DISTANCE, true);
-        if (!event.callEvent()) return;
-
-        dropLeash = event.isDropLeash();
-        level.playSound(null, leashHolder.getX(), leashHolder.getY(), leashHolder.getZ(), SoundEvents.LEAD_BREAK, SoundSource.NEUTRAL, 1.0F, 1.0F); // Moved from Leashable#tickLeash
-    }
-    // CraftBukkit end
-    if (dropLeash) {
+    if (dev.shifu.event.EntityEvents.dropLeash(this, org.bukkit.event.entity.EntityUnleashEvent.UnleashReason.DISTANCE, true)) {
 insert-after:
-    } else {
-        this.removeLeash();
     }
-    // Paper end - Expand EntityUnleashEvent

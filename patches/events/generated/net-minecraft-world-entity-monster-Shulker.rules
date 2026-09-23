@@ -6,11 +6,13 @@ anchor:
     if (attachmentDirection != null) {
         this.unRide();
 insert:
-    // CraftBukkit start
-    org.bukkit.event.entity.EntityTeleportEvent teleportEvent = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTeleportEvent(this, target.getX(), target.getY(), target.getZ());
-    if (teleportEvent.isCancelled() || teleportEvent.getTo() == null) { // Paper
-        return false;
-    } else {
-        target = org.bukkit.craftbukkit.util.CraftLocation.toBlockPos(teleportEvent.getTo());
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityTeleportEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        org.bukkit.event.entity.EntityTeleportEvent teleportEvent = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTeleportEvent(this, target.getX(), target.getY(), target.getZ());
+        if (teleportEvent.isCancelled() || teleportEvent.getTo() == null) { // Paper
+            return false;
+        } else {
+            target = org.bukkit.craftbukkit.util.CraftLocation.toBlockPos(teleportEvent.getTo());
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

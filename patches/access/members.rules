@@ -92,11 +92,6 @@ file: net/minecraft/world/level/dimension/end/EnderDragonFight.java
 line:
     private boolean dragonKilled;
 
-# 上の RegistryDataLoader の差し込みが t.registry を読むので、private のままだと通らない
-file: net/minecraft/resources/RegistryLoadTask.java
-line:
-    private final WritableRegistry<T> registry;
-
 # BlockPlaceEvent の差し込みが、クリックされたブロックの位置を要る。
 # BlockPlaceContext.getClickedPos() は「置く場所」を返すので、
 # クリックされた側は getHitResult() から取るしかない。

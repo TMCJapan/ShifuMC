@@ -1,0 +1,10 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: io/papermc/paper/command/brigadier/argument/SignedMessageResolverImpl.java
+
+# プラグインが渡す文脈の source は ApiSource(ApiSource.forApi が包んだもの)。vanilla の resolveChatMessage は
+# source を NMS の CommandSourceStack として読むので、そのまま渡すと ClassCastException で落ちる。source だけ外した写しを渡す
+replace:
+        MessageArgument.resolveChatMessage(response, erased, argumentName, (message) -> {
+with:
+        MessageArgument.resolveChatMessage(response, erased.copyFor(dev.shifu.command.ApiSource.unwrap(erased.getSource())), argumentName, (message) -> { // Shifu - vanilla へは NMS の source で渡す

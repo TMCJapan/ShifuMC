@@ -5,7 +5,9 @@ file: net/minecraft/stats/ServerRecipeBook.java
 anchor:
     this.add(id);
 insert:
-    // Paper start - PlayerRecipeDiscoverEvent event
-    final org.bukkit.event.player.PlayerRecipeDiscoverEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerRecipeListUpdateEvent(player, recipe);
-    if (event.isCancelled()) continue;
-    // Paper end - PlayerRecipeDiscoverEvent event
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerRecipeDiscoverEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - PlayerRecipeDiscoverEvent event
+        final org.bukkit.event.player.PlayerRecipeDiscoverEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerRecipeListUpdateEvent(player, recipe);
+        if (event.isCancelled()) continue;
+        // Paper end - PlayerRecipeDiscoverEvent event
+    }

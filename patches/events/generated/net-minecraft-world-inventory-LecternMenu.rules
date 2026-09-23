@@ -5,9 +5,11 @@ file: net/minecraft/world/inventory/LecternMenu.java
 anchor:
     ItemStack book = this.lectern.removeItemNoUpdate(0);
 insert:
-    // CraftBukkit start - Event for taking the book
-    org.bukkit.event.player.PlayerTakeLecternBookEvent event = new org.bukkit.event.player.PlayerTakeLecternBookEvent(this.player, this.getBukkitView().getTopInventory().getHolder());
-    if (!event.callEvent()) {
-        return false;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerTakeLecternBookEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start - Event for taking the book
+        org.bukkit.event.player.PlayerTakeLecternBookEvent event = new org.bukkit.event.player.PlayerTakeLecternBookEvent(this.player, this.getBukkitView().getTopInventory().getHolder());
+        if (!event.callEvent()) {
+            return false;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

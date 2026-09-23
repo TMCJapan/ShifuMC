@@ -5,8 +5,10 @@ file: net/minecraft/world/inventory/ResultSlot.java
 anchor:
     this.checkTakeAchievements(carried);
 insert:
-    // Paper start - add ItemCraftedEvent
-    if (!carried.isEmpty()) {
-        new io.papermc.paper.event.inventory.ItemCraftedEvent((org.bukkit.entity.Player) player.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(carried)).callEvent();
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.inventory.ItemCraftedEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - add ItemCraftedEvent
+        if (!carried.isEmpty()) {
+            new io.papermc.paper.event.inventory.ItemCraftedEvent((org.bukkit.entity.Player) player.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(carried)).callEvent();
+        }
+        // Paper end - add ItemCraftedEvent
     }
-    // Paper end - add ItemCraftedEvent

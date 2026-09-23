@@ -5,21 +5,25 @@ file: net/minecraft/world/level/block/SnifferEggBlock.java
 anchor:
     level.playSound(null, position, SoundEvents.SNIFFER_EGG_CRACK, SoundSource.BLOCKS, 0.7F, 0.9F + random.nextFloat() * 0.2F);
 insert:
-    // Paper start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockGrowEvent(level, position, state.setValue(HATCH, this.getHatchLevel(state) + 1), Block.UPDATE_CLIENTS)) {
-        this.rescheduleTick(level, position);
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockGrowEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockGrowEvent(level, position, state.setValue(HATCH, this.getHatchLevel(state) + 1), Block.UPDATE_CLIENTS)) {
+            this.rescheduleTick(level, position);
+            return;
+        }
+        // Paper end
     }
-    // Paper end
 
 # callBlockFadeEvent
 file: net/minecraft/world/level/block/SnifferEggBlock.java
 anchor:
     level.playSound(null, position, SoundEvents.SNIFFER_EGG_HATCH, SoundSource.BLOCKS, 0.7F, 0.9F + random.nextFloat() * 0.2F);
 insert:
-    // Paper start - Call BlockFadeEvent
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, position, state.getFluidState().createLegacyBlock()).isCancelled()) {
-        this.rescheduleTick(level, position);
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockFadeEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - Call BlockFadeEvent
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, position, state.getFluidState().createLegacyBlock()).isCancelled()) {
+            this.rescheduleTick(level, position);
+            return;
+        }
+        // Paper end - Call BlockFadeEvent
     }
-    // Paper end - Call BlockFadeEvent

@@ -44,8 +44,11 @@ def skip_attributes(data, at, pool, want=None):
     return at, found
 
 
-def method_tables(data):
-    """class ファイル -> {(メソッド名, 署名): (局所変数の表, 行番号の一覧)}。"""
+def method_tables(data, with_code=False):
+    """class ファイル -> {(メソッド名, 署名): (局所変数の表, 行番号の一覧)}。
+
+    with_code を真にすると、値の 3 つ目に命令列(Code 属性の code)を足す。
+    """
     pool = parse_constant_pool(data)
     count = struct.unpack_from(">H", data, 8)[0]
     at = 10
@@ -120,7 +123,10 @@ def method_tables(data):
                     _, line = struct.unpack_from(">HH", data, start + 2 + i * 4)
                     source_lines.append(line)
 
-        out[(name, desc)] = (entries, source_lines)
+        if with_code:
+            out[(name, desc)] = (entries, source_lines, data[body + 8:body + 8 + code_len])
+        else:
+            out[(name, desc)] = (entries, source_lines)
 
     return out
 

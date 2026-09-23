@@ -40,8 +40,8 @@ MOD とプラグインが同じサーバーで同時に動き、プレイヤー�
 | 1200 tick 走らせた世界の一致 | vanilla 同士 17 チャンク、それを引いた Shifu との差は 2 |
 | 公式の局所変数が公式の番号に座っていないメソッド | 182 → 21 |
 
-触った vanilla の行は 3 種類だけで、`python tools/verify_additive.py` が形を確かめる。
-内訳は [ARCHITECTURE.md](ARCHITECTURE.md) の「vanilla の行に触っている 3 か所」。
+vanilla の行を書き換えてよいのは 4 種類で、`tools/verify_additive.py` が closure の最後に形を確かめる(2026-09-23 は形に収まらないものが 29 件残っていて、closure はそこで止まる)。
+内訳は [ARCHITECTURE.md](ARCHITECTURE.md) の「vanilla の行に触っている 4 か所」。
 
 ## プレイヤー経路(実測、2026-09-03)
 
@@ -100,8 +100,9 @@ EssentialsX が知っているバージョンの一覧に 26.2 が無いため�
 
 `plugins` と `version` は通らない。この 2 つは Bukkit ではなく Paper 独自のコマンド
 (`io.papermc.paper.command.PaperCommands.registerCommands`)で、vanilla に無いので
-入れていない。Bukkit の `SimpleCommandMap.setFallbackCommands` が登録するのは
-`/bukkit:help` だけ。
+入れていない。Bukkit が自分で登録するコマンド(`SimpleCommandMap` の構築子と `setFallbackCommands` が
+登録するもの)は、`patches/adapter/org-bukkit-craftbukkit-command-CraftCommandMap.rules` で
+`bukkit:` の付いた名前(`/bukkit:help` など)だけにしている。`/help` と `/reload` は vanilla のもの。
 
 ## MOD とプラグインを同時に(実測、2026-09-04)
 

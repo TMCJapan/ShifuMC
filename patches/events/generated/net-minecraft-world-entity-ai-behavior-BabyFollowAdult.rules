@@ -5,14 +5,16 @@ file: net/minecraft/world/entity/ai/behavior/BabyFollowAdult.java
 anchor:
     WalkTarget target = new WalkTarget(
 insert:
-    // CraftBukkit start
-    org.bukkit.event.entity.EntityTargetLivingEntityEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTargetLivingEvent(body, adult, org.bukkit.event.entity.EntityTargetEvent.TargetReason.FOLLOW_LEADER);
-    if (event.isCancelled()) {
-        return false;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityTargetLivingEntityEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        org.bukkit.event.entity.EntityTargetLivingEntityEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTargetLivingEvent(body, adult, org.bukkit.event.entity.EntityTargetEvent.TargetReason.FOLLOW_LEADER);
+        if (event.isCancelled()) {
+            return false;
+        }
+        if (event.getTarget() == null) {
+            walkTarget.erase();
+            return true;
+        }
+        adult = ((org.bukkit.craftbukkit.entity.CraftLivingEntity) event.getTarget()).getHandle();
+        // CraftBukkit end
     }
-    if (event.getTarget() == null) {
-        walkTarget.erase();
-        return true;
-    }
-    adult = ((org.bukkit.craftbukkit.entity.CraftLivingEntity) event.getTarget()).getHandle();
-    // CraftBukkit end

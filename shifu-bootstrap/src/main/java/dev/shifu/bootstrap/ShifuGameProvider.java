@@ -46,6 +46,7 @@ import net.fabricmc.loader.impl.util.Arguments;
  * <ul>
  *   <li>{@code -Dshifu.paperJar=<path>} … paperclip が生成した paper-&lt;ver&gt;.jar</li>
  *   <li>{@code -Dshifu.librariesDir=<dir>} … paperclip が展開したライブラリのルート</li>
+ *   <li>{@code -Dshifu.librariesList=<file>} … bundler が宣言したライブラリ一覧</li>
  * </ul>
  */
 public final class ShifuGameProvider implements GameProvider {
@@ -208,13 +209,27 @@ public final class ShifuGameProvider implements GameProvider {
 	 * <p>paper-api とサーバー実装は同じクラスローダに載せる必要がある。
 	 * Paper 内部は {@code META-INF/services} 経由の ServiceLoader を 30 件以上使っており、
 	 * インタフェース(paper-api 側)と実装(paper-&lt;ver&gt;.jar 側)が分断されると全滅する。
+	 *
+	 * <p>{@code libraries/} 全体にはプラグインが取得した依存も入るため、bundler の
+	 * {@code META-INF/libraries.list} が渡された場合は宣言された jar だけを載せる。
 	 */
 	private void collectLibraries() {
 		String dirProp = System.getProperty("shifu.librariesDir");
 		if (dirProp == null) return;
 
 		Path root = Paths.get(dirProp).toAbsolutePath().normalize();
-		if (!Files.isDirectory(root)) return;
+		String listProp = System.getProperty("shifu.librariesList");
+		if (!Files.isDirectory(root)) {
+			if (listProp != null) {
+				throw new IllegalStateException("paper libraries directory is missing: " + root);
+			}
+			return;
+		}
+
+		if (listProp != null) {
+			collectDeclaredLibraries(root, Paths.get(listProp));
+			return;
+		}
 
 		try (Stream<Path> stream = Files.walk(root)) {
 			stream.filter(Files::isRegularFile)
@@ -223,6 +238,46 @@ public final class ShifuGameProvider implements GameProvider {
 					.forEach(gameLibraries::add);
 		} catch (IOException e) {
 			throw new RuntimeException("failed to scan " + root, e);
+		}
+	}
+
+	/** bundler が宣言したライブラリだけを厳密に読み込む。 */
+	private void collectDeclaredLibraries(Path root, Path list) {
+		if (!Files.isRegularFile(list)) {
+			throw new IllegalStateException("paperclip libraries list is missing: " + list);
+		}
+
+		int declared = 0;
+
+		try {
+			for (String line : Files.readAllLines(list, StandardCharsets.UTF_8)) {
+				if (line.isBlank()) continue;
+
+				String[] parts = line.split("\t", -1);
+				if (parts.length < 3 || parts[2].isBlank()) {
+					throw new IllegalStateException("invalid libraries.list entry: " + line);
+				}
+
+				Path jar = root.resolve(parts[2].trim()).normalize();
+
+				if (!jar.startsWith(root)) {
+					throw new IllegalStateException("libraries.list entry escapes its root: " + parts[2]);
+				}
+				if (!Files.isRegularFile(jar)) {
+					throw new IllegalStateException("paper library is missing: " + jar);
+				}
+
+				declared++;
+				if (isNotSystemLibrary(jar)) {
+					gameLibraries.add(jar);
+				}
+			}
+		} catch (IOException e) {
+			throw new RuntimeException("failed to read " + list, e);
+		}
+
+		if (declared == 0) {
+			throw new IllegalStateException("paperclip libraries list is empty: " + list);
 		}
 	}
 

@@ -6,4 +6,4 @@ file: io/papermc/paper/connection/PaperPlayerConfigurationConnection.java
 replace:
     new DiscardedPayload(id, message)
 with:
-    new DiscardedPayload(id)
+    new dev.shifu.event.PluginMessages.Outgoing(id, message)

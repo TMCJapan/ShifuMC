@@ -5,20 +5,23 @@ file: net/minecraft/world/level/block/BasePressurePlateBlock.java
 anchor:
     if (!level.isClientSide()) {
 insert:
-    if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.EntityInsideBlockEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+    }
 
 # callRedstoneChange
 file: net/minecraft/world/level/block/BasePressurePlateBlock.java
 anchor:
     if (oldSignal != signal) {
 insert:
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)) { // Shifu - 登録が無ければ組み立てない
 
-    // Paper start - Call BlockRedstoneEvent
-    if (oldSignal != signal) {
-        org.bukkit.event.block.BlockRedstoneEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, oldSignal, signal);
+        // Paper start - Call BlockRedstoneEvent
+        if (oldSignal != signal) {
+            org.bukkit.event.block.BlockRedstoneEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, oldSignal, signal);
 
-        signal = event.getNewCurrent();
-        isPressed = signal > 0;
+            signal = event.getNewCurrent();
+            isPressed = signal > 0;
+        }
+        // Paper end - Call BlockRedstoneEvent
     }
-    // Paper end - Call BlockRedstoneEvent
-

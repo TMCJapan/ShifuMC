@@ -5,9 +5,11 @@ file: net/minecraft/world/entity/vehicle/minecart/OldMinecartBehavior.java
 anchor:
     entity.startRiding(this.minecart);
 insert:
-    // CraftBukkit start
-    org.bukkit.event.vehicle.VehicleEntityCollisionEvent collisionEvent = new org.bukkit.event.vehicle.VehicleEntityCollisionEvent(
-        (org.bukkit.entity.Vehicle) this.minecart.getBukkitEntity(), entity.getBukkitEntity()
-    );
-    if (!collisionEvent.callEvent()) continue;
-    // CraftBukkit end
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.vehicle.VehicleEntityCollisionEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        org.bukkit.event.vehicle.VehicleEntityCollisionEvent collisionEvent = new org.bukkit.event.vehicle.VehicleEntityCollisionEvent(
+            (org.bukkit.entity.Vehicle) this.minecart.getBukkitEntity(), entity.getBukkitEntity()
+        );
+        if (!collisionEvent.callEvent()) continue;
+        // CraftBukkit end
+    }

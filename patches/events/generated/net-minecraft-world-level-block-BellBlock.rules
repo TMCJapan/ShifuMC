@@ -5,19 +5,23 @@ file: net/minecraft/world/level/block/BellBlock.java
 anchor:
     if (signal) {
 insert:
-    // Paper start - Call BlockRedstoneEvent
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, signal)) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - Call BlockRedstoneEvent
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBinaryRedstoneChange(level, pos, signal)) {
+            return;
+        }
+        // Paper end - Call BlockRedstoneEvent
     }
-    // Paper end - Call BlockRedstoneEvent
 
 # handleBellRingEvent
 file: net/minecraft/world/level/block/BellBlock.java
 anchor:
     bellBlockEntity.onHit(direction);
 insert:
-    // CraftBukkit start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleBellRingEvent(level, pos, direction, ringingEntity)) {
-        return false;
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.block.BellRingEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleBellRingEvent(level, pos, direction, ringingEntity)) {
+            return false;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

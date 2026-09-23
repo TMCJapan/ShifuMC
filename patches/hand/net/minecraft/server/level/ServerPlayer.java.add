@@ -100,3 +100,9 @@
     // PlayerNaturallySpawnCreaturesEvent。ServerChunkCache が 1 tick に 1 度作って置き、
     // ChunkMap が湧きの範囲を絞るときに読む。登録が無ければ触らないので null のまま。
     public com.destroystokyo.paper.event.entity.PlayerNaturallySpawnCreaturesEvent shifuNaturallySpawnedEvent;
+
+// ServerPlayer.shifuClientWorldBorder
+    // CraftPlayer に仮想の世界の境界(Player.setWorldBorder)が入っているか。CraftPlayer.setWorldBorder が
+    // 入れ外しのたびに書き(patches/adapter の CraftPlayer)、tick が境界を進めるかをこれで決める。
+    // Paper は毎 tick getBukkitEntity().hasClientWorldBorder() を見る。プラグインが無ければ false のまま。
+    public boolean shifuClientWorldBorder;

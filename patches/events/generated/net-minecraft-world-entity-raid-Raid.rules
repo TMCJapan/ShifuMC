@@ -6,7 +6,9 @@ anchor:
         this.stop();
     }
 insert:
-    org.bukkit.craftbukkit.event.CraftEventFactory.callRaidStopEvent(level, this, org.bukkit.event.raid.RaidStopEvent.Reason.NOT_IN_VILLAGE); // CraftBukkit
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.raid.RaidStopEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        org.bukkit.craftbukkit.event.CraftEventFactory.callRaidStopEvent(level, this, org.bukkit.event.raid.RaidStopEvent.Reason.NOT_IN_VILLAGE); // CraftBukkit
+    }
 
 # callRaidStopEvent
 file: net/minecraft/world/entity/raid/Raid.java
@@ -14,4 +16,6 @@ anchor:
     this.stop();
     break;
 insert:
-    org.bukkit.craftbukkit.event.CraftEventFactory.callRaidStopEvent(level, this, org.bukkit.event.raid.RaidStopEvent.Reason.UNSPAWNABLE); // CraftBukkit
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.raid.RaidStopEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        org.bukkit.craftbukkit.event.CraftEventFactory.callRaidStopEvent(level, this, org.bukkit.event.raid.RaidStopEvent.Reason.UNSPAWNABLE); // CraftBukkit
+    }

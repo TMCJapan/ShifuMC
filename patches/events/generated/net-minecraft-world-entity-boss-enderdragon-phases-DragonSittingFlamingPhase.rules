@@ -5,7 +5,7 @@ file: net/minecraft/world/entity/boss/enderdragon/phases/DragonSittingFlamingPha
 anchor:
     level.addFreshEntity(this.flame);
 insert:
-    if (new com.destroystokyo.paper.event.entity.EnderDragonFlameEvent((org.bukkit.entity.EnderDragon) this.dragon.getBukkitEntity(), (org.bukkit.entity.AreaEffectCloud) this.flame.getBukkitEntity()).callEvent()) { // Paper - EnderDragon Events
+    if (!dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.entity.EnderDragonFlameEvent.class) || (new com.destroystokyo.paper.event.entity.EnderDragonFlameEvent((org.bukkit.entity.EnderDragon) this.dragon.getBukkitEntity(), (org.bukkit.entity.AreaEffectCloud) this.flame.getBukkitEntity()).callEvent())) { // Paper - EnderDragon Events
 insert-after:
     // Paper start - EnderDragon Events
     } else {

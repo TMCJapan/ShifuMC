@@ -1,8 +1,18 @@
 # Paper のパッチから作った発火。tools/make_events.py が出したもの。
 
 # EntityEffectTickEvent
+# Paper は vanilla の if の条件の真ん中(shouldApplyEffectTickThisTick と applyEffectTick の間)に項を足している。
+# 真ん中に足すと vanilla の式の形が変わるので、if 文ごと囲む。取り消されたら applyEffectTick を飛ばして
+# tickDownDuration へ進む(Paper で条件が false になるのと同じ)。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/effect/MobEffectInstance.java.patch(EntityEffectTickEvent)
 file: net/minecraft/world/effect/MobEffectInstance.java
 anchor:
-    && !this.effect.value().applyEffectTick(serverLevel, target, this.amplifier)) {
+    if (this.effect.value().shouldApplyEffectTickThisTick(tickCount, this.amplifier)
+        && !this.effect.value().applyEffectTick(serverLevel, target, this.amplifier)) {
+        return false;
+    }
 insert:
-    && new io.papermc.paper.event.entity.EntityEffectTickEvent(target.getBukkitLivingEntity(), org.bukkit.craftbukkit.potion.CraftPotionEffectType.minecraftHolderToBukkit(this.effect), this.amplifier).callEvent() // Paper - Add EntityEffectTickEvent
+    if (dev.shifu.event.EntityEvents.effectTick(this, target, tickCount)) {
+insert-after:
+    }

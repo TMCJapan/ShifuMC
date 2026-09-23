@@ -5,13 +5,15 @@ file: net/minecraft/world/level/block/DragonEggBlock.java
 anchor:
     if (level.isClientSide()) {
 insert:
-    // CraftBukkit start
-    org.bukkit.block.Block from = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
-    org.bukkit.block.Block to = org.bukkit.craftbukkit.block.CraftBlock.at(level, testPos);
-    org.bukkit.event.block.BlockFromToEvent event = new org.bukkit.event.block.BlockFromToEvent(from, to);
-    if (!event.callEvent()) {
-        return;
-    }
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockFromToEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        org.bukkit.block.Block from = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+        org.bukkit.block.Block to = org.bukkit.craftbukkit.block.CraftBlock.at(level, testPos);
+        org.bukkit.event.block.BlockFromToEvent event = new org.bukkit.event.block.BlockFromToEvent(from, to);
+        if (!event.callEvent()) {
+            return;
+        }
 
-    testPos = new BlockPos(event.getToBlock().getX(), event.getToBlock().getY(), event.getToBlock().getZ());
-    // CraftBukkit end
+        testPos = new BlockPos(event.getToBlock().getX(), event.getToBlock().getY(), event.getToBlock().getZ());
+        // CraftBukkit end
+    }

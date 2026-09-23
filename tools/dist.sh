@@ -24,7 +24,14 @@ RUN=$PW/run-dist-check
 mkdir -p "$DIST"
 
 echo "==== 起動側 ===="
-(cd "$SHIFU" && "$GRADLEW" --no-daemon :shifu-bootstrap:jar)
+# :shifu-bootstrap は options.release = 21。JDK 17 を使う系統では
+# 「release version 21 not supported」で止まるので、この段だけ 21 以上で組む。
+BOOT_JDK=$(shifu_jdk21) || {
+    echo "JDK 21 以上が見つからない。SHIFU_JAVA21 でその置き場を指す。" >&2
+    exit 1
+}
+echo "起動側の JDK: $BOOT_JDK"
+(cd "$SHIFU" && JAVA_HOME=$BOOT_JDK "$GRADLEW" --no-daemon :shifu-bootstrap:jar)
 cp "$SHIFU"/shifu-bootstrap/build/libs/shifu-*.jar "$DIST/shifu.jar"
 
 echo "==== サーバー(paperclip)===="
@@ -56,6 +63,9 @@ printf 'minecraft-version = 26.2\npaper-build = latest\nserver-paperclip = %s\nf
 [ -f "$PW/run-fabric/mods/ProbeMod.jar" ] && cp "$PW/run-fabric/mods/ProbeMod.jar" mods/
 [ -f "$SHIFU/tools/build/plugins/worldedit.jar" ] && cp "$SHIFU/tools/build/plugins/worldedit.jar" plugins/
 
+# 起動側は class file 65(release 21)なので、組んだときと同じ JDK で走らせる。
+# サーバーは ServerLaunch が同じ java.home で子 JVM として立ち上げる。
+status=0
 (
     for i in $(seq 1 240); do
         if grep -aq "Done (" launch.log 2>/dev/null; then
@@ -65,7 +75,7 @@ printf 'minecraft-version = 26.2\npaper-build = latest\nserver-paperclip = %s\nf
     done
     sleep 4
     echo stop
-) | "$JAVA" -jar shifu.jar nogui > launch.log 2>&1 || true
+) | "$BOOT_JDK/bin/java" -jar shifu.jar nogui > launch.log 2>&1 || status=$?
 
 echo "---- 組み立てと起動 ----"
 grep -a "\[shifu\]\|Done (\|Loading .* mods" launch.log | head -12
@@ -73,3 +83,10 @@ echo "---- MOD とプラグイン ----"
 grep -a "probemod\|Enabling" launch.log | head -6
 echo "---- 例外 ----"
 grep -ac "Exception\|SEVERE" launch.log || true
+
+# 「Done (」が出なければ起動していない。9-13 の shifu.jar のまま通っていたのは
+# この段を || true で流していたため。
+if ! grep -aq "Done (" launch.log; then
+    echo "起動が Done まで届かなかった(exit $status): $RUN/launch.log" >&2
+    exit 1
+fi

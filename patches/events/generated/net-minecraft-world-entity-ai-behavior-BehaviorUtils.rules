@@ -5,10 +5,12 @@ file: net/minecraft/world/entity/ai/behavior/BehaviorUtils.java
 anchor:
     thrower.level().addFreshEntity(itemEntity);
 insert:
-    // CraftBukkit start
-    org.bukkit.event.entity.EntityDropItemEvent event = new org.bukkit.event.entity.EntityDropItemEvent(thrower.getBukkitEntity(), (org.bukkit.entity.Item) itemEntity.getBukkitEntity());
-    itemEntity.level().getCraftServer().getPluginManager().callEvent(event);
-    if (event.isCancelled()) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityDropItemEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        org.bukkit.event.entity.EntityDropItemEvent event = new org.bukkit.event.entity.EntityDropItemEvent(thrower.getBukkitEntity(), (org.bukkit.entity.Item) itemEntity.getBukkitEntity());
+        itemEntity.level().getCraftServer().getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

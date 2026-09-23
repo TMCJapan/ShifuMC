@@ -5,21 +5,27 @@ file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
     this.currentState = FishingHook.FishHookState.HOOKED_IN_ENTITY;
 insert:
-    new io.papermc.paper.event.entity.FishHookStateChangeEvent((org.bukkit.entity.FishHook) getBukkitEntity(), org.bukkit.entity.FishHook.HookState.HOOKED_ENTITY).callEvent(); // Paper - Add FishHookStateChangeEvent. #HOOKED_ENTITY
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.FishHookStateChangeEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        new io.papermc.paper.event.entity.FishHookStateChangeEvent((org.bukkit.entity.FishHook) getBukkitEntity(), org.bukkit.entity.FishHook.HookState.HOOKED_ENTITY).callEvent(); // Paper - Add FishHookStateChangeEvent. #HOOKED_ENTITY
+    }
 
 # FishHookStateChangeEvent
 file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
     this.currentState = FishingHook.FishHookState.BOBBING;
 insert:
-    new io.papermc.paper.event.entity.FishHookStateChangeEvent((org.bukkit.entity.FishHook) getBukkitEntity(), org.bukkit.entity.FishHook.HookState.BOBBING).callEvent(); // Paper - Add FishHookStateChangeEvent. #BOBBING
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.FishHookStateChangeEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        new io.papermc.paper.event.entity.FishHookStateChangeEvent((org.bukkit.entity.FishHook) getBukkitEntity(), org.bukkit.entity.FishHook.HookState.BOBBING).callEvent(); // Paper - Add FishHookStateChangeEvent. #BOBBING
+    }
 
 # FishHookStateChangeEvent
 file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
     this.currentState = FishingHook.FishHookState.FLYING;
 insert:
-    new io.papermc.paper.event.entity.FishHookStateChangeEvent((org.bukkit.entity.FishHook) getBukkitEntity(), org.bukkit.entity.FishHook.HookState.UNHOOKED).callEvent(); // Paper - Add FishHookStateChangeEvent. #UNHOOKED
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.FishHookStateChangeEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        new io.papermc.paper.event.entity.FishHookStateChangeEvent((org.bukkit.entity.FishHook) getBukkitEntity(), org.bukkit.entity.FishHook.HookState.UNHOOKED).callEvent(); // Paper - Add FishHookStateChangeEvent. #UNHOOKED
+    }
 
 # PlayerFishEvent
 file: net/minecraft/world/entity/projectile/FishingHook.java
@@ -27,19 +33,23 @@ anchor:
         }
     } else if (this.timeUntilHooked > 0) {
 insert:
-    // CraftBukkit start
-    org.bukkit.event.player.PlayerFishEvent playerFishEvent = new org.bukkit.event.player.PlayerFishEvent((org.bukkit.entity.Player) this.getPlayerOwner().getBukkitEntity(), null, (org.bukkit.entity.FishHook) this.getBukkitEntity(), org.bukkit.event.player.PlayerFishEvent.State.FAILED_ATTEMPT);
-    playerFishEvent.callEvent();
-    // CraftBukkit end
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerFishEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        org.bukkit.event.player.PlayerFishEvent playerFishEvent = new org.bukkit.event.player.PlayerFishEvent((org.bukkit.entity.Player) this.getPlayerOwner().getBukkitEntity(), null, (org.bukkit.entity.FishHook) this.getBukkitEntity(), org.bukkit.event.player.PlayerFishEvent.State.FAILED_ATTEMPT);
+        playerFishEvent.callEvent();
+        // CraftBukkit end
+    }
 
 # PlayerFishEvent
 file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
     this.playSound(SoundEvents.FISHING_BOBBER_SPLASH, 0.25F, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);
 insert:
-    // CraftBukkit start
-    org.bukkit.event.player.PlayerFishEvent playerFishEvent = new org.bukkit.event.player.PlayerFishEvent((org.bukkit.entity.Player) this.getPlayerOwner().getBukkitEntity(), null, (org.bukkit.entity.FishHook) this.getBukkitEntity(), org.bukkit.event.player.PlayerFishEvent.State.BITE);
-    if (!playerFishEvent.callEvent()) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerFishEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        org.bukkit.event.player.PlayerFishEvent playerFishEvent = new org.bukkit.event.player.PlayerFishEvent((org.bukkit.entity.Player) this.getPlayerOwner().getBukkitEntity(), null, (org.bukkit.entity.FishHook) this.getBukkitEntity(), org.bukkit.event.player.PlayerFishEvent.State.BITE);
+        if (!playerFishEvent.callEvent()) {
+            return;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end
