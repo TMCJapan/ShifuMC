@@ -72,14 +72,15 @@ def test_head_matches_unfinal():
 
 def test_yield_to():
     root = os.path.join(HERE, "..", "patches", "hand")
-    # 実物で確かめる。ServerPlayer には手で書いた sendChatMessage がある
-    target = "net/minecraft/server/level/ServerPlayer.java"
+    # 実物で確かめる。Commands には手で書いた performCommand がある
+    # (1.18.2 に存在しない新しい版の規則を期待値にしない)。
+    target = "net/minecraft/commands/Commands.java"
     check("譲る先: 手で書いた名前は拾える",
-          asa.defined_in(root, target, "sendChatMessage"), True)
+          asa.defined_in(root, target, "performCommand"), True)
     check("譲る先: 書いていない名前は拾わない",
           asa.defined_in(root, target, "notWrittenAnywhere"), False)
     check("譲る先: 渡さなければ何も拾わない",
-          asa.defined_in(None, target, "sendChatMessage"), False)
+          asa.defined_in(None, target, "performCommand"), False)
 
 
 def test_widened():
@@ -87,8 +88,8 @@ def test_widened():
     found = asa.widened(root)
     # 欄も拾えること。挙げる名前は patches/access の中身なので枝ごとに違う
     check("可視性: 欄を拾う",
-          ("net/minecraft/server/network/ServerCommonPacketListenerImpl.java",
-           "connection") in found, True)
+          ("net/minecraft/server/level/ServerPlayer.java",
+           "containerSynchronizer") in found, True)
     check("可視性: メソッドも拾う",
           ("net/minecraft/world/entity/player/Player.java", "isImmobile") in found, True)
     check("可視性: 無い場所では空", asa.widened(None), set())

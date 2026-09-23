@@ -1,0 +1,16 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: org/bukkit/craftbukkit/inventory/CraftInventoryLectern.java
+
+# vanilla の LecternBlockEntity.bookAccess は無名クラスなので、CraftBukkit の名前付き
+# LecternInventory の instanceof が当たらず tile が常に null だった。
+# 書見台の無名クラスは patches/anon で shifuLectern を上書きして自身を返す(1.21.11 と同じ形)
+replace:
+    if (inventory instanceof LecternBlockEntity.LecternInventory) {
+with:
+    if (inventory.shifuLectern() != null) {
+
+replace:
+    this.tile = ((LecternBlockEntity.LecternInventory) inventory).getLectern();
+with:
+    this.tile = inventory.shifuLectern();

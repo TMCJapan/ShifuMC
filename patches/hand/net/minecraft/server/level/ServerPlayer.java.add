@@ -45,3 +45,8 @@
     // PlayerLevelChangeEvent が前の段を要る。Paper は ServerPlayer の欄として持っている
     public int oldLevel = -1;
 
+// ServerPlayer.shifuClientWorldBorder
+    // CraftPlayer に仮想の世界の境界(Player.setWorldBorder)が入っているか。CraftPlayer.setWorldBorder が
+    // 入れ外しのたびに書き(patches/adapter の CraftPlayer)、tick が境界を進めるかをこれで決める。
+    // Paper は毎 tick getBukkitEntity().hasClientWorldBorder() を見る。プラグインが無ければ false のまま。
+    public boolean shifuClientWorldBorder;

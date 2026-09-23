@@ -8,6 +8,8 @@ anchor:
         float f = (float)Math.pow(2.0, (noteValue - 12) / 12.0);
 insert:
     // Paper start - move NotePlayEvent call to fix instrument/note changes
-    org.bukkit.event.block.NotePlayEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callNotePlayEvent(world, pos, state.getValue(INSTRUMENT), state.getValue(NOTE));
-    if (event.isCancelled()) return false;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.NotePlayEvent.class)) {
+        org.bukkit.event.block.NotePlayEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callNotePlayEvent(world, pos, state.getValue(INSTRUMENT), state.getValue(NOTE));
+        if (event.isCancelled()) return false;
+    }
     // Paper end - move NotePlayEvent call to fix instrument/note changes

@@ -1,0 +1,21 @@
+// 自前で書いた追加。Paper の宣言だけを写す。
+
+// Ingredient.exact
+    // CraftRecipe.toIngredient が ExactChoice のときに立て、toBukkit がレシピを Bukkit の形に戻すたびに読む
+    // (読むのは ExactChoice に限らない)。Paper は test() の中でこれを見て NBT まで比べる。
+    // Shifu は patches/events/ingredient.rules で test() のループの前に見て、下の shifuTestExact へ渡す。
+    // 読んだ位置: D:/.pw182/Paper-Server(HEAD)src/main/java/net/minecraft/world/item/crafting/Ingredient.java:40,79
+    public boolean exact;
+
+// Ingredient.shifuTestExact
+    // Paper の test() の exact の枝と同じ比べ方(品目が同じで ItemStack.tagMatches が通る)。
+    // 空の Ingredient と null は、test() が先に vanilla の行で答えるのでここへは来ない。
+    // 読んだ位置: D:/.pw182/Paper-Server(HEAD)src/main/java/net/minecraft/world/item/crafting/Ingredient.java:79
+    public boolean shifuTestExact(ItemStack itemStack) {
+        for (ItemStack choice : this.getItems()) {
+            if (choice.getItem() == itemStack.getItem() && ItemStack.tagMatches(itemStack, choice)) {
+                return true;
+            }
+        }
+        return false;
+    }

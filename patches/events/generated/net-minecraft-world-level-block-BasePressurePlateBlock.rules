@@ -5,7 +5,8 @@ file: net/minecraft/world/level/block/BasePressurePlateBlock.java
 anchor:
     public void entityInside(BlockState state, Level world, BlockPos pos, Entity entity) {
 insert-after:
-    if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(world, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.EntityInsideBlockEvent.class)
+            && !new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(world, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
 
 # BlockRedstoneEvent
 file: net/minecraft/world/level/block/BasePressurePlateBlock.java
@@ -13,7 +14,8 @@ anchor:
     if (output != signalStrength) {
 insert:
     // CraftBukkit start - Interact Pressure Plate
-    if (flag != flag1) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)
+            && flag != flag1) {
         org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(org.bukkit.craftbukkit.block.CraftBlock.at(world, pos), output, signalStrength);
         eventRedstone.callEvent();
 

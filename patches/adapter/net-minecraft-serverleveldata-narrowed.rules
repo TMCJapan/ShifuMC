@@ -1,4 +1,13 @@
 # アダプタ層の書き換え。vanilla の行ではない(Paper が持つ vanilla のファイル)。
+#
+# **この 2 つは jar には届かない。**どちらも net/minecraft の側なので、
+# closure.ps1 は当てたあとに vanilla の木から同じ道の中身を上書きし(ChunkStatus)、
+# 上書きされない方も keep_vanilla_classes.py が公式のバイトコードへ戻す
+# (tools/build/kept-classes.txt に net/minecraft/server/commands/ScheduleCommand.class がある)。
+# つまり /schedule も構造物の生成の可否も vanilla の「サーバーで 1 つ」のままで、
+# CraftBukkit の世界ごとの扱いにはならない。規則を置いてあるのは、
+# `closure.ps1 -TouchedOnly` が Paper の側のファイルをそのままコンパイルするときに
+# serverLevelData の型が合わずに止まるのを防ぐため。
 
 # vanilla の ServerLevel.serverLevelData は ServerLevelData 型。1.18.2 の ServerLevelData は
 # getLevelName() しか持たないので、worldGenSettings は PrimaryLevelData へ戻して読む。

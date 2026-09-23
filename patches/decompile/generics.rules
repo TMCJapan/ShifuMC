@@ -112,12 +112,7 @@ with:
         consumer.visit((GameRules.Key<T>)key, (GameRules.Type<T>)type);
         ((GameRules.Type<T>)type).callVisitor(consumer, (GameRules.Key<T>)key);
 
-# dispatchedMap の V が capture になって、書き出す側の Map と合わない
-file: net/minecraft/core/component/DataComponentPatch.java
-replace:
-    public static final Codec<DataComponentPatch> CODEC = Codec.dispatchedMap(DataComponentPatch.PatchKey.CODEC, DataComponentPatch.PatchKey::valueCodec)
-with:
-    public static final Codec<DataComponentPatch> CODEC = Codec.<DataComponentPatch.PatchKey, Object>dispatchedMap(DataComponentPatch.PatchKey.CODEC, DataComponentPatch.PatchKey::valueCodec)
+# DataComponentPatch は 1.18.2 に無い
 
 # toMap の K が Object に落ちて newEnumMap に渡らない
 file: net/minecraft/world/entity/animal/Sheep.java
@@ -126,12 +121,7 @@ replace:
 with:
         Arrays.stream(DyeColor.values()).collect(Collectors.<DyeColor, DyeColor, float[]>toMap(dyeColor -> dyeColor, Sheep::createSheepColor))
 
-# Either.right の左側が Object に落ちる
-file: net/minecraft/world/entity/Mob.java
-replace:
-            this.delayedLeashInfo = NbtUtils.readBlockPos(nbt, "leash").map(Either::right).orElse(null);
-with:
-            this.delayedLeashInfo = NbtUtils.readBlockPos(nbt, "leash").<Either<UUID, BlockPos>>map(Either::right).orElse(null);
+# Mob の delayedLeashInfo(Either.right)は 1.18.2 に無い。引き綱は leashInfoTag を読む
 
 # Map<ResourceLocation, Recipe<?>> から Map<ResourceLocation, Recipe<C>> へは直に cast できない(公式は raw の Map に cast している)
 file: net/minecraft/world/item/crafting/RecipeManager.java
@@ -147,50 +137,11 @@ replace:
 with:
         return this.byType(type).values().stream().map(recipe -> (T)recipe).collect(Collectors.toList());
 
-# Stream.empty() の要素型が定まらず、joining に渡らない
-file: net/minecraft/commands/arguments/item/ItemInput.java
-replace:
-            return resourceLocation != null && !optional.isEmpty() ? Stream.of(resourceLocation.toString() + "=" + optional.get()) : Stream.empty();
-with:
-            return resourceLocation != null && !optional.isEmpty() ? Stream.of(resourceLocation.toString() + "=" + optional.get()) : Stream.<String>empty();
+# ItemInput の部品を並べる Stream.empty() は 1.18.2 に無い(serialize は NBT をそのまま書く)
 
-# raw な Int2ObjectOpenHashMap のままだと ::get の返りが Object になる
-file: net/minecraft/util/datafix/DataFixers.java
-replace:
-                schema162, "Change cat variant type", References.ENTITY, "minecraft:cat", "CatType", Util.make(new Int2ObjectOpenHashMap(), catVariants -> {
-with:
-                schema162, "Change cat variant type", References.ENTITY, "minecraft:cat", "CatType", Util.make(new Int2ObjectOpenHashMap<String>(), catVariants -> {
+# 猫と蛙の種類を直す EntityVariantFix(raw な Int2ObjectOpenHashMap)は 1.18.2 の DataFixers に無い
 
-file: net/minecraft/util/datafix/DataFixers.java
-replace:
-                schema163, "Change frog variant type", References.ENTITY, "minecraft:frog", "Variant", Util.make(new Int2ObjectOpenHashMap(), frogVariants -> {
-with:
-                schema163, "Change frog variant type", References.ENTITY, "minecraft:frog", "Variant", Util.make(new Int2ObjectOpenHashMap<String>(), frogVariants -> {
-
-# holders の鍵は ResourceKey<Object>。ResourceKey<T> のままでは入らない
-file: net/minecraft/core/RegistrySetBuilder.java
-replace:
-            return (Holder.Reference<T>)this.holders.computeIfAbsent(key, key2 -> Holder.Reference.createStandAlone(this.owner, (ResourceKey<Object>)key2));
-with:
-            return (Holder.Reference<T>)this.holders.computeIfAbsent((ResourceKey<Object>)key, key2 -> Holder.Reference.createStandAlone(this.owner, (ResourceKey<Object>)key2));
-
-# HolderOwner<Object> を HolderOwner<T> として返すには cast が要る
-file: net/minecraft/core/RegistrySetBuilder.java
-replace:
-        public <T> HolderOwner<T> cast() {
-            return this;
-        }
-with:
-        public <T> HolderOwner<T> cast() {
-            return (HolderOwner<T>)this;
-        }
-
-# ResourceKey<? extends Registry<T>> から ResourceKey<WritableRegistry<?>> へは 1 段では届かない
-file: net/minecraft/core/registries/BuiltInRegistries.java
-replace:
-        WRITABLE_REGISTRY.register((ResourceKey<WritableRegistry<?>>)key, registry, lifecycle);
-with:
-        WRITABLE_REGISTRY.register((ResourceKey<WritableRegistry<?>>)(ResourceKey<?>)key, registry, lifecycle);
+# RegistrySetBuilder と BuiltInRegistries は 1.18.2 に無い(登録は Registry / BuiltinRegistries)
 
 # Paper が addEffect(MobEffectInstance, Cause) を足したので、null が両方に当たる
 file: net/minecraft/world/entity/LivingEntity.java
@@ -210,76 +161,37 @@ replace:
 with:
                 ArgumentBuilder<SharedSuggestionProvider, ?> argumentBuilder = (ArgumentBuilder<SharedSuggestionProvider, ?>)(ArgumentBuilder<?, ?>)commandNode.createBuilder();
 
-# Component::literal は MutableComponent を返す。Filterable の型引数を明示する
-file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
-replace:
-            List<Filterable<Component>> list = pages.stream().map(page -> this.filterableFromOutgoing(page).map(Component::literal)).toList();
-with:
-            List<Filterable<Component>> list = pages.stream().map(page -> this.filterableFromOutgoing(page).<Component>map(Component::literal)).toList();
+# 本の頁を Filterable<Component> に直す行(filterableFromOutgoing)は 1.18.2 に無い
 
-# Object2IntMap.Entry のメソッド参照は受け手が Object になって当たらない
+# Object2IntMap.Entry のメソッド参照は受け手が Object になって当たらない。
+# comparing の型引数を書く(comparingInt とラムダに書き換えると、ラムダが 1 つ増えて
+# 公式の lambda$…$N の番号がずれる。公式はメソッド参照 getIntValue をそのまま渡している)
 file: net/minecraft/server/level/ServerLevel.java
 replace:
                 .sorted(Comparator.comparing(Entry::getIntValue).reversed())
 with:
-                .sorted(Comparator.comparingInt((it.unimi.dsi.fastutil.objects.Object2IntMap.Entry<String> entry) -> entry.getIntValue()).reversed())
+                .sorted(Comparator.<Entry<String>, Integer>comparing(Entry::getIntValue).reversed())
 
-# 逆コンパイラが無名クラスの中の局所変数を外側と同じ名前にして、自分自身で初期化している。
-# Mojang の版は i1 / j1 / k1 / l1。外側の i / j を読む形に戻す
-file: net/minecraft/core/BlockPos.java
-replace:
-                        int i = this.index % i;
-                        int j = this.index / i;
-                        int k = j % j;
-                        int l = j / j;
-                        this.index++;
-                        return this.cursor.set(startX + i, startY + k, startZ + l);
-with:
-                        int i1 = this.index % i;
-                        int j1 = this.index / i;
-                        int k1 = j1 % j;
-                        int l1 = j1 / j;
-                        this.index++;
-                        return this.cursor.set(startX + i1, startY + k1, startZ + l1);
+# BlockPos の無名クラスの局所変数は、1.18.2 の逆コンパイラが i4〜i7 と別の名前にしているので直すものが無い
 
-# unwrapKey().map(...) と orElseGet の型が揃わない。どちらも文字列に直してから繋ぐ
-file: net/minecraft/commands/arguments/item/ItemInput.java
-replace:
-        return this.item.unwrapKey().map(ResourceKey::location).orElseGet(() -> "unknown[" + this.item + "]").toString();
-with:
-        return this.item.unwrapKey().<Object>map(ResourceKey::location).orElseGet(() -> "unknown[" + this.item + "]").toString();
+# ItemInput.getItemName の unwrapKey().map(...) は 1.18.2 に無い(Registry.ITEM.getKey で名前を引く)
 
-# 逆コンパイラが引数の名前を落として、宣言中の変数を自分で読ませている。
-# Mojang の版は new File(playerDataFolder, fileName + ".dat")
-file: net/minecraft/server/players/OldUsersConverter.java
-replace:
-                        File file = new File(file, fileName + ".dat");
-with:
-                        File file = new File(playerDataFolder, fileName + ".dat");
+# OldUsersConverter は、1.18.2 の逆コンパイラが file3 = new File(worldPlayersDirectory, …) と名前を残しているので直すものが無い
 
 # instanceof のパターンに実引数付きの型を書くと、javac 17 は「安全に cast できない」で止める。
-# 型引数無しで判定してから cast する(cast は同じクラス間なので命令列は変わらない)
+# パターンは型引数を ? にして、使う 2 か所に cast を書く(cast は同じクラス間なので
+# checkcast は出ない。局所変数を足すと公式に無い番号の欄が 1 つ増える)
 file: net/minecraft/commands/Commands.java
 replace:
                 if (argumentBuilder instanceof RequiredArgumentBuilder<SharedSuggestionProvider, ?> requiredArgumentBuilder
                     && requiredArgumentBuilder.getSuggestionsProvider() != null) {
                     requiredArgumentBuilder.suggests(SuggestionProviders.safelySwap(requiredArgumentBuilder.getSuggestionsProvider()));
 with:
-                if (argumentBuilder instanceof RequiredArgumentBuilder<?, ?> requiredArgumentBuilder0
-                    && requiredArgumentBuilder0.getSuggestionsProvider() != null) {
-                    RequiredArgumentBuilder<SharedSuggestionProvider, ?> requiredArgumentBuilder = (RequiredArgumentBuilder<SharedSuggestionProvider, ?>)requiredArgumentBuilder0;
-                    requiredArgumentBuilder.suggests(SuggestionProviders.safelySwap(requiredArgumentBuilder.getSuggestionsProvider()));
+                if (argumentBuilder instanceof RequiredArgumentBuilder<?, ?> requiredArgumentBuilder
+                    && requiredArgumentBuilder.getSuggestionsProvider() != null) {
+                    ((RequiredArgumentBuilder<SharedSuggestionProvider, ?>) requiredArgumentBuilder).suggests(SuggestionProviders.safelySwap(((RequiredArgumentBuilder<SharedSuggestionProvider, ?>) requiredArgumentBuilder).getSuggestionsProvider()));
 
-# Either.left の右の型引数が決まらず、exceptionallyAsync のラムダの返り値と合わない
-file: net/minecraft/server/level/ChunkMap.java
-replace:
-                return Either.left(chunkAccess);
-            } else {
-                return Either.left(this.createEmptyChunk(pos));
-with:
-                return Either.<ChunkAccess, ChunkHolder.ChunkLoadingFailure>left(chunkAccess);
-            } else {
-                return Either.<ChunkAccess, ChunkHolder.ChunkLoadingFailure>left(this.createEmptyChunk(pos));
+# ChunkMap.scheduleChunkLoad は 1.18.2 では supplyAsync の返り値に Either.left を返すだけで、exceptionallyAsync が無いので型が決まる
 
 # 逆コンパイラが cast を落としている。Mojang の版は (Strategy<K>) を付けている
 file: net/minecraft/Util.java

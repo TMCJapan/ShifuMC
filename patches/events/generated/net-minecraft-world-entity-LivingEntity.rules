@@ -6,7 +6,9 @@ anchor:
     if (!this.level.isClientSide && this.isSensitiveToWater() && this.isInWaterRainOrBubble()) {
 insert:
     // Paper start - Add EntityMoveEvent
-    if (((ServerLevel) this.level).hasEntityMoveEvent && !(this instanceof Player)) {
+    // Shifu - Paper は tick の頭で世界ごとに控えた ServerLevel.hasEntityMoveEvent を見る。
+    // 控える側は毎 tick 全部の世界を回すので、登録の有無を直に見る
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.EntityMoveEvent.class) && !(this instanceof Player)) {
         if (this.xo != this.getX() || this.yo != this.getY() || this.zo != this.getZ() || this.yRotO != this.getYRot() || this.xRotO != this.getXRot()) {
             org.bukkit.Location from = new org.bukkit.Location(this.level.getWorld(), this.xo, this.yo, this.zo, this.yRotO, this.xRotO);
             org.bukkit.Location to = new org.bukkit.Location(this.level.getWorld(), this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
@@ -21,10 +23,14 @@ insert:
     // Paper end - Add EntityMoveEvent
 
 # callToggleGlideEvent
+# 滑空を解くのは onGround の枝の中の 1 行だけ。外の if ごと囲むと、
+# 滑空している間は地面に降りていなくても毎 tick 発火する。
+# 登録が無ければ最初の項で決まり、vanilla の行がそのまま走る。滑空していないときに
+# vanilla の行を通しても、同じ値の setSharedFlag は何も変えない。
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
-    if (this.onGround && !this.level.isClientSide) {
     this.setSharedFlag(7, false);
-    }
 insert:
-    if (this.getSharedFlag(7) && !org.bukkit.craftbukkit.event.CraftEventFactory.callToggleGlideEvent(this, false).isCancelled()) // CraftBukkit
+    if (!dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityToggleGlideEvent.class)
+            || !this.getSharedFlag(7)
+            || !org.bukkit.craftbukkit.event.CraftEventFactory.callToggleGlideEvent(this, false).isCancelled()) // CraftBukkit

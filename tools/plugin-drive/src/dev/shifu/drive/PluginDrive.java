@@ -144,7 +144,7 @@ public final class PluginDrive extends JavaPlugin implements Listener {
         // プラグインメッセージの本文。bot が shifu:test に文を送る
         this.getServer().getMessenger().registerIncomingPluginChannel(this, "shifu:test", (channel, who, message) ->
                 this.note("plugin message " + channel + " " + message.length + " bytes: "
-                        + new String(message, 1, message.length - 1, java.nio.charset.StandardCharsets.UTF_8)));
+                        + (message.length == 0 ? "" : new String(message, 1, message.length - 1, java.nio.charset.StandardCharsets.UTF_8))));
         this.itemRoundTrip();
         // 世界の名前・UID・鍵。/home の行き先が別の世界と判定される(cross-world の respawn を通る)原因を見る
         for (final org.bukkit.World world : Bukkit.getWorlds()) {

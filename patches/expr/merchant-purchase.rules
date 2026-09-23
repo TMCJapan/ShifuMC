@@ -6,9 +6,10 @@
 #
 # 読んだ位置(Paper 1.20.6):
 #   Paper-Server src/main/java/net/minecraft/world/inventory/MerchantResultSlot.java:52
+# 1.19.4 / 1.18.2 の Paper も同じ位置で出す(MerchantResultSlot.java:53-58)。vanilla の変数名は activeOffer
 
 file: net/minecraft/world/inventory/MerchantResultSlot.java
 replace:
-        MerchantOffer merchantOffer = this.slots.getActiveOffer();
+        MerchantOffer activeOffer = this.slots.getActiveOffer();
 with:
-        MerchantOffer merchantOffer = dev.shifu.event.PlayerEvents.merchantPurchase(this.slots.getActiveOffer(), this.merchant, player, stack);
+        MerchantOffer activeOffer = dev.shifu.event.PlayerEvents.merchantPurchase(this.slots.getActiveOffer(), this.merchant, player, stack);

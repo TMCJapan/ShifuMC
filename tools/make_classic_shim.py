@@ -40,11 +40,8 @@ spec.loader.exec_module(ms)
 fs = ms.fs
 
 # 宣言の行から名前を取る。make_shim が使っているものと同じ。
-# 型引数で始まるメソッド(`<T> void getEntitiesByClass(...)`)。
-# filter_sources の形は「修飾子 + 型 + 名前」なので、型引数が前に付くと当たらない。
-GENERIC = re.compile(r"^\s+(?:(?:public|protected|private|static|final|default|abstract)\s+)*<[^>]+>\s+[\w$<>\[\],.?]+\s+([\w$]+)\s*\(")
-
-PATTERNS = (fs.DECL, fs.FIELD, fs.TYPE_NAME, fs.IFACE, fs.PLAIN_FIELD, GENERIC)
+# 型引数で始まるメソッドの形(ms.GENERIC)は、祖先の宣言を読む側でも使う。
+PATTERNS = (fs.DECL, fs.FIELD, fs.TYPE_NAME, fs.IFACE, fs.PLAIN_FIELD, ms.GENERIC)
 # 型だけを残す。`final ItemStack stack` -> `ItemStack`
 ARG = re.compile(r"^(.*?[\w\]>])\s+\w+$")
 
@@ -427,6 +424,11 @@ def main():
     total = 0
     skipped = 0
     imports = 0
+    dropped = []
+
+    def paper_keys(at):
+        """Paper がその相対パスのファイルに宣言しているものの鍵。"""
+        return {mark for _, mark in ms.declared_in(paper, at)}
 
     for base, _, names in os.walk(tree):
         for name in sorted(names):
@@ -518,6 +520,17 @@ def main():
                 if re.search(r"\brecord\s+" + re.escape(owner) + r"\b", _old_text) and "{" not in "".join(block):
                     continue
 
+                # 祖先の vanilla の宣言を上書きするもの、vanilla の呼び出しが
+                # 結び付き直す多重定義は足さない。プラグインが 0 個でも
+                # vanilla の処理が変わる(make_shim.shadowing の見出しに 3 件)。
+                mark = ms.key_of(member, block)
+                why = (ms.shadowing(tree, rel, owner, mark, ms.annotated(block), paper_keys)
+                       or ms.rebinding(tree, rel, owner, mark))
+
+                if why:
+                    dropped.append(f"{rel} {owner}.{mark}: {why}")
+                    continue
+
                 blocks.append((owner, member, ms.unfinal(block)))
 
             if not blocks:
@@ -547,8 +560,14 @@ def main():
 
             io.open(out, "w", encoding="utf-8", newline="\n").write("\n".join(body) + "\n")
 
+    # 何を外したかは出力に残らないので、その場で書き出す。
+    # 外れたものをアダプタ層が要るなら patches/hand に自前で書く。
+    for line in dropped:
+        print(f"  上書きになるので置かない: {line}", file=sys.stderr)
+
     print(f"Paper にしか無い宣言: {total} 件 / {files} ファイル"
-          f"(要求されていないので置かなかった分 {skipped} 件、足した import {imports} 件)"
+          f"(要求されていないので置かなかった分 {skipped} 件、足した import {imports} 件、"
+          f"上書きになるので置かなかった分 {len(dropped)} 件)"
           + ("" if write else " -- --write でまだ書いていない"))
 
     return 0

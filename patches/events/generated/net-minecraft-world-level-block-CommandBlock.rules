@@ -6,11 +6,13 @@ anchor:
     boolean isPowered = commandBlockEntity.isPowered();
 insert-after:
     // CraftBukkit start
-    org.bukkit.block.Block bukkitBlock = org.bukkit.craftbukkit.block.CraftBlock.at(world, pos);
-    int old = isPowered ? 15 : 0;
-    int current = hasNeighborSignal ? 15 : 0;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)) {
+        org.bukkit.block.Block bukkitBlock = org.bukkit.craftbukkit.block.CraftBlock.at(world, pos);
+        int old = isPowered ? 15 : 0;
+        int current = hasNeighborSignal ? 15 : 0;
 
-    org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(bukkitBlock, old, current);
-    world.getCraftServer().getPluginManager().callEvent(eventRedstone);
-    hasNeighborSignal = eventRedstone.getNewCurrent() > 0;
+        org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(bukkitBlock, old, current);
+        world.getCraftServer().getPluginManager().callEvent(eventRedstone);
+        hasNeighborSignal = eventRedstone.getNewCurrent() > 0;
+    }
     // CraftBukkit end

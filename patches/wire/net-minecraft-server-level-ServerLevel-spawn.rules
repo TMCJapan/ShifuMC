@@ -1,0 +1,10 @@
+# Bukkit 層の配線。vanilla の行は変えていない。
+
+# 主世界以外の Bukkit のスポーン(hand の ServerLevel.shifuSpawn)を次元フォルダへ書く。
+# vanilla が世界のデータを書く所(save の !savingDisabled の中)に置くので、save-off の間は書かない。
+# 置いたその場で書いていたので、save-off 中もファイルが変わっていた。置いていなければ何もしない。
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    this.saveLevelData();
+insert:
+    this.shifuSaveSpawn();

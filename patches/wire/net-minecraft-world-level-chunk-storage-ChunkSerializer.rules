@@ -1,0 +1,30 @@
+# Bukkit 層の配線。vanilla の行は変えない。
+
+# チャンクの PersistentDataContainer(ChunkBukkitValues)。
+#
+# Paper の読み書きは Paper 専用の readInProgressChunkHolder / saveChunk の中にしかなく、
+# vanilla の ChunkMap が通るのは read / write。プラグインが
+# Chunk#getPersistentDataContainer() に書いた値が、アンロードと再起動で消えていた。
+#
+# 空の入れ物なら何も書かない(Paper と同じ条件)ので、値が無ければ NBT は vanilla と同じ。
+# 局所変数を足すと vanilla の LVT がずれるので、tag は 2 回引く。
+#
+# 読んだ位置(Paper 1.18.2):
+#   Paper-Server src/main/java/net/minecraft/world/level/chunk/storage/ChunkSerializer.java:346,689
+file: net/minecraft/world/level/chunk/storage/ChunkSerializer.java
+anchor:
+    chunkAccess.setLightCorrect(_boolean);
+insert:
+    if (nbt.get("ChunkBukkitValues") instanceof CompoundTag) {
+        chunkAccess.persistentDataContainer.putAll(nbt.getCompound("ChunkBukkitValues"));
+    }
+
+file: net/minecraft/world/level/chunk/storage/ChunkSerializer.java
+anchor:
+    compoundTag.put(
+        "structures", packStructureData(StructurePieceSerializationContext.fromLevel(world), pos, chunk.getAllStarts(), chunk.getAllReferences())
+    );
+insert-after:
+    if (!chunk.persistentDataContainer.isEmpty()) {
+        compoundTag.put("ChunkBukkitValues", chunk.persistentDataContainer.toTagCompound());
+    }

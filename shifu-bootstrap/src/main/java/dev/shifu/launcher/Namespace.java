@@ -11,7 +11,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -38,12 +37,20 @@ record Namespace(Path mappings, Path remapClassPath) {
 	static Namespace prepare(Downloader downloader, Path serverDir, String minecraftVersion,
 			PaperArtifacts paper, FabricArtifacts fabric, Path shifuJar)
 			throws IOException, InterruptedException {
-		Path dir = serverDir.resolve(".shifu").resolve("namespace");
+		Path dir = serverDir.resolve(".shifu").resolve("versions").resolve(minecraftVersion)
+				.resolve("namespace");
 		Path intermediary = dir.resolve("intermediary.tiny");
 
 		if (!Files.isRegularFile(intermediary) && !fetchIntermediary(downloader, dir, minecraftVersion, intermediary)) {
 			return null;
 		}
+
+		List<Path> paperLibraries = declaredLibraries(paper);
+		Path paperClassPath = dir.resolve("paper-classpath.txt");
+		Files.createDirectories(dir);
+		Files.write(paperClassPath,
+				paperLibraries.stream().map(path -> path.toAbsolutePath().toString()).toList(),
+				StandardCharsets.UTF_8);
 
 		Path proguard = dir.resolve("server-mappings.txt");
 
@@ -65,12 +72,12 @@ record Namespace(Path mappings, Path remapClassPath) {
 
 		if (!Files.isRegularFile(remapped) || !hash.equals(read(stamp))) {
 			Log.info("writing the server jar in the intermediary namespace (this takes a minute)");
-			bridge(fabric, shifuJar, "remap", mappings, paper.serverJar(), remapped, paper.librariesDir());
+			bridge(fabric, shifuJar, "remap", mappings, paper.serverJar(), remapped, paperClassPath);
 			Files.writeString(stamp, hash);
 		}
 
 		Path classPath = dir.resolve("remap-classpath.txt");
-		Files.writeString(classPath, remapClassPath(remapped, paper.librariesDir()), StandardCharsets.UTF_8);
+		Files.writeString(classPath, remapClassPath(remapped, paperLibraries), StandardCharsets.UTF_8);
 
 		return new Namespace(mappings, classPath);
 	}
@@ -82,6 +89,7 @@ record Namespace(Path mappings, Path remapClassPath) {
 				"-Dfabric.runtimeMappingNamespace=named",
 				"-Dfabric.defaultModDistributionNamespace=intermediary",
 				// MOD を intermediary から named へ写すのは、fabric-loader では開発環境の経路。
+				// MOD に見える答えは productionAnswer で本番と同じ false にする。
 				"-Dfabric.development=true",
 				// 開発環境の経路では fabric-loader が MOD の順を毎回シャッフルする(FabricLoaderImpl.setup)。
 				// Mixin の適用順が起動ごとに変わり、同じ呼び出しを @Redirect する MOD 同士
@@ -90,6 +98,58 @@ record Namespace(Path mappings, Path remapClassPath) {
 				"-Dfabric.debug.disableModShuffle=true",
 				"-Dfabric.remapClasspathFile=" + this.remapClassPath.toAbsolutePath());
 	}
+
+	/**
+	 * {@code FabricLoader.isDevelopmentEnvironment()} が、凍結後(MOD が動き出してから)は
+	 * false を返す fabric-loader に差し替える(書き換えの中身と理由は {@link Bridge})。
+	 * {@code -Dfabric.development=true} のままだと MOD にも true が見え、Fabric API の
+	 * {@code /debugconfig} のような vanilla に無いコマンドが増えていた。
+	 *
+	 * <p>書き換えた jar は元の jar のハッシュで印を付け、fabric-loader の版が変わったら作り直す。
+	 * 書き換えられなかったときは元の jar のまま起動する(MOD には true が見える)。
+	 */
+	static FabricArtifacts productionAnswer(FabricArtifacts fabric, Path shifuJar) throws InterruptedException {
+		List<Path> classPath = new ArrayList<>(fabric.classPath());
+		int index = -1;
+
+		for (int i = 0; i < classPath.size(); i++) {
+			if (classPath.get(i).getFileName().toString().startsWith("fabric-loader-")) {
+				index = i;
+			}
+		}
+
+		if (index < 0) {
+			Log.warn("fabric-loader is not on the classpath - mods will see isDevelopmentEnvironment() = true");
+			return fabric;
+		}
+
+		Path original = classPath.get(index);
+		String name = original.getFileName().toString();
+		Path patched = original.resolveSibling(name.substring(0, name.length() - ".jar".length()) + "-shifu.jar");
+		Path stamp = patched.resolveSibling(patched.getFileName() + ".from");
+
+		try {
+			// 書き換えの形を変えたら REVISION を上げて、作り直させる。
+			String from = Downloader.sha256(original) + " " + LOADER_ANSWER_REVISION;
+
+			if (!Files.isRegularFile(patched) || !from.equals(read(stamp))) {
+				Log.info("rewriting %s so that mods see isDevelopmentEnvironment() = false", name);
+				Files.deleteIfExists(stamp);
+				bridge(fabric, shifuJar, "loader-answer", original, patched);
+				Files.writeString(stamp, from);
+			}
+		} catch (IOException e) {
+			Log.warn("could not rewrite %s (%s) - mods will see isDevelopmentEnvironment() = true", name,
+					e.getMessage());
+			return fabric;
+		}
+
+		classPath.set(index, patched);
+
+		return new FabricArtifacts(List.copyOf(classPath), fabric.mainClass());
+	}
+
+	private static final String LOADER_ANSWER_REVISION = "1";
 
 	/** @return 取れたか。そのバージョンに intermediary が無ければ false */
 	private static boolean fetchIntermediary(Downloader downloader, Path dir, String minecraftVersion, Path out)
@@ -167,18 +227,57 @@ record Namespace(Path mappings, Path remapClassPath) {
 		int exit = process.waitFor();
 
 		if (exit != 0) {
-			throw new IOException("マッピングの " + task + " が " + exit + " で終わった");
+			throw new IOException("Bridge " + task + " が " + exit + " で終わった");
 		}
 	}
 
+	/** bundler が宣言した Paper のライブラリだけを読む。共有 libraries/ 全体は走査しない。 */
+	private static List<Path> declaredLibraries(PaperArtifacts paper) throws IOException {
+		Path list = paper.librariesList();
+
+		if (!Files.isRegularFile(list)) {
+			throw new IOException("paperclip has no META-INF/libraries.list: " + list);
+		}
+
+		Path root = paper.librariesDir().toAbsolutePath().normalize();
+		List<Path> libraries = new ArrayList<>();
+
+		for (String line : Files.readAllLines(list, StandardCharsets.UTF_8)) {
+			if (line.isBlank()) {
+				continue;
+			}
+
+			String[] parts = line.split("\\t", -1);
+
+			if (parts.length < 3 || parts[2].isBlank()) {
+				throw new IOException("invalid libraries.list entry: " + line);
+			}
+
+			Path library = root.resolve(parts[2].trim()).normalize();
+
+			if (!library.startsWith(root)) {
+				throw new IOException("libraries.list entry escapes libraries directory: " + parts[2]);
+			}
+			if (!Files.isRegularFile(library)) {
+				throw new IOException("paper library is missing: " + library);
+			}
+
+			libraries.add(library);
+		}
+
+		if (libraries.isEmpty()) {
+			throw new IOException("paperclip libraries.list is empty: " + list);
+		}
+
+		return List.copyOf(libraries);
+	}
+
 	/** tiny-remapper が MOD を写すときに読むクラスパス。入力側(intermediary)の名前空間で並べる。 */
-	private static String remapClassPath(Path server, Path librariesDir) throws IOException {
+	private static String remapClassPath(Path server, List<Path> libraries) {
 		StringBuilder out = new StringBuilder(server.toAbsolutePath().toString());
 
-		try (Stream<Path> walk = Files.walk(librariesDir)) {
-			for (Path jar : walk.filter(path -> path.toString().endsWith(".jar")).sorted().toList()) {
-				out.append(File.pathSeparatorChar).append(jar.toAbsolutePath());
-			}
+		for (Path jar : libraries) {
+			out.append(File.pathSeparatorChar).append(jar.toAbsolutePath());
 		}
 
 		return out.toString();

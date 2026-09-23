@@ -67,7 +67,7 @@ paper-build = latest
 server-paperclip = shifu-server.jar
 
 # fabric-loader のバージョン
-fabric-loader-version = 0.19.3
+fabric-loader-version = 0.19.5
 
 # Paper が vanilla から変えている挙動を、戻せる範囲で戻す
 vanilla-parity = true

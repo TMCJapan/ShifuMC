@@ -403,6 +403,98 @@ public final class ItemEvents {
     }
 
 
+    /**
+     * PlayerLaunchProjectileEvent(雪玉・卵・エンダーパール・経験値瓶・投げポーション)。
+     *
+     * <p>vanilla は 音 → 生成 → addFreshEntity → 統計 → 消費 を分岐なしで並べる。
+     * Paper は音と統計と消費を addFreshEntity の後ろへ動かして、取り消したら
+     * 何も起きない形にしている。Shifu は vanilla の行を動かせないので、登録が
+     * あるときだけ音・統計・消費を飛ばし({@code if (!launchListening())})、
+     * その分をここで行う。飛ばしたままだと投擲物が減らず、無限に投げられた。
+     *
+     * <p>{@code shouldConsume()} が false のときは手元を送り直す(MC-99075)。
+     *
+     * <p>読んだ位置: Paper-Server
+     * src/main/java/net/minecraft/world/item/SnowballItem.java(PlayerLaunchProjectileEvent)
+     *
+     * @return vanilla の続きへ進んでよいか。false なら呼ぶ側は fail を返す
+     */
+    public static boolean launch(final net.minecraft.world.level.Level level, final Player user,
+                                 final ItemStack stack, final net.minecraft.world.entity.Entity projectile,
+                                 final net.minecraft.sounds.SoundEvent sound,
+                                 final net.minecraft.sounds.SoundSource source,
+                                 final int cooldown) {
+        final com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent event =
+                new com.destroystokyo.paper.event.player.PlayerLaunchProjectileEvent(
+                        (org.bukkit.entity.Player) user.getBukkitEntity(),
+                        org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(stack),
+                        (org.bukkit.entity.Projectile) projectile.getBukkitEntity());
+
+        if (!event.callEvent() || !level.addFreshEntity(projectile)) {
+            if (user instanceof net.minecraft.server.level.ServerPlayer sender) {
+                sender.getBukkitEntity().updateInventory();
+            }
+
+            return false;
+        }
+
+        user.awardStat(net.minecraft.stats.Stats.ITEM_USED.get(stack.getItem()));
+
+        if (event.shouldConsume()) {
+            if (!user.getAbilities().instabuild) {
+                stack.shrink(1);
+            }
+        } else if (user instanceof net.minecraft.server.level.ServerPlayer sender) {
+            sender.getBukkitEntity().updateInventory();
+        }
+
+        if (sound != null) {
+            level.playSound(null, user.getX(), user.getY(), user.getZ(), sound, source,
+                    0.5F, 0.4F / (level.getRandom().nextFloat() * 0.4F + 0.8F));
+        }
+
+        if (cooldown > 0) {
+            user.getCooldowns().addCooldown(stack.getItem(), cooldown);
+        }
+
+        return true;
+    }
+
+    /**
+     * PlayerFishEvent(FISHING)。釣り竿を投げるとき。
+     *
+     * <p>投げ入れの音も、登録があるときは item-menu.rules で飛ばしてあるので、
+     * 取り消されなかったときにここで鳴らす。取り消されたら浮きは出さず、
+     * {@code user.fishing} を戻す。
+     *
+     * <p>読んだ位置: Paper-Server
+     * src/main/java/net/minecraft/world/item/FishingRodItem.java(PlayerFishEvent)
+     *
+     * @return vanilla の続きへ進んでよいか。false なら呼ぶ側は pass を返す
+     */
+    public static boolean castFishingHook(final net.minecraft.world.level.Level level, final Player user,
+                                          final net.minecraft.world.InteractionHand hand,
+                                          final net.minecraft.world.entity.projectile.FishingHook hook) {
+        final org.bukkit.event.player.PlayerFishEvent event = new org.bukkit.event.player.PlayerFishEvent(
+                (org.bukkit.entity.Player) user.getBukkitEntity(), null,
+                (org.bukkit.entity.FishHook) hook.getBukkitEntity(),
+                org.bukkit.event.player.PlayerFishEvent.State.FISHING);
+
+        if (!event.callEvent()) {
+            user.fishing = null;
+
+            return false;
+        }
+
+        level.playSound(null, user.getX(), user.getY(), user.getZ(),
+                net.minecraft.sounds.SoundEvents.FISHING_BOBBER_THROW, net.minecraft.sounds.SoundSource.NEUTRAL,
+                0.5F, 0.4F / (level.getRandom().nextFloat() * 0.4F + 0.8F));
+        level.addFreshEntity(hook);
+
+        return true;
+    }
+
+
     // ------------------------------------------------------------ 釣り竿
 
     public static boolean fishListening() {

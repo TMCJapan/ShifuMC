@@ -1,0 +1,16 @@
+# Ingredient.exact(Bukkit の RecipeChoice.ExactChoice)。手で書いたもの。
+#
+# CraftBukkit は test() の品目ごとの比較の中で exact を見て、立っていれば品目と NBT
+# (ItemStack.tagMatches)で比べる。vanilla の test() は品目だけで比べるので、ExactChoice の
+# レシピが名前や NBT の違うアイテムでも作れていた。
+# exact を立てるのは CraftRecipe.toIngredient だけで、vanilla のレシピでは立たない。
+# 比べる処理は patches/hand の Ingredient.shifuTestExact に置く(局所変数を足さないため)。
+# 立っていないときに増えるのは、ループの前の欄の読み 1 回だけ。
+# 読んだ位置: D:/.pw182/Paper-Server(HEAD)src/main/java/net/minecraft/world/item/crafting/Ingredient.java:79
+file: net/minecraft/world/item/crafting/Ingredient.java
+anchor:
+    for (ItemStack itemStack1 : this.itemStacks) {
+insert:
+    if (this.exact) {
+        return this.shifuTestExact(itemStack);
+    }

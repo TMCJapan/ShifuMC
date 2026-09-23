@@ -4,6 +4,4 @@
 //   splash(HitResult) — 1.19.4 の Paper は onHit の本体をこの名前で切り出し、
 //                       CraftThrownPotion#splash から呼んでいた。Paper 1.18.2 の
 //                       ThrownPotion にその名前は無く(残っているのはコメントだけ)、
-//                       CraftThrownPotion も持たない。PotionSplashEvent に渡す当たり位置は
-//                       vanilla の onHit の中で控える(patches/events/entity-core.rules の
-//                       EntityEvents.splashHit)。
+//                       CraftThrownPotion も持たない。

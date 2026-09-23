@@ -14,8 +14,8 @@ file: net/minecraft/world/level/Level.java
 anchor:
     public boolean setBlock(BlockPos pos, BlockState state, int flags, int maxUpdateDepth) {
 insert-after:
-    if (this.captureTreeGeneration) {
-        return dev.shifu.event.BlockEvents.captureTreeBlock(this, pos, state, flags);
+    if (this.captureTreeGeneration && dev.shifu.event.BlockEvents.captureTreeBlock(this, pos, state, flags)) {
+        return true;
     }
 
 # 苗木が自分で育つとき

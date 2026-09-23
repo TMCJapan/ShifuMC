@@ -4,7 +4,7 @@
 
 ## 1.18.2 の状態(2026-09-16)
 
-コンパイル 0 件、公式に戻したクラスへの参照の欠落 0 件(`LinkCheck`)、プラグイン無しで起動(Done 1.5s、例外 0)。
+コンパイル 0 件、公式に戻したクラスへの参照の欠落 0 件(`LinkCheck`。読めない型を「ある」とみなしていたころの数で、2026-09-21 のレビューでは同じ jar に 16 件あった)、プラグイン無しで起動(Done 1.5s、例外 0)。
 `shifu.jar`(Fabric Loader 0.19.5)+ MOD 16 個(fabric-api の中身を含めて 95)+ プラグイン 25 個で起動し
 (Mixin の失敗 0)、bot が参加して drive の一連が 1.19.4 と同じ数で通る
 (拾う 2、InventoryClick 1、爆発 1、BlockBreak 1、PlayerMove 2、gamemode、/home、TNT、ドア)。
@@ -40,9 +40,9 @@
 | プラグインメッセージの本文 | 1.18.2 の `ServerboundCustomPayloadPacket` はチャンネルと生の bytes なので bot から送れる。`PluginMessages.handle` はあったが `handleCustomPayload`(vanilla は空)に繋がっていなかった。`player.rules` で繋いだ。bot が `shifu:test` に "hello from bot" を送ると drive の `registerIncomingPluginChannel` の listener に 15 バイトで届く |
 | 経済系のプラグイン | Vault 1.7.3 + EssentialsX 2.20.1(HuskHomes は `/home` が重なるので外す。scratchpad の run-mix18-eco.ps1)。Vault の `Economy` サービスが登録され、`getBalance` 0.0 → `depositPlayer` 100 → 100.0、bot の `/balance` に "$100" が返る。EssentialsX は「Fabric 混成では動かすな」と ERROR を 1 行出すが動く |
 | 別の世界へのテレポート | `CraftPlayer.teleport` の cross-world は `PlayerList.respawn`(CraftBukkit は同じ ServerPlayer を使い回す)を通る。3 つ足りなかった: vanilla の `restoreFrom(自分)` が `recipeBook.copyOverData(自分)` で NPE(CraftBukkit はその行をコメントアウト)→ `patches/narrow` で `ShifuEvents.restoreSelf` に向けた。Paper の `noCollision(entity, box, loadChunks)`(CollisionGetter に足したもので、Shifu は公式に戻す)→ hand で `ServerLevel` に 2 引数へ渡す版。`Level.getHardCollidingEntities`(生成器が写した本体は Paper の entitySliceManager を読む。Shifu では null)→ hand で vanilla の `getEntities` から答える。drive の the_end への teleport → true、`Bukkit.getPlayer(uuid) == bot`、戻りも通る |
-| HuskHomes の `teleportAsync` | `MinecraftServer.scheduleOnMain`(Paper が `BlockableEventLoop` に足したもの。LinkCheck は所有クラスが戻していないクラスなので見落とす)を hand で足し、`DistanceManager.chunkMap`(Paper 1.18.2 は構築子で渡す。生成器が写した欄は誰も入れない)を ChunkMap の構築子から入れる(hand の `shifuSetChunkMap` + wire)。`/home` が届く(distance 0.0)。mix の例外 19 → 15 |
+| HuskHomes の `teleportAsync` | `MinecraftServer.scheduleOnMain`(Paper が `BlockableEventLoop` に足したもの。LinkCheck は親を辿って読めない型(`BlockableEventLoop` が実装する `Executor`)に当たると「ある」と答えていたので見落とした)を hand で足し、`DistanceManager.chunkMap`(Paper 1.18.2 は構築子で渡す。生成器が写した欄は誰も入れない)を ChunkMap の構築子から入れる(hand の `shifuSetChunkMap` + wire)。`/home` が届く(distance 0.0)。mix の例外 19 → 15 |
 | 世界ごとのスポーン | vanilla の nether / end の `serverLevelData` は `DerivedLevelData` で、`setSpawn` / `getSharedSpawnPos` が主世界のものへ通る。Multiverse のように世界ごとに `setSpawnLocation` すると主世界のスポーンが変わる形だった。主世界以外は `ServerLevel.shifuSpawn`(hand)に置いて `CraftWorld` が読む。drive で nether を (10, 64, 10) にしても主世界は (0, 66, 0) のまま |
-| 局所変数・ラムダの数 | `run-server.ps1` の後処理の出力: LvtMatch reverted 2 / left alone 2634、LambdaMatch args moved 2・renumbered 20・rewritten 3・left alone 4、公式に戻したクラス 636、Shifu が触って残したクラス 891、公式 jar に無いクラス 18、LinkCheck missing 0、名前の違う無名クラス 29 |
+| 局所変数・ラムダの数 | `run-server.ps1` の後処理の出力: LvtMatch reverted 2 / left alone 2634、LambdaMatch args moved 2・renumbered 20・rewritten 3・left alone 4、公式に戻したクラス 636、Shifu が触って残したクラス 891、公式 jar に無いクラス 18、LinkCheck missing 0(読めない型を「ある」とみなしていたころの数。2026-09-21 のレビューでは 16 件)、名前の違う無名クラス 29 |
 
 確かめられなかったもの: 独自 packet を使う MOD(Fabric のクライアントが要る。bot は vanilla の packet しか話さない)。
 
@@ -63,7 +63,7 @@
 
 ## 1.19.4 の状態(2026-09-13)
 
-コンパイル 0 件、公式に戻したクラスへの参照の欠落 0 件(`LinkCheck`)、プラグイン無しで起動(Done 4.8s、例外 0)。
+コンパイル 0 件、公式に戻したクラスへの参照の欠落 0 件(`LinkCheck`。読めない型を「ある」とみなしていたころの数)、プラグイン無しで起動(Done 4.8s、例外 0)。
 `shifu.jar`(Fabric Loader 0.19.5)+ プラグイン 19 個で起動し、bot が参加して drive の一連が通る。
 
 ### 済んだこと
@@ -289,7 +289,7 @@ Chunky と ChunkyBorder は、Chunky の Fabric MOD と Bukkit プラグイン�
 |---|---|
 | コンパイル | エラー 0(`once.sh`) |
 | 差し込み | 発火 828 箇所 / 337 ファイル、配線 75 箇所 / 38 ファイル、落ちた規則 0 |
-| 追加だけであること | `verify_additive.py` が通る(消えた 23 行は可視性のみ) |
+| 追加だけであること | closure の最後に `verify_additive.py` が走る。2026-09-23 に当てた木では 46 件が決めた形に収まらず、closure はそこで止まる |
 | 起動 | `Done (0.440s)!`。例外 0 |
 | Bukkit の世界 | 3 つ(`world` / `world_nether` / `world_the_end`)。環境と UUID は別々 |
 | スケジューラ | 毎 tick 走る。`MinecraftServer.currentTick` も進む |
@@ -354,8 +354,8 @@ MOD とプラグインが同じサーバーで同時に動き、プレイヤー�
 | 1200 tick 走らせた世界の一致 | vanilla 同士 17 チャンク、それを引いた Shifu との差は 2 |
 | 公式の局所変数が公式の番号に座っていないメソッド | 182 → 21 |
 
-触った vanilla の行は 3 種類だけで、`python tools/verify_additive.py` が形を確かめる。
-内訳は [ARCHITECTURE.md](ARCHITECTURE.md) の「vanilla の行に触っている 3 か所」。
+vanilla の行を書き換えてよいのは 4 種類で、`tools/verify_additive.py` が closure の最後に形を確かめる(2026-09-23 は形に収まらないものが 46 件残っていて、closure はそこで止まる)。
+内訳は [ARCHITECTURE.md](ARCHITECTURE.md) の「vanilla の行に触っている 4 か所」。
 
 ## プレイヤー経路(実測、2026-09-03)
 
@@ -414,8 +414,9 @@ EssentialsX が知っているバージョンの一覧に 26.2 が無いため�
 
 `plugins` と `version` は通らない。この 2 つは Bukkit ではなく Paper 独自のコマンド
 (`io.papermc.paper.command.PaperCommands.registerCommands`)で、vanilla に無いので
-入れていない。Bukkit の `SimpleCommandMap.setFallbackCommands` が登録するのは
-`/bukkit:help` だけ。
+入れていない。Bukkit が自分で登録するコマンド(`SimpleCommandMap` の構築子と `setFallbackCommands` が
+登録するもの)は、`patches/adapter/org-bukkit-craftbukkit-command-CraftCommandMap.rules` で
+`bukkit:` の付いた名前(`/bukkit:help` など)だけにしている。`/help` と `/reload` は vanilla のもの。
 
 ## MOD とプラグインを同時に(実測、2026-09-04)
 

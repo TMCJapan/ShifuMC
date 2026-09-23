@@ -247,8 +247,9 @@ file: net/minecraft/world/entity/monster/Strider.java
 anchor:
     this.setSuffocating(!flag);
 insert:
-    final boolean shifuSuffocating = !flag;
-    if (shifuSuffocating == this.isSuffocating() || dev.shifu.event.AnimalEvents.striderTemperature(this, shifuSuffocating)) {
+    if (!dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.StriderTemperatureChangeEvent.class)
+            || (!flag) == this.isSuffocating()
+            || dev.shifu.event.AnimalEvents.striderTemperature(this, !flag)) {
 insert-after:
     }
 

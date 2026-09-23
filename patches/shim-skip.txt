@@ -118,3 +118,28 @@ net/minecraft/network/protocol/game/ClientboundTabListPacket.java ClientboundTab
 # 足すと BossEvent が vanilla の木の版(欄が protected)で組まれ、CraftBossBar が
 # handle.name / handle.color / handle.overlay を読めなくなる
 net/minecraft/world/BossEvent.java BossEvent.adventure
+
+# CraftBukkit は看板と書見台に CommandSource を実装させて、コマンドの実行元にする。
+# Shifu は vanilla のクラス宣言に interface を足さない(docs/DEVELOPING.md の「宣言に interface を足す」)。
+# vanilla の看板と書見台は CommandSource.NULL で CommandSourceStack を作るので、この 5 つは呼ばれない。
+# @Override が付いているので、足すと上書き先が無くてコンパイルが通らない
+net/minecraft/world/level/block/entity/SignBlockEntity.java SignBlockEntity.sendMessage
+net/minecraft/world/level/block/entity/SignBlockEntity.java SignBlockEntity.getBukkitSender
+net/minecraft/world/level/block/entity/SignBlockEntity.java SignBlockEntity.acceptsSuccess
+net/minecraft/world/level/block/entity/SignBlockEntity.java SignBlockEntity.acceptsFailure
+net/minecraft/world/level/block/entity/SignBlockEntity.java SignBlockEntity.shouldInformAdmins
+net/minecraft/world/level/block/entity/LecternBlockEntity.java LecternBlockEntity.sendMessage
+net/minecraft/world/level/block/entity/LecternBlockEntity.java LecternBlockEntity.getBukkitSender
+net/minecraft/world/level/block/entity/LecternBlockEntity.java LecternBlockEntity.acceptsSuccess
+net/minecraft/world/level/block/entity/LecternBlockEntity.java LecternBlockEntity.acceptsFailure
+net/minecraft/world/level/block/entity/LecternBlockEntity.java LecternBlockEntity.shouldInformAdmins
+
+# Paper は CommandSourceStack に BukkitBrigadierCommandSource を実装させている。Shifu は実装させず、
+# CommandRegisteredEvent に渡すときだけ dev.shifu.command.LegacySource で包む。これは
+# その interface の上書き(@Override)なので、足すとコンパイルが通らない。包みの側に同じ本体を書いた
+# (getBukkitWorld は NMS の source に直に呼ばれるので patches/hand に @Override の無い形で置いた)
+net/minecraft/commands/CommandSourceStack.java CommandSourceStack.getBukkitLocation
+
+# Paper は Component に Iterable<Component> を実装させて iterator() を足している。
+# Shifu は vanilla の interface の宣言を変えないので、この上書き(@Override)は足さない
+net/minecraft/network/chat/Component.java Component.iterator

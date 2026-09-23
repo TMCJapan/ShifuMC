@@ -6,13 +6,16 @@ file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
             if (this.player.getInventory().selected != packet.getSlot() && this.player.getUsedItemHand() == InteractionHand.MAIN_HAND) {
 insert:
-    if (packet.getSlot() == this.player.getInventory().selected) {
-        return; // Paper - スロットが変わっていないときは出さない
-    }
-    org.bukkit.event.player.PlayerItemHeldEvent shifuHeld = new org.bukkit.event.player.PlayerItemHeldEvent(
-            this.getCraftPlayer(), this.player.getInventory().selected, packet.getSlot());
-    if (!shifuHeld.callEvent()) {
-        this.send(new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(this.player.getInventory().selected));
-        this.player.resetLastActionTime();
-        return;
+    // 同じ枠を押したとき、Paper はここで return するが、
+    // それだと vanilla の resetLastActionTime も飛んで放置キックの測りがずれる。
+    // 発火だけを飛ばして、vanilla の行はそのまま通す。
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerItemHeldEvent.class)
+            && packet.getSlot() != this.player.getInventory().selected) {
+        org.bukkit.event.player.PlayerItemHeldEvent shifuHeld = new org.bukkit.event.player.PlayerItemHeldEvent(
+                this.getCraftPlayer(), this.player.getInventory().selected, packet.getSlot());
+        if (!shifuHeld.callEvent()) {
+            this.send(new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(this.player.getInventory().selected));
+            this.player.resetLastActionTime();
+            return;
+        }
     }

@@ -10,6 +10,17 @@
 
 # ============================================================ Entity
 
+# EntityCombustByBlockEvent(溶岩)。lavaHurt の着火を囲む。溶岩の位置は下の lavaContact が控える。
+#
+# 読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/world/entity/Entity.java(lavaHurt)
+file: net/minecraft/world/entity/Entity.java
+anchor:
+    this.setSecondsOnFire(15);
+insert:
+    if (dev.shifu.event.EntityEvents.lavaIgnite(this)) {
+insert-after:
+    }
+
 # PlayerUnleashEntityEvent(持ち主が手で外す)
 #
 # 1.19.4 は Mob.interact が外す(1.21.x の Leashable は無い)。
@@ -18,14 +29,15 @@ file: net/minecraft/world/entity/Mob.java
 anchor:
     this.dropLeash(true, !player.getAbilities().instabuild);
 insert:
-    final Boolean shifuDropLeash = dev.shifu.event.EntityEvents.unleashByPlayer(this, player, hand, !player.getAbilities().instabuild);
-    if (shifuDropLeash == null) {
+    final org.bukkit.event.player.PlayerUnleashEntityEvent shifuUnleash =
+            dev.shifu.event.EntityEvents.unleashByPlayer(this, player, hand);
+    if (shifuUnleash != null && shifuUnleash.isCancelled()) {
         ((net.minecraft.server.level.ServerPlayer) player).connection.send(
                 new net.minecraft.network.protocol.game.ClientboundSetEntityLinkPacket(this, this.getLeashHolder()));
         return InteractionResult.PASS;
     }
-    if (shifuDropLeash != !player.getAbilities().instabuild) {
-        this.dropLeash(true, shifuDropLeash);
+    if (shifuUnleash != null) {
+        this.dropLeash(true, shifuUnleash.isDropLeash());
     } else
 
 # EntityAirChangeEvent
@@ -62,12 +74,22 @@ insert-after:
 # PlayerExpCooldownChangeEvent は Paper-API 1.18.2 に無い(規則を外した)
 
 # EntityPotionEffectEvent(CLEARED)。1.20.6 の removeAllEffects は iterator で消す。
-# 残す指定があれば、消したあとに戻す。
+# 取り消された効果は、iterator を作る前に activeEffects から外しておき、ループのあとで戻す。
+# ループは残った分だけを onEffectRemoved に通して消すので、取り消された効果の属性修飾子は外れず、
+# クライアントへ「消えた」とも送らない。以前は全部消してから戻していたので、効果は残るのに
+# 修飾子が外れ、クライアントには消えたと伝わっていた。main / 1.21.11 も消す前に外している。
+# 全部取り消されたらループは 1 度も回らず、vanilla の flag が false のまま返る。
+# 並びは添字で回す(for-each は Iterator の局所変数を作り、vanilla の iterator と型が重なる)。
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
     Iterator<MobEffectInstance> iterator = this.activeEffects.values().iterator();
 insert:
     final java.util.List<MobEffectInstance> shifuKept = dev.shifu.event.EntityEvents.clearEffects(this, this.activeEffects.values());
+    if (shifuKept != null) {
+        for (int shifuIndex = 0; shifuIndex < shifuKept.size(); shifuIndex++) {
+            this.activeEffects.remove(shifuKept.get(shifuIndex).getEffect());
+        }
+    }
 
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
@@ -76,12 +98,10 @@ anchor:
     iterator.remove();
     }
 insert-after:
-    for (final MobEffectInstance shifuEffect : shifuKept) {
-        this.activeEffects.put(shifuEffect.getEffect(), shifuEffect);
-    }
-
-    if (!shifuKept.isEmpty() && this.activeEffects.size() == shifuKept.size()) {
-        return false;
+    if (shifuKept != null) {
+        for (int shifuIndex = 0; shifuIndex < shifuKept.size(); shifuIndex++) {
+            this.activeEffects.put(shifuKept.get(shifuIndex).getEffect(), shifuKept.get(shifuIndex));
+        }
     }
 
 # EntityPotionEffectEvent(ADDED / CHANGED)
@@ -192,12 +212,10 @@ file: net/minecraft/world/entity/boss/enderdragon/EndCrystal.java
 anchor:
     this.remove(Entity.RemovalReason.KILLED);
 insert:
-    if (dev.shifu.event.EntityEvents.damageCancelled(this, source, amount, false, false)) {
+    if (!dev.shifu.event.EntityEvents.nonLivingDamage(this, source, amount, false, false)) {
         return false;
     }
-    final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = source.isExplosion()
-        ? null
-        : dev.shifu.event.EntityEvents.explosionPrime(this, 6.0F, false);
+    final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = dev.shifu.event.EntityEvents.crystalPrime(this, source);
     if (shifuPrime != null && shifuPrime.isCancelled()) {
         return false;
     }
@@ -237,24 +255,23 @@ insert-after:
 
 # ============================================================ ArmorStand
 
-# EntityDamageEvent(BYPASSES_INVULNERABILITY)。kill が使う被害の元も置く。
+# EntityDamageEvent(BYPASSES_INVULNERABILITY)。
 file: net/minecraft/world/entity/decoration/ArmorStand.java
 anchor:
     this.kill();
     return false;
     } else if (this.isInvulnerableTo(source) || this.invisible || this.isMarker()) {
 insert:
-    if (dev.shifu.event.EntityEvents.damageCancelled(this, source, amount, true, false)) {
+    if (!dev.shifu.event.EntityEvents.nonLivingDamage(this, source, amount, true, false)) {
         return false;
     }
-    dev.shifu.event.EntityEvents.armorStandDeathSource(source);
 
 # EntityDamageEvent(爆発)
 file: net/minecraft/world/entity/decoration/ArmorStand.java
 anchor:
     } else if (source.isExplosion()) {
 insert-after:
-    if (dev.shifu.event.EntityEvents.damageCancelled(this, source, amount, true, false)) {
+    if (!dev.shifu.event.EntityEvents.nonLivingDamage(this, source, amount, true, false)) {
         return false;
     }
 
@@ -263,7 +280,8 @@ file: net/minecraft/world/entity/item/ItemEntity.java
 anchor:
     if (!this.level.isClientSide && this.age >= 6000) {
 insert:
-    if (!this.level.isClientSide() && this.age >= 6000 && !dev.shifu.event.EntityEvents.itemDespawn(this)) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.ItemDespawnEvent.class)
+            && !this.level.isClientSide() && this.age >= 6000 && !dev.shifu.event.EntityEvents.itemDespawn(this)) {
         this.age = 0;
     }
 
@@ -311,7 +329,8 @@ insert-after:
         return;
     }
 
-# PlayerFishEvent(CAUGHT_FISH)。経験値はイベントの値で。
+# PlayerFishEvent(CAUGHT_FISH)。経験値はイベントの値で。囲むのはオーブを出す文だけ。
+# 続く FISH_CAUGHT の統計まで囲んでいたので、登録があると統計が 1 度も増えなかった。
 file: net/minecraft/world/entity/projectile/FishingHook.java
 anchor:
     ItemEntity itemEntity = new ItemEntity(this.level, this.getX(), this.getY(), this.getZ(), itemStack);
@@ -329,9 +348,6 @@ anchor:
     playerOwner.level, playerOwner.getX(), playerOwner.getY() + 0.5, playerOwner.getZ() + 0.5, this.random.nextInt(6) + 1
     )
     );
-    if (itemStack.is(ItemTags.FISHES)) {
-    playerOwner.awardStat(Stats.FISH_CAUGHT, 1);
-    }
 insert:
     if (shifuFish == null) {
 insert-after:
@@ -392,14 +408,6 @@ insert-after:
 
 # ============================================================ ポーション
 
-# WaterBottleSplashEvent。割れた位置を置いてから、水の飛沫の本体を囲む。
-file: net/minecraft/world/entity/projectile/ThrownPotion.java
-anchor:
-    if (flag) {
-    this.applyWater();
-insert:
-    dev.shifu.event.EntityEvents.splashHit(hitResult);
-
 # ============================================================ 乗り物
 
 # VehicleDamageEvent と VehicleDestroyEvent
@@ -427,3 +435,14 @@ anchor:
     this.causeFoodExhaustion(0.1F);
 insert:
     dev.shifu.event.EntityEvents.exhaustionReason(org.bukkit.event.entity.EntityExhaustionEvent.ExhaustionReason.ATTACK);
+
+# 死亡の経験値のうち、既にあるオーブへ足し込まれる分(ExperienceOrb.award → tryMergeToExisting)。
+# 足し込まれた分は addFreshEntity を通らないので catchDrop で控えられず、死亡イベントの
+# getDroppedExp に入らず setDroppedExp(0) でも消せなかった。控えている最中だけ、その回を控えに入れて飛ばす。
+file: net/minecraft/world/entity/ExperienceOrb.java
+anchor:
+    if (!tryMergeToExisting(world, pos, experienceValue)) {
+insert:
+    if (dev.shifu.event.ShifuEvents.catchAward(pos, experienceValue)) {
+        continue;
+    }

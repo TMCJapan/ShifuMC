@@ -1,15 +1,40 @@
-# 1.18.2 では外した。vanilla の CaveVines.use は (BlockState, Level, BlockPos) で、
-# 摘んだ相手を受け取らない(1.19.4 は第 1 引数に @Nullable Entity picker がある)。
-# CraftBukkit 1.18.2 は use に Entity を足した 4 引数の版を別に置き、CaveVinesBlock と
-# CaveVinesPlantBlock をそちらへ向けている。その版は shim が Paper の宣言ごと写すので、
-# EntityChangeBlockEvent と PlayerHarvestBlockEvent はそちらで出る。
+# EntityChangeBlockEvent / PlayerHarvestBlockEvent(光る液果を摘む)。
+# vanilla の CaveVines.use は (BlockState, Level, BlockPos) で、摘んだ相手を受け取らない。
+# CraftBukkit 1.18.2 は use に Entity を足した 4 引数の版を別に置き、shim がその宣言ごと写すが、
+# 呼び手の CaveVinesBlock / CaveVinesPlantBlock は Shifu が触らないので
+# keep_vanilla_classes.py が公式のバイトコードに戻す。4 引数の版は誰からも呼ばれない。
+# 摘んだ相手を持っている呼び手の側で出す。
 #
-# file: net/minecraft/world/level/block/CaveVines.java
-# anchor:
-#             Block.popResource(world, pos, new ItemStack(Items.GLOW_BERRIES, 1));
-# insert:
-#     // CraftBukkit start - call entity change block event
-#     if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(picker, pos, state.setValue(CaveVines.BERRIES, false)).isCancelled()) {
-#         return InteractionResult.sidedSuccess(world.isClientSide);
-#     }
-#     // CraftBukkit end - call entity change block event
+# 落とす物の差し替え(PlayerHarvestBlockEvent.getItemsHarvested)は、
+# PlayerEvents.shearBlock と同じく使っていない。落とすのは vanilla の行。
+#
+# 実が生っているかは、どちらかの登録があるときだけ見る(登録が無ければ判定の呼び出しも増やさない)。
+file: net/minecraft/world/level/block/CaveVinesBlock.java
+anchor:
+        return CaveVines.use(state, world, pos);
+insert:
+    if (dev.shifu.event.BlockEvents.glowBerryPickListening() && CaveVines.hasGlowBerries(state)) {
+        if (!dev.shifu.event.BlockEvents.entityChangeBlock(player, pos, state.setValue(CaveVines.BERRIES, false))) {
+            return InteractionResult.SUCCESS;
+        }
+
+        if (!dev.shifu.event.PlayerEvents.harvestBlock(world, pos, player, hand,
+                java.util.Collections.singletonList(new ItemStack(Items.GLOW_BERRIES, 1)))) {
+            return InteractionResult.SUCCESS;
+        }
+    }
+
+file: net/minecraft/world/level/block/CaveVinesPlantBlock.java
+anchor:
+        return CaveVines.use(state, world, pos);
+insert:
+    if (dev.shifu.event.BlockEvents.glowBerryPickListening() && CaveVines.hasGlowBerries(state)) {
+        if (!dev.shifu.event.BlockEvents.entityChangeBlock(player, pos, state.setValue(CaveVines.BERRIES, false))) {
+            return InteractionResult.SUCCESS;
+        }
+
+        if (!dev.shifu.event.PlayerEvents.harvestBlock(world, pos, player, hand,
+                java.util.Collections.singletonList(new ItemStack(Items.GLOW_BERRIES, 1)))) {
+            return InteractionResult.SUCCESS;
+        }
+    }

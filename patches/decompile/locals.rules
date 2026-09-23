@@ -4,6 +4,164 @@
 # 逆コンパイラが 1 行にまとめると変数が消え、@Local で捕まえる MOD が当たらない。
 # 式は同じ回数だけ、同じ順で評価されるので、挙動は変わらない。
 
+file: net/minecraft/core/dispenser/ShearsDispenseItemBehavior.java
+replace:
+    for (LivingEntity livingEntity : world.getEntitiesOfClass(LivingEntity.class, new AABB(pos), EntitySelector.NO_SPECTATORS)) {
+with:
+    java.util.List<? extends LivingEntity> list = world.getEntitiesOfClass(LivingEntity.class, new AABB(pos), EntitySelector.NO_SPECTATORS);
+    for (LivingEntity livingEntity : list) {
+
+file: net/minecraft/server/MinecraftServer.java
+replace:
+    for (ServerPlayer serverPlayer : Lists.newArrayList(playerList.getPlayers())) {
+with:
+    java.util.List<? extends ServerPlayer> list = Lists.newArrayList(playerList.getPlayers());
+    for (ServerPlayer serverPlayer : list) {
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+replace:
+    if (this.player.level.getBlockEntity(pos) instanceof StructureBlockEntity structureBlockEntity) {
+with:
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = this.player.level.getBlockEntity(pos);
+    if (blockEntity instanceof StructureBlockEntity structureBlockEntity) {
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+replace:
+    BlockState blockState = this.player.level.getBlockState(pos);
+    if (this.player.level.getBlockEntity(pos) instanceof JigsawBlockEntity jigsawBlockEntity) {
+with:
+    BlockState blockState = this.player.level.getBlockState(pos);
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = this.player.level.getBlockEntity(pos);
+    if (blockEntity instanceof JigsawBlockEntity jigsawBlockEntity) {
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+replace:
+    BlockPos pos = packet.getPos();
+    if (this.player.level.getBlockEntity(pos) instanceof JigsawBlockEntity jigsawBlockEntity) {
+with:
+    BlockPos pos = packet.getPos();
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = this.player.level.getBlockEntity(pos);
+    if (blockEntity instanceof JigsawBlockEntity jigsawBlockEntity) {
+
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+replace:
+    if (this.player.containerMenu instanceof MerchantMenu merchantMenu) {
+with:
+    net.minecraft.world.inventory.AbstractContainerMenu abstractContainerMenu = this.player.containerMenu;
+    if (abstractContainerMenu instanceof MerchantMenu merchantMenu) {
+
+file: net/minecraft/server/players/PlayerList.java
+replace:
+    for (Packet<?> packet : scoreboard.getStartTrackingPackets(displayObjective)) {
+with:
+    java.util.List<? extends Packet<?>> list = scoreboard.getStartTrackingPackets(displayObjective);
+    for (Packet<?> packet : list) {
+
+file: net/minecraft/server/players/PlayerList.java
+replace:
+    for (String string : team.getPlayers()) {
+with:
+    java.util.Collection<? extends String> collection = team.getPlayers();
+    for (String string : collection) {
+
+file: net/minecraft/world/entity/LivingEntity.java
+replace:
+    for (Pair<MobEffectInstance, Float> pair : item.getFoodProperties().getEffects()) {
+with:
+    java.util.List<? extends Pair<MobEffectInstance, Float>> list = item.getFoodProperties().getEffects();
+    for (Pair<MobEffectInstance, Float> pair : list) {
+
+file: net/minecraft/world/entity/Mob.java
+replace:
+    for (ItemEntity itemEntity : this.level.getEntitiesOfClass(ItemEntity.class, this.getBoundingBox().inflate(1.0, 0.0, 1.0))) {
+with:
+    java.util.List<? extends ItemEntity> list = this.level.getEntitiesOfClass(ItemEntity.class, this.getBoundingBox().inflate(1.0, 0.0, 1.0));
+    for (ItemEntity itemEntity : list) {
+
+file: net/minecraft/world/entity/animal/Bee.java
+replace:
+    if (Bee.this.level.getBlockEntity(Bee.this.hivePos) instanceof BeehiveBlockEntity beehiveBlockEntity) {
+with:
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = Bee.this.level.getBlockEntity(Bee.this.hivePos);
+    if (blockEntity instanceof BeehiveBlockEntity beehiveBlockEntity) {
+
+file: net/minecraft/world/entity/animal/Cat.java
+replace:
+    for (Cat cat : this.cat.level.getEntitiesOfClass(Cat.class, new AABB(this.goalPos).inflate(2.0))) {
+with:
+    java.util.List<? extends Cat> list = this.cat.level.getEntitiesOfClass(Cat.class, new AABB(this.goalPos).inflate(2.0));
+    for (Cat cat : list) {
+
+file: net/minecraft/world/entity/animal/Cat.java
+replace:
+    for (ItemStack itemStack : lootTable.getRandomItems(builder.create(LootContextParamSets.GIFT))) {
+with:
+    java.util.List<? extends ItemStack> list = lootTable.getRandomItems(builder.create(LootContextParamSets.GIFT));
+    for (ItemStack itemStack : list) {
+
+file: net/minecraft/world/entity/animal/Panda.java
+replace:
+    for (Panda panda : this.level.getEntitiesOfClass(Panda.class, this.getBoundingBox().inflate(10.0))) {
+with:
+    java.util.List<? extends Panda> list = this.level.getEntitiesOfClass(Panda.class, this.getBoundingBox().inflate(10.0));
+    for (Panda panda : list) {
+
+file: net/minecraft/world/entity/animal/Pufferfish.java
+replace:
+    for (Mob mob : this.level.getEntitiesOfClass(Mob.class, this.getBoundingBox().inflate(0.3), entity -> targetingConditions.test(this, entity))) {
+with:
+    java.util.List<? extends Mob> list = this.level.getEntitiesOfClass(Mob.class, this.getBoundingBox().inflate(0.3), entity -> targetingConditions.test(this, entity));
+    for (Mob mob : list) {
+
+file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
+replace:
+    for (ItemStack itemStack : entity.getArmorSlots()) {
+with:
+    java.lang.Iterable<? extends ItemStack> iterable = entity.getArmorSlots();
+    for (ItemStack itemStack : iterable) {
+
+file: net/minecraft/world/entity/player/Player.java
+replace:
+    for (LivingEntity livingEntity : this.level.getEntitiesOfClass(LivingEntity.class, target.getBoundingBox().inflate(1.0, 0.25, 1.0))) {
+with:
+    java.util.List<? extends LivingEntity> list = this.level.getEntitiesOfClass(LivingEntity.class, target.getBoundingBox().inflate(1.0, 0.25, 1.0));
+    for (LivingEntity livingEntity : list) {
+
+file: net/minecraft/world/entity/projectile/FireworkRocketEntity.java
+replace:
+    for (LivingEntity livingEntity : this.level.getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(5.0))) {
+with:
+    java.util.List<? extends LivingEntity> list = this.level.getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(5.0));
+    for (LivingEntity livingEntity : list) {
+
+file: net/minecraft/world/entity/projectile/ThrownPotion.java
+replace:
+    for (Axolotl axolotl : this.level.getEntitiesOfClass(Axolotl.class, aabb)) {
+with:
+    java.util.List<? extends Axolotl> list2 = this.level.getEntitiesOfClass(Axolotl.class, aabb);
+    for (Axolotl axolotl : list2) {
+
+file: net/minecraft/world/item/LeadItem.java
+replace:
+    for (Mob mob : world.getEntitiesOfClass(Mob.class, new AABB(x - 7.0, y - 7.0, z - 7.0, x + 7.0, y + 7.0, z + 7.0))) {
+with:
+    java.util.List<? extends Mob> list = world.getEntitiesOfClass(Mob.class, new AABB(x - 7.0, y - 7.0, z - 7.0, x + 7.0, y + 7.0, z + 7.0));
+    for (Mob mob : list) {
+
+file: net/minecraft/world/level/block/BeehiveBlock.java
+replace:
+    if (world.getBlockEntity(pos) instanceof BeehiveBlockEntity beehiveBlockEntity) {
+with:
+    net.minecraft.world.level.block.entity.BlockEntity blockEntity = world.getBlockEntity(pos);
+    if (blockEntity instanceof BeehiveBlockEntity beehiveBlockEntity) {
+
+file: net/minecraft/world/level/block/Block.java
+replace:
+    for (Entity entity : world.getEntities(null, voxelShape.bounds())) {
+with:
+    java.util.List<? extends Entity> list = world.getEntities(null, voxelShape.bounds());
+    for (Entity entity : list) {
+
 file: net/minecraft/world/level/block/CampfireBlock.java
 replace:
     if (world.getBlockEntity(pos) instanceof CampfireBlockEntity campfireBlockEntity) {
@@ -22,10 +180,10 @@ with:
 
 file: net/minecraft/world/level/block/CommandBlock.java
 replace:
-    protected void tick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
+    public void tick(BlockState state, ServerLevel world, BlockPos pos, Random random) {
     if (world.getBlockEntity(pos) instanceof CommandBlockEntity commandBlockEntity) {
 with:
-    protected void tick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
+    public void tick(BlockState state, ServerLevel world, BlockPos pos, Random random) {
     net.minecraft.world.level.block.entity.BlockEntity blockEntity = world.getBlockEntity(pos);
     if (blockEntity instanceof CommandBlockEntity commandBlockEntity) {
 
@@ -38,244 +196,37 @@ with:
     net.minecraft.world.level.block.entity.BlockEntity blockEntity = world.getBlockEntity(pos);
     if (blockEntity instanceof CommandBlockEntity commandBlockEntity) {
 
-file: net/minecraft/core/dispenser/ShearsDispenseItemBehavior.java
-replace:
-    for (LivingEntity livingEntity : world.getEntitiesOfClass(LivingEntity.class, new AABB(pos), EntitySelector.NO_SPECTATORS)) {
-with:
-    var list = world.getEntitiesOfClass(LivingEntity.class, new AABB(pos), EntitySelector.NO_SPECTATORS);
-    for (LivingEntity livingEntity : list) {
-
-file: net/minecraft/server/MinecraftServer.java
-replace:
-    for (ServerPlayer serverPlayer : Lists.newArrayList(playerList.getPlayers())) {
-with:
-    var list = Lists.newArrayList(playerList.getPlayers());
-    for (ServerPlayer serverPlayer : list) {
-
-file: net/minecraft/server/MinecraftServer.java
-replace:
-    for (NativeModuleLister.NativeModuleInfo nativeModuleInfo : list) {
-with:
-    var list2 = list;
-    for (NativeModuleLister.NativeModuleInfo nativeModuleInfo : list2) {
-
-file: net/minecraft/server/bossevents/CustomBossEvent.java
-replace:
-    for (Tag tag : nbt.getList("Players", 11)) {
-with:
-    var listTag = nbt.getList("Players", 11);
-    for (Tag tag : listTag) {
-
-file: net/minecraft/server/level/ChunkMap.java
-replace:
-    for (ServerPlayer serverPlayer : this.getPlayers(chunkPos, false)) {
-with:
-    var levelChunk3 = this.getPlayers(chunkPos, false);
-    for (ServerPlayer serverPlayer : levelChunk3) {
-
-file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
-replace:
-    if (this.player.level().getBlockEntity(blockPos) instanceof StructureBlockEntity structureBlockEntity) {
-with:
-    net.minecraft.world.level.block.entity.BlockEntity blockEntity = this.player.level().getBlockEntity(blockPos);
-    if (blockEntity instanceof StructureBlockEntity structureBlockEntity) {
-
-file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
-replace:
-    BlockState blockState = this.player.level().getBlockState(blockPos);
-    if (this.player.level().getBlockEntity(blockPos) instanceof JigsawBlockEntity jigsawBlockEntity) {
-with:
-    BlockState blockState = this.player.level().getBlockState(blockPos);
-    net.minecraft.world.level.block.entity.BlockEntity blockEntity = this.player.level().getBlockEntity(blockPos);
-    if (blockEntity instanceof JigsawBlockEntity jigsawBlockEntity) {
-
-file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
-replace:
-    BlockPos blockPos = packet.getPos();
-    if (this.player.level().getBlockEntity(blockPos) instanceof JigsawBlockEntity jigsawBlockEntity) {
-with:
-    BlockPos blockPos = packet.getPos();
-    net.minecraft.world.level.block.entity.BlockEntity blockEntity = this.player.level().getBlockEntity(blockPos);
-    if (blockEntity instanceof JigsawBlockEntity jigsawBlockEntity) {
-
-file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
-replace:
-    if (this.player.getControlledVehicle() instanceof Boat boat) {
-with:
-    net.minecraft.world.entity.Entity entity = this.player.getControlledVehicle();
-    if (entity instanceof Boat boat) {
-
-file: net/minecraft/server/players/PlayerList.java
-replace:
-    for (Entity entity2 : entity.getIndirectPassengers()) {
-with:
-    var uUID2 = entity.getIndirectPassengers();
-    for (Entity entity2 : uUID2) {
-
-file: net/minecraft/server/players/PlayerList.java
-replace:
-    for (Packet<?> packet : scoreboard.getStartTrackingPackets(objective)) {
-with:
-    var list = scoreboard.getStartTrackingPackets(objective);
-    for (Packet<?> packet : list) {
-
-file: net/minecraft/server/players/PlayerList.java
-replace:
-    for (String string : team.getPlayers()) {
-with:
-    var collection = team.getPlayers();
-    for (String string : collection) {
-
-file: net/minecraft/world/RandomizableContainer.java
-replace:
-    if (world.getBlockEntity(pos) instanceof RandomizableContainer randomizableContainer) {
-with:
-    net.minecraft.world.level.block.entity.BlockEntity blockEntity = world.getBlockEntity(pos);
-    if (blockEntity instanceof RandomizableContainer randomizableContainer) {
-
-file: net/minecraft/world/entity/LivingEntity.java
-replace:
-    for (FoodProperties.PossibleEffect possibleEffect : component.effects()) {
-with:
-    var list = component.effects();
-    for (FoodProperties.PossibleEffect possibleEffect : list) {
-
-file: net/minecraft/world/entity/animal/Bee.java
-replace:
-    if (Bee.this.level().getBlockEntity(Bee.this.hivePos) instanceof BeehiveBlockEntity beehiveBlockEntity) {
-with:
-    net.minecraft.world.level.block.entity.BlockEntity blockEntity = Bee.this.level().getBlockEntity(Bee.this.hivePos);
-    if (blockEntity instanceof BeehiveBlockEntity beehiveBlockEntity) {
-
-file: net/minecraft/world/entity/animal/Cat.java
-replace:
-    for (Cat cat : this.cat.level().getEntitiesOfClass(Cat.class, new AABB(this.goalPos).inflate(2.0))) {
-with:
-    var list = this.cat.level().getEntitiesOfClass(Cat.class, new AABB(this.goalPos).inflate(2.0));
-    for (Cat cat : list) {
-
-file: net/minecraft/world/entity/animal/Cat.java
-replace:
-    for (ItemStack itemStack : lootTable.getRandomItems(lootParams)) {
-with:
-    var list = lootTable.getRandomItems(lootParams);
-    for (ItemStack itemStack : list) {
-
-file: net/minecraft/world/entity/animal/Fox.java
-replace:
-    for (Tag tag : nbt.getList("Trusted", 11)) {
-with:
-    var listTag = nbt.getList("Trusted", 11);
-    for (Tag tag : listTag) {
-
-file: net/minecraft/world/entity/animal/Panda.java
-replace:
-    for (ItemStack itemStack : lootTable.getRandomItems(lootParams)) {
-with:
-    var list2 = lootTable.getRandomItems(lootParams);
-    for (ItemStack itemStack : list2) {
-
-file: net/minecraft/world/entity/animal/Pufferfish.java
-replace:
-    for (Mob mob : this.level().getEntitiesOfClass(Mob.class, this.getBoundingBox().inflate(0.3), entity -> targetingConditions.test(this, entity))) {
-with:
-    var list = this.level().getEntitiesOfClass(Mob.class, this.getBoundingBox().inflate(0.3), entity -> targetingConditions.test(this, entity));
-    for (Mob mob : list) {
-
-file: net/minecraft/world/entity/decoration/ArmorStand.java
-replace:
-    for (Entity entity : this.level().getEntities(this, this.getBoundingBox(), RIDABLE_MINECARTS)) {
-with:
-    var list = this.level().getEntities(this, this.getBoundingBox(), RIDABLE_MINECARTS);
-    for (Entity entity : list) {
-
-file: net/minecraft/world/entity/monster/EnderMan.java
-replace:
-    for (ItemStack itemStack2 : blockState.getDrops(builder)) {
-with:
-    var list = blockState.getDrops(builder);
-    for (ItemStack itemStack2 : list) {
-
-file: net/minecraft/world/entity/monster/piglin/PiglinAi.java
-replace:
-    for (ItemStack itemStack : entity.getArmorAndBodyArmorSlots()) {
-with:
-    var iterable = entity.getArmorAndBodyArmorSlots();
-    for (ItemStack itemStack : iterable) {
-
-file: net/minecraft/world/entity/projectile/FireworkRocketEntity.java
-replace:
-    for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(5.0))) {
-with:
-    var list2 = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(5.0));
-    for (LivingEntity livingEntity : list2) {
-
-file: net/minecraft/world/entity/projectile/ThrownPotion.java
-replace:
-    for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, aABB, WATER_SENSITIVE_OR_ON_FIRE)) {
-with:
-    var list = this.level().getEntitiesOfClass(LivingEntity.class, aABB, WATER_SENSITIVE_OR_ON_FIRE);
-    for (LivingEntity livingEntity : list) {
-
-file: net/minecraft/world/entity/projectile/ThrownPotion.java
-replace:
-    for (Axolotl axolotl : this.level().getEntitiesOfClass(Axolotl.class, aABB)) {
-with:
-    var list2 = this.level().getEntitiesOfClass(Axolotl.class, aABB);
-    for (Axolotl axolotl : list2) {
-
-file: net/minecraft/world/entity/projectile/ThrownPotion.java
-replace:
-    for (MobEffectInstance mobEffectInstance : iterable) {
-with:
-    var f = iterable;
-    for (MobEffectInstance mobEffectInstance : f) {
-
-file: net/minecraft/world/entity/raid/Raid.java
-replace:
-    for (Tag tag : nbt.getList("HeroesOfTheVillage", 11)) {
-with:
-    var listTag = nbt.getList("HeroesOfTheVillage", 11);
-    for (Tag tag : listTag) {
-
-file: net/minecraft/world/level/block/Block.java
-replace:
-    for (Entity entity : world.getEntities(null, voxelShape.bounds())) {
-with:
-    var list = world.getEntities(null, voxelShape.bounds());
-    for (Entity entity : list) {
-
 file: net/minecraft/world/level/block/DetectorRailBlock.java
 replace:
     for (BlockPos blockPos : railState.getConnections()) {
 with:
-    var list = railState.getConnections();
+    java.util.List<? extends BlockPos> list = railState.getConnections();
     for (BlockPos blockPos : list) {
 
-file: net/minecraft/world/level/block/entity/SculkCatalystBlockEntity.java
+file: net/minecraft/world/level/block/TargetBlock.java
 replace:
-    if (deadEntity.getLastHurtByMob() instanceof ServerPlayer serverPlayer) {
+    if (projectile.getOwner() instanceof ServerPlayer serverPlayer) {
 with:
-    net.minecraft.world.entity.LivingEntity livingEntity = deadEntity.getLastHurtByMob();
-    if (livingEntity instanceof ServerPlayer serverPlayer) {
-
-file: net/minecraft/world/level/chunk/ChunkGenerator.java
-replace:
-    for (Structure structure : map.getOrDefault(k, Collections.emptyList())) {
-with:
-    var list2 = map.getOrDefault(k, Collections.emptyList());
-    for (Structure structure : list2) {
+    net.minecraft.world.entity.Entity entity = projectile.getOwner();
+    if (entity instanceof ServerPlayer serverPlayer) {
 
 file: net/minecraft/world/level/dimension/end/EndDragonFight.java
 replace:
     for (EndCrystal endCrystal : this.level.getEntitiesOfClass(EndCrystal.class, endSpike.getTopBoundingBox())) {
 with:
-    var list = this.level.getEntitiesOfClass(EndCrystal.class, endSpike.getTopBoundingBox());
+    java.util.List<? extends EndCrystal> list = this.level.getEntitiesOfClass(EndCrystal.class, endSpike.getTopBoundingBox());
     for (EndCrystal endCrystal : list) {
 
 file: net/minecraft/world/level/storage/LevelStorageSource.java
 replace:
-    if (readLightweightData(path) instanceof CompoundTag compoundTag) {
+    if (readLightweightData(file) instanceof CompoundTag compoundTag) {
 with:
-    net.minecraft.nbt.Tag tag = readLightweightData(path);
+    net.minecraft.nbt.Tag tag = readLightweightData(file);
+    if (tag instanceof CompoundTag compoundTag) {
+
+file: net/minecraft/world/level/storage/LevelStorageSource.java
+replace:
+    if (readLightweightData(file1) instanceof CompoundTag compoundTag) {
+with:
+    net.minecraft.nbt.Tag tag = readLightweightData(file1);
     if (tag instanceof CompoundTag compoundTag) {

@@ -14,10 +14,12 @@ with:
             clazz = Commodore.convert(clazz, !CraftMagicNumbers.isLegacy(pdf));
 
 # 読み込む前に plugins の jar を走査して、プラグインのクラスの継承関係を控える
-# (親が NMS のクラスに宣言されたメソッドの名前を引くため)。
+# (親が NMS のクラスに宣言されたメソッドの名前を引くため)。update フォルダの入れ替えは
+# loadPlugins の中の SimplePluginManager.checkUpdate なので、走査の時点ではまだ古い jar が
+# plugins に置いてある。update フォルダも渡して、同じ名前の控えを新しい jar で上書きする。
 file: org/bukkit/craftbukkit/CraftServer.java
 replace:
             Plugin[] plugins = this.pluginManager.loadPlugins(pluginFolder, this.extraPluginJars());
 with:
-            dev.shifu.remap.PluginRemapper.index(pluginFolder, this.extraPluginJars()); // Shifu
+            dev.shifu.remap.PluginRemapper.index(pluginFolder, this.getUpdateFolderFile(), this.extraPluginJars()); // Shifu
             Plugin[] plugins = this.pluginManager.loadPlugins(pluginFolder, this.extraPluginJars());

@@ -6,8 +6,14 @@ file: net/minecraft/server/MinecraftServer.java
 anchor:
     this.tickCount++;
 insert:
-    this.currentTickStart = System.nanoTime(); // Shifu - ServerTickEndEvent が読む
-    new com.destroystokyo.paper.event.server.ServerTickStartEvent(this.tickCount+1).callEvent(); // Paper - Server Tick Events
+    // Shifu - ServerTickEndEvent が読む。登録が無いときは時刻も取らない
+    // (tick の途中で登録されると、その tick の長さだけ 0 からの差になる)
+    if (dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.server.ServerTickEndEvent.class)) {
+        this.currentTickStart = System.nanoTime();
+    }
+    if (dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.server.ServerTickStartEvent.class)) {
+        new com.destroystokyo.paper.event.server.ServerTickStartEvent(this.tickCount+1).callEvent(); // Paper - Server Tick Events
+    }
 
 # ServerTickEndEvent
 # 1.19.4 の nextTickTime はミリ秒なので、残りをナノ秒に直して渡す。
@@ -16,7 +22,9 @@ anchor:
     this.profiler.push("tallying");
 insert:
     // Paper start - Server Tick Events
-    long endTime = System.nanoTime();
-    long remaining = this.nextTickTime * 1000000L - endTime;
-    new com.destroystokyo.paper.event.server.ServerTickEndEvent(this.tickCount, ((double)(endTime - this.currentTickStart) / 1000000D), remaining).callEvent();
+    if (dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.server.ServerTickEndEvent.class)) {
+        long endTime = System.nanoTime();
+        long remaining = this.nextTickTime * 1000000L - endTime;
+        new com.destroystokyo.paper.event.server.ServerTickEndEvent(this.tickCount, ((double)(endTime - this.currentTickStart) / 1000000D), remaining).callEvent();
+    }
     // Paper end - Server Tick Events

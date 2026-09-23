@@ -120,6 +120,7 @@ anchor:
     0.5F,
     0.4F / (world.getRandom().nextFloat() * 0.4F + 0.8F)
     );
+    user.getCooldowns().addCooldown(this, 20);
 insert:
     if (!dev.shifu.event.ItemEvents.launchListening()) {
 insert-after:
@@ -247,3 +248,89 @@ insert-after:
 #
 # vanilla の判定の前。DENY なら何もせず抜ける(vanilla の if のあとには何も無い)。
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/MaceItem.java.patch
+
+# ---------------------------------------------------------------- 投擲物の発射(登録があるとき)
+#
+# 上の if (!launchListening()) で飛ばした音・統計・消費を、取り消されなかったときに
+# ItemEvents.launch が行う。飛ばしたままだったので、PlayerLaunchProjectileEvent に
+# 登録があると投擲物が減らず、無限に投げられた。
+#
+# 読んだ位置: Paper-Server src/main/java/net/minecraft/world/item/SnowballItem.java(PlayerLaunchProjectileEvent)
+
+file: net/minecraft/world/item/SnowballItem.java
+anchor:
+    world.addFreshEntity(snowball);
+insert:
+    if (dev.shifu.event.ItemEvents.launchListening()) {
+        if (!dev.shifu.event.ItemEvents.launch(world, user, itemInHand, snowball,
+                SoundEvents.SNOWBALL_THROW, SoundSource.NEUTRAL, 0)) {
+            return InteractionResultHolder.fail(itemInHand);
+        }
+    } else {
+insert-after:
+    }
+
+file: net/minecraft/world/item/EggItem.java
+anchor:
+    world.addFreshEntity(thrownEgg);
+insert:
+    if (dev.shifu.event.ItemEvents.launchListening()) {
+        if (!dev.shifu.event.ItemEvents.launch(world, user, itemInHand, thrownEgg,
+                SoundEvents.EGG_THROW, SoundSource.PLAYERS, 0)) {
+            return InteractionResultHolder.fail(itemInHand);
+        }
+    } else {
+insert-after:
+    }
+
+file: net/minecraft/world/item/EnderpearlItem.java
+anchor:
+    world.addFreshEntity(thrownEnderpearl);
+insert:
+    if (dev.shifu.event.ItemEvents.launchListening()) {
+        if (!dev.shifu.event.ItemEvents.launch(world, user, itemInHand, thrownEnderpearl,
+                SoundEvents.ENDER_PEARL_THROW, SoundSource.NEUTRAL, 20)) {
+            return InteractionResultHolder.fail(itemInHand);
+        }
+    } else {
+insert-after:
+    }
+
+file: net/minecraft/world/item/ExperienceBottleItem.java
+anchor:
+    world.addFreshEntity(thrownExperienceBottle);
+insert:
+    if (dev.shifu.event.ItemEvents.launchListening()) {
+        if (!dev.shifu.event.ItemEvents.launch(world, user, itemInHand, thrownExperienceBottle,
+                SoundEvents.EXPERIENCE_BOTTLE_THROW, SoundSource.NEUTRAL, 0)) {
+            return InteractionResultHolder.fail(itemInHand);
+        }
+    } else {
+insert-after:
+    }
+
+file: net/minecraft/world/item/ThrowablePotionItem.java
+anchor:
+    world.addFreshEntity(thrownPotion);
+insert:
+    if (dev.shifu.event.ItemEvents.launchListening()) {
+        if (!dev.shifu.event.ItemEvents.launch(world, user, itemInHand, thrownPotion,
+                null, null, 0)) {
+            return InteractionResultHolder.fail(itemInHand);
+        }
+    } else {
+insert-after:
+    }
+
+# 釣り竿の投げ入れ。PlayerFishEvent(FISHING)
+file: net/minecraft/world/item/FishingRodItem.java
+anchor:
+    world.addFreshEntity(new FishingHook(user, world, fishingLuckBonus, i));
+insert:
+    if (dev.shifu.event.ItemEvents.fishListening()) {
+        if (!dev.shifu.event.ItemEvents.castFishingHook(world, user, hand, new FishingHook(user, world, fishingLuckBonus, i))) {
+            return InteractionResultHolder.pass(itemInHand);
+        }
+    } else {
+insert-after:
+    }

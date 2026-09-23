@@ -57,19 +57,6 @@ file: net/minecraft/world/level/GameRules.java
 line:
         protected abstract void deserialize(String value);
 
-# CraftBukkit は看板と書見台をコマンドの送り手にする(/setblock などの実行元)
-file: net/minecraft/world/level/block/entity/SignBlockEntity.java
-line:
-public class SignBlockEntity extends BlockEntity {
-implements:
-    net.minecraft.commands.CommandSource
-
-file: net/minecraft/world/level/block/entity/LecternBlockEntity.java
-line:
-public class LecternBlockEntity extends BlockEntity implements Clearable, MenuProvider {
-implements:
-    net.minecraft.commands.CommandSource
-
 # DATA_TICKS_FROZEN。resendPossiblyDesyncedDataValues に渡す(EntityPortalEvent の発火)
 file: net/minecraft/world/entity/Entity.java
 line:
@@ -210,19 +197,6 @@ file: net/minecraft/world/entity/LivingEntity.java
 unfinal:
     public final int invulnerableDuration = 20;
 
-# Paper の brigadier API は CommandSourceStack を BukkitBrigadierCommandSource として扱う
-file: net/minecraft/commands/CommandSourceStack.java
-line:
-public class CommandSourceStack implements SharedSuggestionProvider {
-implements:
-    com.destroystokyo.paper.brigadier.BukkitBrigadierCommandSource
-
-# Paper は Component を Iterable<Component> にしている(iterator() の @Override)
-file: net/minecraft/network/chat/Component.java
-line:
-public interface Component extends Message, FormattedText {
-implements:
-    Iterable<Component>
 
 # CraftSpellcaster と発火層(AnimalEvents.spellCast)が外から使う。1.19.4 は protected
 file: net/minecraft/world/entity/monster/SpellcasterIllager.java
@@ -898,3 +872,32 @@ line:
 file: net/minecraft/server/level/ServerPlayer.java
 line:
     private int lastSentFood = -99999999;
+
+# ---- patches/hand が触ったので公式の版ではなく vanilla の木から組まれるクラス。Paper の AT と同じだけ広げる
+
+# ChatFormatting を触ると公式(Paper の AT 済み)の版ではなく vanilla の木から組まれる。
+# CraftChatMessage.getColor が code を読む
+file: net/minecraft/ChatFormatting.java
+line:
+    private final char code;
+
+# Ingredient を触ると同じく vanilla の木から組まれる。CraftRecipe が直に作る・読む
+file: net/minecraft/world/item/crafting/Ingredient.java
+line:
+    private Ingredient(Stream<? extends Ingredient.Value> entries) {
+
+file: net/minecraft/world/item/crafting/Ingredient.java
+line:
+    private ItemStack[] itemStacks;
+
+file: net/minecraft/world/item/crafting/Ingredient.java
+line:
+    static class ItemValue implements Ingredient.Value {
+
+file: net/minecraft/world/item/crafting/Ingredient.java
+line:
+        ItemValue(ItemStack stack) {
+
+file: net/minecraft/world/item/crafting/Ingredient.java
+line:
+    private void dissolve() {

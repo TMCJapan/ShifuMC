@@ -1,1 +1,11 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// ItemStack.useOn
+    // WorldEdit の版一致アダプタが呼ぶ。CraftBukkit は vanilla の useOn(UseOnContext) をこの 2 引数版に
+    // 置き換え、ブロックの捕獲と BlockPlaceEvent をここで行う。手は UseOnContext にも入っているので使わず、
+    // vanilla の版へ渡す(BlockPlaceEvent は vanilla の中に差し込んだ発火で出る)。
+    // 引数の数が違うので、vanilla の呼び出しがこちらへ来ることは無い。
+    // 読んだ位置: D:/.pw182/Paper-Server(HEAD)src/main/java/net/minecraft/world/item/ItemStack.java:315
+    public InteractionResult useOn(UseOnContext context, InteractionHand hand) {
+        return this.useOn(context);
+    }

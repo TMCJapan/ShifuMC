@@ -1,1 +1,11 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+
+// EntityArgument.parse
+    // CraftServer.selectEntities が overridePermissions = true で呼ぶ。Paper はこれを
+    // EntitySelectorParser.parse(boolean) へ渡すが、そちらの手書きの版(EntitySelectorParser.java.add)も
+    // 旗を使わずに vanilla の parse() へ渡している。旗を使う先が無いので、ここも vanilla の版へ渡す。
+    // 引数の数が違うので、vanilla の呼び出し(ArgumentType.parse)がこちらへ来ることは無い。
+    // 読んだ位置: D:/.pw182/Paper-Server(HEAD)src/main/java/net/minecraft/commands/arguments/EntityArgument.java:102
+    public EntitySelector parse(StringReader stringReader, boolean overridePermissions) throws CommandSyntaxException {
+        return this.parse(stringReader);
+    }

@@ -48,8 +48,23 @@
     }
 
 // DistanceManager.addPriorityTicket
-    // Paper のチャンク優先度。本体は Paper のものと同じで、addTicket の返り値だけを
-    // 表を見る形に替えている。
+    // Paper のチャンク優先度。呼び手は Bukkit の API だけ(CraftWorld.getChunkAtAsync の
+    // markHighPriority と CraftPlayer.teleportAsync の markAreaHighPriority)。
+    // 本体は Paper のものから 2 つ替えている。
+    //
+    // 1. addTicket の返り値。CraftBukkit は void から boolean(実際に増えたか)へ替えているが、
+    //    vanilla の返り値は替えられないので、足す前に ticket の表を見て同じことを答える。
+    // 2. 既にある ticket を updatePriorityTicket が更新したときの chunkMap.queueHolderUpdate。
+    //    それは pendingChunkUpdates に積むが、Shifu の DistanceManager.runAllUpdates は vanilla で
+    //    その列を汲まない。積むと ChunkHolder が isUpdateQueued のまま溜まり続ける
+    //    (以降その holder は二度と積まれない)。vanilla の ticket に優先度は無く、
+    //    ticket の中身も変わらないので何もしない。
+    //
+    // 最後の runDistanceManagerUpdates は delayDistanceManagerTick を見てから回す。
+    // Paper は ServerChunkCache.runDistanceManagerUpdates の頭で同じ判定をしていて
+    // (読んだ位置: Paper-Server 9c28dabcf src/main/java/net/minecraft/server/level/ServerChunkCache.java:825)、
+    // markAreaHighPriority は半径ぶんの ticket を立てる間これを true にして最後に 1 度だけ回す。
+    // Shifu の ServerChunkCache は vanilla なので見ていなかった。
     private boolean addPriorityTicket(ChunkPos coords, TicketType<ChunkPos> ticketType, int priority) {
         org.spigotmc.AsyncCatcher.catchOp("ChunkMapDistance::addPriorityTicket");
         long pair = coords.toLong();
@@ -65,14 +80,11 @@
             final SortedArraySet<Ticket<?>> at = this.tickets.get(pair);
             success = at == null || !at.contains(ticket);
             this.addTicket(pair, ticket);
-        } else {
-            if (chunk == null) {
-                chunk = this.chunkMap.getUpdatingChunkIfPresent(pair);
-            }
-            this.chunkMap.queueHolderUpdate(chunk);
         }
 
-        this.chunkMap.level.getChunkSource().runDistanceManagerUpdates();
+        if (!this.delayDistanceManagerTick) {
+            this.chunkMap.level.getChunkSource().runDistanceManagerUpdates();
+        }
 
         return success;
     }

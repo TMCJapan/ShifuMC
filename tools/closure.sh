@@ -104,3 +104,8 @@ for round in 1 2 3 4 5 6 7 8 9 10; do
     python tools/required_members.py "$GAP" "$TREE" "$ADAPTER" >> "$REQ"
     echo "round $round: required now $(grep -cE '^    (method|variable|class|access|abstract) ' "$REQ")"
 done
+
+# vanilla の行を決めた形でしか変えていないことを、不動点まで回したあとの木で確かめる
+# (tools/verify_additive.py)。外れた行が 1 つでもあれば exit 1 で、set -e がここで止める。
+# 2026-09-21 まではどこからも呼んでおらず、説明の付かない差分が 7〜56 件ある木のまま組んでいた。
+SHIFU_PAPER=$PW python "$SHIFU/tools/verify_additive.py" "$TREE"

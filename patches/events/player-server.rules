@@ -163,9 +163,19 @@ insert-after:
 
 # ============================================================ プレイヤー
 
-# PlayerSpawnChangeEvent / PlayerSetSpawnEvent。setRespawnPosition の頭
+# PlayerSetSpawnEvent。setRespawnPosition の頭。登録があれば shim の
+# 理由付きの版(Paper の本体)へ渡して、vanilla の本体を飛ばす。
 #
-# 読んだ位置: paper-server patches/sources/net/minecraft/server/world/ServerPlayer.java.patch(PlayerSetSpawnEvent)
+# 読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/server/level/ServerPlayer.java(setRespawnPosition)
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    public void setRespawnPosition(ResourceKey<Level> dimension, @Nullable BlockPos pos, float angle, boolean forced, boolean sendMessage) {
+insert-after:
+    if (dev.shifu.event.PlayerEvents.setSpawn(this, dimension, pos, angle, forced, sendMessage)) {
+        return;
+    }
+
+# 理由(ベッド)
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
     this.setRespawnPosition(this.level.dimension(), pos, this.getYRot(), false, true);
@@ -181,8 +191,7 @@ file: net/minecraft/world/entity/player/Player.java
 anchor:
     this.getFoodData().eat(stack.getItem(), stack);
 insert:
-    final net.minecraft.world.food.FoodProperties shifuFood = stack.getItem().getFoodProperties();
-    if (shifuFood == null || dev.shifu.event.PlayerEvents.eatFood(this, shifuFood, stack)) {
+    if (dev.shifu.event.PlayerEvents.eatFood(this, stack)) {
 insert-after:
     }
 
@@ -195,3 +204,20 @@ anchor:
     this.disableShield(true);
 insert:
     dev.shifu.event.PlayerEvents.shieldAttacker(attacker);
+
+# ServerLoginPacketListenerImpl.hostname(PlayerLoginEvent.getHostname() と、それを読む forced host・
+# BungeeCord 判定のプラグインが使う)。1.18.2 の CraftBukkit は Connection ではなくログインの
+# リスナーに持たせ、作った直後に入れる。登録の有無に関係なく入れる。以前は誰も入れず空のままだった。
+#
+# Shifu で hostname を読むのは PlayerEvents.playerLogin(PlayerLoginEvent)の組み立てだけで、
+# 登録が無ければ読まない。入れるのも登録があるときだけにする。handshake より後に登録されると、
+# その接続の hostname は空のまま。
+#
+# 読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/server/network/ServerHandshakePacketListenerImpl.java:149,165-166
+file: net/minecraft/server/network/ServerHandshakePacketListenerImpl.java
+anchor:
+    this.connection.setListener(new ServerLoginPacketListenerImpl(this.server, this.connection));
+insert-after:
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerLoginEvent.class)) {
+        ((ServerLoginPacketListenerImpl) this.connection.getPacketListener()).hostname = packet.getHostName() + ":" + packet.getPort();
+    }

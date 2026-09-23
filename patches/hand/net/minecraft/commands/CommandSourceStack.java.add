@@ -1,19 +1,26 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
 //
-// patches/access/members.rules で BukkitBrigadierCommandSource(Paper-MojangAPI)を
-// 実装させている。要求は getBukkitEntity / getBukkitWorld / getBukkitLocation /
-// getBukkitSender の 4 つで、Paper 1.18.2 はどれも本体が自分で閉じた形で持っているので
-// 生成器が写せる。ここに書くのは 1 つだけ。
+// Paper は BukkitBrigadierCommandSource(Paper-MojangAPI)を実装させているが、Shifu は実装させない。
+// その 4 つのうち NMS の source に直に呼ばれる 2 つを、@Override の無い形でここに書く
+// (getBukkitSender は CraftBukkit の宣言で @Override が無いので生成器が写す)。
 //
 // 1.19.4 から消した塊:
 //   getHandle      — io.papermc.paper.command.brigadier.PaperCommandSourceStack は
 //                    1.18.2 に無い。1.18.2 の Paper は CommandSourceStack を
 //                    com.destroystokyo.paper.brigadier.BukkitBrigadierCommandSource として扱う。
 //   shifuApiSource — Paper の brigadier API へ渡すときの包み(dev.shifu.command.ApiSource)を
-//                    覚える欄。1.18.2 にその API は無く、src/event/java/dev/shifu/command も空。
+//                    覚える欄。1.18.2 にその API は無い。
 
 // CommandSourceStack.getBukkitEntity
-    // BukkitBrigadierCommandSource の実装。Paper のパッチと同じ
+    // Paper の BukkitBrigadierCommandSource の実装と同じ本体。Shifu は interface を実装させない
+    // (CommandRegisteredEvent に渡すときだけ dev.shifu.command.LegacySource で包む)ので、
+    // Paper から写した本体が NMS の source に直に呼ぶ分を、@Override の無い形でここに置く
     public org.bukkit.entity.Entity getBukkitEntity() {
         return this.getEntity() != null ? this.getEntity().getBukkitEntity() : null;
+    }
+
+// CommandSourceStack.getBukkitWorld
+    // 同じ。GameRules の WorldGameRuleChangeEvent(Paper から写した本体)が呼ぶ
+    public org.bukkit.World getBukkitWorld() {
+        return this.getLevel() != null ? this.getLevel().getWorld() : null;
     }

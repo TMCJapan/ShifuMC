@@ -8,7 +8,8 @@ anchor:
                     this.level.setBlockAndUpdate(blockPos2, BaseFireBlock.getState(this.level, blockPos2));
 insert:
     // CraftBukkit start - Ignition by explosion
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(this.level, blockPos2.getX(), blockPos2.getY(), blockPos2.getZ(), this).isCancelled()) {
+    if (!dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockIgniteEvent.class)
+            || !org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(this.level, blockPos2.getX(), blockPos2.getY(), blockPos2.getZ(), this).isCancelled()) {
 insert-after:
     }
     // CraftBukkit end

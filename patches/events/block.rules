@@ -17,55 +17,86 @@ insert:
         return false;
     }
 
+# BlockBreakEvent#setDropItems(false)
+#
+# Paper は playerDestroy に引数を足して落とし物を出さない。Shifu は vanilla の playerDestroy を
+# そのまま呼び、そのあいだに出た ItemEntity を ShifuEvents.catchDrop(addEntity の頭)で
+# 世界に入れずに捨てる。登録が無ければ blockDropsBegin は何も捨てない。
+#
+# 読んだ位置: Paper-Server src/main/java/net/minecraft/server/level/ServerPlayerGameMode.java(destroyBlock、isDropItems)
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+anchor:
+    if (flag && hasCorrectToolForDrops) {
+    block.playerDestroy(this.level, this.player, pos, blockState, blockEntity, itemStack);
+    }
+insert:
+    dev.shifu.event.ShifuEvents.blockDropsBegin(this.player, pos);
+insert-after:
+    dev.shifu.event.ShifuEvents.blockDropsEnd();
+
 # TNTPrimeEvent
 #
-# 1.19.4 の TntBlock は prime ではなく explode。真偽値を返さないので、
-# 火を付ける手前(private な explode の先頭)で 1 度だけ見る。
-# 原因は呼ぶ側がその直前に置く。
+# 1.18.2 の TntBlock.explode は真偽値を返さない。中で発火して取り消すと、
+# 呼び手の removeBlock / setBlock(AIR) はそのまま走るので、TNT が何も残さずに消えた。
+# 呼び手ごとに、まだ止められる位置で発火する。理由も呼び手の側で渡す。
+#
+# 誘爆は vanilla が setBlock(AIR) のあとに wasExploded を呼ぶので、そこでは止められない。
+# Explosion.finalizeExplosion の中で、壊す手前に見る。
+#
+# 1.18.2 のイベントは com.destroystokyo.paper.event.block.TNTPrimeEvent で、
+# 理由は EXPLOSION / FIRE / ITEM / PROJECTILE / REDSTONE の 5 つ。
+# playerWillDestroy とディスペンサーに当たる理由が無いので、Paper と同じくそこでは出さない。
+#
+# 読んだ位置: Paper-Server src/main/java/net/minecraft/world/level/block/TntBlock.java:40,54,78,113,150
+
+# onPlace と neighborChanged(レッドストーン)。同じ 2 行が 2 箇所にある
 file: net/minecraft/world/level/block/TntBlock.java
 anchor:
-    private static void explode(Level world, BlockPos pos, @Nullable LivingEntity igniter) {
-    if (!world.isClientSide) {
-insert-after:
-    if (!dev.shifu.event.ShifuEvents.tntPrime(world, pos, igniter)) {
+    explode(world, pos);
+    world.removeBlock(pos, false);
+count: 2
+insert:
+    if (!dev.shifu.event.ShifuEvents.tntPrime(world, pos,
+            com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason.REDSTONE, null)) {
         return;
     }
 
-# onPlace と neighborChanged。同じ行が 2 箇所にあり、どちらもレッドストーン
-file: net/minecraft/world/level/block/TntBlock.java
-anchor:
-    if (world.hasNeighborSignal(pos)) {
-count: 2
-insert:
-    dev.shifu.event.ShifuEvents.tntPrimeCause(com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason.REDSTONE, null);
-
-# useItemOn(火打ち石・ファイヤーチャージ)
+# use(火打ち石・ファイヤーチャージ)
 file: net/minecraft/world/level/block/TntBlock.java
 anchor:
     explode(world, pos, player);
 insert:
-    dev.shifu.event.ShifuEvents.tntPrimeCause(com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason.ITEM, player);
+    if (!dev.shifu.event.ShifuEvents.tntPrime(world, pos,
+            com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason.ITEM, player)) {
+        return InteractionResult.FAIL;
+    }
 
 # onProjectileHit(燃えている矢など)
 file: net/minecraft/world/level/block/TntBlock.java
 anchor:
-    if (projectile.isOnFire() && projectile.mayInteract(world, blockPos)) {
+    explode(world, blockPos, owner instanceof LivingEntity ? (LivingEntity)owner : null);
+    world.removeBlock(blockPos, false);
 insert:
-    dev.shifu.event.ShifuEvents.tntPrimeCause(com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason.PROJECTILE, projectile);
-
-# wasExploded(誘爆)
-file: net/minecraft/world/level/block/TntBlock.java
-anchor:
-    PrimedTnt primedTnt = new PrimedTnt(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, explosion.getSourceMob());
-insert:
-    if (!dev.shifu.event.ShifuEvents.tntPrimeByExplosion(world, pos, explosion)) {
+    if (!dev.shifu.event.ShifuEvents.tntPrime(world, blockPos,
+            com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason.PROJECTILE, projectile)) {
         return;
     }
 
-# Paper 1.18.2 の TNTPrimeEvent(com.destroystokyo)には BLOCK_BREAK / DISPENSER の理由が無く、Paper もそこでは出さない
+# 誘爆。TNT 以外の位置でも通るので、登録を見てからブロックを見る
+file: net/minecraft/world/level/Explosion.java
+anchor:
+    if (!blockState.isAir()) {
+insert:
+    if (!dev.shifu.event.ShifuEvents.tntPrimeByExplosion(this.level, blockPos, this)) {
+        continue;
+    }
+
 # 火が燃え移った
 file: net/minecraft/world/level/block/FireBlock.java
 anchor:
     TntBlock.explode(world, pos);
 insert:
-    dev.shifu.event.ShifuEvents.tntPrimeCause(com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason.FIRE, null);
+    if (dev.shifu.event.ShifuEvents.tntPrime(world, pos,
+            com.destroystokyo.paper.event.block.TNTPrimeEvent.PrimeReason.FIRE, null)) {
+insert-after:
+    }

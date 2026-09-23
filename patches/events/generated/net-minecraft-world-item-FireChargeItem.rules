@@ -9,7 +9,8 @@ anchor:
     level.setBlockAndUpdate(clickedPos, BaseFireBlock.getState(level, clickedPos));
 insert:
     // CraftBukkit start - fire BlockIgniteEvent
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, clickedPos, org.bukkit.event.block.BlockIgniteEvent.IgniteCause.FIREBALL, context.getPlayer()).isCancelled()) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockIgniteEvent.class)
+            && org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, clickedPos, org.bukkit.event.block.BlockIgniteEvent.IgniteCause.FIREBALL, context.getPlayer()).isCancelled()) {
         if (!context.getPlayer().getAbilities().instabuild) {
             context.getItemInHand().shrink(1);
         }

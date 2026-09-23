@@ -1,5 +1,5 @@
 # アダプタ層の書き換え。vanilla の行ではない。
 #
-# 1.19.4 では spawnNewGateway() と initiateRespawn(...) を、返り値の無い vanilla の
+# 1.20.6 では spawnNewGateway() と initiateRespawn(Collection) を、返り値の無い vanilla の
 # EndDragonFight へ向け直していた。1.18.2 の Bukkit の DragonBattle API に
-# その 2 つは無く、CraftDragonBattle も持たない。
+# その 2 つは無く(initiateRespawn() は引数無し)、CraftDragonBattle も持たない。1.19.4 も同じ。

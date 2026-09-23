@@ -27,7 +27,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ambient.Bat;
 import net.minecraft.world.entity.animal.axolotl.Axolotl;
-import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -37,7 +36,6 @@ import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.HitResult;
 
 import org.bukkit.craftbukkit.entity.CraftLivingEntity;
 import org.bukkit.craftbukkit.event.CraftEventFactory;
@@ -59,7 +57,6 @@ import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.EntityTransformEvent;
-import org.bukkit.event.entity.EntityUnleashEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.entity.ItemDespawnEvent;
 import org.bukkit.event.entity.PlayerLeashEntityEvent;
@@ -191,10 +188,8 @@ public final class EntityEvents {
 
 
     /**
-     * EntityCombustByBlockEvent(溶岩)。{@code Entity.lavaIgnite} の {@code igniteForSeconds(15.0F)} を囲む。
-     * Paper と同じく、生き物で、まだ燃えていないときだけ出す。それ以外は EntityCombustEvent も出さない。
-     *
-     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/Entity.java.patch(lavaIgnite)
+     * 最後に触れた溶岩の位置を控える。{@link #lavaIgnite} が EntityCombustByBlockEvent に載せる。
+     * Paper は同じものを {@code lastLavaContact} という欄に持つ。
      */
     public static void lavaContact(final Entity entity, final net.minecraft.world.level.material.FluidState fluidState,
                                    final net.minecraft.core.BlockPos pos) {
@@ -203,6 +198,36 @@ public final class EntityEvents {
         }
 
         entity.shifuLastLavaContact = pos.immutable();
+    }
+
+    /**
+     * EntityCombustByBlockEvent(溶岩)。{@code Entity.lavaHurt} の {@code setSecondsOnFire(15)} を囲む。
+     * Paper と同じく、生き物で、まだ燃えていないときだけ出す。それ以外は EntityCombustEvent も出さない。
+     *
+     * <p>読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/world/entity/Entity.java(lavaHurt)
+     *
+     * @return vanilla の行へ進んでよいか
+     */
+    public static boolean lavaIgnite(final Entity entity) {
+        if (!listening(EntityCombustEvent.getHandlerList())) {
+            return true;
+        }
+
+        if (!(entity instanceof LivingEntity) || entity.getRemainingFireTicks() > 0) {
+            return true;
+        }
+
+        final net.minecraft.core.BlockPos lava = entity.shifuLastLavaContact;
+        final org.bukkit.block.Block block = lava == null
+                ? null
+                : org.bukkit.craftbukkit.block.CraftBlock.at(entity.level, lava);
+        final EntityCombustByBlockEvent event = new EntityCombustByBlockEvent(block, entity.getBukkitEntity(), 15);
+
+        if (!event.callEvent()) {
+            return false;
+        }
+
+        return ignite(entity, event.getDuration(), 15);
     }
 
 
@@ -228,15 +253,8 @@ public final class EntityEvents {
 
 
 
-    private static InteractionHand shearHand;
     private static boolean unleashHandled;
 
-    /** ハサミで全部外すとき、{@code dropAllLeashConnections} に渡す手を置く。 */
-    public static void shearHand(final InteractionHand hand) {
-        if (listening(EntityUnleashEvent.getHandlerList())) {
-            shearHand = hand;
-        }
-    }
 
 
 
@@ -249,21 +267,21 @@ public final class EntityEvents {
     }
 
     /**
-     * PlayerUnleashEntityEvent(持ち主が手で外す)。1.20.6 は Mob.interact が外す。
+     * PlayerUnleashEntityEvent(持ち主が手で外す)。Mob.interact が外す。
      *
-     * @return 縄を落とすか。取り消されたら null(呼ぶ側は繋いだままにして packet を送り直す)
+     * <p>縄を落とすか(vanilla の {@code !player.getAbilities().instabuild})もここで求める。
+     * 差し込み側で引数に書いていたときは、登録が無くても 1 回余分に読んでいた。
+     *
+     * @return 発火したイベント。登録が無ければ null(呼ぶ側は vanilla の行で外す)
      */
-    public static Boolean unleashByPlayer(final Mob mob, final net.minecraft.world.entity.player.Player player,
-                                          final InteractionHand hand, final boolean dropLeash) {
+    public static org.bukkit.event.player.PlayerUnleashEntityEvent unleashByPlayer(
+            final Mob mob, final net.minecraft.world.entity.player.Player player, final InteractionHand hand) {
         if (!listening(org.bukkit.event.player.PlayerUnleashEntityEvent.getHandlerList())) {
-            return dropLeash;
+            return null;
         }
 
-        final org.bukkit.event.player.PlayerUnleashEntityEvent event =
-                // 1.18.2 の callPlayerUnleashEntityEvent は手を取らない
-                CraftEventFactory.callPlayerUnleashEntityEvent(mob, player, dropLeash);
-
-        return event.isCancelled() ? null : event.isDropLeash();
+        // 1.18.2 の callPlayerUnleashEntityEvent は手を取らない
+        return CraftEventFactory.callPlayerUnleashEntityEvent(mob, player, !player.getAbilities().instabuild);
     }
 
 
@@ -346,6 +364,18 @@ public final class EntityEvents {
     }
 
     /**
+     * 理由を置いて null を返す。アダプタ層の {@code CraftLivingEntity.addPotionEffect} が
+     * {@code addEffect(effect, EntityEvents.causedBy(Cause.PLUGIN))} の形で、vanilla の
+     * {@code addEffect(effect, source)} の source に渡す。Paper の {@code addEffect(effect, Cause.PLUGIN)} は
+     * vanilla に無いので、アダプタ層は source を null にした vanilla の版を呼んでいて、理由が UNKNOWN になっていた。
+     */
+    public static Entity causedBy(final EntityPotionEffectEvent.Cause cause) {
+        effectCause(cause);
+
+        return null;
+    }
+
+    /**
      * 理由を置いて、{@code effectCauseDone} まで消えないようにする。
      * 1 つの文が効果を何度も付けるところ(ポーションの効果の並び、周りのプレイヤー全員)で使う。
      */
@@ -360,14 +390,16 @@ public final class EntityEvents {
 
     /** {@code effectCauseUntilDone} で置いた理由を外す。 */
     public static void effectCauseDone() {
-        effectCause = null;
-        effectCauseKeep = false;
+        if (effectCause != null) {
+            effectCause = null;
+            effectCauseKeep = false;
+        }
     }
 
     private static EntityPotionEffectEvent.Cause takeEffectCause() {
         final EntityPotionEffectEvent.Cause cause = effectCause;
 
-        if (!effectCauseKeep) {
+        if (cause != null && !effectCauseKeep) {
             effectCause = null;
         }
 
@@ -377,15 +409,16 @@ public final class EntityEvents {
     /**
      * EntityPotionEffectEvent(CLEARED)。{@code removeAllEffects} で消す前に 1 つずつ出す。
      *
-     * @return 取り消されて残す効果
+     * @return 取り消されて残す効果。登録が無ければ null(呼ぶ側は何もしない)
      */
     public static List<MobEffectInstance> clearEffects(final LivingEntity entity, final Collection<MobEffectInstance> effects) {
         final EntityPotionEffectEvent.Cause cause = takeEffectCause();
-        final List<MobEffectInstance> kept = new ArrayList<>();
 
         if (!listening(EntityPotionEffectEvent.getHandlerList())) {
-            return kept;
+            return null;
         }
+
+        final List<MobEffectInstance> kept = new ArrayList<>();
 
         for (MobEffectInstance effect : effects) {
             if (CraftEventFactory.callEntityPotionEffectChangeEvent(entity, effect, null, cause,
@@ -617,16 +650,29 @@ public final class EntityEvents {
     // ------------------------------------------------------------ 生き物でないものの被害・爆発
 
     /**
-     * EntityDamageEvent(生き物でないもの)。Paper の {@code handleNonLivingEntityDamageEvent} と同じ向きで、
-     * true なら取り消し。登録が無ければ false(取り消さない)。
+     * EntityDamageEvent(生き物でないもの)。続けてよいかを返す。登録が無ければ true。
+     * Paper の {@code handleNonLivingEntityDamageEvent} は取り消しで true を返すので、裏返して返す。
      */
-    public static boolean damageCancelled(final Entity entity, final DamageSource source, final double damage,
+    public static boolean nonLivingDamage(final Entity entity, final DamageSource source, final double damage,
                                           final boolean cancelOnZeroDamage, final boolean cancelled) {
         if (!listening(EntityDamageEvent.getHandlerList())) {
-            return false;
+            return true;
         }
 
-        return CraftEventFactory.handleNonLivingEntityDamageEvent(entity, source, damage, cancelOnZeroDamage, cancelled);
+        return !CraftEventFactory.handleNonLivingEntityDamageEvent(entity, source, damage, cancelOnZeroDamage, cancelled);
+    }
+
+    /**
+     * エンドクリスタルが壊れたときの ExplosionPrimeEvent。爆発で壊れたときは vanilla も爆発しないので出さない。
+     * 爆発かどうかの判定もここでする。差し込み側の三項演算子で見ていたときは、
+     * 登録が無くても判定が 1 回増えていた。
+     */
+    public static ExplosionPrimeEvent crystalPrime(final Entity crystal, final DamageSource source) {
+        if (!listening(ExplosionPrimeEvent.getHandlerList()) || source.isExplosion()) {
+            return null;
+        }
+
+        return explosionPrime(crystal, 6.0F, false);
     }
 
 
@@ -635,13 +681,6 @@ public final class EntityEvents {
 
     // ------------------------------------------------------------ 防具立て
 
-    private static DamageSource armorStandSource;
-    private static ArmorStand armorStandDeathFired;
-
-    /** 次の {@code ArmorStand.kill} が使う被害の元を置く(BYPASSES_INVULNERABILITY の経路)。 */
-    public static void armorStandDeathSource(final DamageSource source) {
-        armorStandSource = source;
-    }
 
 
 
@@ -797,12 +836,6 @@ public final class EntityEvents {
 
     // ------------------------------------------------------------ ポーションの飛沫
 
-    private static HitResult splashHit;
-
-    /** 割れた位置を置く({@code onHit} から。水の飛沫のイベントに載せる)。 */
-    public static void splashHit(final HitResult hitResult) {
-        splashHit = hitResult;
-    }
 
 
     public static boolean potionSplashListening() {
@@ -820,18 +853,18 @@ public final class EntityEvents {
     }
 
     /**
-     * VehicleEntityCollisionEvent。取り消されたら true。
+     * VehicleEntityCollisionEvent。続けてよいかを返す。登録が無ければ true。
      *
      * <p>vanilla のメソッドの中で組み立てると局所変数が増え、公式の変数の slot が動く。
      * トロッコの {@code tick} は Paper の差し込みだけで 5 つ増えていて、
      * 公式とずれた変数が 11 個あった。ここへ寄せると 0 になる。
      */
-    public static boolean vehicleCollisionCancelled(final Entity vehicle, final Entity other) {
+    public static boolean vehicleCollision(final Entity vehicle, final Entity other) {
         if (!vehicleCollideListening()) {
-            return false;
+            return true;
         }
 
-        return !new VehicleEntityCollisionEvent(
+        return new VehicleEntityCollisionEvent(
                 (org.bukkit.entity.Vehicle) vehicle.getBukkitEntity(), other.getBukkitEntity()).callEvent();
     }
 

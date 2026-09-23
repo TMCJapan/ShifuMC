@@ -1,0 +1,70 @@
+// 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
+// 呼ぶのは ChunkMap.getChunkStatusOnDisk と ServerLevel の無名クラス(どちらも Shifu が足したもの)、
+// CraftWorld.loadChunk、RegionFile の手書きの追加、ThreadedWorldUpgrader。公式のバイトコードの
+// RegionFileStorage には無いので、足す前はそこへ入った時点で NoSuchMethodError になった。
+// Paper は region file のキャッシュの上限を設定(regionFileCacheSize)にし、RegionFile を
+// isChunkData 付きで作る。ここは vanilla の getRegionFile(ChunkPos) を通すので、上限は vanilla の 256 のまま。
+
+// RegionFileStorage.getRegionFileCoordinates
+    // 読んだ位置: D:/.pw182/Paper-Server(HEAD)src/main/java/net/minecraft/world/level/chunk/storage/RegionFileStorage.java:43
+    public static @Nullable ChunkPos getRegionFileCoordinates(Path file) {
+        String fileName = file.getFileName().toString();
+        if (!fileName.startsWith("r.") || !fileName.endsWith(".mca")) {
+            return null;
+        }
+
+        String[] split = fileName.split("\\.");
+
+        if (split.length != 4) {
+            return null;
+        }
+
+        try {
+            int x = Integer.parseInt(split[1]);
+            int z = Integer.parseInt(split[2]);
+
+            return new ChunkPos(x << 5, z << 5);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+// RegionFileStorage.getRegionFileIfLoaded
+    // 読んだ位置: D:/.pw182/Paper-Server(HEAD)src/main/java/net/minecraft/world/level/chunk/storage/RegionFileStorage.java:65
+    public synchronized RegionFile getRegionFileIfLoaded(ChunkPos chunkcoordintpair) {
+        return this.regionCache.getAndMoveToFirst(ChunkPos.asLong(chunkcoordintpair.getRegionX(), chunkcoordintpair.getRegionZ()));
+    }
+
+// RegionFileStorage.chunkExists
+    // 読んだ位置: D:/.pw182/Paper-Server(HEAD)src/main/java/net/minecraft/world/level/chunk/storage/RegionFileStorage.java:69
+    public synchronized boolean chunkExists(ChunkPos pos) throws IOException {
+        RegionFile regionfile = getRegionFile(pos, true);
+
+        return regionfile != null ? regionfile.hasChunk(pos) : false;
+    }
+
+// RegionFileStorage.getRegionFile
+    // existingOnly が真で、キャッシュにも無くファイルも無ければ null(Paper と同じ)。
+    // それ以外は vanilla の getRegionFile(ChunkPos) に渡す。Paper の 3 引数版(ファイルの鎖を取る)は
+    // 呼ぶ先が無いので足さない。
+    // 読んだ位置: D:/.pw182/Paper-Server(HEAD)src/main/java/net/minecraft/world/level/chunk/storage/RegionFileStorage.java:75
+    public synchronized RegionFile getRegionFile(ChunkPos chunkcoordintpair, boolean existingOnly) throws IOException {
+        if (existingOnly
+                && this.regionCache.get(ChunkPos.asLong(chunkcoordintpair.getRegionX(), chunkcoordintpair.getRegionZ())) == null
+                && !Files.exists(this.folder.resolve("r." + chunkcoordintpair.getRegionX() + "." + chunkcoordintpair.getRegionZ() + ".mca"))) {
+            return null;
+        }
+
+        return this.getRegionFile(chunkcoordintpair);
+    }
+
+// RegionFileStorage.RegionFileSizeException
+    // RegionFile.ChunkBuffer(shim が Paper から写したもの)が投げる。このクラスを触ると
+    // Paper の版の RegionFileStorage.java は組まれなくなるので、入れ子のこの型もここで足す。
+    // 読んだ位置: D:/.pw182/Paper-Server(HEAD)src/main/java/net/minecraft/world/level/chunk/storage/RegionFileStorage.java:368
+    public static final class RegionFileSizeException extends RuntimeException {
+
+        public RegionFileSizeException(String message) {
+            super(message);
+        }
+    }

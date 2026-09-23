@@ -1,10 +1,14 @@
 # HorseJumpEvent。乗り手の跳躍を実行する直前
 # 1.18.2 に executeRidersJump は無く、跳躍は travel の中に直に書いてある。
-# 跳ぶ条件の if ごと囲む。取り消されたら playerJumpPendingScale は
-# そのあとの onGround の枝で 0 に戻る。
+# 波括弧なしの if で vanilla の if ごと従わせる形なので、跳ぶ条件を差し込む側にも書く。
+# 書かないと、乗っている間は跳ばなくても毎 tick 発火する。
+# 取り消されたら playerJumpPendingScale はそのあとの onGround の枝で 0 に戻る。
+# 登録が無ければ最初の項で決まり、跳ぶ条件の読み出しも増やさない。
 file: net/minecraft/world/entity/animal/horse/AbstractHorse.java
 anchor:
                 if (this.playerJumpPendingScale > 0.0F && !this.isJumping() && this.onGround) {
                     double d = this.getCustomJump() * this.playerJumpPendingScale * this.getBlockJumpFactor();
 insert:
-    if (dev.shifu.event.EntityEvents.horseJump(this, this.playerJumpPendingScale))
+    if (!dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.HorseJumpEvent.class)
+            || this.playerJumpPendingScale <= 0.0F || this.isJumping() || !this.onGround
+            || dev.shifu.event.EntityEvents.horseJump(this, this.playerJumpPendingScale))

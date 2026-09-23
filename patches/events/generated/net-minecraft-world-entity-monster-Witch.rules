@@ -10,7 +10,8 @@ anchor:
     if (mainHandItem.is(Items.POTION)) {
 insert:
     // Paper start - WitchConsumePotionEvent
-    if (mainHandItem.is(Items.POTION)) {
+    if (dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.entity.WitchConsumePotionEvent.class)
+            && mainHandItem.is(Items.POTION)) {
         com.destroystokyo.paper.event.entity.WitchConsumePotionEvent event = new com.destroystokyo.paper.event.entity.WitchConsumePotionEvent((org.bukkit.entity.Witch) this.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(mainHandItem));
         mainHandItem = event.callEvent() ? org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getPotion()) : ItemStack.EMPTY;
     }

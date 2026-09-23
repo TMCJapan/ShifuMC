@@ -7,21 +7,23 @@ anchor:
             this.broadcastAndSend(new ClientboundSetEntityMotionPacket(this.entity));
 insert:
     // CraftBukkit start - Create PlayerVelocity event
-    boolean cancelled = false;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerVelocityEvent.class)) {
+        boolean cancelled = false;
 
-    if (this.entity instanceof ServerPlayer) {
-        org.bukkit.entity.Player player = (org.bukkit.entity.Player) this.entity.getBukkitEntity();
-        org.bukkit.util.Vector velocity = player.getVelocity();
+        if (this.entity instanceof ServerPlayer) {
+            org.bukkit.entity.Player player = (org.bukkit.entity.Player) this.entity.getBukkitEntity();
+            org.bukkit.util.Vector velocity = player.getVelocity();
 
-        org.bukkit.event.player.PlayerVelocityEvent event = new org.bukkit.event.player.PlayerVelocityEvent(player, velocity.clone());
-        if (!event.callEvent()) {
-            cancelled = true;
-        } else if (!velocity.equals(event.getVelocity())) {
-            player.setVelocity(event.getVelocity());
+            org.bukkit.event.player.PlayerVelocityEvent event = new org.bukkit.event.player.PlayerVelocityEvent(player, velocity.clone());
+            if (!event.callEvent()) {
+                cancelled = true;
+            } else if (!velocity.equals(event.getVelocity())) {
+                player.setVelocity(event.getVelocity());
+            }
         }
-    }
 
-    if (cancelled) {
-        return;
+        if (cancelled) {
+            return;
+        }
     }
     // CraftBukkit end

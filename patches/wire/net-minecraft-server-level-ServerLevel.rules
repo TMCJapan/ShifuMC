@@ -33,6 +33,16 @@ insert-after:
 
 # 死亡の落とし物と経験値オーブを控えに移す。控えている最中でなければ何もしないので、
 # プラグインを入れていないときに増える仕事は参照 1 つの比較。
+# 4c9fae4 で消えていた。無いと、PlayerDeathEvent に登録があるときに落とし物が控えに入らず
+# 世界に出たまま、keepInventory や取り消しで持ち物も戻るので複製になる。
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    private boolean addEntity(Entity entity) {
+insert-after:
+    if (dev.shifu.event.ShifuEvents.catchDrop(entity)) {
+        return true;
+    }
+
 # 1.18.2 の ServerLevel は gameEventDispatcher を持たない(配りはチャンクごと)。
 # worldBorder は Level の構築子で作られているので、構築子の中ならどこでも入る。
 file: net/minecraft/server/level/ServerLevel.java
@@ -40,3 +50,19 @@ anchor:
         this.getWorldBorder().setAbsoluteMaxSize(server.getAbsoluteMaxWorldSize());
 insert-after:
     this.getWorldBorder().world = this;
+
+# Entity.valid。CraftEntity.isValid() と、Paper の teleportTo(ServerLevel, PositionImpl) が見る。
+# 4c9fae4 で消えていたので、全エンティティで false のままになり、プラグインからの別世界への
+# テレポートが必ず失敗し、EntityEvents.mount も先頭で return していた。
+# 1.18.2 に updateDynamicGameEventListener は無い。onTrackingStart の末尾は EnderDragonPart の登録で、
+# その後ろには generated の entityAddToWorld が入る。Paper は valid を立ててからイベントを出すので、前に置く。
+# 読んだ位置: D:/.pw182/Paper-Server の HEAD:src/main/java/net/minecraft/server/level/ServerLevel.java(onTrackingStart の `entity.valid = true; // CraftBukkit`)
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+            if (entity instanceof EnderDragon enderDragon) {
+                for (EnderDragonPart enderDragonPart : enderDragon.getSubEntities()) {
+                    ServerLevel.this.dragonParts.put(enderDragonPart.getId(), enderDragonPart);
+                }
+            }
+insert:
+    entity.valid = true;

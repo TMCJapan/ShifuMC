@@ -1,0 +1,48 @@
+# 逆コンパイラが式の意味を変えたところを、公式と同じ命令列に戻す。
+# ソースの形だけでは「挙動を変えていない」と言えないので、規則ごとに method: で直すメソッドを名指しする。
+# tools/postcompile.sh の SemDiff が、そのメソッド(中で作る無名クラスと lambda を含む)が公式の命令列と
+# 一致することを確かめ、違えば組むのを止める。verify_additive.py は書き換えがそのメソッドの中に
+# 収まっていることを見る。公式の形は、後処理が比べる公式の jar を javap -c で読んだ。
+# 見つけ方は 2026-09-23 の調べ(素の逆コンパイルに patches/decompile だけを当ててコンパイルし、
+# 公式と命令列・局所変数の出どころを比べた)。
+
+# getDismountLocationInDirection の do-while。公式は getY() < 上限 のあいだ 1 段ずつ上を探す
+# (dcmpg; iflt で先頭へ戻る)。逆コンパイラが while (!(… < …)) と書いたので、コンパイルし直すと
+# ifge になり、1 段目を見たところで探すのをやめていた。馬・ロバ・ラマなどから降りるときに、
+# vanilla なら見つかる一段上の降りる位置を見ない
+file: net/minecraft/world/entity/animal/horse/AbstractHorse.java
+method: net/minecraft/world/entity/animal/horse/AbstractHorse getDismountLocationInDirection(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/entity/LivingEntity;)Lnet/minecraft/world/phys/Vec3;
+replace:
+            } while (!(mutableBlockPos.getY() < d3));
+with:
+            } while (mutableBlockPos.getY() < d3);
+
+# handleFill で、逆コンパイラが double への cast を落としたところ。公式は
+# (double)getX() + 0.13125F + 0.7375F * (double)nextFloat() を double で計算する。cast が無いと
+# float で計算してから広げるので、粒子の位置の丸めが変わる。粒子はクライアントでだけ出る
+file: net/minecraft/world/level/block/ComposterBlock.java
+method: net/minecraft/world/level/block/ComposterBlock handleFill(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Z)V
+replace:
+                pos.getX() + 0.13125F + 0.7375F * random.nextFloat(),
+with:
+                (double)pos.getX() + 0.13125F + 0.7375F * (double)random.nextFloat(),
+
+file: net/minecraft/world/level/block/ComposterBlock.java
+method: net/minecraft/world/level/block/ComposterBlock handleFill(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Z)V
+replace:
+                pos.getZ() + 0.13125F + 0.7375F * random.nextFloat(),
+with:
+                (double)pos.getZ() + 0.13125F + 0.7375F * (double)random.nextFloat(),
+
+# extractProduce も同じ。公式は (double)(nextFloat() * 0.7F) + 0.15F と double で足す。cast が無いと
+# float で足してから広げるので、堆肥箱から出る骨粉の ItemEntity の位置が vanilla と少しずれる
+file: net/minecraft/world/level/block/ComposterBlock.java
+method: net/minecraft/world/level/block/ComposterBlock extractProduce(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/block/state/BlockState;
+replace:
+            double d = world.random.nextFloat() * 0.7F + 0.15F;
+            double d1 = world.random.nextFloat() * 0.7F + 0.060000002F + 0.6;
+            double d2 = world.random.nextFloat() * 0.7F + 0.15F;
+with:
+            double d = (double)(world.random.nextFloat() * 0.7F) + 0.15F;
+            double d1 = (double)(world.random.nextFloat() * 0.7F) + 0.060000002F + 0.6;
+            double d2 = (double)(world.random.nextFloat() * 0.7F) + 0.15F;

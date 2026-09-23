@@ -44,18 +44,38 @@ with:
         return world.bukkitName; // Shifu - vanilla は次元でフォルダを分けないので、名前は ServerLevel が持つ
 
 # 世界ごとのスポーン。vanilla の nether / end の serverLevelData は DerivedLevelData で、setSpawn / getSharedSpawnPos が
-# 主世界のものへ通る。主世界以外は ServerLevel.shifuSpawn(hand)に置いて読む。
+# 主世界のものへ通る。主世界以外は ServerLevel の次元別ファイルに保存して読む。
 replace:
         BlockPos spawn = this.world.getSharedSpawnPos();
 with:
-        BlockPos spawn = this.world.shifuSpawn != null ? this.world.shifuSpawn : this.world.getSharedSpawnPos(); // Shifu
+        BlockPos spawn = this.world.shifuGetSpawn() != null ? this.world.shifuGetSpawn() : this.world.getSharedSpawnPos(); // Shifu
 
 replace:
         float yaw = this.world.getSharedSpawnAngle();
 with:
-        float yaw = this.world.shifuSpawn != null ? this.world.shifuSpawnAngle : this.world.getSharedSpawnAngle(); // Shifu
+        float yaw = this.world.shifuGetSpawn() != null ? this.world.shifuGetSpawnAngle() : this.world.getSharedSpawnAngle(); // Shifu
 
 replace:
             world.setDefaultSpawnPos(new BlockPos(x, y, z), angle); // Paper - use WorldServer#setSpawn
 with:
-            if (world.serverLevelData instanceof net.minecraft.world.level.storage.PrimaryLevelData) { world.setDefaultSpawnPos(new BlockPos(x, y, z), angle); } else { world.shifuSpawn = new BlockPos(x, y, z); world.shifuSpawnAngle = angle; } // Shifu - 主世界以外は世界ごとの欄へ
+            if (world.serverLevelData instanceof net.minecraft.world.level.storage.PrimaryLevelData) { world.setDefaultSpawnPos(new BlockPos(x, y, z), angle); } else { final Location shifuBefore = dev.shifu.event.PlayerEvents.spawnBefore(world); world.shifuSetSpawn(new BlockPos(x, y, z), angle); dev.shifu.event.PlayerEvents.spawnChanged(world, shifuBefore); } // Shifu - 主世界以外は次元フォルダへ永続化。SpawnChangeEvent は主世界なら vanilla の setDefaultSpawnPos に差し込んだ所で出るので、こちらでも同じ 2 つを呼ぶ
+
+# setKeepSpawnInMemory も世界のスポーンから ticket を立てる。同じく主世界以外は ServerLevel の
+# 次元別ファイルの方を見る(見ないと、地獄の spawn を動かしたあとの外し方が主世界の座標になる)。
+replace:
+        BlockPos chunkcoordinates = this.world.getSharedSpawnPos();
+with:
+        BlockPos chunkcoordinates = this.world.shifuGetSpawn() != null ? this.world.shifuGetSpawn() : this.world.getSharedSpawnPos(); // Shifu
+
+# regenerateChunk は最後に ThreadedLevelLightEngine.relight(Starlight)で周りの 9 チャンクの光を計算し直す。
+# vanilla の ThreadedLevelLightEngine に relight は無く、ブロックを消して生成し直したあとで
+# NoSuchMethodError になっていた(チャンクは作り直され、光は古いまま残る)。
+# この版の World.regenerateChunk の javadoc は「@return Whether the chunk was actually regenerated」なので、
+# 何もせずに false を返す。新しい Paper は UnsupportedOperationException を投げるが、この版の API には書かれていない。
+# 読んだ位置: /d/.pw182/Paper-API/src/main/java/org/bukkit/World.java の regenerateChunk、
+# /d/.pw182/Paper-Server(HEAD)src/main/java/org/bukkit/craftbukkit/CraftWorld.java の regenerateChunk
+replace:
+        // Paper start - implement regenerateChunk method
+with:
+        if (true) return false; // Shifu - vanilla の光のエンジンに relight が無い
+        // Paper start - implement regenerateChunk method
