@@ -5,9 +5,11 @@ file: net/minecraft/world/entity/ai/behavior/TryLaySpawnOnWaterNearLand.java
 anchor:
     level.setBlock(blockPos2, blockState, Block.UPDATE_ALL);
 insert:
-    // CraftBukkit start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(entity, blockPos2, blockState)) {
-        isPregnant.erase();
-        return true;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityChangeBlockEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(entity, blockPos2, blockState)) {
+            isPregnant.erase();
+            return true;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

@@ -1,0 +1,43 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: org/bukkit/craftbukkit/command/CraftCommandMap.java
+
+# Bukkit が自分で登録するコマンド(help / reload / version / timings / plugins)は、
+# 接頭辞の付いた名前だけにする。
+#
+# SimpleCommandMap は構築子で setDefaultCommands()、CraftServer.enablePlugins(POSTWORLD) で
+# setFallbackCommands() を呼ぶ。どちらもプラグインの数に関係なく走り、register は
+# `<名前>` と `bukkit:<名前>` の両方を knownCommands に入れる。既にある vanilla の
+# コマンドは VanillaCommandWrapper.canBeOverriden() が true を返すので上書きされ、
+# BukkitBrigForwardingMap.put は dispatcher の vanilla のノードを消す。
+#
+# Paper は Commands の構築子に modern alias registration を足して `minecraft:<名前>` を
+# 残しているが、それは vanilla の行の書き換えなので Shifu には入っていない。
+# 入れないまま plain な名前を渡すと、プラグインを 1 つも入れていなくても
+# /help と /reload が vanilla と変わり、戻す手段も無くなる。
+replace:
+    public Map<String, Command> getKnownCommands() {
+with:
+    // Shifu - 既定のコマンドは接頭辞つきだけにする
+    @Override
+    public boolean register(String label, String fallbackPrefix, Command command) {
+        String owner = command.getClass().getName();
+
+        if (!owner.startsWith("org.bukkit.command.defaults.") && !owner.startsWith("co.aikar.timings.")) {
+            return super.register(label, fallbackPrefix, command);
+        }
+
+        String prefix = fallbackPrefix.toLowerCase(java.util.Locale.ROOT).trim();
+        String name = label.toLowerCase(java.util.Locale.ROOT).trim();
+        this.knownCommands.put(prefix + ":" + name, command);
+
+        for (String alias : command.getAliases()) {
+            this.knownCommands.put(prefix + ":" + alias.toLowerCase(java.util.Locale.ROOT).trim(), command);
+        }
+
+        command.setLabel(prefix + ":" + name);
+        command.register(this);
+        return false;
+    }
+
+    public Map<String, Command> getKnownCommands() {

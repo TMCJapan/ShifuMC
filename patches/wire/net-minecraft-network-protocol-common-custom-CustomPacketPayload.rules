@@ -1,0 +1,24 @@
+# Bukkit 層の配線。vanilla の行は変えない。
+
+# 送る側のプラグインメッセージの本文。
+#
+# vanilla は id で codec を選び、知らない id には DiscardedPayload の codec を返す。
+# その codec の書く側は空なので、Player#sendPluginMessage も BungeeCord / Velocity の
+# チャンネルも sendSupportedChannels の minecraft:register も、チャンネル名だけで本文 0 バイトで届いていた。
+# Paper は DiscardedPayload の record に本文を足して codec を書き換えるが、
+# vanilla の行と record の成分は触れないので、送るときだけ使う型
+# (dev.shifu.event.PluginMessages.Outgoing)を id を書いたところで拾って本文を書く。
+#
+# id ではなく型で分けるので、プラグインのチャンネル名が vanilla や MOD の登録済みの型と
+# 重なっても、encoder の cast(ClassCastException)には進まない。
+# 受け取る側は触っていない(DiscardedPayload の codec が捨てる直前の控えのまま)。
+#
+# 読んだ位置:
+#   paper-server patches/sources/net/minecraft/network/protocol/common/custom/DiscardedPayload.java.patch
+file: net/minecraft/network/protocol/common/custom/CustomPacketPayload.java
+anchor:
+    buffer.writeIdentifier(type.id());
+insert-after:
+    if (dev.shifu.event.PluginMessages.write(buffer, payload)) {
+        return;
+    }

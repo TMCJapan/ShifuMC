@@ -9,7 +9,7 @@
 |---|---|
 | コンパイル | エラー 0(`once.sh`) |
 | 差し込み | 発火 828 箇所 / 337 ファイル、配線 75 箇所 / 38 ファイル、落ちた規則 0 |
-| 追加だけであること | `verify_additive.py` が通る(消えた 23 行は可視性のみ) |
+| 追加だけであること | closure の最後に `verify_additive.py` が走る。2026-09-23 に当てた木では 24 件が決めた形に収まらず、closure はそこで止まる |
 | 起動 | `Done (0.440s)!`。例外 0 |
 | Bukkit の世界 | 3 つ(`world` / `world_nether` / `world_the_end`)。環境と UUID は別々 |
 | スケジューラ | 毎 tick 走る。`MinecraftServer.currentTick` も進む |
@@ -38,7 +38,7 @@
 | | |
 |---|---|
 | 新しいプレイヤーが nether に参加する | vanilla の nether / end の `serverLevelData` は `DerivedLevelData` で、`CraftWorld.setSpawnLocation` の `setSpawn` が主世界の `PrimaryLevelData` へ通る。1.21.9 以降の `RespawnData` は次元を持つので、Multiverse が nether の spawn を置いた時点でサーバーの `effectiveRespawnData` が nether になり、新しいプレイヤーが `world_nether` の (0.5, 1.0, 0.5) に参加していた。主世界以外は `ServerLevel.shifuSpawn`(hand)に置いて `getSpawnLocation` もそこから読む。drive で nether を (10, 64, 10) にしても主世界は (0, 91, 0) のまま、参加は `world` |
-| MOD 無しで参加の直後に落ちる | `VerifyError: Inconsistent stackmap frames`(`ServerGamePacketListenerImpl.handleUseItem`、次に `DimensionDataStorage.readTagFromDisk`)。後処理の `LvtMatch` が slot を入れ替えるが frame を並べ替えない古い版だった(`main` / `ver/1.19.4` の版へ揃えた)のと、`--vars` が try-with-resources の一時変数(frame では top)を生きている slot に重ねるため。MOD 入りだと Mixin が frame を計算し直すので見えず、9-14 の検証(MOD 125 個)では通っていた。`--vars` を外すと MOD 入りの起動が `Environment` の直後で黙って止まる(戻した)。代わりに `tools/lvtmatch` の `FrameFix` を後処理に足し、全クラスの frame を `ClassWriter.COMPUTE_FRAMES` で計算し直す(`ClassWriter(reader, ...)` だと触っていないメソッドは元の bytes を写すので frame が残る。reader を渡さない)。MOD 無し・MOD 125 個の両方で drive の一連が通る |
+| MOD 無しで参加の直後に落ちる | `VerifyError: Inconsistent stackmap frames`(`ServerGamePacketListenerImpl.handleUseItem`、次に `DimensionDataStorage.readTagFromDisk`)。後処理の `LvtMatch` が slot を入れ替えるが frame を並べ替えない古い版だった(`main` / `ver/1.19.4` の版へ揃えた)のと、`--vars` が try-with-resources の一時変数(frame では top)を生きている slot に重ねるため。MOD 入りだと Mixin が frame を計算し直すので見えず、9-14 の検証(MOD 125 個)では通っていた。`--vars` を外すと MOD 入りの起動が `Environment` の直後で黙って止まる(戻した)。代わりに `tools/lvtmatch` の `FrameFix` を後処理に足し、全クラスの frame を `ClassWriter.COMPUTE_FRAMES` で計算し直す(`ClassWriter(reader, ...)` だと触っていないメソッドは元の bytes を写すので frame が残る。reader を渡さない)。2026-09-23 から、FrameFix は LvtMatch が書き換えたメソッドと LambdaMatch が並べ替えたクラスだけに絞った(全クラスでは javac が top と書いた死んだ slot にも型が入り、Mixin から見える局所変数が増えていた)。MOD 無し・MOD 125 個の両方で drive の一連が通る |
 | 別の世界へのテレポート | drive の the_end への teleport → true、`Bukkit.getPlayer(uuid) == bot`、戻りも通る(1.21.11 の respawn は vanilla が新しい ServerPlayer を作るので、1.20.6 以前の restoreFrom の直しは要らない) |
 | adventure の boss bar | Paper は `BossEvent` に欄 `adventure` を足して getter で先に見る。Shifu の getter は vanilla なので、`BossBarImplementationImpl` が送る packet は作ったときの名前・色、割合 1.0 のままになる形だった。listener で変わった値を `ServerBossEvent` の setter に写す(`io-papermc-paper-adventure-BossBarImplementationImpl.rules`)。drive の boss bar(0.25 BLUE → 0.75 / 名前 / RED)が bot に add → progress → name → style → remove の順で届く(MOD 125 個 + プラグイン 26 個の mix で確認) |
 | nether / end の `serverLevelData` | vanilla では `DerivedLevelData` なので、CraftWorld の `PrimaryLevelData` への cast(worldGenOptions、settings.hardcore)は nether / end で落ちる形だった。`PrimaryLevelData` でなければサーバーの `WorldData` を読む(他の版と同じ) |
@@ -99,8 +99,8 @@ MOD とプラグインが同じサーバーで同時に動き、プレイヤー�
 | 1200 tick 走らせた世界の一致 | vanilla 同士 17 チャンク、それを引いた Shifu との差は 2 |
 | 公式の局所変数が公式の番号に座っていないメソッド | 182 → 21 |
 
-触った vanilla の行は 3 種類だけで、`python tools/verify_additive.py` が形を確かめる。
-内訳は [ARCHITECTURE.md](ARCHITECTURE.md) の「vanilla の行に触っている 3 か所」。
+vanilla の行を書き換えてよいのは 4 種類で、`tools/verify_additive.py` が closure の最後に形を確かめる(2026-09-23 は形に収まらないものが 24 件残っていて、closure はそこで止まる)。
+内訳は [ARCHITECTURE.md](ARCHITECTURE.md) の「vanilla の行に触っている 4 か所」。
 
 ## プレイヤー経路(実測、2026-09-03)
 
@@ -159,8 +159,9 @@ EssentialsX が知っているバージョンの一覧に 26.2 が無いため�
 
 `plugins` と `version` は通らない。この 2 つは Bukkit ではなく Paper 独自のコマンド
 (`io.papermc.paper.command.PaperCommands.registerCommands`)で、vanilla に無いので
-入れていない。Bukkit の `SimpleCommandMap.setFallbackCommands` が登録するのは
-`/bukkit:help` だけ。
+入れていない。Bukkit が自分で登録するコマンド(`SimpleCommandMap` の構築子と `setFallbackCommands` が
+登録するもの)は、`patches/adapter/org-bukkit-craftbukkit-command-CraftCommandMap.rules` で
+`bukkit:` の付いた名前(`/bukkit:help` など)だけにしている。`/help` と `/reload` は vanilla のもの。
 
 ## MOD とプラグインを同時に(実測、2026-09-04)
 

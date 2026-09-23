@@ -55,6 +55,28 @@ public final class BlockEvents {
     // ------------------------------------------------------------ ディスペンサー
 
     /**
+     * LootGenerateEvent。器に戦利品を詰める直前。
+     *
+     * <p>登録が無ければ null を返して、呼ぶ側は vanilla の並びをそのまま使う。
+     * {@code CraftEventFactory.callLootGenerateEvent} は器のブロックエンティティの
+     * 写しと ItemStack の写しを作るので、登録を見ずに呼ぶと、チェストを開くたびに
+     * プラグイン 0 個でもその分の仕事が増えていた。
+     *
+     * @return 発火したイベント。登録が無ければ null
+     */
+    public static org.bukkit.event.world.LootGenerateEvent lootGenerate(
+            final Container inventory,
+            final net.minecraft.world.level.storage.loot.LootTable table,
+            final net.minecraft.world.level.storage.loot.LootContext context,
+            final List<ItemStack> loot, final boolean plugin) {
+        if (!listening(org.bukkit.event.world.LootGenerateEvent.getHandlerList())) {
+            return null;
+        }
+
+        return CraftEventFactory.callLootGenerateEvent(inventory, table, context, loot, plugin);
+    }
+
+    /**
      * BlockFailedDispenseEvent。空のディスペンサー(ドロッパー)が音を出す直前。
      *
      * @return 音と GameEvent を出してよいか
@@ -1204,8 +1226,12 @@ public final class BlockEvents {
         return event.isBurning() ? event.getBurnTime() : 0;
     }
 
+    /**
+     * 燃料を減らしてよいか。登録が無ければ見ない(1.21.11 の呼ぶ側は登録があるときだけ
+     * {@link #furnaceBurn} を呼ぶので、前にイベントが false にした値が残っていることがある)。
+     */
     public static boolean furnaceConsumesFuel() {
-        return furnaceConsumesFuel;
+        return !listening(org.bukkit.event.inventory.FurnaceBurnEvent.getHandlerList()) || furnaceConsumesFuel;
     }
 
     public static boolean listeningFurnaceStart() {

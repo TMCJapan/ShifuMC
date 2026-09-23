@@ -5,6 +5,13 @@
 # vanilla の setBlock の行は残す。置く前に控えを取り(登録が無ければ null)、
 # 置いたあとに発火して、取り消されたら控えに戻す。通る経路は vanilla のまま。
 # アンカーが 2 行以上のものは、setBlock の行だけでは定まらないので直前の行を足してある。
+#
+# Paper が発火を if (!...) { return; } で置いて抜けているものは、発火のあとに同じ文で抜ける。
+# 大釜で vanilla が setBlock より先に手持ちを入れ替えるものは、入れ替えの手前で発火する
+# (置いたあとに戻す形では手持ちが戻らない)。--covered に渡した規則と同じ位置のものは出さない。
+#
+#     python tools/make_block_events.py <patches/sources> <木> patches/events/block-change.rules \
+#         --covered patches/events/generated
 
 # handleBlockFormEvent
 file: net/minecraft/server/level/ServerLevel.java
@@ -76,7 +83,9 @@ anchor:
 insert:
     final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock8 = dev.shifu.event.ShifuEvents.blockChangeBefore(level, blockPos, org.bukkit.event.block.BlockGrowEvent.getHandlerList());
 insert-after:
-    dev.shifu.event.ShifuEvents.blockGrow(level, blockPos, shifuBlock8, net.minecraft.world.level.block.Block.UPDATE_ALL);
+    if (!dev.shifu.event.ShifuEvents.blockGrow(level, blockPos, shifuBlock8, net.minecraft.world.level.block.Block.UPDATE_ALL)) {
+        return;
+    }
 
 # handleBlockGrowEvent
 file: net/minecraft/world/level/block/CocoaBlock.java
@@ -139,7 +148,9 @@ anchor:
 insert:
     final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock15 = dev.shifu.event.ShifuEvents.blockChangeBefore(level, pos, org.bukkit.event.block.BlockGrowEvent.getHandlerList());
 insert-after:
-    dev.shifu.event.ShifuEvents.blockGrow(level, pos, shifuBlock15, Block.UPDATE_CLIENTS);
+    if (!dev.shifu.event.ShifuEvents.blockGrow(level, pos, shifuBlock15, Block.UPDATE_CLIENTS)) {
+        return;
+    }
 
 # handleBlockSpreadEvent
 file: net/minecraft/world/level/block/FireBlock.java
@@ -256,7 +267,9 @@ anchor:
 insert:
     final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock28 = dev.shifu.event.ShifuEvents.blockChangeBefore(level, blockPos, org.bukkit.event.block.BlockGrowEvent.getHandlerList());
 insert-after:
-    dev.shifu.event.ShifuEvents.blockGrow(level, blockPos, shifuBlock28, net.minecraft.world.level.block.Block.UPDATE_ALL);
+    if (!dev.shifu.event.ShifuEvents.blockGrow(level, blockPos, shifuBlock28, net.minecraft.world.level.block.Block.UPDATE_ALL)) {
+        return;
+    }
 
 # handleBlockGrowEvent
 file: net/minecraft/world/level/block/StemBlock.java
@@ -292,7 +305,9 @@ anchor:
 insert:
     final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock32 = dev.shifu.event.ShifuEvents.blockChangeBefore(level, pos, org.bukkit.event.block.BlockGrowEvent.getHandlerList());
 insert-after:
-    dev.shifu.event.ShifuEvents.blockGrow(level, pos, shifuBlock32, Block.UPDATE_CLIENTS);
+    if (!dev.shifu.event.ShifuEvents.blockGrow(level, pos, shifuBlock32, Block.UPDATE_CLIENTS)) {
+        return;
+    }
 
 # handleBlockSpreadEvent
 file: net/minecraft/world/level/block/VineBlock.java
@@ -391,4 +406,6 @@ anchor:
 insert:
     final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock43 = dev.shifu.event.ShifuEvents.blockChangeBefore(level, pos, org.bukkit.event.block.BlockFormEvent.getHandlerList());
 insert-after:
-    dev.shifu.event.ShifuEvents.blockForm(level, pos, shifuBlock43, Block.UPDATE_ALL, null);
+    if (!dev.shifu.event.ShifuEvents.blockForm(level, pos, shifuBlock43, Block.UPDATE_ALL, null)) {
+        return;
+    }

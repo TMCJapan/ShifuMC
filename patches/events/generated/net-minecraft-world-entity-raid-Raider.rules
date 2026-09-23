@@ -5,8 +5,10 @@ file: net/minecraft/world/entity/raid/Raider.java
 anchor:
     EquipmentSlot equipmentSlot = EquipmentSlot.HEAD;
 insert:
-    // Paper start - EntityPickupItemEvent fixes
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPickupItemEvent(this, entity, 0).isCancelled()) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityPickupItemEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - EntityPickupItemEvent fixes
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPickupItemEvent(this, entity, 0).isCancelled()) {
+            return;
+        }
+        // Paper end - EntityPickupItemEvent fixes
     }
-    // Paper end - EntityPickupItemEvent fixes

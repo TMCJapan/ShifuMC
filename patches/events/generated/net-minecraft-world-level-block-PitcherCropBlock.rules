@@ -5,4 +5,6 @@ file: net/minecraft/world/level/block/PitcherCropBlock.java
 anchor:
     if (level instanceof ServerLevel serverLevel && entity instanceof Ravager && serverLevel.getGameRules().get(GameRules.MOB_GRIEFING)) {
 insert:
-    if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.EntityInsideBlockEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+    }

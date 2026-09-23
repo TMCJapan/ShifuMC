@@ -18,6 +18,10 @@
 # 「isRemoved で登録しなかった」ときなので、呼び手の扱いは変わらない。
 # doEntityAddEventCalling が中で entity.discard も済ませる。
 #
+# 登録が無ければ呼ばない。doEntityAddEventCalling は分類に関わらずイベントを組み立て、
+# CreatureSpawnEvent では spawn-animals / spawn-monsters の設定で取り消しもする。
+# 登録を見ずに呼んでいたので、プラグイン 0 個でも MOB が 1 体湧くたびにイベントを作っていた。
+#
 # 読んだ位置(Paper 26.2):
 #   paper-server patches/sources/net/minecraft/server/level/ServerLevel.java.patch:667
 #   paper-server src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:721
@@ -29,10 +33,26 @@ insert:
         return true;
     }
 
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.doEntityAddEventCalling(
+    if (dev.shifu.event.ShifuEvents.entityAddListening()
+            && !dev.shifu.event.ShifuEvents.teleportAdding()
+            && !org.bukkit.craftbukkit.event.CraftEventFactory.doEntityAddEventCalling(
             this, entity,
             entity.spawnReason != null
                     ? entity.spawnReason
                     : org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.DEFAULT)) {
         return false;
     }
+
+# 次元を移る個体(Entity.changeDimension → addDuringTeleport)ではスポーンのイベントを出さない。
+# Paper は理由 null で addEntity を呼んで飛ばしている(SPIGOT-6415)。出すと、取り消しで
+# doEntityAddEventCalling が discard し、移る前の個体はもう消えているので実体がどこにも残らない。
+# addEntity を前後で挟んで印を付け、上の差し込みはその間は発火しない。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerLevel.java.patch(addDuringTeleport、addEntity)
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    this.addEntity(entity);
+insert:
+    dev.shifu.event.ShifuEvents.beginTeleportAdd();
+insert-after:
+    dev.shifu.event.ShifuEvents.endTeleportAdd();

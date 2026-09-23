@@ -5,7 +5,9 @@ file: net/minecraft/world/entity/animal/dolphin/Dolphin.java
 anchor:
     this.onItemPickup(entity);
 insert:
-    // CraftBukkit start - call EntityPickupItemEvent
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPickupItemEvent(this, entity, 0).isCancelled()) return;
-    item = entity.getItem(); // CraftBukkit- update ItemStack from event
-    // CraftBukkit end
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityPickupItemEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start - call EntityPickupItemEvent
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPickupItemEvent(this, entity, 0).isCancelled()) return;
+        item = entity.getItem(); // CraftBukkit- update ItemStack from event
+        // CraftBukkit end
+    }

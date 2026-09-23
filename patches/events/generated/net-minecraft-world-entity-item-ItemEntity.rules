@@ -5,76 +5,80 @@ file: net/minecraft/world/entity/item/ItemEntity.java
 anchor:
     merge(destinationEntity, destinationStack, originStack);
 insert:
-    // CraftBukkit start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callItemMergeEvent(originEntity, destinationEntity)) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.ItemMergeEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callItemMergeEvent(originEntity, destinationEntity)) {
+            return;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end
 
 # EntityPickupItemEvent, PlayerAttemptPickupItemEvent, PlayerPickupItemEvent
 file: net/minecraft/world/entity/item/ItemEntity.java
 anchor:
     if (this.pickupDelay == 0 && (this.target == null || this.target.equals(entity.getUUID())) && entity.getInventory().add(item)) {
 insert:
-    // CraftBukkit start - fire PlayerPickupItemEvent
-    int canHold = entity.getInventory().canHold(item);
-    int remaining = count - canHold;
-    boolean flyAtPlayer = false; // Paper
+    if ((dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerAttemptPickupItemEvent.class) || dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerPickupItemEvent.class) || dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityPickupItemEvent.class))) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start - fire PlayerPickupItemEvent
+        int canHold = entity.getInventory().canHold(item);
+        int remaining = count - canHold;
+        boolean flyAtPlayer = false; // Paper
 
-    // Paper start - PlayerAttemptPickupItemEvent
-    if (this.pickupDelay <= 0) {
-        org.bukkit.event.player.PlayerAttemptPickupItemEvent attemptEvent = new org.bukkit.event.player.PlayerAttemptPickupItemEvent((org.bukkit.entity.Player) entity.getBukkitEntity(), (org.bukkit.entity.Item) this.getBukkitEntity(), remaining);
-        this.level().getCraftServer().getPluginManager().callEvent(attemptEvent);
+        // Paper start - PlayerAttemptPickupItemEvent
+        if (this.pickupDelay <= 0) {
+            org.bukkit.event.player.PlayerAttemptPickupItemEvent attemptEvent = new org.bukkit.event.player.PlayerAttemptPickupItemEvent((org.bukkit.entity.Player) entity.getBukkitEntity(), (org.bukkit.entity.Item) this.getBukkitEntity(), remaining);
+            this.level().getCraftServer().getPluginManager().callEvent(attemptEvent);
 
-        flyAtPlayer = attemptEvent.getFlyAtPlayer();
-        if (attemptEvent.isCancelled()) {
-            if (flyAtPlayer) {
-                entity.take(this, count);
+            flyAtPlayer = attemptEvent.getFlyAtPlayer();
+            if (attemptEvent.isCancelled()) {
+                if (flyAtPlayer) {
+                    entity.take(this, count);
+                }
+
+                return;
+            }
+        }
+
+        if (this.pickupDelay <= 0 && canHold > 0) {
+            item.setCount(canHold);
+            // Call legacy event
+            org.bukkit.event.player.PlayerPickupItemEvent playerEvent = new org.bukkit.event.player.PlayerPickupItemEvent((org.bukkit.entity.Player) entity.getBukkitEntity(), (org.bukkit.entity.Item) this.getBukkitEntity(), remaining);
+            playerEvent.setCancelled(!playerEvent.getPlayer().getCanPickupItems());
+            this.level().getCraftServer().getPluginManager().callEvent(playerEvent);
+            flyAtPlayer = playerEvent.getFlyAtPlayer(); // Paper
+            if (playerEvent.isCancelled()) {
+                item.setCount(count); // SPIGOT-5294 - restore count
+                // Paper start
+                if (flyAtPlayer) {
+                    entity.take(this, count);
+                }
+                // Paper end
+                return;
             }
 
-            return;
-        }
-    }
-
-    if (this.pickupDelay <= 0 && canHold > 0) {
-        item.setCount(canHold);
-        // Call legacy event
-        org.bukkit.event.player.PlayerPickupItemEvent playerEvent = new org.bukkit.event.player.PlayerPickupItemEvent((org.bukkit.entity.Player) entity.getBukkitEntity(), (org.bukkit.entity.Item) this.getBukkitEntity(), remaining);
-        playerEvent.setCancelled(!playerEvent.getPlayer().getCanPickupItems());
-        this.level().getCraftServer().getPluginManager().callEvent(playerEvent);
-        flyAtPlayer = playerEvent.getFlyAtPlayer(); // Paper
-        if (playerEvent.isCancelled()) {
-            item.setCount(count); // SPIGOT-5294 - restore count
-            // Paper start
-            if (flyAtPlayer) {
-                entity.take(this, count);
+            // Call newer event afterwards
+            org.bukkit.event.entity.EntityPickupItemEvent entityEvent = new org.bukkit.event.entity.EntityPickupItemEvent(entity.getBukkitEntity(), (org.bukkit.entity.Item) this.getBukkitEntity(), remaining);
+            entityEvent.setCancelled(!entityEvent.getEntity().getCanPickupItems());
+            this.level().getCraftServer().getPluginManager().callEvent(entityEvent);
+            if (entityEvent.isCancelled()) {
+                item.setCount(count); // SPIGOT-5294 - restore count
+                return;
             }
-            // Paper end
-            return;
-        }
 
-        // Call newer event afterwards
-        org.bukkit.event.entity.EntityPickupItemEvent entityEvent = new org.bukkit.event.entity.EntityPickupItemEvent(entity.getBukkitEntity(), (org.bukkit.entity.Item) this.getBukkitEntity(), remaining);
-        entityEvent.setCancelled(!entityEvent.getEntity().getCanPickupItems());
-        this.level().getCraftServer().getPluginManager().callEvent(entityEvent);
-        if (entityEvent.isCancelled()) {
-            item.setCount(count); // SPIGOT-5294 - restore count
-            return;
-        }
+            // Update the ItemStack if it was changed in the event
+            ItemStack current = this.getItem();
+            if (!item.equals(current)) {
+                item = current;
+            } else {
+                item.setCount(canHold + remaining); // = i
+            }
 
-        // Update the ItemStack if it was changed in the event
-        ItemStack current = this.getItem();
-        if (!item.equals(current)) {
-            item = current;
-        } else {
-            item.setCount(canHold + remaining); // = i
+            // Possibly < 0; fix here so we do not have to modify code below
+            this.pickupDelay = 0;
+        } else if (this.pickupDelay == 0) {
+            // ensure that the code below isn't triggered if canHold says we can't pick the items up
+            this.pickupDelay = -1;
         }
-
-        // Possibly < 0; fix here so we do not have to modify code below
-        this.pickupDelay = 0;
-    } else if (this.pickupDelay == 0) {
-        // ensure that the code below isn't triggered if canHold says we can't pick the items up
-        this.pickupDelay = -1;
+        // CraftBukkit end
+        // Paper end - PlayerAttemptPickupItemEvent
     }
-    // CraftBukkit end
-    // Paper end - PlayerAttemptPickupItemEvent

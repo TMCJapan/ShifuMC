@@ -5,4 +5,6 @@ file: net/minecraft/world/item/TridentItem.java
 anchor:
     player.push(f, f1, f2);
 insert:
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerRiptideEvent(player, stack, f, f1, f2)) return false; // Paper - Add player riptide event
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerRiptideEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerRiptideEvent(player, stack, f, f1, f2)) return false; // Paper - Add player riptide event
+    }

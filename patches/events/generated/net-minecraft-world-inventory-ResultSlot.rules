@@ -6,8 +6,10 @@ anchor:
     this.checkTakeAchievements(stack);
     CraftingInput.Positioned positionedCraftInput = this.craftSlots.asPositionedCraftInput();
 insert:
-    // Paper start - add ItemCraftedEvent
-    if (!stack.isEmpty()) {
-        new io.papermc.paper.event.inventory.ItemCraftedEvent((org.bukkit.entity.Player) player.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(stack)).callEvent();
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.inventory.ItemCraftedEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - add ItemCraftedEvent
+        if (!stack.isEmpty()) {
+            new io.papermc.paper.event.inventory.ItemCraftedEvent((org.bukkit.entity.Player) player.getBukkitEntity(), org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(stack)).callEvent();
+        }
+        // Paper end - add ItemCraftedEvent
     }
-    // Paper end - add ItemCraftedEvent

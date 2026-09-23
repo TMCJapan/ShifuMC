@@ -89,9 +89,12 @@ public final class ItemEvents {
      * 参照を控えるのは、vanilla が置いたスロットを「参照が変わった」ことで見分けるため
      * ({@code Slot.setByPlayer} は新しい {@code ItemStack} を置く)。
      *
+     * <p>手持ちの写しも同じときに取って {@link #dragCarried} に置く。呼ぶ側で
+     * {@code before == null ? null : getCarried().copy()} と分けると、登録が無くても比べが走る。
+     *
      * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/AbstractContainerMenu.java.patch(InventoryDragEvent)
      */
-    public static Map<Slot, ItemStack[]> dragBefore(final Set<Slot> slots) {
+    public static Map<Slot, ItemStack[]> dragBefore(final AbstractContainerMenu menu, final Set<Slot> slots) {
         if (!ShifuEvents.listening(org.bukkit.event.inventory.InventoryDragEvent.getHandlerList())) {
             return null;
         }
@@ -102,18 +105,26 @@ public final class ItemEvents {
             before.put(slot, new ItemStack[] {slot.getItem(), slot.getItem().copy()});
         }
 
+        dragCarried = menu.getCarried().copy();
+
         return before;
     }
+
+    /** {@link #dragBefore} が取った手持ちの写し。{@link #drag} が読んで消す。 */
+    private static ItemStack dragCarried;
 
     /**
      * InventoryDragEvent。vanilla がスロットと手持ちを置いたあと。取り消されたら控えに戻す。
      * 通ったときはカーソルをイベントの値にする(Paper と同じ。プラグインが触っていなければ同じ中身)。
      */
     public static void drag(final AbstractContainerMenu menu, final Map<Slot, ItemStack[]> before,
-                            final ItemStack oldCarried, final boolean greedy) {
+                            final boolean greedy) {
         if (before == null) {
             return;
         }
+
+        final ItemStack oldCarried = dragCarried;
+        dragCarried = null;
 
         final InventoryView view = menu.getBukkitView();
         final Map<Integer, org.bukkit.inventory.ItemStack> items = new HashMap<>();

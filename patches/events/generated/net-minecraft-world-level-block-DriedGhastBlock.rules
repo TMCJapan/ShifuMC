@@ -5,19 +5,23 @@ file: net/minecraft/world/level/block/DriedGhastBlock.java
 anchor:
     level.playSound(null, pos, SoundEvents.DRIED_GHAST_TRANSITION, SoundSource.BLOCKS, 1.0F, 1.0F);
 insert:
-    // Paper start - Call BlockGrowEvent
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockGrowEvent(level, pos, state.setValue(HYDRATION_LEVEL, this.getHydrationLevel(state) + 1), Block.UPDATE_CLIENTS)) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockGrowEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - Call BlockGrowEvent
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockGrowEvent(level, pos, state.setValue(HYDRATION_LEVEL, this.getHydrationLevel(state) + 1), Block.UPDATE_CLIENTS)) {
+            return;
+        }
+        // Paper end - Call BlockGrowEvent
     }
-    // Paper end - Call BlockGrowEvent
 
 # callBlockFadeEvent
 file: net/minecraft/world/level/block/DriedGhastBlock.java
 anchor:
     this.spawnGhastling(level, pos, state);
 insert:
-    // Paper start - Call BlockFadeEvent
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, state.getFluidState().createLegacyBlock()).isCancelled()) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockFadeEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - Call BlockFadeEvent
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(level, pos, state.getFluidState().createLegacyBlock()).isCancelled()) {
+            return;
+        }
+        // Paper end - Call BlockFadeEvent
     }
-    // Paper end - Call BlockFadeEvent

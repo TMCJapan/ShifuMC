@@ -1,0 +1,28 @@
+# BlockMultiPlaceEvent。1 回の設置で 2 つ目以降に置く場所の控えを取る。手で書いたもの。
+# 登録が無ければ控えも取らない(ShifuEvents.capturePlace)。控えは同じ設置の
+# ShifuEvents.blockPlace が使って空にし、取り消されたら同じ旗で戻す。
+# 1.20.6 の同名の規則と同じ 3 箇所(ベッドの頭、扉と背の高い草花の上半分)。
+#
+# 読んだ位置: paper-server src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:497
+# (callBlockMultiPlaceEvent)
+
+# ベッドの頭
+file: net/minecraft/world/level/block/BedBlock.java
+anchor:
+    level.setBlock(blockPos, state.setValue(PART, BedPart.HEAD), Block.UPDATE_ALL);
+insert:
+    dev.shifu.event.ShifuEvents.capturePlace(level, blockPos);
+
+# 扉の上半分
+file: net/minecraft/world/level/block/DoorBlock.java
+anchor:
+    level.setBlock(pos.above(), state.setValue(HALF, DoubleBlockHalf.UPPER), Block.UPDATE_ALL);
+insert:
+    dev.shifu.event.ShifuEvents.capturePlace(level, pos.above());
+
+# 背の高い草・花の上半分
+file: net/minecraft/world/level/block/DoublePlantBlock.java
+anchor:
+    level.setBlock(blockPos, copyWaterloggedFrom(level, blockPos, this.defaultBlockState().setValue(HALF, DoubleBlockHalf.UPPER)), Block.UPDATE_ALL);
+insert:
+    dev.shifu.event.ShifuEvents.capturePlace(level, blockPos);

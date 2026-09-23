@@ -5,21 +5,25 @@ file: net/minecraft/world/item/FlintAndSteelItem.java
 anchor:
     level.playSound(player, blockPos, SoundEvents.FLINTANDSTEEL_USE, SoundSource.BLOCKS, 1.0F, level.getRandom().nextFloat() * 0.4F + 0.8F);
 insert:
-    // CraftBukkit start - Store the clicked block
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, blockPos, org.bukkit.event.block.BlockIgniteEvent.IgniteCause.FLINT_AND_STEEL, player).isCancelled()) {
-        context.getItemInHand().hurtAndBreak(1, player, context.getHand().asEquipmentSlot());
-        return InteractionResult.PASS;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockIgniteEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start - Store the clicked block
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, blockPos, org.bukkit.event.block.BlockIgniteEvent.IgniteCause.FLINT_AND_STEEL, player).isCancelled()) {
+            context.getItemInHand().hurtAndBreak(1, player, context.getHand().asEquipmentSlot());
+            return InteractionResult.PASS;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end
 
 # callBlockIgniteEvent
 file: net/minecraft/world/item/FlintAndSteelItem.java
 anchor:
     level.playSound(player, clickedPos, SoundEvents.FLINTANDSTEEL_USE, SoundSource.BLOCKS, 1.0F, level.getRandom().nextFloat() * 0.4F + 0.8F);
 insert:
-    // CraftBukkit start - Store the clicked block
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, clickedPos, org.bukkit.event.block.BlockIgniteEvent.IgniteCause.FLINT_AND_STEEL, player).isCancelled()) {
-        context.getItemInHand().hurtAndBreak(1, player, context.getHand().asEquipmentSlot());
-        return InteractionResult.PASS;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockIgniteEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start - Store the clicked block
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, clickedPos, org.bukkit.event.block.BlockIgniteEvent.IgniteCause.FLINT_AND_STEEL, player).isCancelled()) {
+            context.getItemInHand().hurtAndBreak(1, player, context.getHand().asEquipmentSlot());
+            return InteractionResult.PASS;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

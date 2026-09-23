@@ -5,4 +5,6 @@ file: net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
 anchor:
     this.send(new ClientboundCustomPayloadPacket(new BrandPayload(this.server.getServerModName())));
 insert:
-    new io.papermc.paper.event.connection.configuration.PlayerConnectionInitialConfigureEvent(this.paperConnection).callEvent(); // Paper
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.connection.configuration.PlayerConnectionInitialConfigureEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        new io.papermc.paper.event.connection.configuration.PlayerConnectionInitialConfigureEvent(this.paperConnection).callEvent(); // Paper
+    }

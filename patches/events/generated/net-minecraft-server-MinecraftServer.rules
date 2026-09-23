@@ -5,15 +5,19 @@ file: net/minecraft/server/MinecraftServer.java
 anchor:
     this.tickCount++;
 insert:
-    new com.destroystokyo.paper.event.server.ServerTickStartEvent(this.tickCount+1).callEvent(); // Paper - Server Tick Events
+    if (dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.server.ServerTickStartEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        new com.destroystokyo.paper.event.server.ServerTickStartEvent(this.tickCount+1).callEvent(); // Paper - Server Tick Events
+    }
 
 # ServerTickEndEvent
 file: net/minecraft/server/MinecraftServer.java
 anchor:
     profilerFiller.push("tallying");
 insert:
-    // Paper start - Server Tick Events
-    long endTime = System.nanoTime();
-    long remaining = this.nextTickTimeNanos - endTime;
-    new com.destroystokyo.paper.event.server.ServerTickEndEvent(this.tickCount, ((double)(endTime - this.currentTickStart) / 1000000D), remaining).callEvent();
-    // Paper end - Server Tick Events
+    if (dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.server.ServerTickEndEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - Server Tick Events
+        long endTime = System.nanoTime();
+        long remaining = this.nextTickTimeNanos - endTime;
+        new com.destroystokyo.paper.event.server.ServerTickEndEvent(this.tickCount, ((double)(endTime - this.currentTickStart) / 1000000D), remaining).callEvent();
+        // Paper end - Server Tick Events
+    }

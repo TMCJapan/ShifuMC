@@ -8,21 +8,20 @@
 # ---------------------------------------------------------------- InventoryDragEvent
 #
 # vanilla がスロットと手持ちを置いたあとに発火し、取り消されたら控えに戻す。
-# 控えはドラッグの並びを置く直前に取る(登録が無ければ null で、真偽値 1 つ分の仕事)。
+# 控えはドラッグの並びを置く直前に取る(登録が無ければ null)。手持ちの写しも発火層が一緒に取る。
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/inventory/AbstractContainerMenu.java.patch(InventoryDragEvent)
 file: net/minecraft/world/inventory/AbstractContainerMenu.java
 anchor:
     for (Slot slot1 : this.quickcraftSlots) {
 insert:
-    final java.util.Map<Slot, ItemStack[]> shifuDragBefore = dev.shifu.event.ItemEvents.dragBefore(this.quickcraftSlots);
-    final ItemStack shifuDragCarried = shifuDragBefore == null ? null : this.getCarried().copy();
+    final java.util.Map<Slot, ItemStack[]> shifuDragBefore = dev.shifu.event.ItemEvents.dragBefore(this, this.quickcraftSlots);
 
 file: net/minecraft/world/inventory/AbstractContainerMenu.java
 anchor:
     itemStack.setCount(count);
     this.setCarried(itemStack);
 insert-after:
-    dev.shifu.event.ItemEvents.drag(this, shifuDragBefore, shifuDragCarried, this.quickcraftType == QUICKCRAFT_TYPE_GREEDY);
+    dev.shifu.event.ItemEvents.drag(this, shifuDragBefore, this.quickcraftType == QUICKCRAFT_TYPE_GREEDY);
 
 # ---------------------------------------------------------------- PrepareResultEvent 系
 #
@@ -283,7 +282,8 @@ file: net/minecraft/world/item/CrossbowItem.java
 anchor:
     if (f >= 1.0F && !isCharged(stack) && tryLoadProjectiles(livingEntity, stack)) {
 insert:
-    if (f >= 1.0F && !isCharged(stack) && !dev.shifu.event.ItemEvents.loadCrossbow(livingEntity, stack)) {
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.EntityLoadCrossbowEvent.class)
+            && f >= 1.0F && !isCharged(stack) && !dev.shifu.event.ItemEvents.loadCrossbow(livingEntity, stack)) {
         return;
     }
 
@@ -691,7 +691,7 @@ file: net/minecraft/world/item/ItemStack.java
 anchor:
     int i = this.processDurabilityChange(damage, level, player);
 insert-after:
-    if (i > 0 && player != null) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerItemDamageEvent.class) && i > 0 && player != null) {
         i = dev.shifu.event.ItemEvents.itemDamage(this, player, i, damage);
     }
 
@@ -699,7 +699,7 @@ file: net/minecraft/world/item/ItemStack.java
 anchor:
     int min = Math.min(this.getDamageValue() + i, this.getMaxDamage() - 1);
 insert-after:
-    if (min - this.getDamageValue() > 0) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerItemDamageEvent.class) && min - this.getDamageValue() > 0) {
         final int shifuDamage = dev.shifu.event.ItemEvents.itemDamage(this, serverPlayer, min - this.getDamageValue(), damage);
         if (shifuDamage == 0) {
             return;

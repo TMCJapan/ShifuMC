@@ -1,0 +1,34 @@
+# Bukkit 層の配線。vanilla の行は変えない。
+
+# ブロックエンティティの PersistentDataContainer(PublicBukkitValues)。
+#
+# 入れ物は patches/hand の persistentDataContainer にあるが、NBT との出入りが無く、
+# Bukkit の BlockState#getPersistentDataContainer に書いた値も
+# NBT-API の NBTTileEntity が読む値も保存されない。
+#
+# 中身が空なら何も書かない(Paper と同じ条件)ので、値が無ければ NBT は vanilla と同じ。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/block/entity/BlockEntity.java.patch
+file: net/minecraft/world/level/block/entity/BlockEntity.java
+anchor:
+    protected void loadAdditional(ValueInput input) {
+insert-after:
+    this.persistentDataContainer.clear();
+    input.read("PublicBukkitValues", CompoundTag.CODEC).ifPresent(this.persistentDataContainer::putAll);
+
+file: net/minecraft/world/level/block/entity/BlockEntity.java
+anchor:
+    output.store("components", DataComponentMap.CODEC, this.components);
+insert-after:
+    if (!this.persistentDataContainer.isEmpty()) {
+        output.store("PublicBukkitValues", CompoundTag.CODEC, this.persistentDataContainer.toTagCompound());
+    }
+
+file: net/minecraft/world/level/block/entity/BlockEntity.java
+anchor:
+    public void saveCustomOnly(ValueOutput output) {
+        this.saveAdditional(output);
+insert-after:
+    if (!this.persistentDataContainer.isEmpty()) {
+        output.store("PublicBukkitValues", CompoundTag.CODEC, this.persistentDataContainer.toTagCompound());
+    }

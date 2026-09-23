@@ -6,7 +6,8 @@
 アンカーにすれば、そのまま `patches/events` の規則になる。
 
     python tools/make_events.py <patches/sources> <vanilla の木> <出力先> \
-        [--only 名前,名前] [--skip-file 名前,名前]
+        [--only 名前,名前] [--skip-file 名前,名前] \
+        [--craft <CraftEventFactory.java>] [--api <paper-api の src か jar>]
 
 出せるのは、vanilla の行を 1 行も消していない塊だけ。中括弧が釣り合わない
 (vanilla の行を囲む)ものは `insert` と `insert-after` に分ける。
@@ -15,11 +16,26 @@ vanilla の行が消えている塊は出さない。手で見るしかない。
 アンカーは後ろの文脈を 1 行ずつ伸ばして、vanilla の中で 1 箇所に定まるまで
 広げる。8 行伸ばしても定まらないものは出さない(`apply_events.py` が
 2 箇所以上を失敗にするので、黙って別の場所に入ることはない)。
+
+足した文はそのままでは出さない。`dev.shifu.event.EventGuard.listening` で
+囲んでから出す。Paper の発火行は登録の有無を見ないので、写したままだと
+プラグイン 0 個でもイベントを組み立てる(`MobEffectInstance` の tick ごとに
+`EntityEffectTickEvent`、姿勢が変わるたびに `Entity.getBukkitEntity()`)。
+MOD が登録したエンティティ型では `CraftEntityType.minecraftToBukkit` が
+`IllegalArgumentException` を投げ、`guardEntityTick` がサーバーを落とす。
+
+どのイベントを見るかは、足した文の `new なんとかEvent(` と、
+`CraftEventFactory` のメソッドが作るイベントから決める。後者を読むために
+`--craft` と `--api` が要る(渡さなければ `<patches/sources>` の位置から探す)。
+イベントが決まらない塊と、文として囲めない形(式の途中、波括弧なしの if、
+メソッドを割るもの)は出さない。数え上げには理由ごとに出る。
 """
+import glob
 import io
 import os
 import re
 import sys
+import zipfile
 import collections
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -188,6 +204,233 @@ def drop_unwired(lines):
     return out
 
 
+GUARD_CALL = "dev.shifu.event.EventGuard.listening(%s.class)"
+GUARD_NOTE = "// Shifu - 登録が無ければ組み立てない"
+NEW_EVENT = re.compile(r"new\s+([\w.]*[A-Z]\w*Event)\s*\(")
+CEF_CALL = re.compile(r"CraftEventFactory\.(\w+)\s*\(")
+IF_OPEN = re.compile(r"^(\s*)if\s*\((.*)\)\s*\{\s*(//.*)?$")
+# 波括弧を付けずに次の vanilla の行を条件にしているもの。囲むと形が変わる。
+DANGLING = re.compile(r"^(?:\}\s*else\s*)?(?:if|for|while)\s*\(.*\)\s*$")
+# 文ではなく式の途中(条件の続き、Stream の連鎖)。
+FRAGMENT = (".", "&&", "||", ",", "+", "?", ":", ")")
+MEMBER = re.compile(r"^    (?:public|private|protected|static|final|\s)"
+                    r"*[\w.<>\[\],?@ ]+\s+(\w+)\s*\(")
+IMPORT = re.compile(r"^import\s+(?:static\s+)?([\w.]+);")
+
+
+def craft_map(path):
+    """CraftEventFactory の各メソッドが発火するイベントの完全限定名。
+
+    メソッドの本体にある `new なんとかEvent(` を集めて、同じクラスの
+    別のメソッドを呼んでいるぶんもたどる。単純名は import で解く。
+    """
+    lines = io.open(path, encoding="utf-8").read() \
+        .replace("\r\n", "\n").split("\n")
+    imports = {}
+
+    for line in lines:
+        hit = IMPORT.match(line)
+
+        if hit:
+            imports[hit.group(1).rsplit(".", 1)[-1]] = hit.group(1)
+
+    bodies = collections.defaultdict(list)
+    i = 0
+
+    while i < len(lines):
+        hit = MEMBER.match(lines[i])
+
+        if hit and re.sub(r"//.*$", "", lines[i]).rstrip().endswith("{"):
+            depth = lines[i].count("{") - lines[i].count("}")
+            body = []
+            j = i + 1
+
+            while j < len(lines) and depth > 0:
+                depth += lines[j].count("{") - lines[j].count("}")
+
+                if depth > 0:
+                    body.append(lines[j])
+
+                j += 1
+
+            bodies[hit.group(1)].append("\n".join(body))
+            i = j
+            continue
+
+        i += 1
+
+    direct = {}
+    calls = {}
+
+    for name, texts in bodies.items():
+        made = set()
+        called = set()
+
+        for text in texts:
+            for found in NEW_EVENT.findall(text):
+                made.add(found if "." in found else imports.get(found, found))
+
+            called |= set(re.findall(r"\b(\w+)\s*\(", text))
+
+        direct[name] = made
+        calls[name] = called & set(bodies)
+
+    out = {}
+
+    for name in bodies:
+        seen = set()
+        stack = [name]
+        made = set()
+
+        while stack:
+            one = stack.pop()
+
+            if one in seen:
+                continue
+
+            seen.add(one)
+            made |= direct.get(one, set())
+            stack.extend(calls.get(one, ()))
+
+        out[name] = sorted(made)
+
+    return out
+
+
+def api_map(path):
+    """イベントの単純名 -> 完全限定名。jar でも src の木でも読む。"""
+    out = collections.defaultdict(set)
+
+    if path.endswith(".jar"):
+        for name in zipfile.ZipFile(path).namelist():
+            if name.endswith("Event.class") and "$" not in name:
+                fq = name[:-len(".class")].replace("/", ".")
+                out[fq.rsplit(".", 1)[-1]].add(fq)
+    else:
+        for base, _, files in os.walk(path):
+            for name in files:
+                if not name.endswith("Event.java"):
+                    continue
+
+                rel = os.path.relpath(os.path.join(base, name), path)
+                fq = rel.replace("\\", "/")[:-len(".java")].replace("/", ".")
+                out[fq.rsplit(".", 1)[-1]].add(fq)
+
+    return {k: sorted(v) for k, v in out.items()}
+
+
+def find_sources(sources):
+    """`<patches/sources>` から CraftEventFactory と paper-api を探す。"""
+    root = os.path.abspath(sources)
+
+    for _ in range(4):
+        root = os.path.dirname(root)
+
+        for server, api in (("paper-server", "paper-api"),
+                            ("Paper-Server", "Paper-API")):
+            craft = os.path.join(root, server, "src", "main", "java",
+                                 "org", "bukkit", "craftbukkit", "event",
+                                 "CraftEventFactory.java")
+            src = os.path.join(root, api, "src", "main", "java")
+            jars = sorted(glob.glob(os.path.join(root, api, "build", "libs",
+                                                 "paper-api-*.jar")))
+
+            if os.path.isfile(craft) and (os.path.isdir(src) or jars):
+                return craft, (src if os.path.isdir(src) else jars[-1])
+
+    return None, None
+
+
+def guard_events(lines, craft, api):
+    """この塊が発火するイベントの完全限定名。決まらなければ None。"""
+    text = "\n".join(lines)
+    out = []
+
+    for found in NEW_EVENT.findall(text):
+        if "." in found:
+            out.append(found)
+        elif len(api.get(found, ())) == 1:
+            out.append(api[found][0])
+        else:
+            return None
+
+    for name in CEF_CALL.findall(text):
+        if not craft.get(name):
+            return None
+
+        out.extend(craft[name])
+
+    if not out:
+        return None
+
+    seen = []
+
+    for one in out:
+        if one not in seen:
+            seen.append(one)
+
+    return seen
+
+
+def guard_expr(events):
+    calls = [GUARD_CALL % one for one in events]
+
+    return calls[0] if len(calls) == 1 else "(" + " || ".join(calls) + ")"
+
+
+def guarded(insert, close, expr):
+    """登録を見てから通る形にした insert。できなければ (None, 理由)。"""
+    if close:
+        # 囲む形。開いている if の条件の頭で短絡させれば、登録が無いときに
+        # 通る命令列は vanilla と同じになる。
+        depth = 0
+        at = None
+
+        for i, line in enumerate(insert):
+            before = depth
+            depth += balance([line])
+
+            if before == 0 and depth == 1:
+                at = i
+
+        if at is None:
+            return None, "囲む if が見つからない"
+
+        hit = IF_OPEN.match(insert[at])
+
+        if not hit:
+            return None, "囲んでいるのが素の if ではない"
+
+        out = list(insert)
+        out[at] = "%sif (!%s || (%s)) {%s" % (
+            hit.group(1), expr, hit.group(2).rstrip(),
+            (" " + hit.group(3)) if hit.group(3) else " " + GUARD_NOTE)
+
+        return out, None
+
+    head = next((l.strip() for l in insert
+                 if l.strip() and not l.strip().startswith("//")), "")
+
+    if head.startswith(FRAGMENT):
+        return None, "式の途中なので文として囲めない"
+
+    depth = 0
+
+    for line in insert:
+        depth += balance([line])
+
+        if depth < 0:
+            return None, "メソッドを割っているので文として囲めない"
+
+    for line in insert:
+        if DANGLING.match(STRINGS.sub("", line).strip()):
+            return None, "波括弧なしの if なので囲めない"
+
+    return (["if (%s) { %s" % (expr, GUARD_NOTE)]
+            + ["    " + l if l.strip() else "" for l in insert]
+            + ["}"]), None
+
+
 def contiguous(removed, added):
     """消えた行が、足した行の中にひと続きでそのまま入っている位置。
 
@@ -304,6 +547,22 @@ def main():
         if a == "--skip-file":
             skip_files = set(args[i + 1].split(","))
 
+    craft_path, api_path = find_sources(sources)
+
+    for i, a in enumerate(args):
+        if a == "--craft":
+            craft_path = args[i + 1]
+
+        if a == "--api":
+            api_path = args[i + 1]
+
+    if not craft_path or not api_path:
+        print("CraftEventFactory.java か paper-api が見つからない。"
+              "--craft と --api で渡す", file=sys.stderr)
+        return 1
+
+    craft = craft_map(craft_path)
+    api = api_map(api_path)
     cache = {}
     made = collections.defaultdict(list)
     dropped = collections.Counter()
@@ -378,10 +637,25 @@ def main():
                             dropped["囲む範囲がアンカーに収まらない"] += 1
                             continue
 
+                    fired = guard_events(shape["insert"] + shape["close"],
+                                         craft, api)
+
+                    if fired is None:
+                        dropped["発火するイベントが決まらない"] += 1
+                        continue
+
+                    insert, why = guarded(dedent(shape["insert"]),
+                                          dedent(shape["close"]),
+                                          guard_expr(fired))
+
+                    if insert is None:
+                        dropped[why] += 1
+                        continue
+
                     made[rel].append({
                         "events": names,
                         "anchor": dedent(anchor),
-                        "insert": dedent(shape["insert"]),
+                        "insert": insert,
                         "after": dedent(shape["close"]),
                     })
 
@@ -428,4 +702,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

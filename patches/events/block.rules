@@ -16,11 +16,28 @@ insert:
         return false;
     }
 
+# BlockBreakEvent#setDropItems(false)
+#
+# Paper は playerDestroy に引数を足して落とし物を出さない。Shifu は vanilla の playerDestroy を
+# そのまま呼び、そのあいだに出た ItemEntity を ShifuEvents.catchDrop(addEntity の頭)で
+# 世界に入れずに捨てる。登録が無ければ blockDropsBegin は何も捨てない。
+#
+# 読んだ位置: Paper-Server src/main/java/net/minecraft/server/level/ServerPlayerGameMode.java(destroyBlock、isDropItems)
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+anchor:
+    if (flag && hasCorrectToolForDrops) {
+    block.playerDestroy(this.level, this.player, pos, blockState1, blockEntity, itemStack);
+    }
+insert:
+    dev.shifu.event.ShifuEvents.blockDropsBegin(this.player, pos);
+insert-after:
+    dev.shifu.event.ShifuEvents.blockDropsEnd();
+
 # TNTPrimeEvent
 #
 # 発火は TntBlock.prime の中(ゲームルールの判定を通ったあと、PrimedTnt を作る前)。
 # 理由は Paper が prime の署名に足した Supplier で運ぶが、Shifu は呼ぶ直前に置く
-# (tntPrimeCause)。爆発による誘爆は vanilla が prime を通らないので wasExploded で別に発火する。
+# (tntPrimeCause)。爆発による誘爆は vanilla が prime を通らないので、爆発の側で別に発火する。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/level/block/TntBlock.java.patch
 file: net/minecraft/world/level/block/TntBlock.java
@@ -60,14 +77,9 @@ anchor:
 insert:
     dev.shifu.event.ShifuEvents.tntPrimeCause(org.bukkit.event.block.TNTPrimeEvent.PrimeCause.PROJECTILE, projectile, null);
 
-# wasExploded(誘爆)
-file: net/minecraft/world/level/block/TntBlock.java
-anchor:
-    PrimedTnt primedTnt = new PrimedTnt(level, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, explosion.getIndirectSourceEntity());
-insert:
-    if (!dev.shifu.event.ShifuEvents.tntPrimeByExplosion(level, pos, explosion)) {
-        return;
-    }
+# 誘爆(EXPLOSION)の発火は generated/net-minecraft-world-level-ServerExplosion.rules にある。
+# vanilla は壊してから wasExploded を呼ぶので、そこで出すと取り消したときに TNT が消えたままになる。
+# 同じところで 2 度出さないように、こちらには置かない。
 
 # ディスペンサーの火打ち石
 file: net/minecraft/core/dispenser/DispenseItemBehavior.java

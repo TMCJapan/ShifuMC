@@ -6,8 +6,10 @@ anchor:
     DoubleBlockHalf doubleBlockHalf = state.getValue(HALF);
     if (doubleBlockHalf == DoubleBlockHalf.UPPER) {
 insert:
-    // CraftBukkit start
-    if (((net.minecraft.server.level.ServerLevel)level).hasPhysicsEvent && org.bukkit.craftbukkit.event.CraftEventFactory.callBlockPhysicsEvent(level, pos).isCancelled()) { // Paper
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockPhysicsEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        if (((net.minecraft.server.level.ServerLevel)level).hasPhysicsEvent && org.bukkit.craftbukkit.event.CraftEventFactory.callBlockPhysicsEvent(level, pos).isCancelled()) { // Paper
+            return;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

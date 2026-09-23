@@ -448,6 +448,8 @@ public final class LvtMatch {
             }
         }
 
+        widenOverLoops(insns, count, size, tempFrom, tempTo);
+
         // 公式の番号を引く。同じ名前が複数あるときは出てくる順に対応させる。
         //
         // **同じ名前・型・元の番号の欄はまとめて 1 つの変数として扱う。**逆コンパイルした
@@ -708,6 +710,81 @@ public final class LvtMatch {
 
         if (local.wide) {
             occupied.get(slot + 1).add(local);
+        }
+    }
+
+    /**
+     * ループを跨ぐ一時変数の区間を、そのループの全体まで広げる。
+     *
+     * <p>LVT に無い一時変数(for-each の iterator、配列の長さと添字)は、命令の並びの上では
+     * 「最初の使用から最後の使用まで」しか出てこないが、後ろ向きの分岐で次の周回に戻ると
+     * その後ろでも読み直される。区間を命令の並びのままで見ると、最後の使用より後ろが空きに見え、
+     * そこへ名前付きの変数を移して slot が重なる。
+     *
+     * <p>1.19.4 の {@code Component$Serializer.serialize} で、iterator の slot 7 に
+     * ループ本体の {@code component1} が重なり、2 周目の {@code hasNext} が
+     * {@code IncompatibleClassChangeError} になった。
+     */
+    private static void widenOverLoops(InsnList insns, int count, int size, int[] tempFrom, int[] tempTo) {
+        Map<LabelNode, Integer> labelAt = new IdentityHashMap<>();
+
+        for (int i = 0; i < count; i++) {
+            if (insns.get(i) instanceof LabelNode label) {
+                labelAt.put(label, i);
+            }
+        }
+
+        List<int[]> loops = new ArrayList<>();
+
+        for (int i = 0; i < count; i++) {
+            AbstractInsnNode insn = insns.get(i);
+            List<LabelNode> targets = new ArrayList<>();
+
+            if (insn instanceof JumpInsnNode jump) {
+                targets.add(jump.label);
+            } else if (insn instanceof TableSwitchInsnNode table) {
+                targets.add(table.dflt);
+                targets.addAll(table.labels);
+            } else if (insn instanceof LookupSwitchInsnNode lookup) {
+                targets.add(lookup.dflt);
+                targets.addAll(lookup.labels);
+            }
+
+            for (LabelNode label : targets) {
+                Integer target = labelAt.get(label);
+
+                if (target != null && target < i) {
+                    loops.add(new int[] {target, i});
+                }
+            }
+        }
+
+        boolean grew = true;
+
+        while (grew) {
+            grew = false;
+
+            for (int slot = 0; slot < size; slot++) {
+                if (tempTo[slot] == Integer.MIN_VALUE) {
+                    continue;
+                }
+
+                for (int[] loop : loops) {
+                    if (tempFrom[slot] > loop[1] || loop[0] >= tempTo[slot]) {
+                        continue;
+                    }
+
+                    if (loop[0] < tempFrom[slot]) {
+                        tempFrom[slot] = loop[0];
+                        grew = true;
+                    }
+
+                    if (loop[1] + 1 > tempTo[slot]) {
+                        tempTo[slot] = loop[1] + 1;
+                        grew = true;
+                    }
+                }
+            }
         }
     }
 

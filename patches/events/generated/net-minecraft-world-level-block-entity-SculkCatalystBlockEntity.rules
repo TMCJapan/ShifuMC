@@ -5,4 +5,10 @@ file: net/minecraft/world/level/block/entity/SculkCatalystBlockEntity.java
 anchor:
     sculkCatalyst.catalystListener.getSculkSpreader().updateCursors(level, pos, level.getRandom(), true);
 insert:
-    org.bukkit.craftbukkit.event.CraftEventFactory.sourceBlockOverride = sculkCatalyst.getBlockPos(); // CraftBukkit - SPIGOT-7068: Add source block override, not the most elegant way but better than passing down a BlockPosition up to five methods deep.
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockSpreadEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        org.bukkit.craftbukkit.event.CraftEventFactory.sourceBlockOverride = sculkCatalyst.getBlockPos(); // CraftBukkit - SPIGOT-7068: Add source block override, not the most elegant way but better than passing down a BlockPos up to five methods deep.
+    }
+insert-after:
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockSpreadEvent.class)) {
+        org.bukkit.craftbukkit.event.CraftEventFactory.sourceBlockOverride = null; // CraftBukkit
+    }

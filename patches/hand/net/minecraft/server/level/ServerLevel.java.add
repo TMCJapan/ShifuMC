@@ -161,4 +161,147 @@
     // Bukkit の世界ごとのスポーン。vanilla の nether / end の LevelData は主世界のものを包んでいる(DerivedLevelData)ので、
     // そのまま書くと主世界のスポーンが次元ごと変わり、新しいプレイヤーが nether に参加する
     // (Multiverse が世界ごとに setSpawnLocation する)。主世界以外は CraftWorld がここに置いて読む(patches/adapter)。
+    // 次元フォルダの shifu-spawn.properties に保存する。読み書きは shifuSpawnLock の中。
     public net.minecraft.world.level.storage.LevelData.RespawnData shifuSpawn;
+
+// ServerLevel.shifuSpawnLoaded
+    // ファイルを読み終えたか(ファイルが無い場合を含む)。読めなかったときは立てず、次の呼び出しで読み直す。
+    // 読む前に立てていたので、読み損ねたあとは向き 0 で答えていた。
+    private boolean shifuSpawnLoaded;
+
+// ServerLevel.shifuSpawnDirty
+    // 置いたがまだファイルに書いていない。書くのは世界の保存(save の !skipSave の中、patches/wire)で、
+    // save-off の間は書かない。置いたその場で書いていたので save-off 中もファイルが変わっていた。
+    private boolean shifuSpawnDirty;
+
+// ServerLevel.shifuSpawnLock
+    // 読み書きの鍵。getSpawnLocation は非同期のプラグインからも呼ばれる。遅延読み込みと置き換えが
+    // 別スレッドで重なると、置いた値をファイルの古い値で上書きしうる。
+    private final Object shifuSpawnLock = new Object();
+
+// ServerLevel.shifuParseSpawn
+    // shifu-spawn.properties の中身を {x, y, z, yaw, pitch} にする。1.21.11 は yaw / pitch、1.20.6 以前は angle(yaw と同じ値)を
+    // 書いていたので、どちらの鍵でも読む(pitch が無ければ 0)。座標か向きが欠けている、または数として読めなければ null で、
+    // 保存されたスポーンは無い扱いにする(欠けた鍵で Float.parseFloat(null) が NullPointerException になり、catch を抜けていた)。
+    static double[] shifuParseSpawn(final java.util.Properties properties) {
+        final String x = properties.getProperty("x");
+        final String y = properties.getProperty("y");
+        final String z = properties.getProperty("z");
+        final String yaw = properties.getProperty("yaw", properties.getProperty("angle"));
+
+        if (x == null || y == null || z == null || yaw == null) {
+            return null;
+        }
+
+        try {
+            return new double[] {
+                    Integer.parseInt(x.trim()),
+                    Integer.parseInt(y.trim()),
+                    Integer.parseInt(z.trim()),
+                    Float.parseFloat(yaw.trim()),
+                    Float.parseFloat(properties.getProperty("pitch", "0").trim())};
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
+// ServerLevel.shifuSpawnProperties
+    // 書く中身。どの版でも読めるよう、yaw / pitch と angle(= yaw)を両方書く。
+    static java.util.Properties shifuSpawnProperties(final int x, final int y, final int z, final float yaw, final float pitch) {
+        final java.util.Properties properties = new java.util.Properties();
+        properties.setProperty("x", Integer.toString(x));
+        properties.setProperty("y", Integer.toString(y));
+        properties.setProperty("z", Integer.toString(z));
+        properties.setProperty("yaw", Float.toString(yaw));
+        properties.setProperty("pitch", Float.toString(pitch));
+        properties.setProperty("angle", Float.toString(yaw));
+        return properties;
+    }
+
+// ServerLevel.shifuWriteSpawnFile
+    // 一時ファイルに書いてから置き換える。途中で落ちても前の中身が残る。
+    static void shifuWriteSpawnFile(final java.nio.file.Path file, final java.util.Properties properties) throws java.io.IOException {
+        final java.nio.file.Path temp = file.resolveSibling(file.getFileName() + ".tmp");
+        java.nio.file.Files.createDirectories(file.getParent());
+        try (java.io.Writer out = java.nio.file.Files.newBufferedWriter(temp, java.nio.charset.StandardCharsets.UTF_8)) {
+            properties.store(out, "Shifu dimension spawn");
+        }
+        java.nio.file.Files.move(temp, file, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+    }
+
+// ServerLevel.shifuReadSpawnFile
+    // 中身が欠けていれば null(shifuParseSpawn)。
+    static double[] shifuReadSpawnFile(final java.nio.file.Path file) throws java.io.IOException {
+        final java.util.Properties properties = new java.util.Properties();
+        try (java.io.Reader in = java.nio.file.Files.newBufferedReader(file, java.nio.charset.StandardCharsets.UTF_8)) {
+            properties.load(in);
+        }
+        return shifuParseSpawn(properties);
+    }
+
+// ServerLevel.shifuGetSpawn
+    public net.minecraft.world.level.storage.LevelData.RespawnData shifuGetSpawn() {
+        synchronized (this.shifuSpawnLock) {
+            this.shifuLoadSpawn();
+            return this.shifuSpawn;
+        }
+    }
+
+// ServerLevel.shifuSetSpawn
+    public void shifuSetSpawn(final net.minecraft.world.level.storage.LevelData.RespawnData spawn) {
+        synchronized (this.shifuSpawnLock) {
+            this.shifuSpawn = spawn;
+            this.shifuSpawnLoaded = true;
+            this.shifuSpawnDirty = true;
+        }
+    }
+
+// ServerLevel.shifuSaveSpawn
+    // 世界の保存から呼ぶ(patches/wire)。置いていなければ何もしない。
+    public void shifuSaveSpawn() {
+        synchronized (this.shifuSpawnLock) {
+            if (!this.shifuSpawnDirty) {
+                return;
+            }
+
+            try {
+                shifuWriteSpawnFile(this.shifuSpawnFile(), shifuSpawnProperties(
+                        this.shifuSpawn.pos().getX(), this.shifuSpawn.pos().getY(), this.shifuSpawn.pos().getZ(), this.shifuSpawn.yaw(), this.shifuSpawn.pitch()));
+                this.shifuSpawnDirty = false;
+            } catch (java.io.IOException exception) {
+                MinecraftServer.LOGGER.error("Could not save Shifu spawn for {}", this.dimension().identifier(), exception);
+            }
+        }
+    }
+
+// ServerLevel.shifuLoadSpawn
+    // shifuSpawnLock の中で呼ぶ。
+    private void shifuLoadSpawn() {
+        if (this.shifuSpawnLoaded) {
+            return;
+        }
+
+        final java.nio.file.Path file = this.shifuSpawnFile();
+
+        try {
+            if (java.nio.file.Files.isRegularFile(file)) {
+                final double[] spawn = shifuReadSpawnFile(file);
+
+                if (spawn == null) {
+                    MinecraftServer.LOGGER.warn("Ignored incomplete Shifu spawn file {}", file);
+                } else {
+                    this.shifuSpawn = net.minecraft.world.level.storage.LevelData.RespawnData.of(
+                            this.dimension(), new BlockPos((int) spawn[0], (int) spawn[1], (int) spawn[2]), (float) spawn[3], (float) spawn[4]);
+                }
+            }
+
+            this.shifuSpawnLoaded = true;
+        } catch (java.io.IOException exception) {
+            MinecraftServer.LOGGER.error("Could not load Shifu spawn for {}", this.dimension().identifier(), exception);
+        }
+    }
+
+// ServerLevel.shifuSpawnFile
+    private java.nio.file.Path shifuSpawnFile() {
+        return this.levelStorageAccess.getDimensionPath(this.dimension()).resolve("shifu-spawn.properties");
+    }

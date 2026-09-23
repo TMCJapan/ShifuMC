@@ -395,6 +395,40 @@ public final class EntityEvents {
         }
     }
 
+    /**
+     * EntityUnleashEvent(距離・騎乗・ボートの破壊で外れる)。vanilla の {@code dropLeash()} を囲む。
+     * リードを落とさない指定なら、ここで {@code removeLeash()} する。
+     *
+     * <p>Paper は呼び出し側に {@code boolean dropLeash = true;} を置いて {@code if} で分けていた。
+     * その局所変数と分岐は登録が無くても走るので、発火層に入れた。
+     *
+     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/Leashable.java.patch、
+     * Mob.java.patch(startRiding)、vehicle/boat/AbstractBoat.java.patch(remove)
+     *
+     * @param cancellable 取り消しを見るか。ボートの破壊では Paper も見ない
+     * @return vanilla の {@code dropLeash()} へ進んでよいか
+     */
+    public static boolean dropLeash(final Leashable leashable, final EntityUnleashEvent.UnleashReason reason,
+                                    final boolean cancellable) {
+        if (!listening(EntityUnleashEvent.getHandlerList()) || !(leashable instanceof Entity entity)) {
+            return true;
+        }
+
+        final EntityUnleashEvent event = new EntityUnleashEvent(entity.getBukkitEntity(), reason, true);
+
+        if (!event.callEvent() && cancellable) {
+            return false;
+        }
+
+        if (event.isDropLeash()) {
+            return true;
+        }
+
+        leashable.removeLeash();
+
+        return false;
+    }
+
     private static InteractionHand shearHand;
     private static boolean unleashHandled;
 
@@ -675,6 +709,15 @@ public final class EntityEvents {
                 player.getBukkitEntity(), (org.bukkit.entity.ExperienceOrb) orb.getBukkitEntity()).callEvent();
     }
 
+    /**
+     * PlayerExpCooldownChangeEvent を聞いている登録があるか。{@link #xpCooldown} の代入を囲む。
+     * 囲まないと、登録が無くても {@code takeXpDelay} の読み書きが 1 往復増え、
+     * その欄を {@code @At(FIELD)} で狙う mixin が 2 回当たる。
+     */
+    public static boolean xpCooldownListening() {
+        return listening(PlayerExpCooldownChangeEvent.getHandlerList());
+    }
+
     /** PlayerExpCooldownChangeEvent。vanilla が入れた直後に、イベントの値で入れ直す。 */
     public static int xpCooldown(final Player player, final int newCooldown, final PlayerExpCooldownChangeEvent.ChangeReason reason) {
         if (!listening(PlayerExpCooldownChangeEvent.getHandlerList())) {
@@ -709,6 +752,18 @@ public final class EntityEvents {
     }
 
     /**
+     * 理由を置いて null を返す。アダプタ層の {@code CraftLivingEntity.addPotionEffect} が
+     * {@code addEffect(effect, EntityEvents.causedBy(Cause.PLUGIN))} の形で、vanilla の
+     * {@code addEffect(effect, source)} の source に渡す。Paper の {@code addEffect(effect, Cause.PLUGIN)} は
+     * vanilla に無いので、アダプタ層は source を null にした vanilla の版を呼んでいて、理由が UNKNOWN になっていた。
+     */
+    public static Entity causedBy(final EntityPotionEffectEvent.Cause cause) {
+        effectCause(cause);
+
+        return null;
+    }
+
+    /**
      * 理由を置いて、{@code effectCauseDone} まで消えないようにする。
      * 1 つの文が効果を何度も付けるところ(ポーションの効果の並び、周りのプレイヤー全員)で使う。
      */
@@ -723,14 +778,16 @@ public final class EntityEvents {
 
     /** {@code effectCauseUntilDone} で置いた理由を外す。 */
     public static void effectCauseDone() {
-        effectCause = null;
-        effectCauseKeep = false;
+        if (effectCause != null) {
+            effectCause = null;
+            effectCauseKeep = false;
+        }
     }
 
     private static EntityPotionEffectEvent.Cause takeEffectCause() {
         final EntityPotionEffectEvent.Cause cause = effectCause;
 
-        if (!effectCauseKeep) {
+        if (cause != null && !effectCauseKeep) {
             effectCause = null;
         }
 
@@ -740,15 +797,16 @@ public final class EntityEvents {
     /**
      * EntityPotionEffectEvent(CLEARED)。{@code removeAllEffects} で消す前に 1 つずつ出す。
      *
-     * @return 取り消されて残す効果
+     * @return 取り消されて残す効果。登録が無ければ null(呼ぶ側は何もしない)
      */
     public static List<MobEffectInstance> clearEffects(final LivingEntity entity, final Collection<MobEffectInstance> effects) {
         final EntityPotionEffectEvent.Cause cause = takeEffectCause();
-        final List<MobEffectInstance> kept = new ArrayList<>();
 
         if (!listening(EntityPotionEffectEvent.getHandlerList())) {
-            return kept;
+            return null;
         }
+
+        final List<MobEffectInstance> kept = new ArrayList<>();
 
         for (MobEffectInstance effect : effects) {
             if (CraftEventFactory.callEntityPotionEffectChangeEvent(entity, effect, null, cause,
@@ -758,6 +816,15 @@ public final class EntityEvents {
         }
 
         return kept;
+    }
+
+    /**
+     * {@link #clearEffects} のあと、消えた効果が 1 つも無いか(全部取り消された)。
+     * Paper はこのとき {@code removeAllEffects} が false を返す({@code !toRemove.isEmpty()})。
+     * 呼ぶ側は {@code clearEffects} が null(登録が無い)なら呼ばない。
+     */
+    public static boolean noneRemoved(final Map<?, ?> removed) {
+        return removed.isEmpty();
     }
 
     /**
@@ -1005,6 +1072,40 @@ public final class EntityEvents {
     }
 
     /**
+     * ExplosionPrimeEvent(エンドクリスタルが壊れたとき)。爆発の被害で壊れたときは Paper も出さない。
+     * 被害の種類を見る {@code source.is(IS_EXPLOSION)} を呼ぶ側に置くと登録が無くても走るので、ここで見る。
+     *
+     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/boss/enderdragon/EndCrystal.java.patch
+     */
+    public static ExplosionPrimeEvent crystalPrime(final Entity crystal, final DamageSource source) {
+        if (!listening(ExplosionPrimeEvent.getHandlerList())
+                || source.is(net.minecraft.tags.DamageTypeTags.IS_EXPLOSION)) {
+            return null;
+        }
+
+        return CraftEventFactory.callExplosionPrimeEvent(crystal, 6.0F, false);
+    }
+
+    /**
+     * EndermanAttackPlayerEvent。{@code EnderMan.isBeingStaredBy} の先頭で、登録があるときだけ呼ばれる。
+     * vanilla の判定(変装の頭を被っていない、かつ目が合っている)をここで同じように組み、取り消しの初期値にする。
+     *
+     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/EnderMan.java.patch(EndermanAttackPlayerEvent)
+     *
+     * @return 見つめられているとして扱うか
+     */
+    public static boolean endermanAttack(final net.minecraft.world.entity.monster.EnderMan enderman, final Player player) {
+        final boolean shouldAttack = LivingEntity.PLAYER_NOT_WEARING_DISGUISE_ITEM.test(player)
+                && enderman.isLookingAtMe(player, 0.025, true, false, enderman.getEyeY());
+        final com.destroystokyo.paper.event.entity.EndermanAttackPlayerEvent event =
+                new com.destroystokyo.paper.event.entity.EndermanAttackPlayerEvent(
+                        (org.bukkit.entity.Enderman) enderman.getBukkitEntity(), (org.bukkit.entity.Player) player.getBukkitEntity());
+        event.setCancelled(!shouldAttack);
+
+        return event.callEvent();
+    }
+
+    /**
      * EntityRegainHealthEvent(理由つき)。{@code setHealth(getHealth() + amount)} を囲む。
      *
      * @return vanilla の setHealth へ進んでよいか。量が変えられていたら自分で入れて false
@@ -1058,7 +1159,9 @@ public final class EntityEvents {
 
     /** 次の {@code ArmorStand.kill} が使う被害の元を置く(BYPASSES_INVULNERABILITY の経路)。 */
     public static void armorStandDeathSource(final DamageSource source) {
-        armorStandSource = source;
+        if (listening(EntityDeathEvent.getHandlerList())) {
+            armorStandSource = source;
+        }
     }
 
     /** {@code brokenByPlayer} で、本体のアイテムを落とす前から控え始める(本体も EntityDeathEvent の落とし物に載せる)。 */
@@ -1379,7 +1482,9 @@ public final class EntityEvents {
 
     /** 割れた位置を置く({@code onHit} から。水の飛沫のイベントに載せる)。 */
     public static void splashHit(final HitResult hitResult) {
-        splashHit = hitResult;
+        if (listening(io.papermc.paper.event.entity.WaterBottleSplashEvent.getHandlerList())) {
+            splashHit = hitResult;
+        }
     }
 
     /**

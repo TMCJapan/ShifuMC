@@ -8,14 +8,14 @@ file: net/minecraft/core/dispenser/ShearsDispenseItemBehavior.java
 replace:
     for (Entity entity : level.getEntitiesOfClass(Entity.class, new AABB(pos), EntitySelector.NO_SPECTATORS)) {
 with:
-    var entitiesOfClass = level.getEntitiesOfClass(Entity.class, new AABB(pos), EntitySelector.NO_SPECTATORS);
+    java.util.List<? extends Entity> entitiesOfClass = level.getEntitiesOfClass(Entity.class, new AABB(pos), EntitySelector.NO_SPECTATORS);
     for (Entity entity : entitiesOfClass) {
 
 file: net/minecraft/server/MinecraftServer.java
 replace:
     for (ServerPlayer serverPlayer : Lists.newArrayList(playerList.getPlayers())) {
 with:
-    var list = Lists.newArrayList(playerList.getPlayers());
+    java.util.List<? extends ServerPlayer> list = Lists.newArrayList(playerList.getPlayers());
     for (ServerPlayer serverPlayer : list) {
 
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
@@ -61,14 +61,14 @@ file: net/minecraft/server/players/PlayerList.java
 replace:
     for (Packet<?> packet : scoreboard.getStartTrackingPackets(displayObjective)) {
 with:
-    var startTrackingPackets = scoreboard.getStartTrackingPackets(displayObjective);
+    java.util.List<? extends Packet<?>> startTrackingPackets = scoreboard.getStartTrackingPackets(displayObjective);
     for (Packet<?> packet : startTrackingPackets) {
 
 file: net/minecraft/server/players/PlayerList.java
 replace:
     for (String string : team.getPlayers()) {
 with:
-    var players = team.getPlayers();
+    java.util.Collection<? extends String> players = team.getPlayers();
     for (String string : players) {
 
 file: net/minecraft/world/RandomizableContainer.java
@@ -89,21 +89,21 @@ file: net/minecraft/world/entity/Entity.java
 replace:
     for (ServerPlayer serverPlayer : List.copyOf(oldLevel.players())) {
 with:
-    var list = List.copyOf(oldLevel.players());
+    java.util.List<? extends ServerPlayer> list = List.copyOf(oldLevel.players());
     for (ServerPlayer serverPlayer : list) {
 
 file: net/minecraft/world/entity/animal/feline/Cat.java
 replace:
     for (Cat cat : this.cat.level().getEntitiesOfClass(Cat.class, new AABB(this.goalPos).inflate(2.0))) {
 with:
-    var entitiesOfClass = this.cat.level().getEntitiesOfClass(Cat.class, new AABB(this.goalPos).inflate(2.0));
+    java.util.List<? extends Cat> entitiesOfClass = this.cat.level().getEntitiesOfClass(Cat.class, new AABB(this.goalPos).inflate(2.0));
     for (Cat cat : entitiesOfClass) {
 
 file: net/minecraft/world/entity/animal/feline/Cat.java
 replace:
     for (Player player : this.level().getEntitiesOfClass(Player.class, new AABB(blockPos).inflate(2.0, 2.0, 2.0))) {
 with:
-    var entitiesOfClass = this.level().getEntitiesOfClass(Player.class, new AABB(blockPos).inflate(2.0, 2.0, 2.0));
+    java.util.List<? extends Player> entitiesOfClass = this.level().getEntitiesOfClass(Player.class, new AABB(blockPos).inflate(2.0, 2.0, 2.0));
     for (Player player : entitiesOfClass) {
 
 file: net/minecraft/world/entity/animal/nautilus/AbstractNautilus.java
@@ -117,70 +117,70 @@ file: net/minecraft/world/entity/decoration/ArmorStand.java
 replace:
     for (Entity entity : this.level().getEntities(this, this.getBoundingBox(), RIDABLE_MINECARTS)) {
 with:
-    var entities = this.level().getEntities(this, this.getBoundingBox(), RIDABLE_MINECARTS);
+    java.util.List<? extends Entity> entities = this.level().getEntities(this, this.getBoundingBox(), RIDABLE_MINECARTS);
     for (Entity entity : entities) {
 
 file: net/minecraft/world/entity/decoration/LeashFenceKnotEntity.java
 replace:
     for (Leashable leashable1 : Leashable.leashableLeashedTo(this)) {
 with:
-    var list1 = Leashable.leashableLeashedTo(this);
+    java.util.List<? extends Leashable> list1 = Leashable.leashableLeashedTo(this);
     for (Leashable leashable1 : list1) {
 
 file: net/minecraft/world/entity/monster/EnderMan.java
 replace:
     for (ItemStack itemStack1 : carriedBlock.getDrops(builder)) {
 with:
-    var drops = carriedBlock.getDrops(builder);
+    java.util.List<? extends ItemStack> drops = carriedBlock.getDrops(builder);
     for (ItemStack itemStack1 : drops) {
 
 file: net/minecraft/world/entity/monster/Ravager.java
 replace:
     for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0), predicate)) {
 with:
-    var entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0), predicate);
+    java.util.List<? extends LivingEntity> entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0), predicate);
     for (LivingEntity livingEntity : entitiesOfClass) {
 
 file: net/minecraft/world/entity/monster/Ravager.java
 replace:
     for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0), ROAR_TARGET_ON_CLIENT)) {
 with:
-    var entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0), ROAR_TARGET_ON_CLIENT);
+    java.util.List<? extends LivingEntity> entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(4.0), ROAR_TARGET_ON_CLIENT);
     for (LivingEntity livingEntity : entitiesOfClass) {
 
 file: net/minecraft/world/entity/projectile/EvokerFangs.java
 replace:
     for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(0.2, 0.0, 0.2))) {
 with:
-    var entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(0.2, 0.0, 0.2));
+    java.util.List<? extends LivingEntity> entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(0.2, 0.0, 0.2));
     for (LivingEntity livingEntity : entitiesOfClass) {
 
 file: net/minecraft/world/entity/projectile/FireworkRocketEntity.java
 replace:
     for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(5.0))) {
 with:
-    var entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(5.0));
+    java.util.List<? extends LivingEntity> entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(5.0));
     for (LivingEntity livingEntity : entitiesOfClass) {
 
 file: net/minecraft/world/entity/projectile/throwableitemprojectile/AbstractThrownPotion.java
 replace:
     for (LivingEntity livingEntity : this.level().getEntitiesOfClass(LivingEntity.class, aabb, WATER_SENSITIVE_OR_ON_FIRE)) {
 with:
-    var entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, aabb, WATER_SENSITIVE_OR_ON_FIRE);
+    java.util.List<? extends LivingEntity> entitiesOfClass = this.level().getEntitiesOfClass(LivingEntity.class, aabb, WATER_SENSITIVE_OR_ON_FIRE);
     for (LivingEntity livingEntity : entitiesOfClass) {
 
 file: net/minecraft/world/entity/projectile/throwableitemprojectile/AbstractThrownPotion.java
 replace:
     for (Axolotl axolotl : this.level().getEntitiesOfClass(Axolotl.class, aabb)) {
 with:
-    var entitiesOfClass1 = this.level().getEntitiesOfClass(Axolotl.class, aabb);
+    java.util.List<? extends Axolotl> entitiesOfClass1 = this.level().getEntitiesOfClass(Axolotl.class, aabb);
     for (Axolotl axolotl : entitiesOfClass1) {
 
 file: net/minecraft/world/item/MinecartItem.java
 replace:
     for (Entity entity : level.getEntities(null, abstractMinecart.getBoundingBox())) {
 with:
-    var entities = level.getEntities(null, abstractMinecart.getBoundingBox());
+    java.util.List<? extends Entity> entities = level.getEntities(null, abstractMinecart.getBoundingBox());
     for (Entity entity : entities) {
 
 file: net/minecraft/world/item/enchantment/EnchantmentHelper.java
@@ -196,7 +196,7 @@ file: net/minecraft/world/level/ServerExplosion.java
 replace:
     for (Entity entity : this.level.getEntities(this.source, new AABB(floor, floor2, floor4, floor1, floor3, floor5))) {
 with:
-    var entities = this.level.getEntities(this.source, new AABB(floor, floor2, floor4, floor1, floor3, floor5));
+    java.util.List<? extends Entity> entities = this.level.getEntities(this.source, new AABB(floor, floor2, floor4, floor1, floor3, floor5));
     for (Entity entity : entities) {
 
 file: net/minecraft/world/level/block/BeehiveBlock.java
@@ -210,7 +210,7 @@ file: net/minecraft/world/level/block/Block.java
 replace:
     for (Entity entity : level.getEntities(null, voxelShape.bounds())) {
 with:
-    var entities = level.getEntities(null, voxelShape.bounds());
+    java.util.List<? extends Entity> entities = level.getEntities(null, voxelShape.bounds());
     for (Entity entity : entities) {
 
 file: net/minecraft/world/level/block/CampfireBlock.java
@@ -251,7 +251,7 @@ file: net/minecraft/world/level/block/DetectorRailBlock.java
 replace:
     for (BlockPos blockPos : railState.getConnections()) {
 with:
-    var connections = railState.getConnections();
+    java.util.List<? extends BlockPos> connections = railState.getConnections();
     for (BlockPos blockPos : connections) {
 
 file: net/minecraft/world/level/block/EnchantingTableBlock.java
@@ -307,7 +307,7 @@ file: net/minecraft/world/level/chunk/ChunkGenerator.java
 replace:
     for (Structure structure : map.getOrDefault(i, Collections.emptyList())) {
 with:
-    var list1 = map.getOrDefault(i, Collections.emptyList());
+    java.util.List<? extends Structure> list1 = map.getOrDefault(i, Collections.emptyList());
     for (Structure structure : list1) {
 
 file: net/minecraft/world/level/dimension/end/EndDragonFight.java
@@ -321,7 +321,7 @@ file: net/minecraft/world/level/dimension/end/EndDragonFight.java
 replace:
     for (EndCrystal endCrystal : this.level.getEntitiesOfClass(EndCrystal.class, endSpike.getTopBoundingBox())) {
 with:
-    var entitiesOfClass = this.level.getEntitiesOfClass(EndCrystal.class, endSpike.getTopBoundingBox());
+    java.util.List<? extends EndCrystal> entitiesOfClass = this.level.getEntitiesOfClass(EndCrystal.class, endSpike.getTopBoundingBox());
     for (EndCrystal endCrystal : entitiesOfClass) {
 
 file: net/minecraft/world/level/storage/LevelStorageSource.java

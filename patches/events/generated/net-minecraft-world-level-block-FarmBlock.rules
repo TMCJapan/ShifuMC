@@ -5,20 +5,22 @@ file: net/minecraft/world/level/block/FarmBlock.java
 anchor:
     turnToDirt(entity, state, level, pos);
 insert:
-    // CraftBukkit start - Interact soil
-    org.bukkit.event.Cancellable cancellable;
-    if (entity instanceof Player) {
-        cancellable = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerInteractEvent((Player) entity, org.bukkit.event.block.Action.PHYSICAL, pos, null, null, null);
-    } else {
-        cancellable = new org.bukkit.event.entity.EntityInteractEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos));
-        level.getCraftServer().getPluginManager().callEvent((org.bukkit.event.entity.EntityInteractEvent) cancellable);
-    }
+    if ((dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityInteractEvent.class) || dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerInteractEvent.class) || dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityChangeBlockEvent.class))) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start - Interact soil
+        org.bukkit.event.Cancellable cancellable;
+        if (entity instanceof Player) {
+            cancellable = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerInteractEvent((Player) entity, org.bukkit.event.block.Action.PHYSICAL, pos, null, null, null);
+        } else {
+            cancellable = new org.bukkit.event.entity.EntityInteractEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos));
+            level.getCraftServer().getPluginManager().callEvent((org.bukkit.event.entity.EntityInteractEvent) cancellable);
+        }
 
-    if (cancellable.isCancelled()) {
-        return;
-    }
+        if (cancellable.isCancelled()) {
+            return;
+        }
 
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(entity, pos, Blocks.DIRT.defaultBlockState())) {
-        return;
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(entity, pos, Blocks.DIRT.defaultBlockState())) {
+            return;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

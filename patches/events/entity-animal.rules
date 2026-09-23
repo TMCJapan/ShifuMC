@@ -59,7 +59,8 @@ file: net/minecraft/world/entity/animal/camel/Camel.java
 anchor:
     public void standUpInstantly() {
 insert-after:
-    if (this.isCamelSitting() && !dev.shifu.event.AnimalEvents.toggleSit(this, false)) {
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.EntityToggleSitEvent.class)
+            && this.isCamelSitting() && !dev.shifu.event.AnimalEvents.toggleSit(this, false)) {
         return;
     }
 
@@ -112,22 +113,26 @@ insert-after:
     }
 
 # VillagerCareerChangeEvent(LOSING_JOB)。
+# 渡す NONE の Holder を引く getOrThrow は vanilla のこの経路に無いので、登録があるときだけ引く。
+# イベントが別の職業にしたときは、ここで書き込んで vanilla と同じく refreshBrain して抜ける。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/ai/behavior/ResetProfession.java.patch
 file: net/minecraft/world/entity/ai/behavior/ResetProfession.java
 anchor:
     villager.setVillagerData(villager.getVillagerData().withProfession(level.registryAccess(), VillagerProfession.NONE));
 insert:
-    final net.minecraft.core.Holder<VillagerProfession> shifuNone = level.registryAccess().getOrThrow(VillagerProfession.NONE);
-    final net.minecraft.core.Holder<VillagerProfession> shifuProfession = dev.shifu.event.AnimalEvents.careerChange(
-            villager, shifuNone, org.bukkit.event.entity.VillagerCareerChangeEvent.ChangeReason.LOSING_JOB);
-    if (shifuProfession == null) {
-        return false;
-    }
-    if (shifuProfession == shifuNone) {
-insert-after:
-    } else {
-        villager.setVillagerData(villager.getVillagerData().withProfession(shifuProfession));
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.VillagerCareerChangeEvent.class)) {
+        final net.minecraft.core.Holder<VillagerProfession> shifuNone = level.registryAccess().getOrThrow(VillagerProfession.NONE);
+        final net.minecraft.core.Holder<VillagerProfession> shifuProfession = dev.shifu.event.AnimalEvents.careerChange(
+                villager, shifuNone, org.bukkit.event.entity.VillagerCareerChangeEvent.ChangeReason.LOSING_JOB);
+        if (shifuProfession == null) {
+            return false;
+        }
+        if (shifuProfession != shifuNone) {
+            villager.setVillagerData(villager.getVillagerData().withProfession(shifuProfession));
+            villager.refreshBrain(level);
+            return true;
+        }
     }
 
 # VillagerReplenishTradeEvent。restock と catchUpDemand の 2 箇所、同じ行、同じ差し込み。
@@ -493,14 +498,16 @@ insert:
     }
 
 # StriderTemperatureChangeEvent。状態が変わるときだけ発火。変わらないときは vanilla の代入がそのまま走る。
+# 状態の比べ(isSuffocating())は登録があるときだけ。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/monster/Strider.java.patch
 file: net/minecraft/world/entity/monster/Strider.java
 anchor:
     this.setSuffocating(!flag || flag1);
 insert:
-    final boolean shifuSuffocating = !flag || flag1;
-    if (shifuSuffocating == this.isSuffocating() || dev.shifu.event.AnimalEvents.striderTemperature(this, shifuSuffocating)) {
+    if (!dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.StriderTemperatureChangeEvent.class)
+            || (!flag || flag1) == this.isSuffocating()
+            || dev.shifu.event.AnimalEvents.striderTemperature(this, !flag || flag1)) {
 insert-after:
     }
 

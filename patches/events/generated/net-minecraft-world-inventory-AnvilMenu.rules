@@ -5,20 +5,24 @@ file: net/minecraft/world/inventory/AnvilMenu.java
 anchor:
     if (blockState1 == null) {
 insert:
-    // Paper start - AnvilDamageEvent
-    com.destroystokyo.paper.event.block.AnvilDamagedEvent event = new com.destroystokyo.paper.event.block.AnvilDamagedEvent(getBukkitView(), blockState1 != null ? org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(blockState1) : null);
-    if (!event.callEvent()) {
-        return;
-    } else if (event.getDamageState() == com.destroystokyo.paper.event.block.AnvilDamagedEvent.DamageState.BROKEN) {
-        blockState1 = null;
-    } else {
-        blockState1 = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getDamageState().getMaterial().createBlockData()).getState().setValue(AnvilBlock.FACING, blockState.getValue(AnvilBlock.FACING));
+    if (dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.block.AnvilDamagedEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - AnvilDamageEvent
+        com.destroystokyo.paper.event.block.AnvilDamagedEvent event = new com.destroystokyo.paper.event.block.AnvilDamagedEvent(getBukkitView(), blockState1 != null ? org.bukkit.craftbukkit.block.data.CraftBlockData.fromData(blockState1) : null);
+        if (!event.callEvent()) {
+            return;
+        } else if (event.getDamageState() == com.destroystokyo.paper.event.block.AnvilDamagedEvent.DamageState.BROKEN) {
+            blockState1 = null;
+        } else {
+            blockState1 = ((org.bukkit.craftbukkit.block.data.CraftBlockData) event.getDamageState().getMaterial().createBlockData()).getState().setValue(AnvilBlock.FACING, blockState.getValue(AnvilBlock.FACING));
+        }
+        // Paper end - AnvilDamageEvent
     }
-    // Paper end - AnvilDamageEvent
 
 # callPrepareResultEvent
 file: net/minecraft/world/inventory/AnvilMenu.java
 anchor:
     return true;
 insert:
-    org.bukkit.craftbukkit.event.CraftEventFactory.callPrepareResultEvent(this, RESULT_SLOT); // Paper - Add PrepareResultEvent
+    if ((dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.inventory.PrepareResultEvent.class) || dev.shifu.event.EventGuard.listening(org.bukkit.event.inventory.PrepareAnvilEvent.class) || dev.shifu.event.EventGuard.listening(org.bukkit.event.inventory.PrepareGrindstoneEvent.class) || dev.shifu.event.EventGuard.listening(org.bukkit.event.inventory.PrepareSmithingEvent.class))) { // Shifu - 登録が無ければ組み立てない
+        org.bukkit.craftbukkit.event.CraftEventFactory.callPrepareResultEvent(this, RESULT_SLOT); // Paper - Add PrepareResultEvent
+    }

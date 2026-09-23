@@ -5,9 +5,11 @@ file: net/minecraft/world/entity/projectile/hurtingprojectile/windcharge/BreezeW
 anchor:
     this.level()
 insert:
-    // Paper start - Fire event for WindCharge explosions
-    org.bukkit.event.entity.ExplosionPrimeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callExplosionPrimeEvent(this, RADIUS, false);
-    if (event.isCancelled()) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.ExplosionPrimeEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - Fire event for WindCharge explosions
+        org.bukkit.event.entity.ExplosionPrimeEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callExplosionPrimeEvent(this, RADIUS, false);
+        if (event.isCancelled()) {
+            return;
+        }
+        // Paper end - Fire event for WindCharge explosions
     }
-    // Paper end - Fire event for WindCharge explosions

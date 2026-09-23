@@ -5,8 +5,10 @@ file: net/minecraft/world/level/block/BellBlock.java
 anchor:
     ((BellBlockEntity)blockEntity).onHit(direction);
 insert:
-    // CraftBukkit start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleBellRingEvent(level, pos, direction, entity)) {
-        return false;
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.block.BellRingEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleBellRingEvent(level, pos, direction, entity)) {
+            return false;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

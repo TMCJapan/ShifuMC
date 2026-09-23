@@ -5,8 +5,10 @@ file: net/minecraft/world/level/block/DecoratedPotBlock.java
 anchor:
     level.setBlock(blockPos, state.setValue(CRACKED, true), Block.UPDATE_NONE);
 insert:
-    // CraftBukkit start - call EntityChangeBlockEvent
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(projectile, blockPos, this.getFluidState(state).createLegacyBlock())) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityChangeBlockEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start - call EntityChangeBlockEvent
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(projectile, blockPos, this.getFluidState(state).createLegacyBlock())) {
+            return;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

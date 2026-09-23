@@ -766,9 +766,11 @@ file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
     furnace.litTimeRemaining = furnace.getBurnDuration(level.fuelValues(), itemStack);
 insert-after:
-    furnace.litTimeRemaining = dev.shifu.event.BlockEvents.furnaceBurn(level, pos, itemStack, furnace.litTimeRemaining);
-    if (furnace.litTimeRemaining < 0) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.inventory.FurnaceBurnEvent.class)) {
+        furnace.litTimeRemaining = dev.shifu.event.BlockEvents.furnaceBurn(level, pos, itemStack, furnace.litTimeRemaining);
+        if (furnace.litTimeRemaining < 0) {
+            return;
+        }
     }
 
 file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
@@ -1030,11 +1032,13 @@ file: net/minecraft/world/level/block/entity/trialspawner/TrialSpawner.java
 anchor:
     if (!randomItems.isEmpty()) {
 insert-after:
-    final java.util.List<ItemStack> shifuLoot = dev.shifu.event.BlockEvents.dispenseLoot(level, pos, null, randomItems, lootTable);
-    if (shifuLoot == null) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockDispenseLootEvent.class)) {
+        final java.util.List<ItemStack> shifuLoot = dev.shifu.event.BlockEvents.dispenseLoot(level, pos, null, randomItems, lootTable);
+        if (shifuLoot == null) {
+            return;
+        }
+        randomItems = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(shifuLoot);
     }
-    randomItems = new it.unimi.dsi.fastutil.objects.ObjectArrayList<>(shifuLoot);
 
 # BlockDispenseLootEvent(宝物庫)
 file: net/minecraft/world/level/block/entity/vault/VaultBlockEntity.java
@@ -1328,11 +1332,14 @@ anchor:
     this.shuffleAndSplitItems(randomItems, availableSlots.size(), random);
 insert:
     final org.bukkit.event.world.LootGenerateEvent shifuLoot =
-            org.bukkit.craftbukkit.event.CraftEventFactory.callLootGenerateEvent(container, this, lootContext, randomItems, false);
-    if (shifuLoot.isCancelled()) {
-        return;
+            dev.shifu.event.BlockEvents.lootGenerate(container, this, lootContext, randomItems, false);
+    if (shifuLoot != null) {
+        if (shifuLoot.isCancelled()) {
+            return;
+        }
+
+        randomItems = shifuLoot.getLoot().stream().map(org.bukkit.craftbukkit.inventory.CraftItemStack::asNMSCopy).collect(ObjectArrayList.toList());
     }
-    randomItems = shifuLoot.getLoot().stream().map(org.bukkit.craftbukkit.inventory.CraftItemStack::asNMSCopy).collect(ObjectArrayList.toList());
 
 # patches/hand の fill(Container, LootParams, RandomSource, boolean)。アダプタ層はこちらを呼ぶ
 file: net/minecraft/world/level/storage/loot/LootTable.java
@@ -1341,8 +1348,11 @@ anchor:
     this.shuffleAndSplitItems(itemStacks, availableSlots.size(), random);
 insert:
     final org.bukkit.event.world.LootGenerateEvent shifuLootPlugin =
-            org.bukkit.craftbukkit.event.CraftEventFactory.callLootGenerateEvent(container, this, context, itemStacks, plugin);
-    if (shifuLootPlugin.isCancelled()) {
-        return;
+            dev.shifu.event.BlockEvents.lootGenerate(container, this, context, itemStacks, plugin);
+    if (shifuLootPlugin != null) {
+        if (shifuLootPlugin.isCancelled()) {
+            return;
+        }
+
+        itemStacks = shifuLootPlugin.getLoot().stream().map(org.bukkit.craftbukkit.inventory.CraftItemStack::asNMSCopy).collect(ObjectArrayList.toList());
     }
-    itemStacks = shifuLootPlugin.getLoot().stream().map(org.bukkit.craftbukkit.inventory.CraftItemStack::asNMSCopy).collect(ObjectArrayList.toList());

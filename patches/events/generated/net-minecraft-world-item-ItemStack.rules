@@ -5,8 +5,10 @@ file: net/minecraft/world/item/ItemStack.java
 anchor:
     this.shrink(1);
 insert:
-    // CraftBukkit start - Check for item breaking
-    if (this.count == 1 && player instanceof final ServerPlayer serverPlayer) { // Paper - Add EntityDamageItemEvent
-        org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerItemBreakEvent(serverPlayer, this); // Paper - Add EntityDamageItemEvent
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerItemBreakEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start - Check for item breaking
+        if (this.count == 1 && player instanceof final ServerPlayer serverPlayer) { // Paper - Add EntityDamageItemEvent
+            org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerItemBreakEvent(serverPlayer, this); // Paper - Add EntityDamageItemEvent
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

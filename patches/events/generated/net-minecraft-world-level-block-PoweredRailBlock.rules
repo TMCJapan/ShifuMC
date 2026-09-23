@@ -5,10 +5,12 @@ file: net/minecraft/world/level/block/PoweredRailBlock.java
 anchor:
     level.setBlock(pos, state.setValue(POWERED, flag), Block.UPDATE_ALL);
 insert:
-    // CraftBukkit start
-    int power = flag ? 15 : 0;
-    int newPower = org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, power, 15 - power).getNewCurrent();
-    if (newPower == power) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        int power = flag ? 15 : 0;
+        int newPower = org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, power, 15 - power).getNewCurrent();
+        if (newPower == power) {
+            return;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

@@ -42,7 +42,7 @@ file: net/minecraft/world/entity/Entity.java
 anchor:
     if (itemInHand.is(Items.SHEARS) && this.shearOffAllLeashConnections(player)) {
 insert:
-    if (itemInHand.is(Items.SHEARS)) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityUnleashEvent.class) && itemInHand.is(Items.SHEARS)) {
         dev.shifu.event.EntityEvents.shearHand(hand);
     }
 
@@ -203,7 +203,9 @@ file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
     entity.takeXpDelay = 2;
 insert-after:
-    entity.takeXpDelay = dev.shifu.event.EntityEvents.xpCooldown(entity, entity.takeXpDelay, org.bukkit.event.player.PlayerExpCooldownChangeEvent.ChangeReason.PICKUP_ORB);
+    if (dev.shifu.event.EntityEvents.xpCooldownListening()) {
+        entity.takeXpDelay = dev.shifu.event.EntityEvents.xpCooldown(entity, entity.takeXpDelay, org.bukkit.event.player.PlayerExpCooldownChangeEvent.ChangeReason.PICKUP_ORB);
+    }
 
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
@@ -243,17 +245,20 @@ anchor:
 insert-after:
     // ラムダを使うと LivingEntity の合成メソッドの番号がずれて、
     // fabric-entity-events の isSleepingInBed のラムダを狙う mixin が当たらない。for 文で書く。
-    for (final MobEffectInstance shifuEffect : shifuKept) {
-        map.remove(shifuEffect.getEffect());
-        this.activeEffects.put(shifuEffect.getEffect(), shifuEffect);
+    if (shifuKept != null) {
+        for (final MobEffectInstance shifuEffect : shifuKept) {
+            map.remove(shifuEffect.getEffect());
+            this.activeEffects.put(shifuEffect.getEffect(), shifuEffect);
+        }
     }
 
-# 全部取り消されたら false(Paper の !toRemove.isEmpty())
+# 全部取り消されたら false(Paper の !toRemove.isEmpty())。登録が無ければ shifuKept は null で、
+# vanilla に無い isEmpty() は呼ばない
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
     this.onEffectsRemoved(map.values());
 insert-after:
-    if (map.isEmpty()) {
+    if (shifuKept != null && dev.shifu.event.EntityEvents.noneRemoved(map)) {
         return false;
     }
 
@@ -366,9 +371,7 @@ insert:
     if (dev.shifu.event.EntityEvents.damageCancelled(this, damageSource, amount, false, false)) {
         return false;
     }
-    final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = damageSource.is(DamageTypeTags.IS_EXPLOSION)
-        ? null
-        : dev.shifu.event.EntityEvents.explosionPrime(this, 6.0F, false);
+    final org.bukkit.event.entity.ExplosionPrimeEvent shifuPrime = dev.shifu.event.EntityEvents.crystalPrime(this, damageSource);
     if (shifuPrime != null && shifuPrime.isCancelled()) {
         return false;
     }
@@ -546,7 +549,8 @@ file: net/minecraft/world/entity/item/ItemEntity.java
 anchor:
     if (!this.level().isClientSide() && this.age >= 6000) {
 insert:
-    if (!this.level().isClientSide() && this.age >= 6000 && !dev.shifu.event.EntityEvents.itemDespawn(this)) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.ItemDespawnEvent.class)
+            && !this.level().isClientSide() && this.age >= 6000 && !dev.shifu.event.EntityEvents.itemDespawn(this)) {
         this.age = 0;
     }
 
@@ -898,3 +902,14 @@ anchor:
 count: 2
 insert:
     dev.shifu.event.EntityEvents.exhaustionReason(org.bukkit.event.entity.EntityExhaustionEvent.ExhaustionReason.ATTACK);
+
+# 死亡の経験値のうち、既にあるオーブへ足し込まれる分(ExperienceOrb.award → tryMergeToExisting)。
+# 足し込まれた分は addFreshEntity を通らないので catchDrop で控えられず、死亡イベントの
+# getDroppedExp に入らず setDroppedExp(0) でも消せなかった。控えている最中だけ、その回を控えに入れて飛ばす。
+file: net/minecraft/world/entity/ExperienceOrb.java
+anchor:
+    if (!tryMergeToExisting(level, pos, experienceValue)) {
+insert:
+    if (dev.shifu.event.ShifuEvents.catchAward(pos, direction, experienceValue)) {
+        continue;
+    }

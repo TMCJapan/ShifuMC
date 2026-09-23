@@ -284,8 +284,8 @@ def test_already():
 # ---------------------------------------------------------------- 走査
 
 def named(found):
-    """位置を落として (名前, 塊) だけにする。"""
-    return [(name, block) for name, block, _ in found]
+    """位置と注釈の有無を落として (名前, 塊) だけにする。"""
+    return [(name, block) for name, block, _, _ in found]
 
 
 class FakeHunk:

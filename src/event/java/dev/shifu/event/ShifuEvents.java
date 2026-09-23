@@ -112,6 +112,57 @@ public final class ShifuEvents {
         return !listening(PlayerQuitEvent.getHandlerList());
     }
 
+    /**
+     * エンティティが世界に入るときのイベントを聞いている登録があるか。
+     *
+     * <p>{@code CraftEventFactory.doEntityAddEventCalling} は分類に関わらず
+     * イベントを組み立てるので、登録が無くてもエンティティが 1 つ増えるたびに
+     * 仕事が増える。ここで先に見て、無ければ vanilla の命令列のまま通す。
+     *
+     * <p>見るのは 3 つ。{@code CreatureSpawnEvent} と {@code ItemSpawnEvent} と
+     * {@code ProjectileLaunchEvent} は自分の HandlerList を持たず、
+     * {@code EntitySpawnEvent} のものを使う。
+     *
+     * <p>飛ばすと CraftBukkit が足した「spawn-animals / spawn-monsters が false なら
+     * 捨てる」も飛ぶ。vanilla はそこを {@code ServerChunkCache.tickChunks} で見ているので、
+     * 飛ばした方が vanilla に近い。
+     */
+    public static boolean entityAddListening() {
+        return listening(org.bukkit.event.entity.EntitySpawnEvent.getHandlerList())
+                || listening(org.bukkit.event.vehicle.VehicleCreateEvent.getHandlerList())
+                || listening(org.bukkit.event.weather.LightningStrikeEvent.getHandlerList());
+    }
+
+    /** 次元を移る個体を {@code addDuringTeleport} が addEntity へ渡している間か。登録があるときだけ立てる。 */
+    private static boolean teleportAdding;
+
+    /**
+     * {@code addDuringTeleport} の addEntity の前。次元を移る個体は新しく湧いたものではないので、
+     * 間の addEntity ではスポーンのイベントを出さない。Paper は理由 null で addEntity を呼んで飛ばしている
+     * (SPIGOT-6415)。出していたときは、取り消されると doEntityAddEventCalling が discard し、
+     * 移る前の個体はもう消えているので、ポータルを抜けた MOB・アイテム・トロッコ・エンダーパールが
+     * どこにも残らなかった。
+     *
+     * <p>読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerLevel.java.patch(addDuringTeleport、addEntity)
+     */
+    public static void beginTeleportAdd() {
+        if (entityAddListening()) {
+            teleportAdding = true;
+        }
+    }
+
+    /** {@code addDuringTeleport} の addEntity の後。addEntity が途中で抜けても印を残さない。 */
+    public static void endTeleportAdd() {
+        if (teleportAdding) {
+            teleportAdding = false;
+        }
+    }
+
+    /** 次元を移る個体の addEntity の中か。そのときスポーンのイベントは出さない。 */
+    public static boolean teleportAdding() {
+        return teleportAdding;
+    }
+
     // ------------------------------------------------------------ ブロック
 
     /**
@@ -120,16 +171,74 @@ public final class ShifuEvents {
      * <p>差し込む位置は、vanilla の権限判定が全て終わったあと、
      * 最初の書き換え({@code playerWillDestroy})の直前。
      *
+     * <p>取り消されたら、ブロックエンティティの中身も送り直す。vanilla は
+     * {@code destroyBlock} が false のときブロックの状態だけを送り直すので、
+     * 看板の文字や旗の模様がクライアント側で消えたままになる。
+     *
      * <p>未対応: {@code BlockBreakEvent#setExpToDrop}。
      * 経験値の量を vanilla の落下処理へ渡す経路がまだ無い。
+     *
+     * <p>{@code setDropItems(false)} は、この呼び出しの {@code playerDestroy} が出す
+     * 落とし物(ItemEntity)を世界に入れない形で効かせる({@link #blockDropsBegin})。
+     * Paper は {@code playerDestroy} に引数を足して落とさないが、vanilla の署名は変えられないので、
+     * 出てきたものを {@link #catchDrop} で入れずに捨てる。道具の減り・統計・空腹・経験値は
+     * Paper と同じく残る。
+     *
+     * <p>読んだ位置: Paper-Server
+     * src/main/java/net/minecraft/server/level/ServerPlayerGameMode.java(destroyBlock、tileentity.getUpdatePacket)
      */
     public static boolean blockBreak(final ServerPlayer player, final BlockPos pos) {
         if (!listening(BlockBreakEvent.getHandlerList())) {
             return true;
         }
 
-        return new BlockBreakEvent(
-                CraftBlock.at(player.level(), pos), player.getBukkitEntity()).callEvent();
+        final BlockBreakEvent event = new BlockBreakEvent(CraftBlock.at(player.level(), pos), player.getBukkitEntity());
+        dropsDeniedPlayer = null;
+        dropsDeniedPos = null;
+
+        if (event.callEvent()) {
+            if (!event.isDropItems()) {
+                dropsDeniedPlayer = player;
+                dropsDeniedPos = pos.immutable();
+            }
+
+            return true;
+        }
+
+        final net.minecraft.world.level.block.entity.BlockEntity blockEntity = player.level().getBlockEntity(pos);
+
+        if (blockEntity != null) {
+            final var packet = blockEntity.getUpdatePacket();
+
+            if (packet != null) {
+                player.connection.send(packet);
+            }
+        }
+
+        return false;
+    }
+
+    /** setDropItems(false) にされた破壊。{@link #blockDropsBegin} で使い切る。 */
+    private static ServerPlayer dropsDeniedPlayer;
+    private static BlockPos dropsDeniedPos;
+    /** いま {@code playerDestroy} の中で、落とし物を捨てている。 */
+    private static boolean discardBlockDrops;
+
+    /**
+     * {@code ServerPlayerGameMode.destroyBlock} の {@code playerDestroy} の直前。
+     * 同じプレイヤー・同じ位置の {@link #blockBreak} が {@code setDropItems(false)} だったときだけ、
+     * {@link #blockDropsEnd} までの落とし物を捨てる。位置まで見るのは、クリエイティブで
+     * {@code playerDestroy} まで来ずに抜けた分の控えを、次の別の破壊で使わないため。
+     */
+    public static void blockDropsBegin(final ServerPlayer player, final BlockPos pos) {
+        discardBlockDrops = dropsDeniedPlayer == player && pos.equals(dropsDeniedPos);
+        dropsDeniedPlayer = null;
+        dropsDeniedPos = null;
+    }
+
+    /** {@code playerDestroy} の直後。 */
+    public static void blockDropsEnd() {
+        discardBlockDrops = false;
     }
 
     /** ブロックの設置を聞いている登録があるか。置く前の様子を控えるかの判断に使う。 */
@@ -157,13 +266,74 @@ public final class ShifuEvents {
                                      final org.bukkit.block.BlockState replaced,
                                      final BlockPos clickedPos) {
         if (replaced == null || player == null) {
+            multiPlaced.clear();
             return true;
         }
 
-        org.bukkit.event.block.BlockPlaceEvent event =
-                CraftEventFactory.callBlockPlaceEvent(level, player, hand, replaced, clickedPos);
+        final org.bukkit.event.block.BlockPlaceEvent event;
 
-        return !event.isCancelled() && event.canBuild();
+        if (multiPlaced.isEmpty()) {
+            event = CraftEventFactory.callBlockPlaceEvent(level, player, hand, replaced, clickedPos);
+        } else {
+            final List<org.bukkit.block.BlockState> all = new ArrayList<>();
+            all.add(replaced);
+            all.addAll(multiPlaced);
+            event = CraftEventFactory.callBlockMultiPlaceEvent(level, player, hand, all, clickedPos);
+        }
+
+        if (event.isCancelled() || !event.canBuild()) {
+            revertPlace(level);
+            return false;
+        }
+
+        multiPlaced.clear();
+
+        return true;
+    }
+
+    /**
+     * 1 回の設置で 2 つ目以降に置かれる場所の控え。ベッドの頭、扉と背の高い草花の上半分。
+     *
+     * <p>取るのは {@code setPlacedBy} が {@code setBlock} を呼ぶ直前
+     * ({@code generated/net-minecraft-world-level-block-multiplace.rules})。
+     * 使うのは同じ設置の {@link #blockPlace} で、そこで必ず空にする。
+     * 控えがあれば {@code BlockPlaceEvent} の代わりに {@code BlockMultiPlaceEvent} を出す。
+     * {@code BlockMultiPlaceEvent} は {@code BlockPlaceEvent} の派生なので、
+     * 登録の判定は {@link #blockPlaceListening()} で足りる。
+     *
+     * <p>読んだ位置: paper-server
+     * src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java(callBlockMultiPlaceEvent)
+     */
+    private static final List<org.bukkit.block.BlockState> multiPlaced = new ArrayList<>();
+
+    /** 2 つ目以降に置く場所の控えを取る。登録が無ければ何もしない。 */
+    public static void capturePlace(final net.minecraft.world.level.Level level, final BlockPos pos) {
+        if (!(level instanceof ServerLevel) || !blockPlaceListening()) {
+            return;
+        }
+
+        multiPlaced.add(CraftBlock.at(level, pos).getState());
+    }
+
+    /**
+     * 取り消されたとき、2 つ目以降に置いた分を控えへ戻す。1 つ目は呼ぶ側
+     * ({@code block-place.rules})が戻す。
+     *
+     * <p>旗は {@code block-place.rules} が 1 つ目を戻すのと同じ
+     * {@code UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE | UPDATE_SKIP_ON_PLACE}。
+     * {@code UPDATE_ALL} で戻すと、残っているもう片方が {@code updateShape} で空気になり、
+     * {@code destroyBlock(pos, true)} でドロップまで出る(1.20.6 で起きた)。
+     */
+    private static void revertPlace(final ServerLevel level) {
+        for (final org.bukkit.block.BlockState one : multiPlaced) {
+            level.setBlock(((org.bukkit.craftbukkit.block.CraftBlockState) one).getPosition(),
+                    ((org.bukkit.craftbukkit.block.CraftBlockState) one).getHandle(),
+                    net.minecraft.world.level.block.Block.UPDATE_CLIENTS
+                            | net.minecraft.world.level.block.Block.UPDATE_KNOWN_SHAPE
+                            | net.minecraft.world.level.block.Block.UPDATE_SKIP_ON_PLACE);
+        }
+
+        multiPlaced.clear();
     }
 
     // ------------------------------------------------------------ エンティティ
@@ -218,6 +388,8 @@ public final class ShifuEvents {
     private static final class DeathCapture {
         final List<Entity.DefaultDrop> drops = new ArrayList<>();
         final List<ExperienceOrb> orbs = new ArrayList<>();
+        /** {@code ExperienceOrb.award} が既にあるオーブへ足そうとした分({@link #catchAward})。 */
+        final List<Award> awards = new ArrayList<>();
         final DeathCapture previous;
         DeathInventory inventory;
 
@@ -232,8 +404,39 @@ public final class ShifuEvents {
                 total += orb.getValue();
             }
 
+            for (Award award : this.awards) {
+                total += award.value();
+            }
+
             return total;
         }
+    }
+
+    /** 控えた {@code ExperienceOrb.award} の 1 回分。 */
+    private record Award(net.minecraft.world.phys.Vec3 pos, net.minecraft.world.phys.Vec3 direction, int value) {
+    }
+
+    /**
+     * {@code ExperienceOrb.award} のループで、既にあるオーブへ足す判定({@code tryMergeToExisting})の手前。
+     * 死亡の控えを取っている最中なら、その回の量を控えに入れて true を返し、呼ぶ側はその回を飛ばす。
+     *
+     * <p>足し込まれた経験値は新しいオーブにならず addFreshEntity を通らないので、{@link #catchDrop} では
+     * 控えられない。そのため PlayerDeathEvent / EntityDeathEvent の {@code getDroppedExp} に入らず、
+     * {@code setDroppedExp(0)} でも消せなかった。控えを取っていなければ参照 1 つの比較で false。
+     *
+     * <p>控えた分は {@link #releaseExperience} が、量が変えられていなければ同じ位置と向き({@code awardWithDirection})で
+     * もう 1 度 award に通す(足し込むかどうかはそのとき vanilla が決める)。
+     */
+    public static boolean catchAward(final net.minecraft.world.phys.Vec3 pos, final net.minecraft.world.phys.Vec3 direction, final int value) {
+        final DeathCapture current = capture;
+
+        if (current == null) {
+            return false;
+        }
+
+        current.awards.add(new Award(pos, direction, value));
+
+        return true;
     }
 
     private static DeathCapture capture;
@@ -267,6 +470,11 @@ public final class ShifuEvents {
      * {@code CraftEventFactory} が作り直す。経験値オーブも同じ。
      */
     public static boolean catchDrop(final Entity entity) {
+        if (discardBlockDrops && entity instanceof net.minecraft.world.entity.item.ItemEntity) {
+            // BlockBreakEvent#setDropItems(false)。世界に入れずに捨てる(呼び手の addEntity は true を返す)
+            return true;
+        }
+
         final DeathCapture current = capture;
 
         if (current == null) {
@@ -343,6 +551,10 @@ public final class ShifuEvents {
             for (ExperienceOrb orb : current.orbs) {
                 victim.level().addFreshEntity(orb);
             }
+
+            for (Award award : current.awards) {
+                ExperienceOrb.awardWithDirection((ServerLevel) victim.level(), award.pos(), award.direction(), award.value());
+            }
         } else if (wanted > 0) {
             ExperienceOrb.award((ServerLevel) victim.level(), victim.position(), wanted);
         }
@@ -397,11 +609,20 @@ public final class ShifuEvents {
         releaseExperience(victim, current, event.getDroppedExp());
     }
 
+    /** {@link #entityDamageBefore} が発火して、まだ {@code actuallyHurt} に渡していないイベントと、その相手。 */
+    private static org.bukkit.event.entity.EntityDamageEvent pendingDamage;
+    private static LivingEntity pendingDamaged;
+
     /**
-     * ダメージ。
+     * EntityDamageEvent。{@code hurtServer} で眠りを覚ます行の手前。
      *
-     * <p><b>登録が無ければ null。</b> 呼ぶ側は null のとき vanilla の
-     * {@code actuallyHurt} をそのまま通す。
+     * <p>vanilla はこの先で、盾の耐久を減らし、盾で防いだ攻撃者を弾き(盾を割る)、兜の耐久を減らしてから
+     * {@code actuallyHurt} を呼ぶ。以前は {@code actuallyHurt} の手前で発火していたので、取り消しても
+     * それらと眠りの解除は済んでいた。Paper は盾の計算を dryRun で先に済ませて発火し、取り消しなら
+     * 何もせずに抜ける。同じ形にするため、ここで vanilla と同じ式でダメージを先に求めて発火する。
+     *
+     * <p>{@code actuallyHurt} が呼ばれない場合(無敵時間中で前回以下)は発火しない(Paper と同じ)。
+     * 取り消されなければイベントを控えて、{@code actuallyHurt} の手前で {@link #takeDamage} が渡す。
      *
      * <p><b>差分の内訳は載らない。</b> Paper は防具・耐性・吸収・受け流しの
      * 減衰を先に計算して {@code DamageModifier} ごとに詰め、減衰後の値を
@@ -411,22 +632,115 @@ public final class ShifuEvents {
      * {@code getDamage()} と同じ値を返す。
      * {@code getDamage(DamageModifier.ARMOR)} などは 0。
      *
-     * <p>取り消しと {@code setDamage} は効く。原因
-     * ({@code DamageCause})は Paper と同じ導出をそのまま使う。
+     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch(hurtServer)、
+     * CraftEventFactory.callNonLivingEntityDamageEvent(名前に反して中身は生死を問わない)
      *
-     * <p>参照した位置(Paper 26.2):
-     * {@code paper-server src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:1228}
-     * ({@code callNonLivingEntityDamageEvent}。名前に反して中身は生死を問わない)
+     * @return vanilla の続きへ進んでよいか。取り消されたら false
      */
-    public static org.bukkit.event.entity.EntityDamageEvent entityDamage(
-            final Entity entity,
-            final net.minecraft.world.damagesource.DamageSource source,
-            final float damage) {
+    public static boolean entityDamageBefore(
+            final LivingEntity entity, final ServerLevel level,
+            final net.minecraft.world.damagesource.DamageSource source, final float amount) {
         if (!listening(org.bukkit.event.entity.EntityDamageEvent.getHandlerList())) {
+            return true;
+        }
+
+        float damage = amount < 0.0F ? 0.0F : amount;
+        damage -= blockedDamage(entity, source, damage);
+
+        if (source.is(net.minecraft.tags.DamageTypeTags.IS_FREEZING) && entity.getType().is(net.minecraft.tags.EntityTypeTags.FREEZE_HURTS_EXTRA_TYPES)) {
+            damage *= 5.0F;
+        }
+
+        if (source.is(net.minecraft.tags.DamageTypeTags.DAMAGES_HELMET) && !entity.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).isEmpty()) {
+            damage *= 0.75F;
+        }
+
+        if (Float.isNaN(damage) || Float.isInfinite(damage)) {
+            damage = Float.MAX_VALUE;
+        }
+
+        if (entity.invulnerableTime > 10.0F && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_COOLDOWN)) {
+            if (damage <= entity.lastHurt) {
+                return true;
+            }
+
+            damage -= entity.lastHurt;
+        }
+
+        final org.bukkit.event.entity.EntityDamageEvent event =
+                CraftEventFactory.callNonLivingEntityDamageEvent(entity, source, damage, false);
+
+        if (event.isCancelled()) {
+            return false;
+        }
+
+        pendingDamage = event;
+        pendingDamaged = entity;
+
+        return true;
+    }
+
+    /**
+     * {@code applyItemBlocking} のうち、防いだ量を求める部分だけ。盾の耐久と攻撃者への反動
+     * ({@code hurtBlockingItem}、{@code blockUsingItem})は通さない。Paper の dryRun と同じ。
+     *
+     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch(applyItemBlocking)
+     */
+    private static float blockedDamage(final LivingEntity entity, final net.minecraft.world.damagesource.DamageSource source,
+                                       final float damage) {
+        if (damage <= 0.0F) {
+            return 0.0F;
+        }
+
+        final net.minecraft.world.item.ItemStack blockingWith = entity.getItemBlockingWith();
+
+        if (blockingWith == null) {
+            return 0.0F;
+        }
+
+        final net.minecraft.world.item.component.BlocksAttacks blocksAttacks =
+                blockingWith.get(net.minecraft.core.component.DataComponents.BLOCKS_ATTACKS);
+
+        if (blocksAttacks == null || blocksAttacks.bypassedBy().map(source::is).orElse(false)) {
+            return 0.0F;
+        }
+
+        if (source.getDirectEntity() instanceof net.minecraft.world.entity.projectile.arrow.AbstractArrow arrow
+                && arrow.getPierceLevel() > 0) {
+            return 0.0F;
+        }
+
+        final net.minecraft.world.phys.Vec3 sourcePosition = source.getSourcePosition();
+        final double angle;
+
+        if (sourcePosition != null) {
+            final net.minecraft.world.phys.Vec3 viewVector = entity.calculateViewVector(0.0F, entity.getYHeadRot());
+            net.minecraft.world.phys.Vec3 vectorTo = sourcePosition.subtract(entity.position());
+            vectorTo = new net.minecraft.world.phys.Vec3(vectorTo.x, 0.0, vectorTo.z).normalize();
+            angle = Math.acos(vectorTo.dot(viewVector));
+        } else {
+            angle = (float) Math.PI;
+        }
+
+        return blocksAttacks.resolveBlockedDamage(source, damage, angle);
+    }
+
+    /**
+     * {@link #entityDamageBefore} が控えたイベント。{@code actuallyHurt} の手前で読む。
+     * 登録が無かった、または別の相手のものなら null で、呼ぶ側は vanilla の {@code actuallyHurt} を通す。
+     */
+    public static org.bukkit.event.entity.EntityDamageEvent takeDamage(final LivingEntity entity) {
+        final org.bukkit.event.entity.EntityDamageEvent event = pendingDamage;
+
+        if (event == null) {
             return null;
         }
 
-        return CraftEventFactory.callNonLivingEntityDamageEvent(entity, source, damage, false);
+        final LivingEntity damaged = pendingDamaged;
+        pendingDamage = null;
+        pendingDamaged = null;
+
+        return damaged == entity ? event : null;
     }
 
     /**
@@ -687,8 +1001,14 @@ public final class ShifuEvents {
     /** 行き先を変えられた {@code teleport(transition)} の、入れ子の呼び出しの相手。 */
     private static ServerPlayer suppressTransition;
 
-    /** 呼び出し側が先に置いた理由。vanilla の署名には理由を運ぶ引数が無い。 */
-    private static Entity causeEntity;
+    /**
+     * 呼び出し側が先に置いた理由。vanilla の署名には理由を運ぶ引数が無い。
+     *
+     * <p>相手は弱い参照で持つ。コーラスフルーツは理由を置いたあと {@code randomTeleport} が
+     * 失敗するとテレポートが起きないので、次に誰かがテレポートするまで、退出した
+     * ServerPlayer もこの欄に残った。
+     */
+    private static java.lang.ref.WeakReference<Entity> causeEntity;
     private static TeleportCause cause;
 
     /**
@@ -703,7 +1023,7 @@ public final class ShifuEvents {
             return;
         }
 
-        causeEntity = entity;
+        causeEntity = new java.lang.ref.WeakReference<>(entity);
         cause = reason;
     }
 
@@ -722,7 +1042,7 @@ public final class ShifuEvents {
     }
 
     private static TeleportCause takeCause(final ServerPlayer player) {
-        final TeleportCause placed = causeEntity == player ? cause : null;
+        final TeleportCause placed = causeEntity != null && causeEntity.get() == player ? cause : null;
         causeEntity = null;
         cause = null;
 
@@ -1288,10 +1608,12 @@ public final class ShifuEvents {
             return;
         }
 
-        if (old.shifuKeepInventory) {
-            fresh.getInventory().replaceWith(old.getInventory());
-            fresh.getInventory().setSelectedSlot(old.getInventory().getSelectedSlot());
-        }
+        // keepInventory なら全部、そうでなければ getItemsToKeep の分だけが古い方の持ち物に残っている
+        // (playerDeath が戻している)。どちらも写す。keepInventory のときだけ写していたので、
+        // getItemsToKeep に足した物は古い ServerPlayer と一緒に消えていた。何も残っていなければ
+        // 古い方も空なので、写しても新しい方は空のまま。
+        fresh.getInventory().replaceWith(old.getInventory());
+        fresh.getInventory().setSelectedSlot(old.getInventory().getSelectedSlot());
 
         if (old.keepLevel) {
             fresh.experienceLevel = old.experienceLevel;
@@ -1345,70 +1667,90 @@ public final class ShifuEvents {
         }
     }
 
-    /** BlockGrowEvent。vanilla が置いたあと。 */
-    public static void blockGrow(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
-                                 final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags) {
+    /**
+     * BlockGrowEvent。vanilla が置いたあと。
+     *
+     * @return 取り消されなかったか。茎は実を置いたあとに自分を「実つき」に変えるので、
+     *         取り消されたらそこで抜ける(抜けないと、実が無いのに茎だけ空を向いた)
+     */
+    public static boolean blockGrow(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
+                                    final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags) {
         if (before == null) {
-            return;
+            return true;
         }
 
         final org.bukkit.craftbukkit.block.CraftBlockState placed = org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
         final org.bukkit.event.block.BlockGrowEvent event = new org.bukkit.event.block.BlockGrowEvent(placed.getBlock(), placed);
-        finishBlockChange(level, pos, before, placed, event.callEvent(), flags);
+        final boolean allowed = event.callEvent();
+        finishBlockChange(level, pos, before, placed, allowed, flags);
+
+        return allowed;
     }
 
     /** BlockSpreadEvent。vanilla が置いたあと。 */
-    public static void blockSpread(final net.minecraft.world.level.LevelAccessor level, final BlockPos source, final BlockPos pos,
-                                   final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags) {
+    public static boolean blockSpread(final net.minecraft.world.level.LevelAccessor level, final BlockPos source, final BlockPos pos,
+                                      final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags) {
         if (before == null) {
-            return;
+            return true;
         }
 
         final BlockPos from = CraftEventFactory.sourceBlockOverride != null ? CraftEventFactory.sourceBlockOverride : source;
         final org.bukkit.craftbukkit.block.CraftBlockState placed = org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
         final org.bukkit.event.block.BlockSpreadEvent event = new org.bukkit.event.block.BlockSpreadEvent(
                 placed.getBlock(), CraftBlock.at(level, from), placed);
-        finishBlockChange(level, pos, before, placed, event.callEvent(), flags);
+        final boolean allowed = event.callEvent();
+        finishBlockChange(level, pos, before, placed, allowed, flags);
+
+        return allowed;
     }
 
     /** BlockFormEvent / EntityBlockFormEvent。vanilla が置いたあと。 */
-    public static void blockForm(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
-                                 final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags, final Entity entity) {
+    public static boolean blockForm(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
+                                    final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags, final Entity entity) {
         if (before == null) {
-            return;
+            return true;
         }
 
         final org.bukkit.craftbukkit.block.CraftBlockState placed = org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
         final org.bukkit.event.block.BlockFormEvent event = entity == null
                 ? new org.bukkit.event.block.BlockFormEvent(placed.getBlock(), placed)
                 : new org.bukkit.event.block.EntityBlockFormEvent(entity.getBukkitEntity(), placed.getBlock(), placed);
-        finishBlockChange(level, pos, before, placed, event.callEvent(), flags);
+        final boolean allowed = event.callEvent();
+        finishBlockChange(level, pos, before, placed, allowed, flags);
+
+        return allowed;
     }
 
     /** MoistureChangeEvent。vanilla が置いたあと。 */
-    public static void moistureChange(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
-                                      final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags) {
+    public static boolean moistureChange(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
+                                         final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags) {
         if (before == null) {
-            return;
+            return true;
         }
 
         final org.bukkit.craftbukkit.block.CraftBlockState placed = org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
         final org.bukkit.event.block.MoistureChangeEvent event = new org.bukkit.event.block.MoistureChangeEvent(placed.getBlock(), placed);
-        finishBlockChange(level, pos, before, placed, event.callEvent(), flags);
+        final boolean allowed = event.callEvent();
+        finishBlockChange(level, pos, before, placed, allowed, flags);
+
+        return allowed;
     }
 
     /** CauldronLevelChangeEvent。vanilla が置いたあと。 */
-    public static void cauldronLevelChange(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
-                                           final org.bukkit.craftbukkit.block.CraftBlockState before, final Entity entity,
-                                           final org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason reason) {
+    public static boolean cauldronLevelChange(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
+                                              final org.bukkit.craftbukkit.block.CraftBlockState before, final Entity entity,
+                                              final org.bukkit.event.block.CauldronLevelChangeEvent.ChangeReason reason) {
         if (before == null) {
-            return;
+            return true;
         }
 
         final org.bukkit.craftbukkit.block.CraftBlockState placed = org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
         final org.bukkit.event.block.CauldronLevelChangeEvent event = new org.bukkit.event.block.CauldronLevelChangeEvent(
                 CraftBlock.at(level, pos), entity == null ? null : entity.getBukkitEntity(), reason, placed);
-        finishBlockChange(level, pos, before, placed, event.callEvent(), net.minecraft.world.level.block.Block.UPDATE_ALL);
+        final boolean allowed = event.callEvent();
+        finishBlockChange(level, pos, before, placed, allowed, net.minecraft.world.level.block.Block.UPDATE_ALL);
+
+        return allowed;
     }
 
     // ------------------------------------------------------------ クリック
@@ -1627,16 +1969,19 @@ public final class ShifuEvents {
     }
 
     /** EntityChangeBlockEvent。vanilla が置いたあと。Paper は置く前に発火するが、形は同じ。 */
-    public static void entityChangeBlock(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
-                                         final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags, final Entity entity) {
+    public static boolean entityChangeBlock(final net.minecraft.world.level.LevelAccessor level, final BlockPos pos,
+                                            final org.bukkit.craftbukkit.block.CraftBlockState before, final int flags, final Entity entity) {
         if (before == null) {
-            return;
+            return true;
         }
 
         final org.bukkit.craftbukkit.block.CraftBlockState placed = org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level, pos);
         final org.bukkit.event.entity.EntityChangeBlockEvent event = new org.bukkit.event.entity.EntityChangeBlockEvent(
                 entity.getBukkitEntity(), placed.getBlock(), placed.getBlockData());
-        finishBlockChange(level, pos, before, placed, event.callEvent(), flags);
+        final boolean allowed = event.callEvent();
+        finishBlockChange(level, pos, before, placed, allowed, flags);
+
+        return allowed;
     }
 
     // ------------------------------------------------------------ TNT
@@ -1689,16 +2034,49 @@ public final class ShifuEvents {
         return CraftEventFactory.callTNTPrimeEvent(level, pos, cause, entity, block);
     }
 
-    /** 爆発で誘爆するとき。vanilla は prime を通らず {@code wasExploded} で直に作る。 */
+    /**
+     * 爆発で誘爆するとき。vanilla は prime を通らず {@code wasExploded} で直に作る。
+     *
+     * <p>{@code wasExploded} は vanilla がその位置を壊したあとに呼ばれるので、
+     * そこで取り消すと TNT は消えたままになる。出す位置は
+     * {@code ServerExplosion.interactWithBlocks} の、その位置を壊す手前。
+     *
+     * <p>いまその位置に入っているのは
+     * {@code patches/events/generated/net-minecraft-world-level-ServerExplosion.rules} で、
+     * Paper の行をそのまま写しているので登録を見ていない(プラグイン 0 個でも
+     * 壊れる位置ごとに {@code getBlockState} とゲームルールを引く)。
+     * そこから呼び替えるための形にしてある。爆発で壊れる位置ごとに通るので、
+     * 登録を見てからゲームルールとブロックを見る。
+     *
+     * <p>読んだ位置: paper-server
+     * patches/sources/net/minecraft/world/level/ServerExplosion.java.patch:167-178
+     *
+     * @return その位置を vanilla のとおり壊してよいか
+     */
     public static boolean tntPrimeByExplosion(final ServerLevel level, final BlockPos pos, final net.minecraft.world.level.Explosion explosion) {
         if (!listening(org.bukkit.event.block.TNTPrimeEvent.getHandlerList())) {
             return true;
         }
 
+        final net.minecraft.world.level.block.state.BlockState state = level.getBlockState(pos);
+
+        if (!level.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.TNT_EXPLODES)
+                || !(state.getBlock() instanceof net.minecraft.world.level.block.TntBlock)) {
+            return true;
+        }
+
         final Entity source = explosion.getDirectSourceEntity();
 
-        return CraftEventFactory.callTNTPrimeEvent(level, pos, org.bukkit.event.block.TNTPrimeEvent.PrimeCause.EXPLOSION,
-                source, source == null ? BlockPos.containing(explosion.center()) : null);
+        if (CraftEventFactory.callTNTPrimeEvent(level, pos, org.bukkit.event.block.TNTPrimeEvent.PrimeCause.EXPLOSION,
+                source, source == null ? BlockPos.containing(explosion.center()) : null)) {
+            return true;
+        }
+
+        // クライアントは爆発の packet でこの位置を空気にしているので、送り直す
+        level.sendBlockUpdated(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), state,
+                net.minecraft.world.level.block.Block.UPDATE_ALL);
+
+        return false;
     }
 
     // ------------------------------------------------------------ ゲームモード・飛行・ベッド・食事
@@ -1717,8 +2095,9 @@ public final class ShifuEvents {
     }
 
     /**
-     * PlayerGameModeChangeEvent。{@code changeGameModeForPlayer} で「同じモードなら何もしない」の
-     * 判定のあと、書き換える前。Paper と同じ位置。
+     * PlayerGameModeChangeEvent。{@code changeGameModeForPlayer} の先頭、「同じモードなら何もしない」の
+     * 判定の手前。同じモードなら発火せずに true(Paper は判定のあとで出すので、同じモードでは出ない)。
+     * 判定の手前に置くのは、置かれた理由をどの経路でも消すため。
      *
      * <p>未対応: cancelMessage(Paper の /gamemode はこれを送るが、vanilla のコマンドは読まない)。
      *
@@ -1734,6 +2113,10 @@ public final class ShifuEvents {
                 : org.bukkit.event.player.PlayerGameModeChangeEvent.Cause.UNKNOWN;
         gameModePlayer = null;
         gameModeCause = null;
+
+        if (mode == player.gameMode.getGameModeForPlayer()) {
+            return true;
+        }
 
         return new org.bukkit.event.player.PlayerGameModeChangeEvent(
                 player.getBukkitEntity(), org.bukkit.GameMode.getByValue(mode.getId()), cause, null).callEvent();

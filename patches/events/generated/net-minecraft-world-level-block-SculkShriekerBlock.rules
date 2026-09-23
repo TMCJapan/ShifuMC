@@ -5,4 +5,6 @@ file: net/minecraft/world/level/block/SculkShriekerBlock.java
 anchor:
     serverLevel.getBlockEntity(pos, BlockEntityType.SCULK_SHRIEKER).ifPresent(sculkShrieker -> sculkShrieker.tryShriek(serverLevel, serverPlayer));
 insert:
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerInteractEvent(serverPlayer, org.bukkit.event.block.Action.PHYSICAL, pos, null, null, null).isCancelled()) return; // CraftBukkit
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerInteractEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerInteractEvent(serverPlayer, org.bukkit.event.block.Action.PHYSICAL, pos, null, null, null).isCancelled()) return; // CraftBukkit
+    }

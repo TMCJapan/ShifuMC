@@ -5,10 +5,12 @@ file: net/minecraft/world/entity/vehicle/minecart/AbstractMinecart.java
 anchor:
     double d = entity.getX() - this.getX();
 insert:
-    // CraftBukkit start
-    org.bukkit.event.vehicle.VehicleEntityCollisionEvent collisionEvent = new org.bukkit.event.vehicle.VehicleEntityCollisionEvent(
-        (org.bukkit.entity.Vehicle) this.getBukkitEntity(),
-        entity.getBukkitEntity()
-    );
-    if (!collisionEvent.callEvent()) return;
-    // CraftBukkit end
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.vehicle.VehicleEntityCollisionEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        org.bukkit.event.vehicle.VehicleEntityCollisionEvent collisionEvent = new org.bukkit.event.vehicle.VehicleEntityCollisionEvent(
+            (org.bukkit.entity.Vehicle) this.getBukkitEntity(),
+            entity.getBukkitEntity()
+        );
+        if (!collisionEvent.callEvent()) return;
+        // CraftBukkit end
+    }

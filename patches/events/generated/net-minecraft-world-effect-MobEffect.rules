@@ -5,4 +5,6 @@ file: net/minecraft/world/effect/MobEffect.java
 anchor:
     this.applyEffectTick(level, entity, amplifier);
 insert:
-    if (!new io.papermc.paper.event.entity.EntityEffectTickEvent(entity.getBukkitLivingEntity(), org.bukkit.craftbukkit.potion.CraftPotionEffectType.minecraftToBukkit(this), amplifier).callEvent()) { return; } // Paper - Add EntityEffectTickEvent
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.EntityEffectTickEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        if (!new io.papermc.paper.event.entity.EntityEffectTickEvent(entity.getBukkitLivingEntity(), org.bukkit.craftbukkit.potion.CraftPotionEffectType.minecraftToBukkit(this), amplifier).callEvent()) { return; } // Paper - Add EntityEffectTickEvent
+    }

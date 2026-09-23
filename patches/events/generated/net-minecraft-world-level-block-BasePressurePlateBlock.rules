@@ -5,20 +5,24 @@ file: net/minecraft/world/level/block/BasePressurePlateBlock.java
 anchor:
     if (!level.isClientSide()) {
 insert:
-    if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.EntityInsideBlockEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+    }
 
 # BlockRedstoneEvent
 file: net/minecraft/world/level/block/BasePressurePlateBlock.java
 anchor:
     if (currentSignal != signalStrength) {
 insert:
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)) { // Shifu - 登録が無ければ組み立てない
 
-    // CraftBukkit start - Interact Pressure Plate
-    if (flag != flag1) {
-        org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(org.bukkit.craftbukkit.block.CraftBlock.at(level, pos), currentSignal, signalStrength);
-        eventRedstone.callEvent();
+        // CraftBukkit start - Interact Pressure Plate
+        if (flag != flag1) {
+            org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(org.bukkit.craftbukkit.block.CraftBlock.at(level, pos), currentSignal, signalStrength);
+            eventRedstone.callEvent();
 
-        flag1 = eventRedstone.getNewCurrent() > 0;
-        signalStrength = eventRedstone.getNewCurrent();
+            flag1 = eventRedstone.getNewCurrent() > 0;
+            signalStrength = eventRedstone.getNewCurrent();
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

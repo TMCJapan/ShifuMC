@@ -13,9 +13,16 @@
 # 発火は placedState が確定したあと、音・gameEvent・手持ちの減りより前。
 # 取り消したときにその 3 つが起きないのは、Paper と同じ。
 #
+# 戻すときの旗は UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE | UPDATE_SKIP_ON_PLACE。
+# UPDATE_ALL で戻すと形の更新が隣へ届き、まだ残っているもう片方(ベッドの頭、扉や
+# 背の高い花の上半分)が updateShape で空気になって、Block.updateOrDestroy の
+# destroyBlock(pos, true) でドロップまで出る。手持ちは FAIL のまま減らないので、
+# 取り消すたびにブロックが増えていた。
+#
 # 読んだ位置(Paper 26.2):
 #   paper-server src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:519
 #   vanilla      net/minecraft/world/item/BlockItem.java:67,86
+#   paper-server src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java:193(戻すときの旗)
 
 file: net/minecraft/world/item/BlockItem.java
 anchor:
@@ -37,6 +44,8 @@ insert:
                     shifuLevel, player, blockPlaceContext.getHand(), shifuReplaced,
                     blockPlaceContext.getHitResult().getBlockPos())) {
         shifuLevel.setBlock(clickedPos, ((org.bukkit.craftbukkit.block.CraftBlockState) shifuReplaced).getHandle(),
-                net.minecraft.world.level.block.Block.UPDATE_ALL);
+                net.minecraft.world.level.block.Block.UPDATE_CLIENTS
+                        | net.minecraft.world.level.block.Block.UPDATE_KNOWN_SHAPE
+                        | net.minecraft.world.level.block.Block.UPDATE_SKIP_ON_PLACE);
         return InteractionResult.FAIL;
     }

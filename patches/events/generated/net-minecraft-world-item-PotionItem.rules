@@ -5,13 +5,15 @@ file: net/minecraft/world/item/PotionItem.java
 anchor:
     level.playSound(null, clickedPos, SoundEvents.GENERIC_SPLASH, SoundSource.BLOCKS, 1.0F, 1.0F);
 insert:
-    // Paper start
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(player, clickedPos, Blocks.MUD.defaultBlockState())) {
-        if (itemInHand.getCount() > 1 || player.hasInfiniteMaterials()) {
-            player.containerMenu.sendAllDataToRemote();
-        } else {
-            player.containerMenu.forceHeldSlot(context.getHand());
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityChangeBlockEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityChangeBlockEvent(player, clickedPos, Blocks.MUD.defaultBlockState())) {
+            if (itemInHand.getCount() > 1 || player.hasInfiniteMaterials()) {
+                player.containerMenu.sendAllDataToRemote();
+            } else {
+                player.containerMenu.forceHeldSlot(context.getHand());
+            }
+            return InteractionResult.PASS;
         }
-        return InteractionResult.PASS;
+        // Paper end
     }
-    // Paper end

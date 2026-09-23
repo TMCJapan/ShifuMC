@@ -5,8 +5,10 @@ file: net/minecraft/world/entity/ai/goal/RemoveBlockGoal.java
 anchor:
     level.removeBlock(posWithBlock, false);
 insert:
-    // CraftBukkit start - Step on eggs
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityInteractEvent(this.removerMob, org.bukkit.craftbukkit.block.CraftBlock.at(level, posWithBlock))) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityInteractEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start - Step on eggs
+        if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityInteractEvent(this.removerMob, org.bukkit.craftbukkit.block.CraftBlock.at(level, posWithBlock))) {
+            return;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

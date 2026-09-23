@@ -1,0 +1,24 @@
+# Bukkit 層の配線。vanilla の行は変えない。
+
+# チャンクの PersistentDataContainer(ChunkBukkitValues)。
+#
+# Shifu には読み書きがどこにも無く、プラグインが Chunk#getPersistentDataContainer() に
+# 書いた値がアンロードと再起動で消えていた。Paper は record に成分を足して運ぶが、
+# record の成分は足せないので、ChunkMap が作ったところで instance に結んで
+# (patches/wire/net-minecraft-server-level-ChunkMap.rules)、ここで外す。
+# 控えが無ければ何もしないので、値が無ければ NBT は vanilla と同じ。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/chunk/storage/SerializableChunkData.java.patch
+#   (「CraftBukkit start - load chunk persistent data from nbt」と
+#    「CraftBukkit start - store chunk persistent data in nbt」)
+file: net/minecraft/world/level/chunk/storage/SerializableChunkData.java
+anchor:
+    chunkAccess.setLightCorrect(this.lightCorrect);
+insert:
+    this.shifuApplyTo(chunkAccess);
+
+file: net/minecraft/world/level/chunk/storage/SerializableChunkData.java
+anchor:
+    compoundTag.put("structures", this.structureData);
+insert-after:
+    this.shifuWriteTo(compoundTag);

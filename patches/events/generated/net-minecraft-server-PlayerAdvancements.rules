@@ -5,24 +5,28 @@ file: net/minecraft/server/PlayerAdvancements.java
 anchor:
     this.unregisterListeners(advancement);
 insert:
-    // Paper start - Add PlayerAdvancementCriterionGrantEvent
-    if (!new com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent(this.player.getBukkitEntity(), advancement.toBukkit(), criterionKey).callEvent()) {
-        orStartProgress.revokeProgress(criterionKey);
-        return false;
+    if (dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - Add PlayerAdvancementCriterionGrantEvent
+        if (!new com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent(this.player.getBukkitEntity(), advancement.toBukkit(), criterionKey).callEvent()) {
+            orStartProgress.revokeProgress(criterionKey);
+            return false;
+        }
+        // Paper end - Add PlayerAdvancementCriterionGrantEvent
     }
-    // Paper end - Add PlayerAdvancementCriterionGrantEvent
 
 # PlayerAdvancementDoneEvent
 file: net/minecraft/server/PlayerAdvancements.java
 anchor:
     advancement.value().rewards().grant(this.player);
 insert:
-    // Paper start - Add Adventure message to PlayerAdvancementDoneEvent
-    // ラムダを使うと PlayerAdvancements の合成メソッドの番号がずれて、styledchat の
-    // 告知の文を狙う @ModifyArg が当たらない。Optional の中身を取り出して分岐で書く。
-    final net.minecraft.advancements.DisplayInfo shifuInfo = advancement.value().display().orElse(null);
-    final net.kyori.adventure.text.Component message = shifuInfo != null && shifuInfo.shouldAnnounceChat()
-            ? io.papermc.paper.adventure.PaperAdventure.asAdventure(shifuInfo.getType().createAnnouncement(advancement, this.player)) : null;
-    final org.bukkit.event.player.PlayerAdvancementDoneEvent event = new org.bukkit.event.player.PlayerAdvancementDoneEvent(this.player.getBukkitEntity(), advancement.toBukkit(), message);
-    this.player.level().getCraftServer().getPluginManager().callEvent(event); // CraftBukkit
-    // Paper end
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerAdvancementDoneEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - Add Adventure message to PlayerAdvancementDoneEvent
+        // ラムダを使うと PlayerAdvancements の合成メソッドの番号がずれて、styledchat の
+        // 告知の文を狙う @ModifyArg が当たらない。Optional の中身を取り出して分岐で書く。
+        final net.minecraft.advancements.DisplayInfo shifuInfo = advancement.value().display().orElse(null);
+        final net.kyori.adventure.text.Component message = shifuInfo != null && shifuInfo.shouldAnnounceChat()
+                ? io.papermc.paper.adventure.PaperAdventure.asAdventure(shifuInfo.getType().createAnnouncement(advancement, this.player)) : null;
+        final org.bukkit.event.player.PlayerAdvancementDoneEvent event = new org.bukkit.event.player.PlayerAdvancementDoneEvent(this.player.getBukkitEntity(), advancement.toBukkit(), message);
+        this.player.level().getCraftServer().getPluginManager().callEvent(event); // CraftBukkit
+        // Paper end
+    }

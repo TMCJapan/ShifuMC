@@ -5,24 +5,28 @@ file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
     this.count = this.count + orb.count;
 insert:
-    // Paper start - call orb merge event
-    if (!new com.destroystokyo.paper.event.entity.ExperienceOrbMergeEvent((org.bukkit.entity.ExperienceOrb) this.getBukkitEntity(), (org.bukkit.entity.ExperienceOrb) orb.getBukkitEntity()).callEvent()) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.entity.ExperienceOrbMergeEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // Paper start - call orb merge event
+        if (!new com.destroystokyo.paper.event.entity.ExperienceOrbMergeEvent((org.bukkit.entity.ExperienceOrb) this.getBukkitEntity(), (org.bukkit.entity.ExperienceOrb) orb.getBukkitEntity()).callEvent()) {
+            return;
+        }
+        // Paper end - call orb merge event
     }
-    // Paper end - call orb merge event
 
 # callPlayerItemMendEvent
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
     itemStack.setDamageValue(itemStack.getDamageValue() - min);
 insert:
-    // CraftBukkit start
-    // Paper start - mending event
-    final int consumedExperience = min > 0 ? min * value / i : 0;
-    org.bukkit.event.player.PlayerItemMendEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerItemMendEvent(player, this, itemStack, randomItemWith.get().inSlot(), min, consumedExperience);
-    // Paper end - mending event
-    min = event.getRepairAmount();
-    if (event.isCancelled()) {
-        return value;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerItemMendEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        // Paper start - mending event
+        final int consumedExperience = min > 0 ? min * value / i : 0;
+        org.bukkit.event.player.PlayerItemMendEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerItemMendEvent(player, this, itemStack, randomItemWith.get().inSlot(), min, consumedExperience);
+        // Paper end - mending event
+        min = event.getRepairAmount();
+        if (event.isCancelled()) {
+            return value;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

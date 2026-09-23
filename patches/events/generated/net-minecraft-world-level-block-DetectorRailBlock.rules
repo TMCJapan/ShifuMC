@@ -5,20 +5,24 @@ file: net/minecraft/world/level/block/DetectorRailBlock.java
 anchor:
     if (!level.isClientSide()) {
 insert:
-    if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.EntityInsideBlockEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(level, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+    }
 
 # BlockRedstoneEvent
 file: net/minecraft/world/level/block/DetectorRailBlock.java
 anchor:
     if (flag && !poweredValue) {
 insert:
-    // CraftBukkit start
-    if (poweredValue != flag) {
-        org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)) { // Shifu - 登録が無ければ組み立てない
+        // CraftBukkit start
+        if (poweredValue != flag) {
+            org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
 
-        org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(block, poweredValue ? 15 : 0, flag ? 15 : 0);
-        level.getCraftServer().getPluginManager().callEvent(eventRedstone);
+            org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(block, poweredValue ? 15 : 0, flag ? 15 : 0);
+            level.getCraftServer().getPluginManager().callEvent(eventRedstone);
 
-        flag = eventRedstone.getNewCurrent() > 0;
+            flag = eventRedstone.getNewCurrent() > 0;
+        }
+        // CraftBukkit end
     }
-    // CraftBukkit end

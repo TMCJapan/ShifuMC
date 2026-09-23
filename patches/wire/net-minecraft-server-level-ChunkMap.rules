@@ -20,3 +20,22 @@ insert:
     } else {
 insert-after:
     }
+
+# チャンクの PersistentDataContainer(ChunkBukkitValues)を SerializableChunkData に結ぶ。
+#
+# record の成分は足せないので、作ったところで instance に結んでおき、
+# read / write で外す(patches/wire/net-minecraft-world-level-chunk-storage-SerializableChunkData.rules)。
+# 控えを入れるのはプラグインが書いたチャンクだけで、それ以外は何も残らない。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/level/chunk/storage/SerializableChunkData.java.patch
+file: net/minecraft/server/level/ChunkMap.java
+anchor:
+    SerializableChunkData serializableChunkData = SerializableChunkData.parse(this.level, this.level.palettedContainerFactory(), tag);
+insert-after:
+    SerializableChunkData.shifuRememberTag(serializableChunkData, tag);
+
+file: net/minecraft/server/level/ChunkMap.java
+anchor:
+    SerializableChunkData serializableChunkData = SerializableChunkData.copyOf(this.level, chunk);
+insert-after:
+    SerializableChunkData.shifuRememberChunk(serializableChunkData, chunk);

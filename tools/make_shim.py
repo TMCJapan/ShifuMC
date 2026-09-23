@@ -67,7 +67,7 @@ def depth_at(original, line):
 
 
 def members_in(original, bodies, hunk, names):
-    """hunk が足している要素を (名前, 塊, 入る位置) で返す。
+    """hunk が足している要素を (名前, 塊, 入る位置, @Override か) で返す。
 
     メソッドの中の局所変数は要素の宣言と同じ形をしている。
     見分けるには深さを見るしかないので、元のファイルでの深さから始めて、
@@ -98,6 +98,15 @@ def members_in(original, bodies, hunk, names):
             index += 1
             continue
 
+        # 宣言の直前に付いている注釈。塊には入らないので、ここで見ておく。
+        # 祖先の宣言を上書きするものかの手掛かりになる(shadowing)。
+        over = False
+        back = index - 1
+
+        while back >= 0 and seq[back][1].strip().startswith("@"):
+            over = over or seq[back][1].strip().split("(")[0] == "@Override"
+            back -= 1
+
         block = capture([t for _, t in seq[index:]], 0)
         span = seq[index:index + len(block)]
         index += len(block)
@@ -106,7 +115,7 @@ def members_in(original, bodies, hunk, names):
 
         # 途中に文脈行が混じる = 元からある行を巻き込む。足せない。
         if all(added for added, _ in span):
-            found.append((name, block, pos))
+            found.append((name, block, pos, over))
 
     return found
 
@@ -312,6 +321,485 @@ def signature(block):
     return " ".join(head.split())
 
 
+# 祖先が宣言しているものを見る。
+#
+# 足した宣言が祖先の vanilla の宣言を上書き・隠蔽すると、プラグインが 0 個でも
+# vanilla の呼び出しがこちらへ来る。2026-09-21 のレビューで 3 件出た。
+#
+#   * AbstractSkeleton.addAdditionalSaveData(CompoundTag) は Entity の同名を上書きし、
+#     スケルトンの NBT に Paper.ShouldBurnInDay が増えた
+#   * RegionFile.ChunkBuffer.write は ByteArrayOutputStream の同名を上書きし、
+#     vanilla の NbtIo.write がそちらを通った
+#   * PlayerList.getPlayerStats(ServerPlayer) は vanilla の getPlayerStats(Player) より
+#     引数が特殊なので、ServerPlayer の構築子の呼び出しが結び付き直した
+#
+# 1 回の実行で木は 1 つなので、読んだファイルと解決の結果は控えて使い回す。
+CACHE = {"lines": {}, "supers": {}, "extends": {}, "declared": {}, "where": {}, "patched": {}}
+
+# 暗黙の親。extends に書かないので継承の並びには出ないが、足すと
+# vanilla の側の文字列の連結や Set への出し入れの結果が変わる。
+OBJECT = ("toString()", "hashCode()", "equals(Object)", "clone()", "finalize()")
+
+# 基本型の広がり。vanilla が `f(long)` を持つところに `f(int)` を足すと、
+# int の式を渡している vanilla の呼び出しはそちらへ結び付く。
+WIDER = {
+    "byte": ("short", "int", "long", "float", "double"),
+    "short": ("int", "long", "float", "double"),
+    "char": ("int", "long", "float", "double"),
+    "int": ("long", "float", "double"),
+    "long": ("float", "double"),
+    "float": ("double",),
+}
+
+PRIMITIVE = ("boolean", "byte", "short", "char", "int", "long", "float", "double", "void")
+
+# 型引数で始まるメソッド(`<T> void getEntitiesByClass(...)`)。
+# filter_sources の形は「修飾子 + 型 + 名前」なので、型引数が前に付くと当たらない。
+GENERIC = re.compile(r"^\s+(?:(?:public|protected|private|static|final|default|abstract)\s+)*"
+                     r"<[^>]+>\s+[\w$<>\[\],.?]+\s+([\w$]+)\s*\(")
+
+# 引数に付く注釈。鍵は空白を落とすので `@Nullable Entity` が `@NullableEntity` になる。
+# vanilla の宣言とアダプタ層の宣言で付け方が違うので、突き合わせる前に落とす。
+MARKER = re.compile(r"^@[\w.]*?(?:Nullable|NotNull|NonNull|Nonnull|Deprecated)")
+
+
+def lines_of(tree, rel):
+    """木の中のファイルの行。無ければ None。
+
+    vanilla の木と Paper の木の両方を引くので、控えの鍵に木を入れる。
+    """
+    mark = (tree, rel)
+
+    if mark not in CACHE["lines"]:
+        path = os.path.join(tree, rel.replace("/", os.sep))
+        CACHE["lines"][mark] = (
+            open(path, encoding="utf-8", errors="replace").read().split("\n")
+            if os.path.isfile(path) else None)
+
+    return CACHE["lines"][mark]
+
+
+def plain(text):
+    """型引数を落とす。`Predicate<? super Entity>` -> `Predicate`。"""
+    out = []
+    depth = 0
+
+    for char in text:
+        if char == "<":
+            depth += 1
+        elif char == ">":
+            depth = max(0, depth - 1)
+        elif depth == 0:
+            out.append(char)
+
+    return "".join(out)
+
+
+def norm(key):
+    """鍵を突き合わせる形にする。型引数とパッケージ名を落とす。
+
+    vanilla とアダプタ層で同じ型の書き方が違う(`CompoundTag` と
+    `net.minecraft.nbt.CompoundTag`)。そのままでは祖先の宣言と一致しない。
+    """
+    name, mark, args = key.partition("(")
+
+    if not mark:
+        return name
+
+    return name + "(" + ",".join(
+        MARKER.sub("", one.strip()).rsplit(".", 1)[-1]
+        for one in plain(args.rstrip(")")).split(",") if one.strip()) + ")"
+
+
+def kin(clause):
+    """`extends A implements B, C` から親の名前。型引数は落とす。
+
+    `ContainerSingleItem.BlockContainerSingleItem` のように入れ子の型を
+    指していることがあるので、点は落とさずに返す。
+    """
+    text = plain(clause or "")
+
+    for word in ("extends", "implements", "&"):
+        text = text.replace(word, ",")
+
+    return [one.strip() for one in text.split(",") if one.strip()]
+
+
+def supers_of(tree, rel):
+    """そのファイルの中の型の名前 -> 直接の親と実装先の単純名。"""
+    mark = (tree, rel)
+
+    if mark not in CACHE["supers"]:
+        out = {}
+
+        for line in lines_of(tree, rel) or ():
+            # 型引数を先に落とす。`class EntityType<T extends Entity> implements ...` の
+            # 「extends Entity」を親と読むと、無関係な型の宣言を祖先のものと見る
+            match = fs.EXTENDS.match(plain(line))
+
+            if match:
+                out.setdefault(match.group(1), []).extend(kin(match.group(2)))
+
+        CACHE["supers"][mark] = out
+
+    return CACHE["supers"][mark]
+
+
+def extends_of(tree, rel):
+    """そのファイルの中の class の名前 -> `extends` に書いた親。
+
+    interface は入れない。Paper は interface の側に adventure の親
+    (`Component extends Iterable<Component>`)を足すので、そこを親として
+    数えると「木の外の親を上書きしている」に見えてしまう。
+    """
+    mark = (tree, rel)
+
+    if mark not in CACHE["extends"]:
+        out = {}
+
+        for line in lines_of(tree, rel) or ():
+            text = plain(line)
+            match = fs.EXTENDS.match(text)
+
+            if not match or not re.search(r"\b(?:class|enum|record)\s+$", text[:match.start(1)]):
+                continue
+
+            clause = match.group(2) or ""
+            cut = clause.find("implements")
+            names = [one.strip() for one
+                     in (clause[:cut] if cut >= 0 else clause).replace("extends", ",").split(",")
+                     if one.strip()]
+
+            if names:
+                out[match.group(1)] = names[0]
+
+        CACHE["extends"][mark] = out
+
+    return CACHE["extends"][mark]
+
+
+def outside_super(tree, rel, owner):
+    """木の外にある親クラスの名前。無ければ None。
+
+    `ChunkBuffer extends ByteArrayOutputStream` のように、実装を継いでいる
+    相手が木の外にいるかを見る。
+    """
+    at = rel
+    name = owner
+    seen = set()
+
+    while (at, name) not in seen:
+        seen.add((at, name))
+        up = extends_of(tree, at).get(name)
+
+        if not up:
+            return None
+
+        where = where_of(tree, at, up)
+
+        if not where:
+            return up
+
+        at = where
+        name = up.rsplit(".", 1)[-1]
+
+    return None
+
+
+def where_of(tree, rel, name):
+    """そのファイルから見た型の名前の相対パス。木の外のものは None。
+
+    同じ単純名の型が木の中に何十個もある(`Entry`、`Builder`)。名前だけで
+    引くと関係の無い型の宣言を祖先のものと読むので、そのファイルの中の宣言 ->
+    import -> 同じパッケージ、の順で決める。
+    """
+    mark = (tree, rel, name)
+
+    if mark in CACHE["where"]:
+        return CACHE["where"][mark]
+
+    # 入れ子の型(`ContainerSingleItem.BlockContainerSingleItem`)は外側の
+    # ファイルにいる。パッケージ名が前に付いていることもあるので、
+    # 大文字で始まる最初の語を外側の型として見る。
+    parts = name.split(".")
+    heads = [at for at, part in enumerate(parts) if part[:1].isupper()]
+    outer = parts[heads[0]] if heads else name
+    package = ".".join(parts[:heads[0]]) if heads else ""
+    lines = lines_of(tree, rel) or []
+    here = re.compile(r"\b(?:class|interface|enum|record)\s+" + re.escape(outer) + r"\b")
+    imported = re.compile(r"^import\s+(?:static\s+)?([\w.]+)\." + re.escape(outer) + r";")
+
+    if package:
+        found = package.replace(".", "/") + "/" + outer + ".java"
+    elif any(here.search(line) for line in lines):
+        found = rel
+    else:
+        for line in lines:
+            hit = imported.match(line.strip())
+
+            if hit:
+                found = hit.group(1).replace(".", "/") + "/" + outer + ".java"
+
+                # 入れ子の型の import(`a.b.Outer.Inner`)。外側のファイルにいる
+                if lines_of(tree, found) is None:
+                    found = hit.group(1).replace(".", "/") + ".java"
+
+                break
+        else:
+            near = os.path.dirname(rel)
+            found = (near + "/" if near else "") + outer + ".java"
+
+    if lines_of(tree, found) is None:
+        found = None
+
+    CACHE["where"][mark] = found
+
+    return found
+
+
+def owner_at(lines, start):
+    """その本体を開いている型の名前。"""
+    head = start
+
+    while head > 0 and not lines[head - 1].rstrip().endswith((";", "{", "}")):
+        head -= 1
+
+    match = fs.TYPE_NAME.search(" ".join(lines[head:start + 1]))
+
+    return match.group(1) if match else "(supertype)"
+
+
+def declared_in(tree, rel):
+    """そのファイルの型の直下にある宣言。(型の名前, 鍵) の集合。
+
+    祖先が同じものを宣言しているかを見るだけなので、塊は取らない。
+    """
+    mark = (tree, rel)
+
+    if mark not in CACHE["declared"]:
+        lines = lines_of(tree, rel) or []
+        out = set()
+
+        for start, end, depth in fs.type_bodies(lines):
+            owner = owner_at(lines, start)
+
+            for number in range(start + 1, min(end + 1, len(lines))):
+                line = lines[number]
+
+                if not line.strip() or indent(line) != depth:
+                    continue
+
+                # 宣言が折り返していると 1 行では `(` や `;` まで届かない。
+                # `;` か `{` が出るまで繋いでから見る(members と同じ)。
+                joined = line.rstrip()
+
+                for more in lines[number + 1:number + 8]:
+                    if ";" in joined or "{" in joined:
+                        break
+
+                    joined += " " + more.strip()
+
+                for probe in (line, joined):
+                    match = next((hit for hit in (
+                        pattern.match(probe) for pattern in
+                        (fs.DECL, fs.FIELD, fs.TYPE_NAME, fs.IFACE, fs.PLAIN_FIELD, GENERIC)) if hit), None)
+
+                    if match:
+                        out.add((owner, norm(key_of(match.group(1), lines[number:number + 8]))))
+                        break
+
+        CACHE["declared"][mark] = out
+
+    return CACHE["declared"][mark]
+
+
+def ancestry(tree, rel, owner):
+    """owner の上にある型。(相対パス, 名前) を近い順に返す。
+
+    木の外の型(`ByteArrayOutputStream` など)は相対パスが None。
+    そこに何が宣言されているかは読めないので、区別して返す。
+    """
+    out = []
+    seen = {(rel, owner)}
+    queue = [(rel, owner)]
+
+    while queue:
+        at, name = queue.pop(0)
+
+        for parent in supers_of(tree, at).get(name, ()):
+            up = (where_of(tree, at, parent), parent.rsplit(".", 1)[-1])
+
+            if up in seen:
+                continue
+
+            seen.add(up)
+            out.append(up)
+
+            if up[0]:
+                queue.append(up)
+
+    return out
+
+
+def patched_keys(root, rel):
+    """`patches/sources` がそのファイルに足している宣言の鍵。
+
+    mache は Paper の NMS がソースではなく差分なので、追加行から拾う。
+    行の深さを見られないので局所変数も混ざるが、これは「祖先が既に持って
+    いるから足してよい」と判断する側に使うので、混ざる分には害が無い。
+    """
+    mark = (root, rel)
+
+    if mark not in CACHE["patched"]:
+        path = os.path.join(root, rel.replace("/", os.sep) + ".patch")
+        out = set()
+
+        if os.path.isfile(path):
+            added = [line[1:] for line in
+                     open(path, encoding="utf-8", errors="replace").read().split("\n")
+                     if line[:1] == "+" and not line.startswith("+++")]
+
+            for number, line in enumerate(added):
+                for pattern in (fs.DECL, fs.FIELD, fs.TYPE_NAME, fs.IFACE, fs.PLAIN_FIELD, GENERIC):
+                    match = pattern.match(line)
+
+                    if match:
+                        out.add(norm(key_of(match.group(1), added[number:number + 8])))
+                        break
+
+        CACHE["patched"][mark] = out
+
+    return CACHE["patched"][mark]
+
+
+def shape(key):
+    """鍵の名前と引数の数。
+
+    型引数を入れ替えた上書き(`Property.getIdFor(T)` と
+    `BooleanProperty.getIdFor(Boolean)`)を同じものとして数えるのに使う。
+    """
+    name, mark, args = key.partition("(")
+
+    if not mark:
+        return (name, None)
+
+    return (name, len([one for one in args.rstrip(")").split(",") if one.strip()]))
+
+
+def annotated(block, mark="@Override"):
+    """宣言に前置された注釈にそれがあるか。本体の中の注釈は見ない。"""
+    for line in block:
+        text = line.strip()
+
+        if text.startswith("@"):
+            if text.split("(")[0] == mark:
+                return True
+
+            continue
+
+        if text.startswith("//") or not text:
+            continue
+
+        return False
+
+    return False
+
+
+def shadowing(tree, rel, owner, key, override, paper=None):
+    """祖先の vanilla の宣言を上書き・隠蔽する宣言か。理由を返す。
+
+    上書きすると、vanilla の呼び出しがこちらへ入る。`override` は Paper が
+    その宣言に `@Override` を付けていたか。`paper` は木の中の型の相対パスから
+    「Paper がそこに宣言しているものの鍵」を返す関数。
+    """
+    key = norm(key)
+    chain = ancestry(tree, rel, owner)
+
+    if key in OBJECT:
+        return f"Object.{key} を上書きする"
+
+    for where, name in chain:
+        if where and (name, key) in declared_in(tree, where):
+            return f"{name}.{key} を上書きする"
+
+    # 木の外の親クラス(java.io.ByteArrayOutputStream など)が宣言している
+    # ものは読めない。Paper が @Override を付けていて、木の中の祖先のどれも
+    # その鍵を宣言していなければ、上書きの相手はその外の親。vanilla は
+    # その実装をそのまま使っている。
+    #
+    # 逆に、木の中の祖先に Paper が同じものを宣言しているなら、それは shim が
+    # 一緒に足す宣言(`Container.onOpen` のような Paper の追加)の実装なので足す。
+    outside = outside_super(tree, rel, owner) if override and paper else None
+
+    if outside and not any(shape(key) in {shape(one) for one in paper(where)}
+                           for where, _ in chain if where):
+        return f"木の外の親 {outside} のメソッドを上書きする"
+
+    return None
+
+
+def narrower(tree, rel, sub, sup):
+    """sub が sup より特殊な型か。同じなら偽。"""
+    sub = norm(sub)
+    sup = norm(sup)
+
+    if sub == sup:
+        return False
+
+    if sub in WIDER:
+        return sup in WIDER[sub]
+
+    if sub.endswith("...") or sup.endswith("..."):
+        return False
+
+    if sup == "Object":
+        return True
+
+    if sub.endswith("[]") or sup in PRIMITIVE:
+        return False
+
+    where = where_of(tree, rel, sub)
+
+    return bool(where) and any(name == sup for _, name in ancestry(tree, where, sub))
+
+
+def rebinding(tree, rel, owner, key):
+    """vanilla の同名のメソッドより引数が特殊な多重定義か。理由を返す。
+
+    Java は一番特殊な方を選ぶので、足すと vanilla の呼び出しの行き先が変わる。
+    """
+    name, mark, args = norm(key).partition("(")
+
+    if not mark:
+        return None
+
+    args = [one for one in args.rstrip(")").split(",") if one]
+
+    for where, who in [(rel, owner)] + ancestry(tree, rel, owner):
+        if not where:
+            continue
+
+        for other, that in declared_in(tree, where):
+            if other != who:
+                continue
+
+            name2, mark2, args2 = that.partition("(")
+
+            if not mark2 or name2 != name:
+                continue
+
+            args2 = [one for one in args2.rstrip(")").split(",") if one]
+
+            if len(args2) != len(args) or not args:
+                continue
+
+            if all(mine == theirs or narrower(tree, rel, mine, theirs)
+                   for mine, theirs in zip(args, args2)):
+                return f"{who}.{that} に結び付いている vanilla の呼び出しがこちらへ来る"
+
+    return None
+
+
 def place(lines, bodies, line, block):
     """その要素を置く型の本体を選ぶ。
 
@@ -491,6 +979,11 @@ def main():
 
     stats = {"files": 0, "members": 0, "missed": 0, "imports": 0}
     missed = []
+    dropped = []
+
+    def paper_side(at):
+        """木の中の祖先で Paper が宣言しているものの鍵。"""
+        return patched_keys(patch_root, at)
 
     for target, hunks in fs.patches(patch_root):
         path, original = fs.source(tree, target)
@@ -505,7 +998,7 @@ def main():
         rejected = {}
 
         for hunk in sorted(hunks, key=lambda h: h.start):
-            for name, block, pos in members_in(original, bodies, hunk, names):
+            for name, block, pos, over in members_in(original, bodies, hunk, names):
                 mark = signature(block)
 
                 if mark in seen:
@@ -521,6 +1014,17 @@ def main():
                     # ここで既出にしない。同じ名前が別の hunk にも出ることがあり、
                     # そちらは取り出せる形をしているかもしれない。
                     rejected.setdefault(target, set()).add(name)
+                    continue
+
+                # 祖先の vanilla の宣言を上書きするもの、vanilla の呼び出しが
+                # 結び付き直す多重定義は足さない(shadowing の見出しに 3 件)。
+                owner = owner_at(original, body[0])
+                key = key_of(name, block)
+                why = (shadowing(tree, target, owner, key, over, paper_side)
+                       or rebinding(tree, target, owner, key))
+
+                if why:
+                    dropped.append(f"{target} {owner}.{key}: {why}")
                     continue
 
                 seen.add(mark)
@@ -555,10 +1059,16 @@ def main():
         with open(path, "w", encoding="utf-8", newline="\n") as handle:
             handle.write("\n".join(out))
 
+    # 何を外したかは木にも出力にも残らないので、その場で書き出す。
+    # 外れたものをアダプタ層が要るなら patches/hand に自前で書く。
+    for line in dropped:
+        print(f"  上書きになるので置かない: {line}", file=sys.stderr)
+
     print(f"足したファイル  : {stats['files']}")
     print(f"足したメンバー  : {stats['members']}")
     print(f"足した import   : {stats['imports']}")
     print(f"置き場所が不明  : {stats['missed']}")
+    print(f"上書きになるもの: {len(dropped)}")
 
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                        "..", "docs", "backlog", "shim-todo.txt")

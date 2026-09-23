@@ -8,17 +8,43 @@ replace:
             return !this.world.explode0(entity, Explosion.getDefaultDamageSource(this.world, entity), null, x, y, z, power, setFire, explosionType, ParticleTypes.EXPLOSION, ParticleTypes.EXPLOSION_EMITTER, Level.DEFAULT_EXPLOSION_BLOCK_PARTICLES, SoundEvents.GENERIC_EXPLODE, configurator).wasCanceled; // Paper - expand explosion API
 with:
             net.minecraft.world.entity.Entity entity = (source == null) ? null : ((CraftEntity) source).getHandle();
-            // vanilla の explode は void。ServerExplosion を返す explode0 と wasCanceled は Paper の追加。
-            // configurator が書き換える excludeSourceFromDamage も Paper の追加で、vanilla は常に発生源を除く。
-            // イベントを発火しないので取り消しは起きない。常に true を返す。
-            this.world.explode(entity, Explosion.getDefaultDamageSource(this.world, entity), null, x, y, z, power, setFire, explosionType, ParticleTypes.EXPLOSION, ParticleTypes.EXPLOSION_EMITTER, Level.DEFAULT_EXPLOSION_BLOCK_PARTICLES, SoundEvents.GENERIC_EXPLODE);
+            // vanilla の explode は void で爆発を返さない。ServerExplosion を返す explode0 と wasCanceled は Paper の追加。
+            // vanilla の ServerLevel.explode と同じ手順(BlockInteraction を決める、ServerExplosion.explode、近くの
+            // プレイヤーへの packet)をここで組む。ServerLevel.explode を通らないので、そこに差し込んだ
+            // explosionCancelled もここで読み、取り消されたら packet を送らず false を返す(Paper と同じ戻り値)。
+            // BLOCK は上の STANDARD の置き換えからだけ来る(発生源が無く、壊す)。CraftBukkit の STANDARD は常に DESTROY で、
+            // vanilla の BLOCK は blockExplosionDropDecay で DESTROY_WITH_DECAY になり、ドロップが減っていた。
+            // ほかの場合は vanilla の switch と getDestroyType と同じ。
+            // configurator が書き換える excludeSourceFromDamage は Paper の追加で、vanilla は常に発生源を除く。
+            // 読んだ位置: <PW>/paper-server/src/minecraft/java の Mache コミットの net/minecraft/server/level/ServerLevel.java の explode と getDestroyType
+            final Explosion.BlockInteraction blockInteraction = switch (explosionType) {
+                case NONE -> Explosion.BlockInteraction.KEEP;
+                case BLOCK -> Explosion.BlockInteraction.DESTROY;
+                case MOB -> this.world.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)
+                    ? (this.world.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_EXPLOSION_DROP_DECAY) ? Explosion.BlockInteraction.DESTROY_WITH_DECAY : Explosion.BlockInteraction.DESTROY)
+                    : Explosion.BlockInteraction.KEEP;
+                case TNT -> this.world.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.TNT_EXPLOSION_DROP_DECAY) ? Explosion.BlockInteraction.DESTROY_WITH_DECAY : Explosion.BlockInteraction.DESTROY;
+                case TRIGGER -> Explosion.BlockInteraction.TRIGGER_BLOCK;
+            };
+            final Vec3 center = new Vec3(x, y, z);
+            final net.minecraft.world.level.ServerExplosion explosion = new net.minecraft.world.level.ServerExplosion(this.world, entity, Explosion.getDefaultDamageSource(this.world, entity), null, center, power, setFire, blockInteraction);
+            final int blockCount = explosion.explode();
+            if (dev.shifu.event.ShifuEvents.explosionCancelled(explosion)) {
+                return false;
+            }
+            final net.minecraft.core.particles.ParticleOptions particle = explosion.isSmall() ? ParticleTypes.EXPLOSION : ParticleTypes.EXPLOSION_EMITTER;
+            for (net.minecraft.server.level.ServerPlayer player : this.world.players()) {
+                if (player.distanceToSqr(center) < 4096.0) {
+                    player.connection.send(new net.minecraft.network.protocol.game.ClientboundExplodePacket(center, power, blockCount, java.util.Optional.ofNullable(explosion.getHitPlayers().get(player)), particle, SoundEvents.GENERIC_EXPLODE, Level.DEFAULT_EXPLOSION_BLOCK_PARTICLES));
+                }
+            }
             return true;
 
-# 元案の通りで通す
+# STANDARD は CraftBukkit が足した定数で、enum に定数は足さない。BLOCK に置き換え、上の switch で DESTROY に写す
 replace:
                 explosionType = net.minecraft.world.level.Level.ExplosionInteraction.STANDARD; // Break blocks, don't decay drops
 with:
-                explosionType = net.minecraft.world.level.Level.ExplosionInteraction.BLOCK; // Shifu - STANDARD は CraftBukkit が足した定数。enum に定数は足さないので vanilla の BLOCK を使う
+                explosionType = net.minecraft.world.level.Level.ExplosionInteraction.BLOCK; // Shifu - STANDARD の代わり。下の switch で DESTROY にする
 
 # 元案から 2 点直した
 replace:
@@ -95,13 +121,13 @@ with:
         return this.world.bukkitName; // Shifu - vanilla は次元でフォルダを分けないので、名前は ServerLevel が持つ
 
 # 世界ごとのスポーン。vanilla の nether / end の serverLevelData は DerivedLevelData で、setSpawn / getRespawnData が
-# 主世界のものへ通る(次元ごと書き換わり、新しいプレイヤーが nether に参加した)。主世界以外は ServerLevel.shifuSpawn(hand)。
+# 主世界のものへ通る(次元ごと書き換わり、新しいプレイヤーが nether に参加した)。主世界以外は次元別ファイルへ保存する。
 replace:
         final LevelData.RespawnData respawnData = this.world.serverLevelData.getRespawnData();
 with:
-        final LevelData.RespawnData respawnData = this.world.shifuSpawn != null ? this.world.shifuSpawn : this.world.serverLevelData.getRespawnData(); // Shifu
+        final LevelData.RespawnData respawnData = this.world.shifuGetSpawn() != null ? this.world.shifuGetSpawn() : this.world.serverLevelData.getRespawnData(); // Shifu
 
 replace:
             this.world.serverLevelData.setSpawn(LevelData.RespawnData.of(this.world.dimension(), new BlockPos(x, y, z), yaw, pitch));
 with:
-            if (this.world.serverLevelData instanceof net.minecraft.world.level.storage.PrimaryLevelData) { this.world.serverLevelData.setSpawn(LevelData.RespawnData.of(this.world.dimension(), new BlockPos(x, y, z), yaw, pitch)); } else { this.world.shifuSpawn = LevelData.RespawnData.of(this.world.dimension(), new BlockPos(x, y, z), yaw, pitch); } // Shifu - 主世界以外は世界ごとの欄へ
+            if (this.world.serverLevelData instanceof net.minecraft.world.level.storage.PrimaryLevelData) { this.world.serverLevelData.setSpawn(LevelData.RespawnData.of(this.world.dimension(), new BlockPos(x, y, z), yaw, pitch)); } else { this.world.shifuSetSpawn(LevelData.RespawnData.of(this.world.dimension(), new BlockPos(x, y, z), yaw, pitch)); } // Shifu - 主世界以外は次元フォルダへ永続化

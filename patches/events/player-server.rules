@@ -22,7 +22,7 @@ file: net/minecraft/commands/Commands.java
 anchor:
     if (var7.getInput() != null && var7.getCursor() >= 0) {
 insert:
-    if (!dev.shifu.event.PlayerEvents.silentUnknownCommand() && !(var7.getInput() != null && var7.getCursor() >= 0)) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.command.UnknownCommandEvent.class) && !(var7.getInput() != null && var7.getCursor() >= 0)) {
         dev.shifu.event.PlayerEvents.unknownCommand(source, command, var7, null);
     }
 
@@ -657,3 +657,20 @@ anchor:
             blocksAttacks.disable(level, this, secondsToDisableBlocking, itemBlockingWith);
 insert:
     dev.shifu.event.PlayerEvents.shieldAttacker(entity);
+
+# Connection.hostname(PlayerLoginEvent.getHostname() と、それを読む forced host・BungeeCord 判定の
+# プラグインが使う)。CraftBukkit は handleIntention の先頭で、登録の有無に関係なく入れる。
+# 以前は PlayerHandshakeEvent の登録があるときだけ PlayerEvents.handshake が入れていたので、
+# ふだんは空のままだった。
+# 読むのは ShifuEvents の AsyncPlayerPreLoginEvent と PlayerLoginEvent の発火だけなので、
+# どちらかに登録があるときに入れる。登録が無ければ handleIntention は vanilla の命令列のまま。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerHandshakePacketListenerImpl.java.patch:28
+file: net/minecraft/server/network/ServerHandshakePacketListenerImpl.java
+anchor:
+    public void handleIntention(ClientIntentionPacket packet) {
+insert-after:
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.AsyncPlayerPreLoginEvent.class)
+            || dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerLoginEvent.class)) {
+        this.connection.hostname = packet.hostName() + ":" + packet.port();
+    }

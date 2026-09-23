@@ -1,6 +1,15 @@
 # vanilla の中の無名クラスへの追加。型の名前が無いので hand では届かない。
 
-# createContext が返す RegistryInfoLookup の無名クラス(RegistryDataLoader$3)
+# createContext が返す RegistryInfoLookup の無名クラス(RegistryDataLoader$1)
+# Paper は createContext の中で registryLookups と loaders から Provider を作り、無名クラスに持たせる。
+# 同じ式を無名クラスの中に書くと registryLookups と loaders も捕まえ、捕まえる値が公式の 1 個(map)から 3 個になり、
+# 公式の val$result を @Shadow する MOD が合わない。map の値の owner から作り直す。map の値は
+# createInfoForContextRegistry(owner は registryLookup)と createInfoForNewRegistry(owner は loader.registry)が作るので、
+# Paper の Stream.concat と同じ lookup が並ぶ。
+# 違い: 同じ key が両方にあると、Paper は Provider.create の toUnmodifiableMap が IllegalStateException を投げ、
+# ここでは map が後の loaders の側だけを残す。
+# 読んだ位置: patches/sources/net/minecraft/resources/RegistryDataLoader.java.patch:5-19
+#   net/minecraft/resources/RegistryDataLoader.java:209-229、net/minecraft/core/HolderLookup.java:48-51
 file: net/minecraft/resources/RegistryDataLoader.java
 anchor:
     @Override
@@ -8,6 +17,10 @@ anchor:
 insert:
     @Override
     public HolderLookup.Provider lookupForValueCopyViaBuilders() {
-        return HolderLookup.Provider.create(java.util.stream.Stream.concat(registryLookups.stream(), loaders.stream().map(RegistryDataLoader.Loader::registry)));
+        java.util.List<HolderLookup.RegistryLookup<?>> lookups = new java.util.ArrayList<>();
+        for (RegistryOps.RegistryInfo<?> info : map.values()) {
+            lookups.add((HolderLookup.RegistryLookup<?>)info.owner());
+        }
+        return HolderLookup.Provider.create(lookups.stream());
     }
 

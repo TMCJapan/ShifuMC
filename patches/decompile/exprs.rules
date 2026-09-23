@@ -1,0 +1,40 @@
+# 逆コンパイラが式の意味を変えたところを、公式と同じ命令列に戻す。
+# ソースの形だけでは「挙動を変えていない」と言えないので、規則ごとに method: で直すメソッドを名指しする。
+# tools/postcompile.sh の SemDiff が、そのメソッド(中で作る無名クラスと lambda を含む)が公式の命令列と
+# 一致することを確かめ、違えば組むのを止める。verify_additive.py は書き換えがそのメソッドの中に
+# 収まっていることを見る。公式の形は、後処理が比べる公式の jar を javap -c で読んだ。
+# 見つけ方は 2026-09-23 の調べ(素の逆コンパイルに patches/decompile だけを当ててコンパイルし、
+# 公式と命令列・局所変数の出どころを比べた)。
+
+# addCollisionsAlongTravel で、逆コンパイラが double への cast を落としたところ。公式は
+# (double)blockX + 1.0E-5F を double で計算する。cast が無いと int + float を float で計算するので、
+# |座標| が 256 を超えると 1.0E-5F が丸めで消え、clamp の下限がブロックの端そのものになる。
+# forEachBlockIntersectedBetween を通る Entity.checkInsideBlocks(移動で通ったブロックの効果)と
+# Ghast の移動先の判定で、拾うブロックが vanilla と変わる
+file: net/minecraft/world/level/BlockGetter.java
+method: net/minecraft/world/level/BlockGetter addCollisionsAlongTravel(Lit/unimi/dsi/fastutil/longs/LongSet;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Lnet/minecraft/world/level/BlockGetter$BlockStepVisitor;)I
+replace:
+                double d6 = Mth.clamp(vec32.x, floor + 1.0E-5F, floor + 1.0 - 1.0E-5F);
+                double d7 = Mth.clamp(vec32.y, floor1 + 1.0E-5F, floor1 + 1.0 - 1.0E-5F);
+                double d8 = Mth.clamp(vec32.z, floor2 + 1.0E-5F, floor2 + 1.0 - 1.0E-5F);
+with:
+                double d6 = Mth.clamp(vec32.x, (double)floor + 1.0E-5F, floor + 1.0 - 1.0E-5F);
+                double d7 = Mth.clamp(vec32.y, (double)floor1 + 1.0E-5F, floor1 + 1.0 - 1.0E-5F);
+                double d8 = Mth.clamp(vec32.z, (double)floor2 + 1.0E-5F, floor2 + 1.0 - 1.0E-5F);
+
+# 同じメソッドの while の本体。公式は if (clip の結果が空) continue; の形(ifeq で本体へ、goto で先頭へ)。
+# 逆コンパイラが本体を if (!…isEmpty()) { … } で囲んだので分岐の向きと飛び先が変わる。挙動は同じだが、
+# 命令列が公式と一致しないと SemDiff が上の cast の書き換えを証明できないので、ここも公式の形に戻す。
+# 本体は { … } の塊のまま残す(字下げを変えずに済む。塊は命令を作らない)
+file: net/minecraft/world/level/BlockGetter.java
+method: net/minecraft/world/level/BlockGetter addCollisionsAlongTravel(Lit/unimi/dsi/fastutil/longs/LongSet;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Lnet/minecraft/world/level/BlockGetter$BlockStepVisitor;)I
+replace:
+            if (!optional.isEmpty()) {
+                i3++;
+with:
+            if (optional.isEmpty()) {
+                continue;
+            }
+
+            {
+                i3++;
