@@ -13,22 +13,26 @@
 # 発火は placedState が確定したあと、音・gameEvent・手持ちの減りより前。
 # 取り消したときにその 3 つが起きないのは、Paper と同じ。
 #
+# 戻すときの旗は UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE。UPDATE_ALL で戻すと形の更新が
+# 隣へ届き、まだ残っているもう片方(ベッドの頭、扉や背の高い花の上半分)が
+# updateShape で空気になって、Block.updateOrDestroy の destroyBlock(pos, true) で
+# ドロップまで出る。手持ちは FAIL のまま減らないので、取り消すたびにブロックが増えていた。
+# 2 つ目以降の場所は ShifuEvents.revertPlace が同じ旗で戻す。
+#
 # 読んだ位置(Paper 26.2):
 #   paper-server src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:519
 #   vanilla      net/minecraft/world/item/BlockItem.java:67,86
+#   paper-server src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java:193(戻すときの旗)
 
 file: net/minecraft/world/item/BlockItem.java
 anchor:
     BlockState blockState = this.getPlacementState(blockPlaceContext);
 insert-after:
-    final org.bukkit.block.BlockState shifuReplaced =
-            dev.shifu.event.ShifuEvents.armPlace()
-                    ? org.bukkit.craftbukkit.block.CraftBlock.at(
-                            blockPlaceContext.getLevel(),
-                            blockPlaceContext.getClickedPos()).getState()
-                    : null;
+    final org.bukkit.block.BlockState shifuReplaced = dev.shifu.event.ShifuEvents.armPlace(blockPlaceContext);
 
-# 置いたあとに発火する。取り消されたら控えへ戻して FAIL を返す
+# 置いたあとに発火する。取り消されたら控えへ戻して FAIL を返す。
+# getBlockAgainst() に渡すのは当たったブロック(getHitResult)。getClickedPos は
+# 置いた位置なので、置いた位置そのものが返っていた(main / 1.21.11 と同じ形にした)。
 file: net/minecraft/world/item/BlockItem.java
 anchor:
     SoundType soundType = blockState2.getSoundType();
@@ -36,9 +40,10 @@ insert:
     if (shifuReplaced != null && level instanceof net.minecraft.server.level.ServerLevel shifuLevel
             && !dev.shifu.event.ShifuEvents.blockPlace(
                     shifuLevel, player, blockPlaceContext.getHand(), shifuReplaced,
-                    blockPlaceContext.getClickedPos())) {
+                    blockPlaceContext.getHitResult().getBlockPos())) {
         dev.shifu.event.ShifuEvents.revertPlace(shifuLevel);
         shifuLevel.setBlock(blockPos, ((org.bukkit.craftbukkit.block.CraftBlockState) shifuReplaced).getHandle(),
-                net.minecraft.world.level.block.Block.UPDATE_ALL);
+                net.minecraft.world.level.block.Block.UPDATE_CLIENTS
+                        | net.minecraft.world.level.block.Block.UPDATE_KNOWN_SHAPE);
         return InteractionResult.FAIL;
     }

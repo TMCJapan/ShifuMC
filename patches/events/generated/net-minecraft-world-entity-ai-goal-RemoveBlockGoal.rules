@@ -8,7 +8,8 @@ anchor:
     level.removeBlock(blockPos2, false);
 insert:
     // CraftBukkit start - Step on eggs
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityInteractEvent(this.removerMob, org.bukkit.craftbukkit.block.CraftBlock.at(level, blockPos2))) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityInteractEvent.class)
+            && !org.bukkit.craftbukkit.event.CraftEventFactory.callEntityInteractEvent(this.removerMob, org.bukkit.craftbukkit.block.CraftBlock.at(level, blockPos2))) {
         return;
     }
     // CraftBukkit end

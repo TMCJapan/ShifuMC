@@ -28,7 +28,7 @@
 // Level.getHardCollidingEntities
     // Paper のチャンク系(EntityLookup / entitySliceManager)は Shifu に無い(null)。生成器が写した本体はそこを読んで
     // NPE になる(PlayerList.respawn の noCollision → Paper の CollisionUtil)。vanilla の getEntities で答える。
-    // 「硬い当たり」は Paper が Entity に足した hardCollides()(ボートなど)で絞る。
+    // 「硬い当たり」(Paper が Entity に足した hardCollides())では絞らない(下の 4 引数版)。
     @Override
     public List<Entity> getHardCollidingEntities(Entity except, AABB box, Predicate<? super Entity> predicate) {
         final List<Entity> ret = new java.util.ArrayList<>();
@@ -44,11 +44,76 @@
     }
 
 // Level.getHardCollidingEntities
+    // 絞らずに vanilla の getEntities をそのまま渡す。Paper の hardCollides() は
+    // CollisionUtil.getEntityHardCollisions の前段の絞り込みで、その後ろで
+    // entity.canCollideWith(other) / other.canBeCollidedWith() を掛け直すので、
+    // 全部渡した結果は vanilla の EntityGetter.getEntityCollisions と同じになる。
+    // Entity.hardCollides は Paper が初期化子で入れる欄で、生成器は宣言しか写さないため
+    // 誰も代入しない(ビルド済み jar の Entity に putfield hardCollides が 0 件)。
+    // false で絞ると、ボート・シュルカー・トロッコに当たらなくなっていた。
+    // 読んだ位置: Paper-Server HEAD src/main/java/io/papermc/paper/util/CollisionUtil.java:1780(getEntityHardCollisions の絞り直し)
     @Override
     public void getHardCollidingEntities(Entity except, AABB box, Predicate<? super Entity> predicate, List<Entity> into) {
-        for (final Entity other : this.getEntities(except, box, predicate == null ? e -> true : predicate)) {
-            if (other.hardCollides()) {
-                into.add(other);
+        this.getEntities(except, box, predicate, into);
+    }
+
+// Level.getChunkEntities
+    // CraftChunk.getEntities の中身。生成器が写した本体は Paper のチャンク系
+    // (getEntityLookup / entitySliceManager)を読むので、Shifu では null で落ちる。
+    // vanilla の EntitySection はエンティティの blockPosition のチャンクで入れ分けるので
+    // (PersistentEntitySectionManager.addEntity が SectionPos.asLong(entity.blockPosition()) で入れる)、
+    // そのチャンクの列を引いて chunkPosition() で絞る。y は世界の高さに収まらない
+    // (/tp で外に出せる)ので座標の範囲いっぱいを取る。
+    // 読んだ位置: vanilla-src net/minecraft/world/level/entity/PersistentEntitySectionManager.java:78
+    public org.bukkit.entity.Entity[] getChunkEntities(int chunkX, int chunkZ) {
+        final ServerLevel level = (ServerLevel) this;
+        level.getChunk(chunkX, chunkZ);
+
+        final List<org.bukkit.entity.Entity> out = new java.util.ArrayList<>();
+        final AABB column = new AABB(chunkX << 4, -3.0E7, chunkZ << 4,
+                                     (chunkX << 4) + 16, 3.0E7, (chunkZ << 4) + 16);
+
+        level.getEntities().get(column, entity -> {
+            if (entity.chunkPosition().x != chunkX || entity.chunkPosition().z != chunkZ) {
+                return;
+            }
+
+            final org.bukkit.entity.Entity bukkit = entity.getBukkitEntity();
+
+            if (bukkit != null) {
+                out.add(bukkit);
+            }
+        });
+
+        return out.toArray(new org.bukkit.entity.Entity[0]);
+    }
+
+// Level.noCollision
+    // 生成器が写した noCollision(2 引数と 3 引数)は Paper の CollisionUtil へ通る。
+    // その走査は Level.minSection / maxSection と LevelChunkSection.specialCollidingBlocks を読むが、
+    // どれも Paper が構築子と setBlockState で入れる欄で、生成器は宣言しか写さないので 0 のまま
+    // (ビルド済み jar の Level に putfield minSection が 0 件)。
+    // maxBlockY が min((0 << 4) + 16, ...) になり、y=17 より上でブロックに当たらなくなっていた。
+    // 名前で shim を止めて、vanilla の CollisionGetter.noCollision をそのまま使う。
+    // 3 引数の版(loadChunks)は CollisionGetter 側の shim が 2 引数へ渡す。
+
+// Level.getEntitiesByClass
+    // DelegatedGeneratorAccess(プラグインの BlockPopulator に渡す世界)が呼ぶ。生成器が写した本体は
+    // Paper のチャンク系(ServerLevel.getEntityLookup)を読むので、Shifu では null で落ちる
+    // (Level.getChunkEntities と同じ形)。vanilla の getEntities で集めて型と述語で絞る。
+    // Paper の CollisionUtil は述語に null を渡すので、null は「絞らない」として扱う。
+    // 観戦者も含める(Paper の EntityLookup は観戦者を外さない)。
+    public <T> void getEntitiesByClass(Class<? extends T> clazz, Entity except, final AABB box, List<? super T> into,
+                                       Predicate<? super T> predicate) {
+        for (Entity entity : this.getEntities(except, box, java.util.Objects::nonNull)) {
+            if (!clazz.isInstance(entity)) {
+                continue;
+            }
+
+            final T value = clazz.cast(entity);
+
+            if (predicate == null || predicate.test(value)) {
+                into.add(value);
             }
         }
     }

@@ -1,0 +1,19 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: io/papermc/paper/chunk/system/scheduling/ChunkTaskScheduler.java
+
+# Paper は ChunkMap.getDependencyStatus を static にして型の側から呼ぶ。Shifu は vanilla の
+# instance のメソッドのまま残す(static にすると vanilla の this.getDependencyStatus(…) が
+# invokestatic に変わる)。ここは static のメソッドの中で ChunkMap が手元に無いので、
+# vanilla の本体と同じ式をその場で書く。
+# 読んだ位置: D:/.pw206/vanilla-src/minecraft/java の HEAD、net/minecraft/server/level/ChunkMap.java:706-715
+replace:
+            final ChunkStatus requiredNeighbourStatus = ChunkMap.getDependencyStatus(genStatus, radius);
+with:
+            final ChunkStatus requiredNeighbourStatus = radius == 0 ? genStatus.getParent() : ChunkStatus.getStatusAroundFullChunk(ChunkStatus.getDistance(genStatus) + radius); // Shifu - vanilla の ChunkMap.getDependencyStatus と同じ式
+
+# 同じ。こちらは ChunkMap が手元にあるので vanilla のメソッドを呼ぶ
+replace:
+                final ChunkStatus requiredNeighbourStatus = ChunkMap.getDependencyStatus(toStatus, radius);
+with:
+                final ChunkStatus requiredNeighbourStatus = this.world.getChunkSource().chunkMap.getDependencyStatus(toStatus, radius); // Shifu - vanilla の instance のメソッド

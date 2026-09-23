@@ -53,11 +53,52 @@ insert:
 
 # PlayerTeleportEvent(同じ世界の中)
 #
-# connection.teleport(destination, relatives) の中。vanilla が位置を確定させて
-# packet を送ったあとで発火し、取り消し・変更があればもう 1 度動かす。
-# 動かす前の場所は先に取っておく(登録が無ければ null)。
+# connection.teleport(x, y, z, yaw, pitch, flags) の先頭。登録があれば shim の
+# teleport(..., cause)(Paper の本体)へ渡して vanilla の本体を飛ばす。Paper の本体は
+# 動かす前に発火し、internalTeleport(hand)で印を付けてこのメソッドを呼び直す。
+# 2 回目は印を見て素通りし、vanilla の本体が動かす。
 #
-# 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch:986
+# 読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java:1643-1694
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    public void teleport(double x, double y, double z, float yaw, float pitch, Set<RelativeMovement> flags) {
+insert-after:
+    if (dev.shifu.event.ShifuEvents.playerTeleport(this, x, y, z, yaw, pitch, flags)) {
+        return;
+    }
+
+# PlayerTeleportEvent(別の世界へ)。vanilla は世界を移してから connection.teleport を呼ぶので、
+# 動かす前にここで発火する。同じ世界なら何もせず、上の connection.teleport で出る。
+#
+# 読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/server/level/ServerPlayer.java:2409-2416
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    public void teleportTo(ServerLevel targetWorld, double x, double y, double z, float yaw, float pitch) {
+insert-after:
+    if (dev.shifu.event.ShifuEvents.playerTeleportWorld(this, targetWorld, x, y, z, yaw, pitch)) {
+        return;
+    }
+
+# ポータルとリスポーンの位置合わせは PlayerTeleportEvent を出さない(Paper は internalTeleport)。
+# ポータルでは世界を移したあとなので、動かす前の場所が行き先の世界の座標になる。
+# リスポーンでは connection.player がまだ死んだ方の ServerPlayer。
+#
+# 読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/server/level/ServerPlayer.java:1258-1330、
+# src/main/java/net/minecraft/server/players/PlayerList.java(respawn の internalTeleport)
+file: net/minecraft/server/level/ServerPlayer.java
+anchor:
+    this.connection.teleport(portalInfo.pos.x, portalInfo.pos.y, portalInfo.pos.z, portalInfo.yRot, portalInfo.xRot);
+insert:
+    dev.shifu.event.ShifuEvents.silentTeleport(this.connection);
+
+file: net/minecraft/server/players/PlayerList.java
+anchor:
+    serverPlayer.connection.teleport(serverPlayer.getX(), serverPlayer.getY(), serverPlayer.getZ(), serverPlayer.getYRot(), serverPlayer.getXRot());
+insert:
+    dev.shifu.event.ShifuEvents.silentTeleport(serverPlayer.connection);
+
+# テレポートの理由。Paper は署名を増やして渡しているが、Shifu は呼ぶ直前に置く。
+# 登録が無ければ何もしない。
 file: net/minecraft/server/commands/TeleportCommand.java
 anchor:
     if (target.teleportTo(world, x, y, z, movementFlags, f, g)) {
@@ -176,6 +217,18 @@ anchor:
     if (serverPlayer.setGameMode(gameMode)) {
 insert:
     dev.shifu.event.ShifuEvents.gameModeCause(serverPlayer, org.bukkit.event.player.PlayerGameModeChangeEvent.Cause.COMMAND);
+
+# PlayerGameModeChangeEvent。changeGameModeForPlayer の先頭。同じモードなら発火しない
+# (Paper と同じ)。置かれた理由をどの経路でも消すため、同じモードの判定の手前に置く。
+#
+# 読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/server/level/ServerPlayerGameMode.java(changeGameModeForPlayer)
+file: net/minecraft/server/level/ServerPlayerGameMode.java
+anchor:
+    if (gameMode == this.gameModeForPlayer) {
+insert:
+    if (!dev.shifu.event.ShifuEvents.gameModeChange(this.player, gameMode)) {
+        return false;
+    }
 
 # PlayerToggleFlightEvent
 #

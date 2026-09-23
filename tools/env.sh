@@ -39,6 +39,30 @@ if [ -f "$SHIFU/tools/env.local.sh" ]; then
     . "$SHIFU/tools/env.local.sh"
 fi
 
+# ブランチと $PW の版が合っているか。tools/env.local.sh(git 管理外)が無い worktree では
+# $PW がリポジトリの親の .pw になるので、ver/1.18.2 の木から main の 26.2 のクローンを
+# 見にいく。mache と見なされて JDK 25 が要ることになり、tools/build/lvtmatch の class が
+# class file 69 で作られていた(1.18.2 は JDK 17 で走るので UnsupportedClassVersionError)。
+_branch=$(git -C "$SHIFU" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+
+case "$_branch" in
+    ver/*)
+        _want=${_branch#ver/}
+        # クローンを作る前(setup.sh を回す前)は gradle.properties がまだ無い。そのときは見ない。
+        _have=$(sed -n 's/^mcVersion=//p' "$PW/gradle.properties" 2>/dev/null | head -1)
+
+        if [ -n "$_have" ] && [ "$_have" != "$_want" ]; then
+            echo "$PW は Minecraft $_have の木だが、$_branch は $_want で組む。" >&2
+            echo "  tools/env.local.sh で SHIFU_PAPER を $_want のクローンに向ける。" >&2
+            exit 1
+        fi
+
+        unset _want _have
+        ;;
+esac
+
+unset _branch
+
 # Paper の並べ方。1.21.4 以降は mache(paper-server と patches/sources)、
 # それより前は classic(Paper-Server と patches/server)。
 # Windows では paper-server と Paper-Server が同じ場所になるので、
@@ -94,6 +118,27 @@ fi
 JAVA="$JAVA_HOME/bin/java"
 export JAVA_HOME
 
+# JDK 21 以上の置き場を返す。:shifu-bootstrap は options.release = 21 なので、
+# 1.18.2 / 1.19.4 が使う JDK 17 では「release version 21 not supported」で組めない。
+# $JAVA_HOME と、その隣に入っている JDK から探す。SHIFU_JAVA21 で直接指定もできる。
+shifu_jdk21() {
+    for _home in "${SHIFU_JAVA21:-$JAVA_HOME}" "$(dirname "$JAVA_HOME")"/*; do
+        [ -f "$_home/release" ] || continue
+        _v=$(sed -n 's/^JAVA_VERSION="\([0-9]*\).*/\1/p' "$_home/release")
+
+        if [ -n "$_v" ] && [ "$_v" -ge 21 ]; then
+            printf '%s' "$_home"
+            unset _home _v
+
+            return 0
+        fi
+    done
+
+    unset _home _v
+
+    return 1
+}
+
 # Gradle ラッパー。cd した先からの相対で呼ぶ。
 case "$(uname -s)" in
     MINGW*|MSYS*|CYGWIN*) GRADLEW=./gradlew.bat ;;
@@ -115,6 +160,21 @@ else
     RESOURCES=${SHIFU_RESOURCES:-$PW/paper-server/src/minecraft/resources}
 fi
 
+# 別の系統の木を指す SHIFU_TREE を引き継ぐと、その木に規則を当ててしまう
+# (2026-09-24、1.20.6 の closure のために設定した SHIFU_TREE が次の 1.21.11 の closure に残り、
+# 1.20.6 の木へ 1.21.11 の shim を置いた)。木は $PW の下に無ければ止める。
+_tree_u=$(cygpath -u "$TREE" 2>/dev/null || echo "$TREE")
+_pw_u=$(cygpath -u "$PW" 2>/dev/null || echo "$PW")
+
+case "$_tree_u" in
+    "$_pw_u"/*) ;;
+    *)
+        echo "SHIFU_TREE ($TREE) が PW ($PW) の下に無い。別の系統の木を指したまま残っていないか確かめる。" >&2
+        exit 1
+        ;;
+esac
+
+unset _tree_u _pw_u
 export SHIFU_TREE=$TREE
 export SHIFU_SOURCES=$SOURCES
 
@@ -272,27 +332,46 @@ shifu_parity_dirs() {
     # 中身を変えるときは VanillaParity.java と docs/VANILLA-PARITY.md も合わせる。
     mkdir -p "$PW/run-parity/config"
 
+    # entity-activation-range は 0 で活性化範囲の判定そのものが外れる。大きい値では外れない:
+    # ActivationRange.activateEntities は maxRange を
+    # min((simulationDistance << 4) - 8, maxRange) に丸めてから箱を作る
+    # (読んだ位置: $PW/Paper-Server/src/main/java/org/spigotmc/ActivationRange.java:194)。
     cat > "$PW/run-parity/spigot.yml" <<'SPIGOT'
 # vanilla 一致の比較用。起動側が書くものと同じ内容。
 world-settings:
   default:
     entity-activation-range:
-      animals: 512
-      monsters: 512
-      raiders: 512
-      misc: 512
-      water: 512
-      villagers: 512
-      flying-monsters: 512
+      animals: 0
+      monsters: 0
+      raiders: 0
+      misc: 0
+      water: 0
+      villagers: 0
+      flying-monsters: 0
     max-tnt-per-tick: 0
 SPIGOT
 
-    cat > "$PW/run-parity/config/paper-world-defaults.yml" <<'PAPER'
+    # 1.19 より前の Paper は config/ を読まず、paper.yml の world-settings.default で読む
+    # (VanillaParity.before119 と同じ分け方)。書く場所を間違えると
+    # per-player-mob-spawns が true のまま走る。
+    case "$MC_VERSION" in
+        1.1[0-8]|1.1[0-8].*)
+            cat > "$PW/run-parity/paper.yml" <<'PAPER'
+# vanilla 一致の比較用。起動側が書くものと同じ内容。
+world-settings:
+  default:
+    per-player-mob-spawns: false
+PAPER
+            ;;
+        *)
+            cat > "$PW/run-parity/config/paper-world-defaults.yml" <<'PAPER'
 # vanilla 一致の比較用。起動側が書くものと同じ内容。
 entities:
   spawning:
     per-player-mob-spawns: false
 PAPER
+            ;;
+    esac
 
     # 難読化されている版では、公式の jar をそのまま走らせると
     # tools/tickstop の agent が MinecraftServer.tickServer を見つけられない。

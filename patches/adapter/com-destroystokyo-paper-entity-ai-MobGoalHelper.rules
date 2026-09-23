@@ -2,6 +2,20 @@
 
 file: com/destroystokyo/paper/entity/ai/MobGoalHelper.java
 
+# vanilla の Flag に UNKNOWN_BEHAVIOR は無い(enum に定数は足さない。足すと後ろの ordinal がずれる)
+replace:
+            case UNKNOWN_BEHAVIOR:
+                return GoalType.UNKNOWN_BEHAVIOR;
+with:
+            // Shifu - vanilla の Flag に UNKNOWN_BEHAVIOR は無い
+
+replace:
+            case UNKNOWN_BEHAVIOR:
+                return Goal.Flag.UNKNOWN_BEHAVIOR;
+with:
+            case UNKNOWN_BEHAVIOR:
+                return null; // Shifu - vanilla の Flag に UNKNOWN_BEHAVIOR は無い
+
 # 原案どおり
 replace:
             for (GoalType type : types) {

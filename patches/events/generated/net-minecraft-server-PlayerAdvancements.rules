@@ -15,13 +15,15 @@ insert:
     // Paper は flatMap のラムダで書いているが、ここに足すと vanilla の
     // ifPresent(display -> ...) が lambda$award$1 に繰り下がる。番号で狙う mixin
     // (styled-chat の PlayerAdvancementsMixin)が当たらなくなるので、ラムダを使わずに書く。
-    net.kyori.adventure.text.Component message = null;
-    if (advancement.value().display().isPresent()) {
-        final net.minecraft.advancements.DisplayInfo shifuInfo = advancement.value().display().get();
-        if (shifuInfo.shouldAnnounceChat()) {
-            message = io.papermc.paper.adventure.PaperAdventure.asAdventure(shifuInfo.getType().createAnnouncement(advancement, this.player));
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerAdvancementDoneEvent.class)) {
+        net.kyori.adventure.text.Component message = null;
+        if (advancement.value().display().isPresent()) {
+            final net.minecraft.advancements.DisplayInfo shifuInfo = advancement.value().display().get();
+            if (shifuInfo.shouldAnnounceChat()) {
+                message = io.papermc.paper.adventure.PaperAdventure.asAdventure(shifuInfo.getType().createAnnouncement(advancement, this.player));
+            }
         }
+        final org.bukkit.event.player.PlayerAdvancementDoneEvent event = new org.bukkit.event.player.PlayerAdvancementDoneEvent(this.player.getBukkitEntity(), advancement.toBukkit(), message);
+        this.player.level().getCraftServer().getPluginManager().callEvent(event); // CraftBukkit
     }
-    final org.bukkit.event.player.PlayerAdvancementDoneEvent event = new org.bukkit.event.player.PlayerAdvancementDoneEvent(this.player.getBukkitEntity(), advancement.toBukkit(), message);
-    this.player.level().getCraftServer().getPluginManager().callEvent(event); // CraftBukkit
     // Paper end

@@ -1,0 +1,133 @@
+# 逆コンパイラが無名クラスの中の局所変数・引数に、外側で捕まえている局所変数と同じ名前を付けたところ。
+# 中の名前が外側を隠すので、外側を読むはずの式が中の変数を読む。javac は外側を捕まえないので
+# val$ の欄が公式より少なくなり、SyntheticMatch が欄の名前を公式に合わせられない。
+# 挙動も vanilla と違っていた。中の名前だけを付け替えて、外側を読む形に戻す。
+# 公式の形は 1.20.6 の <PW>/.gradle/caches/paperweight/taskCache/minecraft.jar を javap -c で読んだ。
+
+# 公式の BlockPos$3 は originZ, maxDepth, reachX, reachY, reachZ, originX, originY の 7 つを捕まえ、
+# cursor.set(originX + x, originY + y, originZ + z) を返す。逆コンパイラが中の x / y / z を
+# i / j / k にしたので、外側の j(originX)と k(originY)が隠れて set(y + x, z + y, originZ + z) になっていた。
+# withinManhattan は findClosestMatch などが使うので、探す位置がずれる
+file: net/minecraft/core/BlockPos.java
+replace:
+                            int i = this.x;
+                            int j = this.y;
+                            int k = this.currentDepth - Math.abs(i) - Math.abs(j);
+                            if (k <= rangeZ) {
+                                this.zMirror = k != 0;
+                                blockPos = this.cursor.set(j + i, k + j, l + k);
+with:
+                            int i1 = this.x;
+                            int j1 = this.y;
+                            int k1 = this.currentDepth - Math.abs(i1) - Math.abs(j1);
+                            if (k1 <= rangeZ) {
+                                this.zMirror = k1 != 0;
+                                blockPos = this.cursor.set(j + i1, k + j1, l + k1);
+
+# 公式の OldUsersConverter$5.movePlayerFile は new File(worldPlayerDirectory, fileName + ".dat") で、
+# 外側の file(players/)を捕まえる(val$ は 5 つ)。逆コンパイラが中の変数も file にしたので、
+# 宣言中の自分を読む形(コンパイルが通らない)になっていた。中の変数を file5 にする
+file: net/minecraft/server/players/OldUsersConverter.java
+replace:
+                        File file = new File(file, fileName + ".dat");
+                        File file2 = new File(playerDataFolder, uuid + ".dat");
+                        OldUsersConverter.ensureDirectoryExists(playerDataFolder);
+                        if (!file.renameTo(file2)) {
+with:
+                        File file5 = new File(file, fileName + ".dat");
+                        File file2 = new File(playerDataFolder, uuid + ".dat");
+                        OldUsersConverter.ensureDirectoryExists(playerDataFolder);
+                        if (!file5.renameTo(file2)) {
+
+# 公式の ServerLoginPacketListenerImpl$1 は外側の digest を捕まえ、hasJoinedServer(name, digest, address) を呼ぶ。
+# 逆コンパイラが中の name も外側の digest も string にしたので hasJoinedServer(name, name, …) になり、
+# online-mode のログインがセッションサーバーで必ず弾かれていた。中の変数を string2 にする
+file: net/minecraft/server/network/ServerLoginPacketListenerImpl.java
+replace:
+                String string = Objects.requireNonNull(ServerLoginPacketListenerImpl.this.requestedUsername, "Player name not initialized");
+with:
+                String string2 = Objects.requireNonNull(ServerLoginPacketListenerImpl.this.requestedUsername, "Player name not initialized");
+
+file: net/minecraft/server/network/ServerLoginPacketListenerImpl.java
+replace:
+                try {
+                    ProfileResult profileResult = ServerLoginPacketListenerImpl.this.server
+                        .getSessionService()
+                        .hasJoinedServer(string, string, this.getAddress());
+                    if (profileResult != null) {
+                        GameProfile gameProfile = profileResult.profile();
+                        ServerLoginPacketListenerImpl.LOGGER.info("UUID of player {} is {}", gameProfile.getName(), gameProfile.getId());
+                        ServerLoginPacketListenerImpl.this.startClientVerification(gameProfile);
+                    } else if (ServerLoginPacketListenerImpl.this.server.isSingleplayer()) {
+                        ServerLoginPacketListenerImpl.LOGGER.warn("Failed to verify username but will let them in anyway!");
+                        ServerLoginPacketListenerImpl.this.startClientVerification(UUIDUtil.createOfflineProfile(string));
+                    } else {
+                        ServerLoginPacketListenerImpl.this.disconnect(Component.translatable("multiplayer.disconnect.unverified_username"));
+                        ServerLoginPacketListenerImpl.LOGGER.error("Username '{}' tried to join with an invalid session", string);
+                    }
+                } catch (AuthenticationUnavailableException var4) {
+                    if (ServerLoginPacketListenerImpl.this.server.isSingleplayer()) {
+                        ServerLoginPacketListenerImpl.LOGGER.warn("Authentication servers are down but will let them in anyway!");
+                        ServerLoginPacketListenerImpl.this.startClientVerification(UUIDUtil.createOfflineProfile(string));
+with:
+                try {
+                    ProfileResult profileResult = ServerLoginPacketListenerImpl.this.server
+                        .getSessionService()
+                        .hasJoinedServer(string2, string, this.getAddress());
+                    if (profileResult != null) {
+                        GameProfile gameProfile = profileResult.profile();
+                        ServerLoginPacketListenerImpl.LOGGER.info("UUID of player {} is {}", gameProfile.getName(), gameProfile.getId());
+                        ServerLoginPacketListenerImpl.this.startClientVerification(gameProfile);
+                    } else if (ServerLoginPacketListenerImpl.this.server.isSingleplayer()) {
+                        ServerLoginPacketListenerImpl.LOGGER.warn("Failed to verify username but will let them in anyway!");
+                        ServerLoginPacketListenerImpl.this.startClientVerification(UUIDUtil.createOfflineProfile(string2));
+                    } else {
+                        ServerLoginPacketListenerImpl.this.disconnect(Component.translatable("multiplayer.disconnect.unverified_username"));
+                        ServerLoginPacketListenerImpl.LOGGER.error("Username '{}' tried to join with an invalid session", string2);
+                    }
+                } catch (AuthenticationUnavailableException var4) {
+                    if (ServerLoginPacketListenerImpl.this.server.isSingleplayer()) {
+                        ServerLoginPacketListenerImpl.LOGGER.warn("Authentication servers are down but will let them in anyway!");
+                        ServerLoginPacketListenerImpl.this.startClientVerification(UUIDUtil.createOfflineProfile(string2));
+
+# 公式の LevelStorageSource$LevelStorageAccess$1 は外側の lockPath を捕まえ、visitFile では lockPath 以外を消し、
+# postVisitDirectory では世界のフォルダーに来たとき lockPath を消す。逆コンパイラが引数も外側と同じ path にしたので、
+# visitFile は !path.equals(path) で 1 つも消さず、postVisitDirectory は lockPath の代わりにフォルダーを消しにいっていた。
+# 引数を file / dir にする
+file: net/minecraft/world/level/storage/LevelStorageSource.java
+replace:
+                        public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
+                            if (!path.equals(path)) {
+                                LevelStorageSource.LOGGER.debug("Deleting {}", path);
+                                Files.delete(path);
+with:
+                        public FileVisitResult visitFile(Path file, BasicFileAttributes basicFileAttributes) throws IOException {
+                            if (!file.equals(path)) {
+                                LevelStorageSource.LOGGER.debug("Deleting {}", file);
+                                Files.delete(file);
+
+file: net/minecraft/world/level/storage/LevelStorageSource.java
+replace:
+                        public FileVisitResult postVisitDirectory(Path path, @Nullable IOException iOException) throws IOException {
+                            if (iOException != null) {
+                                throw iOException;
+                            } else {
+                                if (path.equals(LevelStorageAccess.this.levelDirectory.path())) {
+                                    LevelStorageAccess.this.lock.close();
+                                    Files.deleteIfExists(path);
+with:
+                        public FileVisitResult postVisitDirectory(Path dir, @Nullable IOException iOException) throws IOException {
+                            if (iOException != null) {
+                                throw iOException;
+                            } else {
+                                if (dir.equals(LevelStorageAccess.this.levelDirectory.path())) {
+                                    LevelStorageAccess.this.lock.close();
+                                    Files.deleteIfExists(path);
+
+file: net/minecraft/world/level/storage/LevelStorageSource.java
+replace:
+                                Files.delete(path);
+                                return FileVisitResult.CONTINUE;
+with:
+                                Files.delete(dir);
+                                return FileVisitResult.CONTINUE;

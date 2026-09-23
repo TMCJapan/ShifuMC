@@ -16,6 +16,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.HandlerNames;
 import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
 import net.minecraft.network.protocol.common.custom.BrandPayload;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.common.custom.DiscardedPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.network.ServerCommonPacketListenerImpl;
@@ -217,4 +218,44 @@ public final class PluginMessages {
     }
 
 
+
+    /**
+     * 送る側のプラグインメッセージ。
+     *
+     * <p>vanilla の {@code DiscardedPayload} は成分が id 1 つで、codec の書く側は空
+     * ({@code (value, buf) -> {}})。record の成分は足せないので、送るときだけ使う型を
+     * こちらに置き、{@code CustomPacketPayload.codec} が id を書いたところで本文を書く
+     * ({@code patches/wire/net-minecraft-network-protocol-common-custom-CustomPacketPayload.rules})。
+     *
+     * <p>vanilla は payload の型ではなく id で codec を選ぶので、控えを {@code DiscardedPayload} に
+     * 結ぶ形にすると、プラグインのチャンネル名が vanilla や MOD の登録済みの型と重なったときに
+     * encoder の cast で {@code ClassCastException} になる。型で先に分けるとそこを通らない。
+     *
+     * <p>読んだ位置: Paper の DiscardedPayload は record に {@code io.netty.buffer.ByteBuf data} を足して
+     * codec の書く側で {@code writeBytes} する
+     * ({@code Paper-Server src/main/java/net/minecraft/network/protocol/common/custom/DiscardedPayload.java:7,11})。
+     */
+    public record Outgoing(ResourceLocation id, byte[] data) implements CustomPacketPayload {
+
+        @Override
+        public CustomPacketPayload.Type<Outgoing> type() {
+            return new CustomPacketPayload.Type<>(this.id);
+        }
+    }
+
+    /**
+     * {@code CustomPacketPayload.codec} が id を書いたあと。Shifu が作った送る側の payload なら
+     * 本文を書いて、vanilla の codec 選びへは進まない。
+     *
+     * @return 本文を書いたか
+     */
+    public static boolean write(final FriendlyByteBuf buf, final CustomPacketPayload payload) {
+        if (!(payload instanceof Outgoing outgoing)) {
+            return false;
+        }
+
+        buf.writeBytes(outgoing.data());
+
+        return true;
+    }
 }

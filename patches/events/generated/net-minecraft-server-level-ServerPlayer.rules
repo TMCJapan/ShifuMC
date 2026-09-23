@@ -7,16 +7,23 @@ anchor:
 insert:
 
     // CraftBukkit start - initialize oldLevel, fire PlayerLevelChangeEvent, and tick client-sided world border
-    if (this.oldLevel == -1) {
-        this.oldLevel = this.experienceLevel;
+    // Shifu - oldLevel を読むのは PlayerLevelChangeEvent だけなので、控えるのも登録があるときだけ。
+    // 登録の無い間は -1 のままで、登録された最初の tick にいまの値から控え始める
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerLevelChangeEvent.class)) {
+        if (this.oldLevel == -1) {
+            this.oldLevel = this.experienceLevel;
+        }
+
+        if (this.oldLevel != this.experienceLevel) {
+            org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerLevelChangeEvent(this.getBukkitEntity(), this.oldLevel, this.experienceLevel);
+            this.oldLevel = this.experienceLevel;
+        }
     }
 
-    if (this.oldLevel != this.experienceLevel) {
-        org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerLevelChangeEvent(this.getBukkitEntity(), this.oldLevel, this.experienceLevel);
-        this.oldLevel = this.experienceLevel;
-    }
-
-    if (this.getBukkitEntity().hasClientWorldBorder()) {
+    // Shifu - Paper は毎 tick getBukkitEntity().hasClientWorldBorder() を見る(vanilla に無い呼び出し)。
+    // 仮想の境界はイベントではなく API(Player.setWorldBorder)で入るので listening では包めない。
+    // CraftPlayer.setWorldBorder が入れ外しのたびに書く欄を読む。プラグインが無ければ false のまま
+    if (this.shifuClientWorldBorder) {
         ((org.bukkit.craftbukkit.CraftWorldBorder) this.getBukkitEntity().getWorldBorder()).getHandle().tick();
     }
     // CraftBukkit end
@@ -26,16 +33,17 @@ file: net/minecraft/server/level/ServerPlayer.java
 anchor:
     if (abstractContainerMenu == null) {
 insert:
-    Component title = null; // Paper - Add titleOverride to InventoryOpenEvent
     // CraftBukkit start - Inventory open hook
-    if (abstractContainerMenu != null) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.inventory.InventoryOpenEvent.class)
+            && abstractContainerMenu != null) {
         abstractContainerMenu.setTitle(factory.getDisplayName());
 
         boolean cancelled = false;
         // Paper start - Add titleOverride to InventoryOpenEvent
         final com.mojang.datafixers.util.Pair<net.kyori.adventure.text.Component, AbstractContainerMenu> result = org.bukkit.craftbukkit.event.CraftEventFactory.callInventoryOpenEventWithTitle(this, abstractContainerMenu, cancelled);
         abstractContainerMenu = result.getSecond();
-        title = io.papermc.paper.adventure.PaperAdventure.asVanilla(result.getFirst());
+        // Shifu - Paper はここで title を受けて画面を開く packet に渡すが、Shifu の packet は
+        // vanilla の行が送るので titleOverride は使っていない。受ける局所変数も置かない
         // Paper end - Add titleOverride to InventoryOpenEvent
         if (abstractContainerMenu == null && !cancelled) { // Let pre-cancelled events fall through
             // SPIGOT-5263 - close chest if cancelled

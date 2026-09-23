@@ -8,14 +8,16 @@ anchor:
     if (!player.addItem(itemStack)) {
 insert:
     // Paper start - Add PlayerFlowerPotManipulateEvent
-    org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(world, pos);
-    org.bukkit.inventory.ItemStack pottedStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(itemStack);
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent.class)) {
+        org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(world, pos);
+        org.bukkit.inventory.ItemStack pottedStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asBukkitCopy(itemStack);
 
-    io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent event = new io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent((org.bukkit.entity.Player) player.getBukkitEntity(), block, pottedStack, false);
-    if (!event.callEvent()) {
-        // Update client
-        player.containerMenu.sendAllDataToRemote();
+        io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent event = new io.papermc.paper.event.player.PlayerFlowerPotManipulateEvent((org.bukkit.entity.Player) player.getBukkitEntity(), block, pottedStack, false);
+        if (!event.callEvent()) {
+            // Update client
+            player.containerMenu.sendAllDataToRemote();
 
-        return InteractionResult.PASS;
+            return InteractionResult.PASS;
+        }
     }
     // Paper end - Add PlayerFlowerPotManipulateEvent

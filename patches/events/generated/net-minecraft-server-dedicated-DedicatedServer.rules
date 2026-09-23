@@ -1,8 +1,2 @@
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
-
-# WhitelistToggleEvent
-file: net/minecraft/server/dedicated/DedicatedServer.java
-anchor:
-    this.settings.update(serverPropertiesHandler -> serverPropertiesHandler.whiteList.update(this.registryAccess(), useWhitelist));
-insert:
-    new com.destroystokyo.paper.event.server.WhitelistToggleEvent(useWhitelist).callEvent(); // Paper - WhitelistToggleEvent
+# WhitelistToggleEvent は外した。patches/events/player-server.rules が同じアンカーに
+# dev.shifu.event.PlayerEvents.whitelistToggle を置いていて、両方当たると 2 度出る。

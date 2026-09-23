@@ -7,7 +7,8 @@ anchor:
     world.playSound(null, pos, SoundEvents.FROGSPAWN_HATCH, SoundSource.BLOCKS, 1.0F, 1.0F);
 insert:
     // Paper start - Call BlockFadeEvent
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(world, pos, Blocks.AIR.defaultBlockState()).isCancelled()) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockFadeEvent.class)
+            && org.bukkit.craftbukkit.event.CraftEventFactory.callBlockFadeEvent(world, pos, Blocks.AIR.defaultBlockState()).isCancelled()) {
         return;
     }
     // Paper end - Call BlockFadeEven

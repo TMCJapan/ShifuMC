@@ -6,10 +6,11 @@ anchor:
     if (state.getValue(POWERED) != bl) {
 insert:
     // CraftBukkit start
-    boolean oldPowered = state.getValue(FenceGateBlock.POWERED);
-    if (oldPowered != bl) {
+    // Shifu - 前の値は登録があるときだけ読む
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)
+            && state.getValue(FenceGateBlock.POWERED) != bl) {
         int newPower = bl ? 15 : 0;
-        int oldPower = oldPowered ? 15 : 0;
+        int oldPower = state.getValue(FenceGateBlock.POWERED) ? 15 : 0;
         org.bukkit.block.Block bukkitBlock = org.bukkit.craftbukkit.block.CraftBlock.at(world, pos);
         org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(bukkitBlock, oldPower, newPower);
         world.getCraftServer().getPluginManager().callEvent(eventRedstone);

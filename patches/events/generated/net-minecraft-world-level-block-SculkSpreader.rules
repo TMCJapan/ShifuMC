@@ -4,6 +4,7 @@ file: net/minecraft/world/level/block/SculkSpreader.java
 anchor:
             this.cursors.add(cursor);
 insert:
-    if (!this.isWorldGeneration() && !dev.shifu.event.BlockEvents.sculkBloom(this.level, cursor.getPos(), cursor.getCharge())) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.SculkBloomEvent.class)
+            && !this.isWorldGeneration() && !dev.shifu.event.BlockEvents.sculkBloom(this.level, cursor.getPos(), cursor.getCharge())) {
         return;
     }

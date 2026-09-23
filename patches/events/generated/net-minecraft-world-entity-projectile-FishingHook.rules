@@ -12,8 +12,10 @@ anchor:
     } else if (this.timeUntilHooked > 0) {
 insert:
     // CraftBukkit start
-    org.bukkit.event.player.PlayerFishEvent playerFishEvent = new org.bukkit.event.player.PlayerFishEvent((org.bukkit.entity.Player) this.getPlayerOwner().getBukkitEntity(), null, (org.bukkit.entity.FishHook) this.getBukkitEntity(), org.bukkit.event.player.PlayerFishEvent.State.FAILED_ATTEMPT);
-    playerFishEvent.callEvent();
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerFishEvent.class)) {
+        org.bukkit.event.player.PlayerFishEvent playerFishEvent = new org.bukkit.event.player.PlayerFishEvent((org.bukkit.entity.Player) this.getPlayerOwner().getBukkitEntity(), null, (org.bukkit.entity.FishHook) this.getBukkitEntity(), org.bukkit.event.player.PlayerFishEvent.State.FAILED_ATTEMPT);
+        playerFishEvent.callEvent();
+    }
     // CraftBukkit end
 
 # PlayerFishEvent
@@ -22,8 +24,10 @@ anchor:
     this.playSound(SoundEvents.FISHING_BOBBER_SPLASH, 0.25F, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);
 insert:
     // CraftBukkit start
-    org.bukkit.event.player.PlayerFishEvent playerFishEvent = new org.bukkit.event.player.PlayerFishEvent((org.bukkit.entity.Player) this.getPlayerOwner().getBukkitEntity(), null, (org.bukkit.entity.FishHook) this.getBukkitEntity(), org.bukkit.event.player.PlayerFishEvent.State.BITE);
-    if (!playerFishEvent.callEvent()) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerFishEvent.class)) {
+        org.bukkit.event.player.PlayerFishEvent playerFishEvent = new org.bukkit.event.player.PlayerFishEvent((org.bukkit.entity.Player) this.getPlayerOwner().getBukkitEntity(), null, (org.bukkit.entity.FishHook) this.getBukkitEntity(), org.bukkit.event.player.PlayerFishEvent.State.BITE);
+        if (!playerFishEvent.callEvent()) {
+            return;
+        }
     }
     // CraftBukkit end

@@ -8,7 +8,8 @@ anchor:
     serverLevel.addFreshEntityWithPassengers(armorStand);
 insert:
     // CraftBukkit start
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPlaceEvent(context, armorStand).isCancelled()) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityPlaceEvent.class)
+            && org.bukkit.craftbukkit.event.CraftEventFactory.callEntityPlaceEvent(context, armorStand).isCancelled()) {
         if (context.getPlayer() != null) context.getPlayer().containerMenu.sendAllDataToRemote(); // Paper - Fix inventory desync
         return InteractionResult.FAIL;
     }

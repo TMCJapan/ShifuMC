@@ -1,11 +1,3 @@
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
-
-# MapInitializeEvent
-file: net/minecraft/server/level/ServerLevel.java
-anchor:
-    this.getServer().overworld().getDataStorage().set(id.key(), state);
-insert:
-    // CraftBukkit start
-    org.bukkit.event.server.MapInitializeEvent event = new org.bukkit.event.server.MapInitializeEvent(state.mapView);
-    event.callEvent();
-    // CraftBukkit end
+# MapInitializeEvent は外した。setMapData の中身に当たる規則だが、同じメソッドの頭に
+# net-minecraft-server-level-ServerLevel-world.rules が
+# dev.shifu.event.PlayerEvents.mapInitialize を置いている。両方当たると 2 度出る。

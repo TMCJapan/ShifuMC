@@ -7,7 +7,8 @@ anchor:
     entity.setDeltaMovement(entity.getDeltaMovement().add(vec32));
 insert:
     // CraftBukkit start - Call EntityKnockbackEvent
-    if (entity instanceof LivingEntity) {
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.EntityKnockbackEvent.class)
+            && entity instanceof LivingEntity) {
         // Paper start - knockback events
         io.papermc.paper.event.entity.EntityKnockbackEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityKnockbackEvent((org.bukkit.craftbukkit.entity.CraftLivingEntity) entity.getBukkitEntity(), this.damageSource.getEntity() != null ? this.damageSource.getEntity() : this.source, io.papermc.paper.event.entity.EntityKnockbackEvent.Cause.EXPLOSION, ad, vec32);
         vec32 = event.isCancelled() ? Vec3.ZERO : org.bukkit.craftbukkit.util.CraftVector.toNMS(event.getKnockback());
@@ -21,7 +22,8 @@ anchor:
     this.level.setBlockAndUpdate(blockPos2, BaseFireBlock.getState(this.level, blockPos2));
 insert:
     // CraftBukkit start - Ignition by explosion
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(this.level, blockPos2, this).isCancelled()) {
+    if (!dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockIgniteEvent.class)
+            || !org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(this.level, blockPos2, this).isCancelled()) {
 insert-after:
     }
     // CraftBukkit end

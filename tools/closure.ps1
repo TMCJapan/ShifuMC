@@ -2,6 +2,9 @@
 #
 #     powershell -File tools\closure.ps1 -Paper D:\.pw194 -JavaHome "C:\Program Files\Java\jdk-17" [-Rounds 10] [-Report]
 #
+# -Report は当たらなかった規則を並べて先へ進む。調べるときだけ使う。
+# 付けたままビルドすると、当たらない規則を抱えたまま jar ができる。
+#
 # MSYS の bash は fork が枯れると途中で止まる(sh が子を持たないまま残る)。
 # closure.sh は python と git の呼び出しが 1 周に数十回あって、そのたびに fork するので、
 # 止まりやすい。ここでは PowerShell から直に呼ぶ。やることは closure.sh と同じ順。
@@ -49,7 +52,18 @@ $basePaper = Base $PaperServer "Initial"
 New-Item -ItemType Directory -Force (Join-Path $Shifu "docs\backlog") | Out-Null
 if (-not (Test-Path $Req)) { New-Item -ItemType File $Req | Out-Null }
 
-function Py { param([string[]] $a) & python @a 2>&1 | ForEach-Object { "$_" } }
+# python が SystemExit で止まっても、呼び出し側は次の対象へ進んでしまう。
+# 1.18.2 の patches/decompile は 3 番目の対象で止まり、残り 40 件が当たらないまま
+# コンパイルまで進んでいた。終了コードを見て、その場で止める。
+function Py {
+    param([string[]] $a)
+
+    & python @a 2>&1 | ForEach-Object { "$_" }
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "$(Split-Path -Leaf $a[0]) $(Split-Path -Leaf $a[1]) が失敗した(exit $LASTEXITCODE)"
+    }
+}
 
 $before = ""
 
@@ -155,3 +169,8 @@ for ($round = 1; $round -le $Rounds; $round++) {
     $now = @(Select-String -Path $Req -Pattern "^    (method|variable|class|access|abstract) ").Count
     "round ${round}: required now $now"
 }
+
+# vanilla の行を決めた形でしか変えていないことを、不動点まで回したあとの木で確かめる
+# (tools/verify_additive.py)。外れた行が 1 つでもあれば Py が throw して止まる。
+# 2026-09-21 まではどこからも呼んでおらず、説明の付かない差分が 7〜56 件ある木のまま組んでいた。
+Py @("$Shifu\tools\verify_additive.py", $Tree)

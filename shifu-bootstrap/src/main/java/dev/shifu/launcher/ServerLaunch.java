@@ -3,7 +3,6 @@ package dev.shifu.launcher;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,10 +38,8 @@ final class ServerLaunch {
 		command.add("-Dshifu.paperJar=" + paper.serverJar().toAbsolutePath());
 		command.add("-Dshifu.librariesDir=" + paper.librariesDir().toAbsolutePath());
 
-		// bundler が宣言している分だけを載せる。無ければ librariesDir を全部さらう
-		if (Files.isRegularFile(paper.librariesList())) {
-			command.add("-Dshifu.librariesList=" + paper.librariesList().toAbsolutePath());
-		}
+		// bundler が宣言している分だけを載せる。欠落時は子 JVM 側で明示的に失敗させる。
+		command.add("-Dshifu.librariesList=" + paper.librariesList().toAbsolutePath());
 		command.add("-Dshifu.vanillaJar=" + paper.vanillaJar().toAbsolutePath());
 		command.add("-Dshifu.vanillaParity=" + config.vanillaParity());
 
@@ -62,7 +59,27 @@ final class ServerLaunch {
 				.inheritIO()
 				.start();
 
+		forwardStop(process);
+
 		return process.waitFor();
+	}
+
+	/**
+	 * {@code docker stop} や {@code kill} は親にしか SIGTERM を送らないので、
+	 * 転送しないと子のサーバーが保存されないまま残る。
+	 * 転送したあと終わるまで待つのは、親が先に終わると docker がコンテナごと止めて、
+	 * 子の保存を途中で切るため。
+	 */
+	private static void forwardStop(Process process) {
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			process.destroy();
+
+			try {
+				process.waitFor();
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		}, "shifu-forward-stop"));
 	}
 
 }

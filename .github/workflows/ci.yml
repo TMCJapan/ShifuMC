@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    # 普段の作業は ver/* の上で進むので、そこでも走らせる。
+    # main だけにしていたころは、1.18.2 のテストが陳腐化しても気付けなかった。
+    branches: [main, master, "ver/**"]
   pull_request:
 
 jobs:
@@ -18,6 +20,23 @@ jobs:
 
       # Paper のクローンは要らない。規則の読み取りと差し込みの判定だけを見る。
       - run: sh tools/test-all.sh
+
+      # *.ps1 は sh -n では見られないので PowerShell の parser に掛ける。
+      # closure.ps1 / run-server.ps1 は ver/* にしか無い。
+      - name: PowerShell の構文
+        shell: pwsh
+        run: |
+          $bad = 0
+          foreach ($file in Get-ChildItem tools -Filter *.ps1) {
+              $errors = $null
+              [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$null, [ref]$errors) | Out-Null
+              if ($errors) {
+                  $bad = 1
+                  $file.Name
+                  $errors | ForEach-Object { "  " + $_.ToString() }
+              }
+          }
+          exit $bad
 
   bootstrap:
     name: 起動側のビルド

@@ -11,27 +11,30 @@ anchor:
     this.player.setShiftKeyDown(true);
 insert:
     // CraftBukkit start
-    if (this.player.isRemoved()) return;
-    switch (packet.getAction()) {
-        case PRESS_SHIFT_KEY:
-        case RELEASE_SHIFT_KEY:
-            org.bukkit.event.player.PlayerToggleSneakEvent shifuSneak = new org.bukkit.event.player.PlayerToggleSneakEvent(this.getCraftPlayer(), packet.getAction() == net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action.PRESS_SHIFT_KEY);
-            this.cserver.getPluginManager().callEvent(shifuSneak);
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerToggleSneakEvent.class)
+            || dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerToggleSprintEvent.class)) {
+        if (this.player.isRemoved()) return;
+        switch (packet.getAction()) {
+            case PRESS_SHIFT_KEY:
+            case RELEASE_SHIFT_KEY:
+                org.bukkit.event.player.PlayerToggleSneakEvent shifuSneak = new org.bukkit.event.player.PlayerToggleSneakEvent(this.getCraftPlayer(), packet.getAction() == net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action.PRESS_SHIFT_KEY);
+                this.cserver.getPluginManager().callEvent(shifuSneak);
 
-            if (shifuSneak.isCancelled()) {
-                return;
-            }
-            break;
-        case START_SPRINTING:
-        case STOP_SPRINTING:
-            org.bukkit.event.player.PlayerToggleSprintEvent shifuSprint = new org.bukkit.event.player.PlayerToggleSprintEvent(this.getCraftPlayer(), packet.getAction() == net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action.START_SPRINTING);
-            this.cserver.getPluginManager().callEvent(shifuSprint);
+                if (shifuSneak.isCancelled()) {
+                    return;
+                }
+                break;
+            case START_SPRINTING:
+            case STOP_SPRINTING:
+                org.bukkit.event.player.PlayerToggleSprintEvent shifuSprint = new org.bukkit.event.player.PlayerToggleSprintEvent(this.getCraftPlayer(), packet.getAction() == net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action.START_SPRINTING);
+                this.cserver.getPluginManager().callEvent(shifuSprint);
 
-            if (shifuSprint.isCancelled()) {
-                return;
-            }
-            break;
-        default:
-            break;
+                if (shifuSprint.isCancelled()) {
+                    return;
+                }
+                break;
+            default:
+                break;
+        }
     }
     // CraftBukkit end

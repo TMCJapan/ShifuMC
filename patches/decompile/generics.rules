@@ -178,12 +178,14 @@ replace:
 with:
             List<Filterable<Component>> list = pages.stream().map(page -> this.filterableFromOutgoing(page).<Component>map(Component::literal)).toList();
 
-# Object2IntMap.Entry のメソッド参照は受け手が Object になって当たらない
+# Object2IntMap.Entry のメソッド参照は受け手が Object になって当たらない。
+# comparing の型引数を書く(comparingInt とラムダに書き換えると、ラムダが 1 つ増えて
+# 公式の lambda$…$N の番号がずれる。公式はメソッド参照 getIntValue をそのまま渡している)
 file: net/minecraft/server/level/ServerLevel.java
 replace:
                 .sorted(Comparator.comparing(Entry::getIntValue).reversed())
 with:
-                .sorted(Comparator.comparingInt((it.unimi.dsi.fastutil.objects.Object2IntMap.Entry<String> entry) -> entry.getIntValue()).reversed())
+                .sorted(Comparator.<Entry<String>, Integer>comparing(Entry::getIntValue).reversed())
 
 # 逆コンパイラが無名クラスの中の局所変数を外側と同じ名前にして、自分自身で初期化している。
 # Mojang の版は i1 / j1 / k1 / l1。外側の i / j を読む形に戻す
@@ -210,10 +212,12 @@ replace:
 with:
         return this.item.unwrapKey().<Object>map(ResourceKey::location).orElseGet(() -> "unknown[" + this.item + "]").toString();
 
-# 逆コンパイラが引数の名前を落として、宣言中の変数を自分で読ませている。
-# Mojang の版は new File(playerDataFolder, fileName + ".dat")
-file: net/minecraft/server/players/OldUsersConverter.java
+# findCodec が返すのは ? super B / ? extends CustomPacketPayload。逆コンパイラが cast を落としている。
+# 1.21.11 の同じ行には (StreamCodec<B, T>) が付いている。
+# このファイルは patches/wire/net-minecraft-network-protocol-common-custom-CustomPacketPayload.rules で
+# 触るようになったので、vanilla の jar からではなく組み直す側に回る。
+file: net/minecraft/network/protocol/common/custom/CustomPacketPayload.java
 replace:
-                        File file = new File(file, fileName + ".dat");
+                StreamCodec<B, T> streamCodec = this.findCodec(id.id);
 with:
-                        File file = new File(playerDataFolder, fileName + ".dat");
+                StreamCodec<B, T> streamCodec = (StreamCodec<B, T>) this.findCodec(id.id);

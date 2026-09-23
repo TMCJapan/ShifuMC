@@ -41,3 +41,18 @@ net/minecraft/server/network/ServerGamePacketListenerImpl.java ServerGamePacketL
 # Paper は hurtAndBreak の 3 つめを LivingEntity に替えている。vanilla は ServerPlayer なので、
 # 同じ本体のうち渡す実体だけを変えた版を patches/hand に置いた
 net/minecraft/world/item/ItemStack.java ItemStack.hurtAndBreakWithoutChecks
+
+# CraftBukkit は看板と書見台に CommandSource を実装させて、コマンドの実行元にする。
+# Shifu は vanilla のクラス宣言に interface を足さない(docs/DEVELOPING.md の「宣言に interface を足す」)。
+# vanilla の看板と書見台は CommandSource.NULL で CommandSourceStack を作るので、この 5 つは呼ばれない。
+# @Override が付いているので、足すと上書き先が無くてコンパイルが通らない
+net/minecraft/world/level/block/entity/SignBlockEntity.java SignBlockEntity.sendSystemMessage
+net/minecraft/world/level/block/entity/SignBlockEntity.java SignBlockEntity.getBukkitSender
+net/minecraft/world/level/block/entity/SignBlockEntity.java SignBlockEntity.acceptsSuccess
+net/minecraft/world/level/block/entity/SignBlockEntity.java SignBlockEntity.acceptsFailure
+net/minecraft/world/level/block/entity/SignBlockEntity.java SignBlockEntity.shouldInformAdmins
+net/minecraft/world/level/block/entity/LecternBlockEntity.java LecternBlockEntity.sendSystemMessage
+net/minecraft/world/level/block/entity/LecternBlockEntity.java LecternBlockEntity.getBukkitSender
+net/minecraft/world/level/block/entity/LecternBlockEntity.java LecternBlockEntity.acceptsSuccess
+net/minecraft/world/level/block/entity/LecternBlockEntity.java LecternBlockEntity.acceptsFailure
+net/minecraft/world/level/block/entity/LecternBlockEntity.java LecternBlockEntity.shouldInformAdmins

@@ -8,7 +8,8 @@ anchor:
     itemStack.shrink(1);
 insert:
     // CraftBukkit start - fire PlayerLeashEntityEvent
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerLeashEntityEvent(this, player, player, hand).isCancelled()) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.PlayerLeashEntityEvent.class)
+            && org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerLeashEntityEvent(this, player, player, hand).isCancelled()) {
         ((net.minecraft.server.level.ServerPlayer) player).connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityLinkPacket(this, this.getLeashHolder()));
         player.containerMenu.sendAllDataToRemote(); // Paper - Fix inventory desync
         return InteractionResult.PASS;

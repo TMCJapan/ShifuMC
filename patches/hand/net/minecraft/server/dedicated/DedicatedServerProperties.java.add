@@ -6,3 +6,13 @@
                                             final joptsimple.OptionSet options) {
         return this.reload(registryAccess, properties);
     }
+
+// DedicatedServerProperties.debug
+    // Paper の `this.get("debug", false)` は Settings.get の中で properties.put("debug", ...) まで
+    // 通るので、起動時の保存で server.properties に vanilla に無い debug=false が 1 行増える。
+    // Properties は Hashtable なので、鍵の並びも run-vanilla の server.properties とずれる。
+    // 読むだけにして properties には入れない。欄自体は DedicatedServer.isDebugging が読む。
+    // 読んだ位置: net/minecraft/server/dedicated/Settings.java の
+    //   get(String, boolean) -> get(String, Function<String, V>, Function<V, String>, V) の
+    //   this.properties.put(key, stringifier.apply(object))(5 系統とも同じ形)
+    public final boolean debug = Boolean.parseBoolean(this.properties.getProperty("debug"));

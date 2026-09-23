@@ -8,10 +8,12 @@ anchor:
     world.addFreshEntity(itemEntity);
 insert:
     // CraftBukkit start - handle EntityDropItemEvent
-    org.bukkit.event.entity.EntityDropItemEvent event = new org.bukkit.event.entity.EntityDropItemEvent(this.getBukkitEntity(), (org.bukkit.entity.Item) itemEntity.getBukkitEntity());
-    org.bukkit.Bukkit.getPluginManager().callEvent(event);
-    if (event.isCancelled()) {
-        return;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityDropItemEvent.class)) {
+        org.bukkit.event.entity.EntityDropItemEvent event = new org.bukkit.event.entity.EntityDropItemEvent(this.getBukkitEntity(), (org.bukkit.entity.Item) itemEntity.getBukkitEntity());
+        org.bukkit.Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }
     }
     // CraftBukkit end
 
@@ -21,6 +23,10 @@ anchor:
     ItemStack itemStack = new ItemStack(Items.SNIFFER_EGG);
 insert:
     // Paper start - Add EntityFertilizeEggEvent event
-    final io.papermc.paper.event.entity.EntityFertilizeEggEvent result = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityFertilizeEggEvent(this, other);
-    if (result.isCancelled()) return;
+    // callEntityFertilizeEggEvent は経験値のぶんの getRandom().nextInt(7) + 1 を
+    // 先に引く。登録を見てから呼ぶ AnimalEvents.fertilizeEgg を通して、
+    // プラグインが無いときは乱数列が vanilla と同じになるようにする。
+    if (!dev.shifu.event.AnimalEvents.fertilizeEgg(this, other)) {
+        return;
+    }
     // Paper end - Add EntityFertilizeEggEvent event

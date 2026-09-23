@@ -1,0 +1,22 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+file: org/bukkit/craftbukkit/block/CraftChest.java
+
+# 大型チェストを見分ける。Paper の getMenuProvider は CraftBukkit が足した名前付きの
+# ChestBlock.DoubleInventory を返すが、vanilla の MENU_PROVIDER_COMBINER は無名クラスを返すので
+# instanceof が当たらず、大型チェストでも片側の入れ物しか返らなかった。
+# vanilla の ChestBlock.getContainer は 2 つ並んでいれば CompoundContainer を返す(1.21.11 と同じ形)
+replace:
+    MenuProvider nms = blockChest.getMenuProvider(this.data, world.getHandle(), this.getPosition(), true);
+with:
+    net.minecraft.world.Container container = ChestBlock.getContainer(blockChest, this.data, world.getHandle(), this.getPosition(), true);
+
+replace:
+    if (nms instanceof ChestBlock.DoubleInventory) {
+with:
+    if (container instanceof net.minecraft.world.CompoundContainer compoundContainer) {
+
+replace:
+    inventory = new CraftInventoryDoubleChest((ChestBlock.DoubleInventory) nms);
+with:
+    inventory = new CraftInventoryDoubleChest(compoundContainer);

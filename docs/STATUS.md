@@ -161,8 +161,8 @@ MOD 側が悪いように見えて、全部 Shifu 側だった。公式の jar �
 | nether / end の `serverLevelData` | vanilla では `DerivedLevelData` なので、CraftWorld の `PrimaryLevelData` への cast(worldGenOptions、settings.hardcore)は nether / end で落ちる形だった。`PrimaryLevelData` でなければサーバーの `WorldData` を読む(1.18.2 / 1.19.4 と同じ) |
 | 別の世界へのテレポート | `CraftPlayer.teleport` の cross-world は `PlayerList.respawn`(CraftBukkit は同じ ServerPlayer を使い回す)を通る。vanilla の `restoreFrom(自分)` が `recipeBook.copyOverData(自分)` で NPE になる形だった(CraftBukkit はその行をコメントアウト)→ `patches/narrow` で `ShifuEvents.restoreSelf` に向けた。`Level.getHardCollidingEntities` / `getEntities`(生成器が写した本体は Paper の EntityLookup を読む。Shifu では null)→ hand で vanilla の `getEntities` から答える。drive の the_end への teleport → true、`Bukkit.getPlayer(uuid) == bot`、戻りも通る(MOD 16 個 + プラグイン 26 個の mix) |
 | 世界ごとのスポーン | vanilla の nether / end の `serverLevelData` は `DerivedLevelData` で、`setSpawn` / `getSharedSpawnPos` が主世界のものへ通る。Multiverse のように世界ごとに `setSpawnLocation` すると主世界のスポーンが変わる形だった。主世界以外は `ServerLevel.shifuSpawn`(hand)に置いて `CraftWorld` が読む。drive で nether を (10, 64, 10) にしても主世界は (0, 66, 0) のまま |
-| MOD 無しの起動 | `dist.sh` の後処理(`LvtMatch --vars`)が try-with-resources の一時変数を生きている slot に重ね、MOD 無しだと `VerifyError` になる(MOD 入りは Mixin が frame を計算し直すので見えない)。`tools/lvtmatch` の `FrameFix` を後処理に足して全クラスの frame を計算し直す(1.21.11 と同じ。公式 jar も渡す: 触っていないクラスは classes に無い)。次に hand の `Level.getEntities` が Paper の `CollisionUtil` から null の predicate で呼ばれて湧きの判定で落ちたので null を通す。MOD 無し(プラグイン 26 個)と MOD 16 個の両方で drive の一連が通る |
-| ビルドの後処理 | `tools/run-server.ps1` の後処理は `LvtMatch --vars` の段を飛ばす(1.19.4 の公式 jar の名前が理由)。1.20.6 をそれで組むと `ServerPlayerGameMode.destroyBlock` の局所変数の並びが公式と合わず、Fabric API の mixin(`fabric-events-interaction-v0`)が LVT の不一致で落ちて起動しない。1.20.6 は `sh tools/dist.sh --build`(`postcompile.sh`。`--slots` のあと `--vars`)で組む。`tools/build/lvtmatch` は `ClassCheck` が無い古い版だったので `sh tools/lvtmatch/build.sh` で組み直した |
+| MOD 無しの起動 | `dist.sh` の後処理(`LvtMatch --vars`)が try-with-resources の一時変数を生きている slot に重ね、MOD 無しだと `VerifyError` になる(MOD 入りは Mixin が frame を計算し直すので見えない)。`tools/lvtmatch` の `FrameFix` を後処理に足して全クラスの frame を計算し直す(1.21.11 と同じ。公式 jar も渡す: 触っていないクラスは classes に無い)。2026-09-23 から、FrameFix は LvtMatch が書き換えたメソッドと LambdaMatch が並べ替えたクラスだけに絞った(全クラスでは javac が top と書いた死んだ slot にも型が入り、Mixin から見える局所変数が増えていた)。次に hand の `Level.getEntities` が Paper の `CollisionUtil` から null の predicate で呼ばれて湧きの判定で落ちたので null を通す。MOD 無し(プラグイン 26 個)と MOD 16 個の両方で drive の一連が通る |
+| ビルドの後処理 | `tools/run-server.ps1` の後処理は `LvtMatch --vars` の段を飛ばす(1.19.4 の公式 jar の名前が理由)。1.20.6 をそれで組むと `ServerPlayerGameMode.destroyBlock` の局所変数の並びが公式と合わず、Fabric API の mixin(`fabric-events-interaction-v0`)が LVT の不一致で落ちて起動しない。1.20.6 は `sh tools/dist.sh --build`(`postcompile.sh`。`--slots` のあと `--vars`)で組む。`tools/build/lvtmatch` は `ClassCheck` が無い古い版だったので `sh tools/lvtmatch/build.sh` で組み直した。2026-09-23 から `run-server.ps1` も `postcompile.sh` を呼ぶ(後処理はそこ 1 か所だけ) |
 
 ### 残っている食い違い(1.20.6)
 
@@ -187,7 +187,7 @@ Chunky と ChunkyBorder は、Chunky の Fabric MOD と Bukkit プラグイン�
 |---|---|
 | コンパイル | エラー 0(`once.sh`) |
 | 差し込み | 発火 828 箇所 / 337 ファイル、配線 75 箇所 / 38 ファイル、落ちた規則 0 |
-| 追加だけであること | `verify_additive.py` が通る(消えた 23 行は可視性のみ) |
+| 追加だけであること | closure の最後に `verify_additive.py` が走る。2026-09-23 に当てた木では 46 件が決めた形に収まらず、closure はそこで止まる |
 | 起動 | `Done (0.440s)!`。例外 0 |
 | Bukkit の世界 | 3 つ(`world` / `world_nether` / `world_the_end`)。環境と UUID は別々 |
 | スケジューラ | 毎 tick 走る。`MinecraftServer.currentTick` も進む |
@@ -252,8 +252,8 @@ MOD とプラグインが同じサーバーで同時に動き、プレイヤー�
 | 1200 tick 走らせた世界の一致 | vanilla 同士 17 チャンク、それを引いた Shifu との差は 2 |
 | 公式の局所変数が公式の番号に座っていないメソッド | 182 → 21 |
 
-触った vanilla の行は 3 種類だけで、`python tools/verify_additive.py` が形を確かめる。
-内訳は [ARCHITECTURE.md](ARCHITECTURE.md) の「vanilla の行に触っている 3 か所」。
+vanilla の行を書き換えてよいのは 4 種類で、`tools/verify_additive.py` が closure の最後に形を確かめる(2026-09-23 は形に収まらないものが 46 件残っていて、closure はそこで止まる)。
+内訳は [ARCHITECTURE.md](ARCHITECTURE.md) の「vanilla の行に触っている 4 か所」。
 
 ## プレイヤー経路(実測、2026-09-03)
 
@@ -312,8 +312,9 @@ EssentialsX が知っているバージョンの一覧に 26.2 が無いため�
 
 `plugins` と `version` は通らない。この 2 つは Bukkit ではなく Paper 独自のコマンド
 (`io.papermc.paper.command.PaperCommands.registerCommands`)で、vanilla に無いので
-入れていない。Bukkit の `SimpleCommandMap.setFallbackCommands` が登録するのは
-`/bukkit:help` だけ。
+入れていない。Bukkit が自分で登録するコマンド(`SimpleCommandMap` の構築子と `setFallbackCommands` が
+登録するもの)は、`patches/adapter/org-bukkit-craftbukkit-command-CraftCommandMap.rules` で
+`bukkit:` の付いた名前(`/bukkit:help` など)だけにしている。`/help` と `/reload` は vanilla のもの。
 
 ## MOD とプラグインを同時に(実測、2026-09-04)
 

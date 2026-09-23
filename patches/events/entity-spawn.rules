@@ -25,6 +25,7 @@ anchor:
     return this.entityManager.addNewEntity(entity);
 insert:
     if (dev.shifu.event.ShifuEvents.entityAddListening()
+            && !dev.shifu.event.ShifuEvents.teleportAdding()
             && !org.bukkit.craftbukkit.event.CraftEventFactory.doEntityAddEventCalling(
             this, entity,
             entity.spawnReason != null
@@ -32,3 +33,17 @@ insert:
                     : org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.DEFAULT)) {
         return false;
     }
+
+# 次元を移る個体(Entity.changeDimension → addDuringTeleport)ではスポーンのイベントを出さない。
+# Paper は理由 null で addEntity を呼んで飛ばしている(SPIGOT-6415)。出すと、取り消しで
+# doEntityAddEventCalling が discard し、移る前の個体はもう消えているので実体がどこにも残らない。
+# addEntity を前後で挟んで印を付け、上の差し込みはその間は発火しない。
+#
+# 読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/server/level/ServerLevel.java:1641-1652,1704
+file: net/minecraft/server/level/ServerLevel.java
+anchor:
+    this.addEntity(entity);
+insert:
+    dev.shifu.event.ShifuEvents.beginTeleportAdd();
+insert-after:
+    dev.shifu.event.ShifuEvents.endTeleportAdd();

@@ -423,7 +423,6 @@ public final class PlayerEvents {
 
     private static ServerPlayer spawnPlayer;
     private static com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause spawnCause;
-    private static boolean settingSpawn;
 
     /** 次の {@code setRespawnPosition} の理由を置く。 */
     public static void spawnCause(final ServerPlayer player, final com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause cause) {
@@ -434,6 +433,43 @@ public final class PlayerEvents {
 
         spawnPlayer = player;
         spawnCause = cause;
+    }
+
+    /**
+     * PlayerSpawnChangeEvent と PlayerSetSpawnEvent。vanilla の
+     * {@code setRespawnPosition(dimension, pos, angle, forced, sendMessage)} の先頭。
+     *
+     * <p>Paper はこの 5 引数の版を理由付きの版へ向け替えて、そちらで発火から書き込みまで行う。
+     * その版は shim として入っているので、登録があればそちらへ渡して、呼ぶ側は vanilla の本体を飛ばす。
+     *
+     * <p>リスポーンで作り直している途中の ServerPlayer(まだプレイヤーの一覧に無い)では発火しない。
+     * Paper 1.20.6 はその呼び出しを消している(「just copies old location into reused entity」)。
+     * 発火すると、その ServerPlayer にまだ付け替わっていない CraftPlayer が新しく作られる。
+     *
+     * <p>読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/server/level/ServerPlayer.java:2460-2512、
+     * src/main/java/net/minecraft/server/players/PlayerList.java:895
+     *
+     * @return 済ませたか。true なら呼ぶ側は vanilla の本体を飛ばして抜ける
+     */
+    public static boolean setSpawn(final ServerPlayer player, final net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension,
+                                   final BlockPos pos, final float angle, final boolean forced, final boolean sendMessage) {
+        if (!listening(com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.getHandlerList())
+                && !listening(org.bukkit.event.player.PlayerSpawnChangeEvent.getHandlerList())) {
+            return false;
+        }
+
+        final com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause cause = spawnPlayer == player && spawnCause != null
+                ? spawnCause : com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause.UNKNOWN;
+        spawnPlayer = null;
+        spawnCause = null;
+
+        if (player.server.getPlayerList().getPlayer(player.getUUID()) != player) {
+            return false;
+        }
+
+        player.setRespawnPosition(dimension, pos, angle, forced, sendMessage, cause);
+
+        return true;
     }
 
 
@@ -473,10 +509,19 @@ public final class PlayerEvents {
      * 値が差し替えられていたら、その差と元の saturation でここで足して false。
      *
      * 読んだ位置: paper-server patches/sources/net/minecraft/world/food/FoodProperties.java.patch
+     *
+     * <p>FoodProperties は登録があるときだけここで引く。差し込み側で局所変数に受けていたときは、
+     * 登録が無くても {@code stack.get(FOOD)} が 1 回増えていた。食べ物でなければ vanilla の行へ通す。
      */
-    public static boolean eatFood(final net.minecraft.world.entity.player.Player player,
-                                  final net.minecraft.world.food.FoodProperties properties, final ItemStack stack) {
+    public static boolean eatFood(final net.minecraft.world.entity.player.Player player, final ItemStack stack) {
         if (!listening(org.bukkit.event.entity.FoodLevelChangeEvent.getHandlerList())) {
+            return true;
+        }
+
+        final net.minecraft.world.food.FoodProperties properties =
+                stack.get(net.minecraft.core.component.DataComponents.FOOD);
+
+        if (properties == null) {
             return true;
         }
 
@@ -1600,6 +1645,23 @@ public final class PlayerEvents {
         return new com.destroystokyo.paper.event.player.PlayerReadyArrowEvent(serverPlayer.getBukkitEntity(),
                 org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(bow),
                 org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(arrow)).callEvent();
+    }
+
+    /**
+     * PlayerReadyArrowEvent。手に持った矢を選ぶ判定({@code getHeldProjectile} に渡す判定)に発火を足したもの。
+     * 登録が無ければ渡された判定をそのまま返す。
+     */
+    public static java.util.function.Predicate<net.minecraft.world.item.ItemStack> readyArrowHeld(
+            final java.util.function.Predicate<net.minecraft.world.item.ItemStack> supported,
+            final net.minecraft.world.entity.player.Player player,
+            final net.minecraft.world.item.ItemStack bow) {
+        if (!(player instanceof ServerPlayer)
+                || !ShifuEvents.listening(
+                        com.destroystokyo.paper.event.player.PlayerReadyArrowEvent.getHandlerList())) {
+            return supported;
+        }
+
+        return supported.and(arrow -> readyArrow(player, bow, arrow));
     }
 
 

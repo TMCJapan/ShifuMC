@@ -18,3 +18,39 @@
                                      final @Nullable Function<net.kyori.adventure.audience.Audience, Component> unsignedFunction) {
         this.broadcastChatMessage(message, sender, chatType);
     }
+
+// PlayerList.getPlayerStats
+    // Paper の版は `entityhuman.getStats()` を見て、無ければ下の UUID の版へ渡す。
+    // その版は CraftBukkit が `stats` の表への put を消しているので、表が空のままになる。
+    // vanilla の `ServerPlayer` の構築子はこの引数の版に結び付く(より特殊な方が選ばれる)ので、
+    // そのまま足すと vanilla の `save(ServerPlayer)` が `ServerStatsCounter.save()` を呼べず、
+    // 統計が 1 度も保存されない。vanilla の `getPlayerStats(Player)` へ渡す。
+    public ServerStatsCounter getPlayerStats(ServerPlayer player) {
+        return this.getPlayerStats((Player) player);
+    }
+
+// PlayerList.getPlayerStats
+    // `CraftOfflinePlayer.getStatistic` が呼ぶ。入っていない人の統計をファイルから読むだけで、
+    // `stats` の表には入れない(入れると、その人が入っていない間も保存の対象になる)。
+    public ServerStatsCounter getPlayerStats(UUID uuid, String displayName) {
+        ServerPlayer player = this.getPlayer(uuid);
+        ServerStatsCounter stats = player == null ? null : player.getStats();
+
+        if (stats == null) {
+            File dir = this.server.getWorldPath(LevelResource.PLAYER_STATS_DIR).toFile();
+            File file = new File(dir, String.valueOf(uuid) + ".json");
+
+            if (!file.exists()) {
+                File old = new File(dir, displayName + ".json");
+                Path path = old.toPath();
+
+                if (FileUtil.isPathNormalized(path) && FileUtil.isPathPortable(path) && path.startsWith(dir.getPath()) && old.isFile()) {
+                    old.renameTo(file);
+                }
+            }
+
+            stats = new ServerStatsCounter(this.server, file);
+        }
+
+        return stats;
+    }

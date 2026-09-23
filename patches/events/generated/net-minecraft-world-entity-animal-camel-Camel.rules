@@ -1,11 +1,3 @@
-
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
-
-# EntityToggleSitEvent
-file: net/minecraft/world/entity/animal/camel/Camel.java
-anchor:
-    this.setPose(Pose.STANDING);
-    this.gameEvent(GameEvent.ENTITY_ACTION);
-    this.resetLastPoseChangeTickToFullStand(this.level().getGameTime());
-insert:
-    if (this.isCamelSitting() && !new io.papermc.paper.event.entity.EntityToggleSitEvent(this.getBukkitEntity(), false).callEvent()) return; // Paper - Add EntityToggleSitEvent
+# EntityToggleSitEvent は外した。このアンカーは standUpInstantly の中で、
+# net-minecraft-world-entity-animal-camel-Camel-sit.rules が同じメソッドの頭に
+# dev.shifu.event.AnimalEvents.toggleSit を置いている。両方当たると 2 度出る。

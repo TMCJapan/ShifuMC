@@ -47,6 +47,9 @@ def _at(subject, required=True):
 
     classic(1.21.3 以前)の木は「paper Imports」1 つしか積まないので、
     Mache や paper ATs は無い。無いときは None を返す。
+    classic で AT が触ったファイルを残さなくてよいのは、戻す先の minecraft.jar が AT を当てたあとの
+    jar だから(9-16 の 1.20.6 / 1.19.4 / 1.18.2 で、net/minecraft の全クラスの修飾子が
+    applyMergedAt.jar と一致した)。
     """
     for line in git(["log", "--format=%H %s"]):
         if line.endswith(" " + subject):

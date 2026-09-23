@@ -49,6 +49,28 @@ public final class BlockEvents {
     }
 
     /**
+     * LootGenerateEvent。器に戦利品を詰める直前。
+     *
+     * <p>登録が無ければ null を返して、呼ぶ側は vanilla の並びをそのまま使う。
+     * {@code CraftEventFactory.callLootGenerateEvent} は器のブロックエンティティの
+     * 写しと ItemStack の写しを作るので、登録を見ずに呼ぶと、チェストを開くたびに
+     * プラグイン 0 個でもその分の仕事が増えていた。
+     *
+     * @return 発火したイベント。登録が無ければ null
+     */
+    public static org.bukkit.event.world.LootGenerateEvent lootGenerate(
+            final Container inventory,
+            final net.minecraft.world.level.storage.loot.LootTable table,
+            final net.minecraft.world.level.storage.loot.LootContext context,
+            final List<ItemStack> loot, final boolean plugin) {
+        if (!listening(org.bukkit.event.world.LootGenerateEvent.getHandlerList())) {
+            return null;
+        }
+
+        return CraftEventFactory.callLootGenerateEvent(inventory, table, context, loot, plugin);
+    }
+
+    /**
      * EntityCombustByBlockEvent。火のブロックが燃やす直前。
      *
      * @return 燃やしてよいか。取り消されたら Paper と同じく残り火の時間を 1 戻す
@@ -622,27 +644,33 @@ public final class BlockEvents {
      * FurnaceBurnEvent。燃料に火を付ける直前。
      *
      * <p>{@code setBurning(false)} は燃焼時間 0 として扱う(Paper は時間を入れたまま火を付けない)。
+     * 燃焼時間({@code litTime})の書き換えもここでする。差し込み側で受け直していたときは、
+     * 登録が無くても同じ値を書き戻し、そのあと値を比べていた。
      *
-     * @return 燃焼時間。取り消されたら -1(tick を抜ける。Paper と同じ)
+     * @return 続けてよいか。取り消されたら litTime を -1 にして false(tick を抜ける。Paper と同じ)
      */
     // 1.20.6 の serverTick は Level を受ける
-    public static int furnaceBurn(final net.minecraft.world.level.Level level, final BlockPos pos, final ItemStack fuel, final int burnTime) {
+    public static boolean furnaceBurn(final net.minecraft.world.level.Level level, final BlockPos pos, final ItemStack fuel,
+                                      final net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity furnace) {
         furnaceConsumesFuel = true;
 
         if (!listening(org.bukkit.event.inventory.FurnaceBurnEvent.getHandlerList())) {
-            return burnTime;
+            return true;
         }
 
         final org.bukkit.event.inventory.FurnaceBurnEvent event = new org.bukkit.event.inventory.FurnaceBurnEvent(
-                bukkit(level, pos), CraftItemStack.asCraftMirror(fuel), burnTime);
+                bukkit(level, pos), CraftItemStack.asCraftMirror(fuel), furnace.litTime);
 
         if (!event.callEvent()) {
-            return -1;
+            furnace.litTime = -1;
+
+            return false;
         }
 
         furnaceConsumesFuel = event.willConsumeFuel();
+        furnace.litTime = event.isBurning() ? event.getBurnTime() : 0;
 
-        return event.isBurning() ? event.getBurnTime() : 0;
+        return true;
     }
 
     public static boolean furnaceConsumesFuel() {
@@ -1423,6 +1451,28 @@ public final class BlockEvents {
                 org.bukkit.craftbukkit.block.CraftBlock.at(level, pos), charge).callEvent();
     }
 
+    /**
+     * スカルクカタリストが広げる間、BlockSpreadEvent の広がった元をカタリストにする
+     * ({@code CraftEventFactory.sourceBlockOverride}、SPIGOT-7068)。
+     *
+     * <p>読むのは {@link ShifuEvents#blockSpread} だけで、そこへは BlockSpreadEvent の登録が
+     * あるときしか来ない。CraftBukkit はカタリストの tick ごとに登録の有無に関係なく入れて外していた。
+     *
+     * <p>読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/world/level/block/entity/SculkCatalystBlockEntity.java:48
+     */
+    public static void sculkSourceArm(final BlockPos catalyst) {
+        if (ShifuEvents.listening(org.bukkit.event.block.BlockSpreadEvent.getHandlerList())) {
+            CraftEventFactory.sourceBlockOverride = catalyst;
+        }
+    }
+
+    /** {@link #sculkSourceArm} で入れたものを外す。 */
+    public static void sculkSourceDone() {
+        if (CraftEventFactory.sourceBlockOverride != null) {
+            CraftEventFactory.sourceBlockOverride = null;
+        }
+    }
+
 
     /**
      * BlockDispenseArmorEvent。ディスペンサーが防具を着せる直前。
@@ -1584,6 +1634,28 @@ public final class BlockEvents {
 
 
     // ------------------------------------------------------------ 木の育ち
+
+    /**
+     * 控えているあいだの {@code Level.getBlockState} が控えを読むか。
+     *
+     * <p>控えた位置は世界にまだ古いブロック(苗木)が残っているので、
+     * {@code TreeFeature.getMaxFreeTreeHeight} が「上が塞がっている」と見て生成をやめる。
+     * StructureGrowEvent に登録があると苗木が 1 本も育たず、骨粉だけが減っていた。
+     * Paper も {@code getBlockState} で控えを読み戻している。
+     *
+     * <p>局所変数を増やさないように、有無と中身を別々に聞く形にしてある。
+     *
+     * <p>読んだ位置(Paper 1.20.6):
+     *   Paper-Server src/main/java/net/minecraft/world/level/Level.java:1150
+     */
+    public static boolean hasCapturedTreeBlock(final Level level, final BlockPos pos) {
+        return level.capturedBlockStates.containsKey(pos);
+    }
+
+    /** 控えた状態。{@link #hasCapturedTreeBlock} が true のときだけ呼ぶ。 */
+    public static BlockState capturedTreeBlock(final Level level, final BlockPos pos) {
+        return level.capturedBlockStates.get(pos).getHandle();
+    }
 
     /**
      * 木が育つあいだのブロックを控える。{@code Level.setBlock} の先頭。

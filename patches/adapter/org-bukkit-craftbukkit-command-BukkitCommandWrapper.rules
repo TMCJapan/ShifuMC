@@ -1,0 +1,29 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+#
+# BukkitBrigadierCommand<S> は S が BukkitBrigadierCommandSource であることを求める。
+# Paper は NMS の CommandSourceStack にそれ(PaperCommandSourceStack 経由)を実装させているが、
+# Shifu は vanilla のクラス宣言に interface を足さない(docs/ARCHITECTURE.md の「Paper の brigadier API」)。
+# 1.20.6 の Paper はこのクラスを使わない(new BukkitCommandWrapper を呼ぶ所が無い。
+# Bukkit のコマンドは io.papermc.paper.command.brigadier.bukkit.BukkitCommandNode で入る)ので、
+# CommandRegisteredEvent を出す部分ごと落とす。
+# 読んだ位置: D:/.pw206/Paper-Server の HEAD、src/main/java を BukkitCommandWrapper で検索して 0 件
+
+file: org/bukkit/craftbukkit/command/BukkitCommandWrapper.java
+
+replace:
+public class BukkitCommandWrapper implements com.mojang.brigadier.Command<CommandSourceStack>, Predicate<CommandSourceStack>, SuggestionProvider<CommandSourceStack>, com.destroystokyo.paper.brigadier.BukkitBrigadierCommand<CommandSourceStack> { // Paper
+with:
+public class BukkitCommandWrapper implements com.mojang.brigadier.Command<CommandSourceStack>, Predicate<CommandSourceStack>, SuggestionProvider<CommandSourceStack> { // Shifu - BukkitBrigadierCommand は外す
+
+replace:
+        com.destroystokyo.paper.event.brigadier.CommandRegisteredEvent<CommandSourceStack> event = new com.destroystokyo.paper.event.brigadier.CommandRegisteredEvent<>(label, this, this.command, root, literal, defaultArgs);
+        if (!event.callEvent()) {
+            return null;
+        }
+        literal = event.getLiteral();
+        if (event.isRawCommand()) {
+            defaultNode.clientNode = literal;
+            literal = defaultNode;
+        }
+with:
+        // Shifu - CommandRegisteredEvent は出さない(このクラスは 1.20.6 で呼ばれない)

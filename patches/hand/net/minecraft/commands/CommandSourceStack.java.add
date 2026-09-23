@@ -1,10 +1,11 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
 //
-// patches/access/implements.rules で PaperCommandSourceStack(API の CommandSourceStack)を
-// 実装させている。その interface が要求するもののうち、default が無い 2 つをここに置く。
+// Paper は CommandSourceStack に PaperCommandSourceStack(API の CommandSourceStack)を実装させているが、
+// Shifu は実装させない。API へ渡すときは dev.shifu.command.ApiSource で包む
+// (docs/ARCHITECTURE.md の「Paper の brigadier API」)。ここの宣言には @Override を付けない。
 
 // CommandSourceStack.getHandle
-    // PaperCommandSourceStack の実装。Paper のパッチと同じで、自分を返す。
+    // Paper のパッチと同じで、自分を返す。
     public CommandSourceStack getHandle() {
         return this;
     }

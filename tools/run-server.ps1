@@ -13,40 +13,30 @@ param(
 
 $ErrorActionPreference = "Continue"
 $Shifu = Split-Path -Parent $PSScriptRoot
-$Classes = Join-Path $Paper "Paper-Server\build\classes\java\main"
-$Mojang = Join-Path $Paper ".gradle\caches\paperweight\taskCache\minecraft.jar"
 $Run = Join-Path $Paper "run-shifu"
 $env:JAVA_HOME = $JavaHome
-$env:SHIFU_PAPER = $Paper
-$env:SHIFU_TREE = Join-Path $Paper "vanilla-src\minecraft\java"
+# 区切りが \ のままだと MSYS の sh が escape として読む
+$env:SHIFU_PAPER = $Paper -replace '\\', '/'
+$env:SHIFU_TREE = (Join-Path $Paper "vanilla-src\minecraft\java") -replace '\\', '/'
 $env:PYTHONIOENCODING = "utf-8"
 $java = Join-Path $JavaHome "bin\java.exe"
 
 if (-not $SkipBuild) {
     Set-Location $Paper
     & .\gradlew.bat --no-daemon ":paper-server:compileJava" "-Dorg.gradle.jvmargs=-Xmx6G" 2>&1 | Select-String "BUILD|error:" | ForEach-Object { $_.Line }
+    if ($LASTEXITCODE -ne 0) { throw "compileJava が失敗した(exit $LASTEXITCODE)" }
 
-    # postcompile.sh と同じ順。局所変数の番号合わせ → ラムダ → 公式バイトコードへ戻す → 数える
-    Set-Location $Shifu
-    $cp = "$Shifu\tools\build\lvtmatch" + (Get-Content "$Shifu\tools\build\lvtmatch\asm.cp" -Raw)
-    $differs = "$Shifu\tools\build\lvt-differs.txt"
-    python tools\compare_lvt.py $Classes $Mojang --list | Select-Object -Last 1
-    & $java -cp $cp dev.shifu.lvtmatch.LvtMatch $Classes $Mojang $differs --slots | Select-Object -Last 2
-    python tools\compare_lvt.py $Classes $Mojang --list | Select-Object -Last 1
-    # --vars は使わない。1.19.4 の公式 jar の LVT の名前(paperweight 1.5 が付けたもの)は codebook の名前と
-    # 違うので大量に動かし、名前の無い一時変数(for-each の iterator)を生きている slot に重ねる
-    # (ChunkGenerator.applyBiomeDecoration が IncompatibleClassChangeError で落ちた)。slot の並びは --slots で合わせる
-    python tools\check_extra_locals.py $Classes $Mojang --list | Select-Object -Last 1
-    python tools\check_lambdas.py $Classes $Mojang --list | Select-Object -Last 1
-    & $java -cp $cp dev.shifu.lvtmatch.LambdaMatch $Classes $Mojang "$Shifu\tools\build\lambda-differs.txt" | Select-Object -Last 4
-    python tools\keep_vanilla_classes.py $Classes $Mojang
-    # 公式に戻したクラスに、残りのクラスが参照している欄やメソッドが無いと起動時に NoSuchFieldError になる。ここで数える
-    & $java -cp $cp dev.shifu.lvtmatch.LinkCheck $Classes "$Shifu\tools\build\kept-classes.txt" "$Shifu\tools\build\link-missing.txt" $Mojang | Select-Object -Last 1
-    python tools\check_synthetic_names.py $Classes $Mojang | Select-Object -Last 1
-    & $java -cp $cp dev.shifu.lvtmatch.CodeDiff $Classes $Mojang "$Shifu\tools\build\code-differs.txt" | Select-Object -Last 3
+    # 後処理は tools/postcompile.sh の 1 か所だけに置く。ここに写しがあったころは、
+    # ps1 で組んだ jar にだけ FrameFix と LvtMatch --vars が入らず、sh で組んだものと
+    # 中身が違った。MSYS の sh は PATH に無いので、git の入っている場所から引く
+    $sh = Join-Path (Split-Path -Parent (Split-Path -Parent (Get-Command git.exe).Source)) "bin\sh.exe"
+    if (-not (Test-Path $sh)) { throw "MSYS の sh が見つからない: $sh" }
+    & $sh (($Shifu -replace '\\', '/') + "/tools/postcompile.sh")
+    if ($LASTEXITCODE -ne 0) { throw "postcompile.sh が失敗した(exit $LASTEXITCODE)" }
 
     Set-Location $Paper
     & .\gradlew.bat --no-daemon -I "$Shifu\tools\keepfields.gradle" ":createMojmapBundlerJar" -x ":paper-server:compileJava" "-Dorg.gradle.jvmargs=-Xmx6G -Duser.language=en -Duser.country=US" 2>&1 | Select-String "BUILD|error" | ForEach-Object { $_.Line }
+    if ($LASTEXITCODE -ne 0) { throw "createMojmapBundlerJar が失敗した(exit $LASTEXITCODE)" }
 }
 
 $jar = Get-ChildItem (Join-Path $Paper "build\libs") -Filter "*bundler*.jar" | Where-Object { $_.Name -notmatch "reobf" } | Select-Object -First 1

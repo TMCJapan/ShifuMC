@@ -531,6 +531,42 @@ public final class AnimalEvents {
                 (org.bukkit.craftbukkit.entity.CraftEnderman) enderman.getBukkitEntity(), reason).callEvent();
     }
 
+    /** {@code isLookingAtMe} の中で EndermanAttackPlayerEvent を出している最中か。 */
+    private static boolean endermanAttacking;
+
+    /**
+     * EndermanAttackPlayerEvent の入口。{@code isLookingAtMe} の頭で、登録があるときだけ呼ぶ。
+     * 出している最中(vanilla の本体の答えを取りに、同じメソッドをもう 1 度呼んだところ)なら false。
+     */
+    public static boolean endermanAttackEnter() {
+        if (endermanAttacking) {
+            return false;
+        }
+
+        endermanAttacking = true;
+
+        return true;
+    }
+
+    /**
+     * EndermanAttackPlayerEvent。vanilla の本体の答え({@code stared})を取り消しの初期値にして出し、
+     * プラグインの答えを返す。Paper と同じ形。
+     *
+     * <p>読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/world/entity/monster/EnderMan.java:235(isLookingAtMe)
+     */
+    public static boolean endermanAttack(final net.minecraft.world.entity.monster.EnderMan enderman,
+                                         final net.minecraft.world.entity.player.Player player, final boolean stared) {
+        endermanAttacking = false;
+
+        final com.destroystokyo.paper.event.entity.EndermanAttackPlayerEvent event =
+                new com.destroystokyo.paper.event.entity.EndermanAttackPlayerEvent(
+                        (org.bukkit.entity.Enderman) enderman.getBukkitEntity(),
+                        (org.bukkit.entity.Player) player.getBukkitEntity());
+        event.setCancelled(!stared);
+
+        return event.callEvent();
+    }
+
     /**
      * PufferFishStateChangeEvent。膨らむ・しぼむ直前。
      *

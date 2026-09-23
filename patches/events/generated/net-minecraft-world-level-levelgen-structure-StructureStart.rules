@@ -6,10 +6,13 @@ anchor:
 insert:
     dev.shifu.event.BlockEvents.structureAccessDone();
 
-# /place で置いたときの理由
+# /place で置いたときの理由。読むのは AsyncStructureGenerateEvent の登録があるときの
+# BlockEvents.structureAccess だけなので、登録が無ければ入れない
 file: net/minecraft/server/commands/PlaceCommand.java
 anchor:
             BoundingBox boundingBox = structureStart.getBoundingBox();
             ChunkPos chunkPos = new ChunkPos(SectionPos.blockToSectionCoord(boundingBox.minX()), SectionPos.blockToSectionCoord(boundingBox.minZ()));
 insert:
-    structureStart.generationEventCause = org.bukkit.event.world.AsyncStructureGenerateEvent.Cause.COMMAND;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.world.AsyncStructureGenerateEvent.class)) {
+        structureStart.generationEventCause = org.bukkit.event.world.AsyncStructureGenerateEvent.Cause.COMMAND;
+    }

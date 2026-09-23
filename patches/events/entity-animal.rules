@@ -8,6 +8,20 @@
 # Paper は setInSittingPose / setSitting / sit に発火の引数を足しているが、Shifu は先頭に差し込む。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/TamableAnimal.java.patch(EntityToggleSitEvent)
+# 飼いならした動物・パンダ・ラクダは generated の規則が入れる。
+
+# キツネ。Paper は 1 引数の setSitting から setSitting(sitting, true) を呼んで発火する。
+# 取り消されたら座り(立ち)を書き換えない。
+#
+# 読んだ位置: /d/.pw206/Paper-Server(HEAD)src/main/java/net/minecraft/world/entity/animal/Fox.java:447-455
+file: net/minecraft/world/entity/animal/Fox.java
+anchor:
+    public void setSitting(boolean sitting) {
+insert-after:
+    if (!dev.shifu.event.AnimalEvents.toggleSit(this, sitting)) {
+        return;
+    }
+
 file: net/minecraft/world/entity/ai/behavior/VillagerMakeLove.java
 anchor:
     parent.setAge(6000);
@@ -255,8 +269,9 @@ file: net/minecraft/world/entity/monster/Strider.java
 anchor:
     this.setSuffocating(!bl || bl2);
 insert:
-    final boolean shifuSuffocating = !bl || bl2;
-    if (shifuSuffocating == this.isSuffocating() || dev.shifu.event.AnimalEvents.striderTemperature(this, shifuSuffocating)) {
+    if (!dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.StriderTemperatureChangeEvent.class)
+            || (!bl || bl2) == this.isSuffocating()
+            || dev.shifu.event.AnimalEvents.striderTemperature(this, !bl || bl2)) {
 insert-after:
     }
 

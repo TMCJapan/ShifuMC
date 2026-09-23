@@ -12,3 +12,19 @@ replace:
         return new WrappedArgumentCommandNode<>(pureNode.getName(), pureArgumentType, nativeArgumentType, pureNode.getCommand(), pureNode.getRequirement(), redirectNode, pureNode.getRedirectModifier(), pureNode.isFork(), suggestionProvider);
 with:
         return new WrappedArgumentCommandNode<>(pureNode.getName(), pureArgumentType, nativeArgumentType, dev.shifu.command.ApiSource.toNms(pureNode.getCommand()), dev.shifu.command.ApiSource.toNms(pureNode.getRequirement()), redirectNode, dev.shifu.command.ApiSource.toNms(pureNode.getRedirectModifier()), pureNode.isFork(), dev.shifu.command.ApiSource.toNms(suggestionProvider)); // Shifu - source を包み直す
+
+# 素のノード(リテラル、NMS が知っている引数)。createBuilder で写すと、述語・実行・補完が
+# API の source を受けるまま vanilla の dispatcher に入る
+replace:
+    private CommandNode<CommandSourceStack> simpleUnwrap(final CommandNode<CommandSourceStack> node) {
+        return node.createBuilder()
+            .redirect(node.getRedirect() == null ? null : this.unwrapNode(node.getRedirect()))
+            .build();
+    }
+with:
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private CommandNode<CommandSourceStack> simpleUnwrap(final CommandNode<CommandSourceStack> node) {
+        // Shifu - source を包み直して組み立てる
+        return dev.shifu.command.ApiSource.unwrapNode(node,
+            node.getRedirect() == null ? null : this.unwrapNode(node.getRedirect()));
+    }

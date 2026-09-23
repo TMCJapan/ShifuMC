@@ -412,8 +412,7 @@ file: net/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity.java
 anchor:
     blockEntity.litTime = blockEntity.getBurnDuration(itemStack);
 insert-after:
-    blockEntity.litTime = dev.shifu.event.BlockEvents.furnaceBurn(world, pos, itemStack, blockEntity.litTime);
-    if (blockEntity.litTime < 0) {
+    if (!dev.shifu.event.BlockEvents.furnaceBurn(world, pos, itemStack, blockEntity)) {
         return;
     }
 
@@ -772,8 +771,27 @@ anchor:
     this.shuffleAndSplitItems(objectArrayList, list.size(), randomSource);
 insert:
     final org.bukkit.event.world.LootGenerateEvent shifuLoot =
-            org.bukkit.craftbukkit.event.CraftEventFactory.callLootGenerateEvent(inventory, this, lootContext, objectArrayList, false);
-    if (shifuLoot.isCancelled()) {
-        return;
+            dev.shifu.event.BlockEvents.lootGenerate(inventory, this, lootContext, objectArrayList, false);
+    if (shifuLoot != null) {
+        if (shifuLoot.isCancelled()) {
+            return;
+        }
+
+        objectArrayList = shifuLoot.getLoot().stream().map(org.bukkit.craftbukkit.inventory.CraftItemStack::asNMSCopy).collect(ObjectArrayList.toList());
     }
-    objectArrayList = shifuLoot.getLoot().stream().map(org.bukkit.craftbukkit.inventory.CraftItemStack::asNMSCopy).collect(ObjectArrayList.toList());
+
+# ------------------------------------------------------------ 木の育ちの控えの読み戻し
+#
+# 控えるのは generated/net-minecraft-world-level-tree-grow.rules(Level.setBlock)。
+# 読み戻しが無いと、控えた位置には古いブロック(苗木)が残って見えるので、
+# TreeFeature.getMaxFreeTreeHeight が「上が塞がっている」と判断して生成をやめる。
+# StructureGrowEvent に登録があると苗木が 1 本も育たず、骨粉だけが減っていた。
+#
+# 読んだ位置: Paper-Server src/main/java/net/minecraft/world/level/Level.java:1150
+file: net/minecraft/world/level/Level.java
+anchor:
+    public BlockState getBlockState(BlockPos pos) {
+insert-after:
+    if (this.captureTreeGeneration && dev.shifu.event.BlockEvents.hasCapturedTreeBlock(this, pos)) {
+        return dev.shifu.event.BlockEvents.capturedTreeBlock(this, pos);
+    }

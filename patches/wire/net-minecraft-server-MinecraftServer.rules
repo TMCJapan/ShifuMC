@@ -94,12 +94,32 @@ anchor:
 insert:
     org.spigotmc.WatchdogThread.doStop();
 
-# EntityMoveEvent に登録があるかを、世界を回す前に控える(Paper と同じ位置)
+# ServerLevel.hasEntityMoveEvent(EntityMoveEvent に登録があるかを世界ごとに控える欄)は入れない。
+# 読むのは LivingEntity の EntityMoveEvent の差し込みだけで、そちらは登録の有無を直に見る
+# (patches/events/generated/net-minecraft-world-entity-LivingEntity.rules)。Paper と同じく
+# tick ごとに全部の世界を回して入れていたので、登録が無くても毎 tick ループが 1 つ増えていた。
+
+# データパックを読み直すと Commands が作り直される。Paper はその直前にプラグインの
+# コマンドのノードを新しい dispatcher へ移し、読み直しのあとで COMMANDS(RELOAD) を出して
+# syncCommands している。
+# 読んだ位置: D:/.pw206/Paper-Server の HEAD:src/main/java/net/minecraft/server/MinecraftServer.java:2301, 2325-2330
+#
+# どれも入っていなかったときは、/datapack enable と /reload のあと、plugin.yml のコマンドも
+# Brigadier API のコマンドも dispatcher と CommandMap の両方から消えて、再起動まで戻らなかった。
 file: net/minecraft/server/MinecraftServer.java
 anchor:
-    this.getPlayerList().getPlayers().forEach(player -> player.connection.suspendFlushing());
-insert-after:
-    for (net.minecraft.server.level.ServerLevel shifuLevel : this.getAllLevels()) {
-        shifuLevel.hasEntityMoveEvent = io.papermc.paper.event.entity.EntityMoveEvent.getHandlerList().getRegisteredListeners().length > 0;
-    }
+    this.resources.close();
+    this.resources = resourceManagerHolder;
+insert:
+    io.papermc.paper.command.brigadier.PaperBrigadier.moveBukkitCommands(this.resources.managers().getCommands(), resourceManagerHolder.managers().commands);
 
+file: net/minecraft/server/MinecraftServer.java
+anchor:
+    this.structureTemplateManager.onResourceManagerReload(this.resources.resourceManager);
+insert-after:
+    io.papermc.paper.command.brigadier.PaperCommands.INSTANCE.setValid();
+    io.papermc.paper.plugin.lifecycle.event.LifecycleEventRunner.INSTANCE.callReloadableRegistrarEvent(io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents.COMMANDS, io.papermc.paper.command.brigadier.PaperCommands.INSTANCE, org.bukkit.plugin.Plugin.class, io.papermc.paper.plugin.lifecycle.event.registrar.ReloadableRegistrarEvent.Cause.RELOAD);
+    ((org.bukkit.craftbukkit.help.SimpleHelpMap) this.server.getHelpMap()).clear();
+    ((org.bukkit.craftbukkit.help.SimpleHelpMap) this.server.getHelpMap()).initializeGeneralTopics();
+    ((org.bukkit.craftbukkit.help.SimpleHelpMap) this.server.getHelpMap()).initializeCommands();
+    this.server.syncCommands();

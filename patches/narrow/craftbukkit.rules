@@ -66,33 +66,17 @@ with:
             this.value = safeParse(value);
         }
 
-# Paper は HangingEntity.offs を static にして、絵の当たり判定を作るときに
-# 型の側から呼ぶ。中身は引数だけで決まるので、static にしても結果は同じ
+# HangingEntity.offs は vanilla の instance のメソッドのまま残す。Paper は static にして、
+# 型の側から呼ぶ calculateBoundingBox(shim で写したもの)を足している。static にすると
+# vanilla の this.offs(…) の呼び出しが invokestatic に変わる。写した本体の側で、
+# offs の本体と同じ式に置き換える
 file: net/minecraft/world/entity/decoration/HangingEntity.java
 replace:
-    private double offs(int i) {
+            double d4 = HangingEntity.offs(width);
+            double d5 = HangingEntity.offs(height);
 with:
-    private static double offs(int i) {
-
-# Paper は Goal.Flag に UNKNOWN_BEHAVIOR を足す。MobGoalHelper と PaperCustomGoal が
-# その名前で分岐する。列挙子は本体の末尾には足せないので、宣言の並びを置き換える。
-# 位置は Paper と同じ先頭にする(ordinal を合わせる)。
-# vanilla は Goal.Flag の ordinal を保存しないので、足しても記録の互換は変わらない
-file: net/minecraft/world/entity/ai/goal/Goal.java
-replace:
-    public static enum Flag {
-        MOVE,
-with:
-    public static enum Flag {
-        UNKNOWN_BEHAVIOR, // Paper - add UNKNOWN_BEHAVIOR
-        MOVE,
-
-# Paper のチャンク系が型の側から呼ぶ。中身は引数だけで決まるので static にしても結果は同じ
-file: net/minecraft/server/level/ChunkMap.java
-replace:
-    public ChunkStatus getDependencyStatus(ChunkStatus centerChunkTargetStatus, int distance) {
-with:
-    public static ChunkStatus getDependencyStatus(ChunkStatus centerChunkTargetStatus, int distance) { // Paper - static
+            double d4 = width % 32 == 0 ? 0.5D : 0.0D; // Shifu - vanilla の offs(int) と同じ式
+            double d5 = height % 32 == 0 ? 0.5D : 0.0D; // Shifu - vanilla の offs(int) と同じ式
 
 # 親の pollTask を public に広げたので、上書きも合わせる。可視性だけ
 file: net/minecraft/server/level/ServerChunkCache.java
@@ -112,3 +96,14 @@ replace:
         entityplayer1.restoreFrom(entityplayer, flag);
 with:
         if (entityplayer1 != entityplayer) { entityplayer1.restoreFrom(entityplayer, flag); } else { dev.shifu.event.ShifuEvents.restoreSelf(entityplayer); } // Shifu
+
+# 同じ PlayerList.respawn(Paper から写した本体)。クライアントへ送る既定スポーン。
+# vanilla の nether / end の getSharedSpawnPos は主世界のものを返すので、
+# プラグインが地獄のスポーンを動かしても、地獄で死に戻ったときに送る位置は主世界のままになる。
+# CraftWorld.getSpawnLocation と同じ落とし方で ServerLevel の次元別のスポーンを先に見る。
+# プラグインが置いていない間は shifuGetSpawn() が null で、vanilla と同じ値を送る。
+file: net/minecraft/server/players/PlayerList.java
+replace:
+        entityplayer1.connection.send(new ClientboundSetDefaultSpawnPositionPacket(worldserver1.getSharedSpawnPos(), worldserver1.getSharedSpawnAngle()));
+with:
+        entityplayer1.connection.send(new ClientboundSetDefaultSpawnPositionPacket(worldserver1.shifuGetSpawn() != null ? worldserver1.shifuGetSpawn() : worldserver1.getSharedSpawnPos(), worldserver1.shifuGetSpawn() != null ? worldserver1.shifuGetSpawnAngle() : worldserver1.getSharedSpawnAngle())); // Shifu

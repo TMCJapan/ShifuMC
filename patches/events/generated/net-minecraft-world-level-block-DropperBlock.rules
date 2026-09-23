@@ -1,15 +1,3 @@
-# Paper のパッチから作った発火。tools/make_events.py が出したもの。
-
-# handleBlockFailedDispenseEvent
-file: net/minecraft/world/level/block/DropperBlock.java
-anchor:
-    world.levelEvent(1001, pos, 0);
-insert:
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockFailedDispenseEvent(world, pos)) // Paper - Add BlockFailedDispenseEvent
-
-# handleBlockPreDispenseEvent
-file: net/minecraft/world/level/block/DropperBlock.java
-anchor:
-    itemStack2 = DISPENSE_BEHAVIOUR.dispense(blockSource, itemStack);
-insert:
-    if (!org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockPreDispenseEvent(world, pos, itemStack, i)) return; // Paper - Add BlockPreDispenseEvent
+# BlockFailedDispenseEvent / BlockPreDispenseEvent は外した。
+# patches/events/block-more.rules が同じ 2 つのアンカーに
+# dev.shifu.event.BlockEvents.failedDispense / preDispense を置いている。

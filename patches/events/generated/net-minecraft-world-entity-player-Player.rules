@@ -7,7 +7,8 @@ anchor:
     if (this.sleepCounter > 100) {
 insert:
     // Paper start - Add PlayerDeepSleepEvent
-    if (this.sleepCounter == SLEEP_DURATION) {
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.player.PlayerDeepSleepEvent.class)
+            && this.sleepCounter == SLEEP_DURATION) {
         if (!new io.papermc.paper.event.player.PlayerDeepSleepEvent((org.bukkit.entity.Player) getBukkitEntity()).callEvent()) {
             this.sleepCounter = Integer.MIN_VALUE;
         }

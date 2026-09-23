@@ -5,7 +5,8 @@ file: net/minecraft/world/level/block/DetectorRailBlock.java
 anchor:
     protected void entityInside(BlockState state, Level world, BlockPos pos, Entity entity) {
 insert-after:
-    if (!new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(world, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
+    if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.EntityInsideBlockEvent.class)
+            && !new io.papermc.paper.event.entity.EntityInsideBlockEvent(entity.getBukkitEntity(), org.bukkit.craftbukkit.block.CraftBlock.at(world, pos)).callEvent()) { return; } // Paper - Add EntityInsideBlockEvent
 
 # BlockRedstoneEvent
 file: net/minecraft/world/level/block/DetectorRailBlock.java
@@ -13,7 +14,8 @@ anchor:
     if (bl2 && !bl) {
 insert:
     // CraftBukkit start
-    if (bl != bl2) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)
+            && bl != bl2) {
         org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(world, pos);
 
         org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(block, bl ? 15 : 0, bl2 ? 15 : 0);

@@ -36,3 +36,13 @@ replace:
                     if (predicate.test(itemStack2)) {
 with:
                     if (predicate.test(itemStack2) && dev.shifu.event.PlayerEvents.readyArrow(this, stack, itemStack2)) {
+
+# 手に持った矢(左手、次に右手)。Paper は getHeldProjectile に渡す判定にも発火を足している。
+# 判定を包んで渡す。登録が無ければ同じ判定がそのまま渡る。
+# 包む式は第 1 引数に置く(verify_additive が認める expr の形)。
+# 読んだ位置: Paper-Server 1.20.6 src/main/java/net/minecraft/world/entity/player/Player.java:2299
+file: net/minecraft/world/entity/player/Player.java
+replace:
+            ItemStack itemStack = ProjectileWeaponItem.getHeldProjectile(this, predicate);
+with:
+            ItemStack itemStack = ProjectileWeaponItem.getHeldProjectile(this, dev.shifu.event.PlayerEvents.readyArrowHeld(predicate, this, stack));

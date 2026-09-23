@@ -6,7 +6,8 @@ anchor:
     blockEntity.cookingProgress++;
 insert:
     // CraftBukkit start
-    if (recipeHolder != null && blockEntity.cookingProgress == 0) {
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.inventory.FurnaceStartSmeltEvent.class)
+            && recipeHolder != null && blockEntity.cookingProgress == 0) {
         org.bukkit.craftbukkit.inventory.CraftItemStack source = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(blockEntity.items.get(0));
         org.bukkit.inventory.CookingRecipe<?> recipe = (org.bukkit.inventory.CookingRecipe<?>) recipeHolder.toBukkitRecipe();
 

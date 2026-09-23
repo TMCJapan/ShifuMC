@@ -4,7 +4,8 @@ file: net/minecraft/world/entity/Entity.java
 anchor:
     public void setSwimming(boolean swimming) {
 insert-after:
-    if (this.valid && this.isSwimming() != swimming
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityToggleSwimEvent.class)
+            && this.valid && this.isSwimming() != swimming
             && this instanceof net.minecraft.world.entity.LivingEntity shifuSwimmer
             && !dev.shifu.event.EntityEvents.toggleSwim(shifuSwimmer, swimming)) {
         return;

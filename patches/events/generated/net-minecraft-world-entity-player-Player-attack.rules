@@ -8,11 +8,12 @@ insert-after:
         return;
     }
 
+# 攻撃の溜めを戻す 1 行だけを囲む。前の行の g *= h(エンチャントの上乗せに溜めを掛ける)
+# まで囲むと、取り消したときに上乗せが減らないまま通る。
+# resetAttackStrengthTicker は tick() にも同じ行があるので、続く行までアンカーに入れる。
 file: net/minecraft/world/entity/player/Player.java
 anchor:
-                g *= h;
-                this.resetAttackStrengthTicker();
+    this.resetAttackStrengthTicker();
+    if (target.getType().is(EntityTypeTags.REDIRECTABLE_PROJECTILE) && target instanceof Projectile projectile) {
 insert:
-    if (dev.shifu.event.PlayerEvents.attackCooldownReset(this, target)) {
-insert-after:
-    }
+    if (dev.shifu.event.PlayerEvents.attackCooldownReset(this, target))

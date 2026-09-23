@@ -5,4 +5,5 @@ file: net/minecraft/world/entity/boss/wither/WitherBoss.java
 anchor:
     this.setAlternativeTarget(j, livingEntity2.getId());
 insert:
-    if (org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTargetLivingEvent(this, livingEntity2, org.bukkit.event.entity.EntityTargetEvent.TargetReason.CLOSEST_ENTITY).isCancelled()) continue; // CraftBukkit
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityTargetLivingEntityEvent.class)
+            && org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTargetLivingEvent(this, livingEntity2, org.bukkit.event.entity.EntityTargetEvent.TargetReason.CLOSEST_ENTITY).isCancelled()) continue; // CraftBukkit

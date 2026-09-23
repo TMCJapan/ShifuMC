@@ -8,8 +8,12 @@ anchor:
     this.setValue(player, stat, i);
 insert:
     // CraftBukkit start - fire Statistic events
-    org.bukkit.event.Cancellable cancellable = org.bukkit.craftbukkit.event.CraftEventFactory.handleStatisticsIncrease(player, stat, this.getValue(stat), i);
-    if (cancellable != null && cancellable.isCancelled()) {
-        return;
+    // Shifu - 登録が無ければ組み立てない(Bukkit の統計の種類へ引き直すのも、知らない統計を
+    // System.err へ書くのも handleStatisticsIncrease の中)
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerStatisticIncrementEvent.class)) {
+        org.bukkit.event.Cancellable cancellable = org.bukkit.craftbukkit.event.CraftEventFactory.handleStatisticsIncrease(player, stat, this.getValue(stat), i);
+        if (cancellable != null && cancellable.isCancelled()) {
+            return;
+        }
     }
     // CraftBukkit end

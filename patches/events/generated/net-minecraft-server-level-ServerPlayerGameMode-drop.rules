@@ -7,9 +7,7 @@ anchor:
                         block.playerDestroy(this.level, this.player, pos, blockState2, blockEntity, itemStack2);
                     }
 insert:
-    org.bukkit.block.BlockState shifuBrokenState =
-            org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(
-                    this.level.getWorld(), pos, blockState2, blockEntity);
-    dev.shifu.event.ShifuEvents.blockDropArm();
+    final org.bukkit.block.BlockState shifuBrokenState =
+            dev.shifu.event.ShifuEvents.blockDropArm(this.level, pos, blockState2, blockEntity);
 insert-after:
     dev.shifu.event.ShifuEvents.blockDropFire(this.level, pos, shifuBrokenState, this.player);

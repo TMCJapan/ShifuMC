@@ -131,6 +131,36 @@ public final class ShifuEvents {
                 || listening(org.bukkit.event.weather.LightningStrikeEvent.getHandlerList());
     }
 
+    /** 次元を移る個体を {@code addDuringTeleport} が addEntity へ渡している間か。登録があるときだけ立てる。 */
+    private static boolean teleportAdding;
+
+    /**
+     * {@code addDuringTeleport} の addEntity の前。次元を移る個体は新しく湧いたものではないので、
+     * 間の addEntity ではスポーンのイベントを出さない。Paper は理由 null で addEntity を呼んで飛ばしている
+     * (SPIGOT-6415)。出していたときは、取り消されると doEntityAddEventCalling が discard し、
+     * 移る前の個体はもう消えているので、ポータルを抜けた MOB・アイテム・トロッコ・エンダーパールが
+     * どこにも残らなかった。
+     *
+     * <p>読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/server/level/ServerLevel.java:1641-1652,1704
+     */
+    public static void beginTeleportAdd() {
+        if (entityAddListening()) {
+            teleportAdding = true;
+        }
+    }
+
+    /** {@code addDuringTeleport} の addEntity の後。addEntity が途中で抜けても印を残さない。 */
+    public static void endTeleportAdd() {
+        if (teleportAdding) {
+            teleportAdding = false;
+        }
+    }
+
+    /** 次元を移る個体の addEntity の中か。そのときスポーンのイベントは出さない。 */
+    public static boolean teleportAdding() {
+        return teleportAdding;
+    }
+
     // ------------------------------------------------------------ ブロック
 
     /**
@@ -139,16 +169,74 @@ public final class ShifuEvents {
      * <p>差し込む位置は、vanilla の権限判定が全て終わったあと、
      * 最初の書き換え({@code playerWillDestroy})の直前。
      *
+     * <p>取り消されたら、ブロックエンティティの中身も送り直す。vanilla は
+     * {@code destroyBlock} が false のときブロックの状態だけを送り直すので、
+     * 看板の文字や旗の模様がクライアント側で消えたままになる。
+     *
      * <p>未対応: {@code BlockBreakEvent#setExpToDrop}。
      * 経験値の量を vanilla の落下処理へ渡す経路がまだ無い。
+     *
+     * <p>{@code setDropItems(false)} は、この呼び出しの {@code playerDestroy} が出す
+     * 落とし物(ItemEntity)を世界に入れない形で効かせる({@link #blockDropsBegin})。
+     * Paper は {@code playerDestroy} に引数を足して落とさないが、vanilla の署名は変えられないので、
+     * 出てきたものを {@link #catchDrop} で入れずに捨てる。道具の減り・統計・空腹・経験値は
+     * Paper と同じく残る。
+     *
+     * <p>読んだ位置: Paper-Server
+     * src/main/java/net/minecraft/server/level/ServerPlayerGameMode.java(destroyBlock、tileentity.getUpdatePacket)
      */
     public static boolean blockBreak(final ServerPlayer player, final BlockPos pos) {
         if (!listening(BlockBreakEvent.getHandlerList())) {
             return true;
         }
 
-        return new BlockBreakEvent(
-                CraftBlock.at(player.level(), pos), player.getBukkitEntity()).callEvent();
+        final BlockBreakEvent event = new BlockBreakEvent(CraftBlock.at(player.level(), pos), player.getBukkitEntity());
+        dropsDeniedPlayer = null;
+        dropsDeniedPos = null;
+
+        if (event.callEvent()) {
+            if (!event.isDropItems()) {
+                dropsDeniedPlayer = player;
+                dropsDeniedPos = pos.immutable();
+            }
+
+            return true;
+        }
+
+        final net.minecraft.world.level.block.entity.BlockEntity blockEntity = player.level().getBlockEntity(pos);
+
+        if (blockEntity != null) {
+            final var packet = blockEntity.getUpdatePacket();
+
+            if (packet != null) {
+                player.connection.send(packet);
+            }
+        }
+
+        return false;
+    }
+
+    /** setDropItems(false) にされた破壊。{@link #blockDropsBegin} で使い切る。 */
+    private static ServerPlayer dropsDeniedPlayer;
+    private static BlockPos dropsDeniedPos;
+    /** いま {@code playerDestroy} の中で、落とし物を捨てている。 */
+    private static boolean discardBlockDrops;
+
+    /**
+     * {@code ServerPlayerGameMode.destroyBlock} の {@code playerDestroy} の直前。
+     * 同じプレイヤー・同じ位置の {@link #blockBreak} が {@code setDropItems(false)} だったときだけ、
+     * {@link #blockDropsEnd} までの落とし物を捨てる。位置まで見るのは、クリエイティブで
+     * {@code playerDestroy} まで来ずに抜けた分の控えを、次の別の破壊で使わないため。
+     */
+    public static void blockDropsBegin(final ServerPlayer player, final BlockPos pos) {
+        discardBlockDrops = dropsDeniedPlayer == player && pos.equals(dropsDeniedPos);
+        dropsDeniedPlayer = null;
+        dropsDeniedPos = null;
+    }
+
+    /** {@code playerDestroy} の直後。 */
+    public static void blockDropsEnd() {
+        discardBlockDrops = false;
     }
 
     /**
@@ -201,14 +289,20 @@ public final class ShifuEvents {
     private static final List<org.bukkit.block.BlockState> multiPlaced = new ArrayList<>();
 
     /**
-     * 1 回の設置の始まり。控えを空にして、控えを取るかどうかを返す。
+     * 1 回の設置の始まり。登録があれば控えを空にして、置く前の様子を返す。無ければ null。
      *
-     * <p>{@code BlockItem.place} の頭で 1 度だけ呼ぶ。
+     * <p>{@code BlockItem.place} の頭で 1 度だけ呼ぶ。置く前の様子を差し込み側の三項演算子で
+     * 組み立てていたときは、登録が無くても判定の呼び出しと分岐が vanilla の行の間に入っていた。
      */
-    public static boolean armPlace() {
+    public static org.bukkit.block.BlockState armPlace(
+            final net.minecraft.world.item.context.BlockPlaceContext context) {
+        if (!blockPlaceListening()) {
+            return null;
+        }
+
         multiPlaced.clear();
 
-        return blockPlaceListening();
+        return CraftBlock.at(context.getLevel(), context.getClickedPos()).getState();
     }
 
     /**
@@ -223,12 +317,23 @@ public final class ShifuEvents {
         multiPlaced.add(CraftBlock.at(level, pos).getState());
     }
 
-    /** 取り消されたとき、2 つ目以降に置いた分を控えへ戻す。 */
+    /**
+     * 取り消されたとき、2 つ目以降に置いた分を控えへ戻す。
+     *
+     * <p>旗は {@code UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE}。{@code UPDATE_ALL} で
+     * 戻すと形の更新が隣へ届き、まだ残っている下半分が {@code updateShape} で
+     * 空気になって {@code destroyBlock(pos, true)} でドロップまで出る。
+     * 手持ちは {@code FAIL} のまま減らないので、取り消すたびにブロックが増えていた。
+     *
+     * <p>読んだ位置: Paper-Server src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java:214
+     * ({@code setTypeAndData} の {@code applyPhysics=false})
+     */
     public static void revertPlace(final ServerLevel level) {
         for (final org.bukkit.block.BlockState one : multiPlaced) {
             level.setBlock(((org.bukkit.craftbukkit.block.CraftBlockState) one).getPosition(),
                     ((org.bukkit.craftbukkit.block.CraftBlockState) one).getHandle(),
-                    net.minecraft.world.level.block.Block.UPDATE_ALL);
+                    net.minecraft.world.level.block.Block.UPDATE_CLIENTS
+                            | net.minecraft.world.level.block.Block.UPDATE_KNOWN_SHAPE);
         }
 
         multiPlaced.clear();
@@ -328,6 +433,8 @@ public final class ShifuEvents {
     private static final class DeathCapture {
         final List<net.minecraft.world.entity.Entity.DefaultDrop> drops = new ArrayList<>();
         final List<ExperienceOrb> orbs = new ArrayList<>();
+        /** {@code ExperienceOrb.award} が既にあるオーブへ足そうとした分({@link #catchAward})。 */
+        final List<Award> awards = new ArrayList<>();
         final DeathCapture previous;
         DeathInventory inventory;
 
@@ -342,8 +449,39 @@ public final class ShifuEvents {
                 total += orb.getValue();
             }
 
+            for (Award award : this.awards) {
+                total += award.value();
+            }
+
             return total;
         }
+    }
+
+    /** 控えた {@code ExperienceOrb.award} の 1 回分。 */
+    private record Award(net.minecraft.world.phys.Vec3 pos, int value) {
+    }
+
+    /**
+     * {@code ExperienceOrb.award} のループで、既にあるオーブへ足す判定({@code tryMergeToExisting})の手前。
+     * 死亡の控えを取っている最中なら、その回の量を控えに入れて true を返し、呼ぶ側はその回を飛ばす。
+     *
+     * <p>足し込まれた経験値は新しいオーブにならず addFreshEntity を通らないので、{@link #catchDrop} では
+     * 控えられない。そのため PlayerDeathEvent / EntityDeathEvent の {@code getDroppedExp} に入らず、
+     * {@code setDroppedExp(0)} でも消せなかった。控えを取っていなければ参照 1 つの比較で false。
+     *
+     * <p>控えた分は {@link #releaseExperience} が、量が変えられていなければ同じ位置で
+     * もう 1 度 award に通す(足し込むかどうかはそのとき vanilla が決める)。
+     */
+    public static boolean catchAward(final net.minecraft.world.phys.Vec3 pos, final int value) {
+        final DeathCapture current = capture;
+
+        if (current == null) {
+            return false;
+        }
+
+        current.awards.add(new Award(pos, value));
+
+        return true;
     }
 
     private static DeathCapture capture;
@@ -359,6 +497,11 @@ public final class ShifuEvents {
      * 速度や向きも vanilla が決めたままになる。経験値オーブも同じ。
      */
     public static boolean catchDrop(final net.minecraft.world.entity.Entity entity) {
+        if (discardBlockDrops && entity instanceof net.minecraft.world.entity.item.ItemEntity) {
+            // BlockBreakEvent#setDropItems(false)。世界に入れずに捨てる(呼び手の addEntity は true を返す)
+            return true;
+        }
+
         final List<net.minecraft.world.entity.item.ItemEntity> broken = blockDrops;
 
         if (broken != null && entity instanceof net.minecraft.world.entity.item.ItemEntity dropped) {
@@ -441,17 +584,30 @@ public final class ShifuEvents {
             for (ExperienceOrb orb : current.orbs) {
                 victim.level().addFreshEntity(orb);
             }
+
+            for (Award award : current.awards) {
+                ExperienceOrb.award((ServerLevel) victim.level(), award.pos(), award.value());
+            }
         } else if (wanted > 0) {
             ExperienceOrb.award((ServerLevel) victim.level(), victim.position(), wanted);
         }
     }
 
 
+    /** {@link #entityDamageBefore} が発火して、まだ {@code actuallyHurt} に渡していないイベントと、その相手。 */
+    private static org.bukkit.event.entity.EntityDamageEvent pendingDamage;
+    private static LivingEntity pendingDamaged;
+
     /**
-     * ダメージ。
+     * EntityDamageEvent。{@code hurt} で眠りを覚ます行の手前。
      *
-     * <p><b>登録が無ければ null。</b> 呼ぶ側は null のとき vanilla の
-     * {@code actuallyHurt} をそのまま通す。
+     * <p>vanilla はこの先で、盾の耐久を減らし、盾で防いだ攻撃者を弾き(盾を割る)、兜の耐久を減らしてから
+     * {@code actuallyHurt} を呼ぶ。以前は {@code actuallyHurt} の手前で発火していたので、取り消しても
+     * それらと眠りの解除は済んでいた。Paper は盾の計算を dryRun で先に済ませて発火し、取り消しなら
+     * 何もせずに抜ける。同じ形にするため、ここで vanilla と同じ式でダメージを先に求めて発火する。
+     *
+     * <p>{@code actuallyHurt} が呼ばれない場合(無敵時間中で前回以下)は発火しない(Paper と同じ)。
+     * 取り消されなければイベントを控えて、{@code actuallyHurt} の手前で {@link #takeDamage} が渡す。
      *
      * <p><b>差分の内訳は載らない。</b> Paper は防具・耐性・吸収・受け流しの
      * 減衰を先に計算して {@code DamageModifier} ごとに詰め、減衰後の値を
@@ -461,22 +617,69 @@ public final class ShifuEvents {
      * {@code getDamage()} と同じ値を返す。
      * {@code getDamage(DamageModifier.ARMOR)} などは 0。
      *
-     * <p>取り消しと {@code setDamage} は効く。原因
-     * ({@code DamageCause})は Paper と同じ導出をそのまま使う。
+     * <p>読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/world/entity/LivingEntity.java(hurt)、
+     * CraftEventFactory.callNonLivingEntityDamageEvent(名前に反して中身は生死を問わない)
      *
-     * <p>参照した位置(Paper 26.2):
-     * {@code paper-server src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:1228}
-     * ({@code callNonLivingEntityDamageEvent}。名前に反して中身は生死を問わない)
+     * @return vanilla の続きへ進んでよいか。取り消されたら false
      */
-    public static org.bukkit.event.entity.EntityDamageEvent entityDamage(
-            final Entity entity,
-            final net.minecraft.world.damagesource.DamageSource source,
-            final float damage) {
+    public static boolean entityDamageBefore(
+            final LivingEntity entity,
+            final net.minecraft.world.damagesource.DamageSource source, final float amount) {
         if (!listening(org.bukkit.event.entity.EntityDamageEvent.getHandlerList())) {
+            return true;
+        }
+
+        float damage = amount;
+
+        if (damage > 0.0F && entity.isDamageSourceBlocked(source)) {
+            damage = 0.0F;
+        }
+
+        if (source.is(net.minecraft.tags.DamageTypeTags.IS_FREEZING) && entity.getType().is(net.minecraft.tags.EntityTypeTags.FREEZE_HURTS_EXTRA_TYPES)) {
+            damage *= 5.0F;
+        }
+
+        if (source.is(net.minecraft.tags.DamageTypeTags.DAMAGES_HELMET) && !entity.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).isEmpty()) {
+            damage *= 0.75F;
+        }
+
+        if ((float) entity.invulnerableTime > 10.0F && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_COOLDOWN)) {
+            if (damage <= entity.lastHurt) {
+                return true;
+            }
+
+            damage -= entity.lastHurt;
+        }
+
+        final org.bukkit.event.entity.EntityDamageEvent event =
+                CraftEventFactory.callNonLivingEntityDamageEvent(entity, source, damage, false);
+
+        if (event.isCancelled()) {
+            return false;
+        }
+
+        pendingDamage = event;
+        pendingDamaged = entity;
+
+        return true;
+    }
+
+    /**
+     * {@link #entityDamageBefore} が控えたイベント。{@code actuallyHurt} の手前で読む。
+     * 登録が無かった、または別の相手のものなら null で、呼ぶ側は vanilla の {@code actuallyHurt} を通す。
+     */
+    public static org.bukkit.event.entity.EntityDamageEvent takeDamage(final LivingEntity entity) {
+        final org.bukkit.event.entity.EntityDamageEvent event = pendingDamage;
+
+        if (event == null) {
             return null;
         }
 
-        return CraftEventFactory.callNonLivingEntityDamageEvent(entity, source, damage, false);
+        final LivingEntity damaged = pendingDamaged;
+        pendingDamage = null;
+        pendingDamaged = null;
+
+        return damaged == entity ? event : null;
     }
 
     /**
@@ -711,9 +914,15 @@ public final class ShifuEvents {
      * 同じオブジェクトを使い回すので、vanilla の {@code restoreFrom(自分)} は
      * {@code recipeBook.copyOverData(自分)} で states を clear してから読んで NPE になる
      * (CraftBukkit はその 1 行をコメントアウトしている。Shifu は vanilla の行を触らない)。
-     * 同じオブジェクトなら欄の写しは全部 no-op なので、効果のある 4 つだけを行う。
+     * 同じオブジェクトなら欄の写しは全部 no-op なので、効果のある 5 つだけを行う。
+     *
+     * <p>先頭の 1 行は restoreFrom の {@code gameMode.setGameModeForPlayer(今のモード, 前のモード)} の効果。
+     * モードは同じなので、残る効果は能力の付け直し(サバイバルなら飛行を切る)だけ。
+     * これが無いと、飛んでいるプレイヤーを別の世界へテレポートさせたとき飛行が残った。
+     * setGameModeForPlayer は protected なので、中で呼んでいる {@code updatePlayerAbilities} を直接呼ぶ。
      */
     public static void restoreSelf(final ServerPlayer player) {
+        player.gameMode.getGameModeForPlayer().updatePlayerAbilities(player.getAbilities());
         player.onUpdateAbilities();
         player.lastSentExp = -1;
         player.lastSentHealth = -1.0F;
@@ -725,11 +934,17 @@ public final class ShifuEvents {
     /** 次に {@code connection.teleport} を通る相手のうち、発火しないもの。 */
     private static ServerPlayer silentTeleport;
 
-    /** 行き先を変えられた {@code teleport(transition)} の、入れ子の呼び出しの相手。 */
+    /** 行き先を変えられた {@code teleportTo(ServerLevel, ...)} の、入れ子の呼び出しの相手。 */
     private static ServerPlayer suppressTransition;
 
-    /** 呼び出し側が先に置いた理由。vanilla の署名には理由を運ぶ引数が無い。 */
-    private static Entity causeEntity;
+    /**
+     * 呼び出し側が先に置いた理由。vanilla の署名には理由を運ぶ引数が無い。
+     *
+     * <p>相手は弱い参照で持つ。コーラスフルーツは理由を置いたあと {@code randomTeleport} が
+     * 失敗するとテレポートが起きないので、次に誰かがテレポートするまで、退出した
+     * ServerPlayer もこの欄に残った。
+     */
+    private static java.lang.ref.WeakReference<Entity> causeEntity;
     private static TeleportCause cause;
 
     /**
@@ -744,7 +959,7 @@ public final class ShifuEvents {
             return;
         }
 
-        causeEntity = entity;
+        causeEntity = new java.lang.ref.WeakReference<>(entity);
         cause = reason;
     }
 
@@ -752,7 +967,7 @@ public final class ShifuEvents {
      * 次の {@code connection.teleport} では発火しない。
      *
      * <p>Paper が {@code internalTeleport} を使っている場所
-     * (位置がずれたときの戻し、イベントの取り消し)で使う。
+     * (位置がずれたときの戻し、イベントの取り消し、リスポーン、ポータル)で使う。
      */
     public static void silentTeleport(final ServerGamePacketListenerImpl connection) {
         if (!listening(PlayerTeleportEvent.getHandlerList())) {
@@ -760,6 +975,98 @@ public final class ShifuEvents {
         }
 
         silentTeleport = connection.player;
+    }
+
+    /** 置かれた理由を読んで消す。その相手のものでなければ UNKNOWN。 */
+    private static TeleportCause takeCause(final ServerPlayer player) {
+        final TeleportCause placed = causeEntity != null && causeEntity.get() == player ? cause : null;
+        causeEntity = null;
+        cause = null;
+
+        return placed != null ? placed : TeleportCause.UNKNOWN;
+    }
+
+    /**
+     * PlayerTeleportEvent(同じ世界の中)。vanilla の {@code connection.teleport(x, y, z, yaw, pitch, flags)} の先頭。
+     *
+     * <p>Paper はこのメソッドに理由の引数を足した版で発火し、動かすのは internalTeleport に任せている。
+     * その版は shim として入っているので、登録があればそちらへ渡して、呼ぶ側は vanilla の本体を飛ばす。
+     * 渡した先の internalTeleport(hand)が発火しない印を付けて vanilla の版を呼び直すので、
+     * 2 回目はここを素通りして vanilla の本体が動かす。
+     * 動かす前と後が同じ場所なら発火しない(SPIGOT-5171。Paper の版の中で見ている)。
+     *
+     * <p>読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java:1657-1694
+     *
+     * @return 済ませたか。true なら呼ぶ側は vanilla の本体を飛ばして抜ける
+     */
+    public static boolean playerTeleport(final ServerGamePacketListenerImpl connection,
+                                         final double x, final double y, final double z, final float yaw, final float pitch,
+                                         final java.util.Set<RelativeMovement> flags) {
+        final ServerPlayer player = connection.player;
+
+        if (silentTeleport == player) {
+            silentTeleport = null;
+
+            return false;
+        }
+
+        if (!listening(PlayerTeleportEvent.getHandlerList())) {
+            return false;
+        }
+
+        connection.teleport(x, y, z, yaw, pitch, flags, takeCause(player));
+
+        return true;
+    }
+
+    /**
+     * PlayerTeleportEvent(別の世界へ)。vanilla の {@code teleportTo(ServerLevel, x, y, z, yaw, pitch)} の先頭。
+     * 同じ世界なら何もしない(中の {@code connection.teleport} で出る)。
+     *
+     * <p>vanilla は世界を移してから {@code connection.teleport} を呼ぶので、そこでは動かす前の場所が取れない。
+     * Paper はこのメソッドを CraftPlayer.teleport へ向け替えて、動かす前に発火している。
+     * Shifu は動かす処理を vanilla のまま残し、発火だけを先に済ませる。取り消されたら何もせずに抜ける。
+     * 行き先が変えられたら、その世界と位置で自分を呼び直す(呼び直しでは発火しない)。
+     * どちらでも、続けて vanilla が呼ぶ {@code connection.teleport} では発火しない。
+     *
+     * <p>読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/server/level/ServerPlayer.java:2409-2416、
+     * src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java:1396-1490
+     *
+     * @return 済ませたか。true なら呼ぶ側は vanilla の本体を飛ばして抜ける
+     */
+    public static boolean playerTeleportWorld(final ServerPlayer player, final ServerLevel level,
+                                              final double x, final double y, final double z, final float yaw, final float pitch) {
+        if (suppressTransition == player) {
+            suppressTransition = null;
+
+            return false;
+        }
+
+        if (level == player.level() || !listening(PlayerTeleportEvent.getHandlerList())) {
+            return false;
+        }
+
+        final Location to = new Location(level.getWorld(), x, y, z, yaw, pitch);
+        final PlayerTeleportEvent event = new PlayerTeleportEvent(
+                player.getBukkitEntity(), player.getBukkitEntity().getLocation(), to.clone(), takeCause(player));
+
+        if (!event.callEvent()) {
+            return true;
+        }
+
+        silentTeleport = player;
+
+        final Location dest = event.getTo();
+
+        if (to.equals(dest)) {
+            return false;
+        }
+
+        suppressTransition = player;
+        player.teleportTo(((CraftWorld) dest.getWorld()).getHandle(),
+                dest.getX(), dest.getY(), dest.getZ(), dest.getYaw(), dest.getPitch());
+
+        return true;
     }
 
 
@@ -1192,66 +1499,70 @@ public final class ShifuEvents {
 
     // ------------------------------------------------------------ TNT
 
-    private static org.bukkit.event.block.TNTPrimeEvent.PrimeCause primeCause;
-    private static Entity primeEntity;
-    private static BlockPos primeBlock;
-
     /**
-     * 次の {@code TntBlock.prime} の理由を置く。Paper は prime の署名に発火の Supplier を
-     * 足して呼び出し側から渡しているが、Shifu は呼ぶ直前に置く。登録が無ければ何もしない。
-     */
-    public static void tntPrimeCause(final org.bukkit.event.block.TNTPrimeEvent.PrimeCause cause,
-                                     final Entity entity, final BlockPos block) {
-        if (!listening(org.bukkit.event.block.TNTPrimeEvent.getHandlerList())) {
-            return;
-        }
-
-        primeCause = cause;
-        primeEntity = entity;
-        primeBlock = block;
-    }
-
-    /**
-     * TNTPrimeEvent。{@code TntBlock.prime} の中で、ゲームルールの判定を通ったあと、
-     * {@code PrimedTnt} を作る前。Paper と同じ位置。
+     * TNTPrimeEvent。差し込みは {@code TntBlock.explode} を呼ぶ側ごとに置いてある。
+     *
+     * <p>1.20.6 の {@code explode} は真偽値を返さないので、その中で発火して取り消すと、
+     * 呼び手の {@code removeBlock} / {@code setBlock(AIR)} が後から走って
+     * TNT が何も残さずに消えた。呼び手の側なら、点かなかったときと同じところへ抜けられる。
+     *
+     * <p>主のブロック({@code getPrimingBlock})は渡さない。Paper はレッドストーンの
+     * {@code sourcePos} を渡すが、onPlace と neighborChanged は差し込みのアンカーが
+     * 同じ 2 行なので、片方だけ別の値にできない。
+     *
+     * <p>読んだ位置: Paper-Server
+     * src/main/java/net/minecraft/world/level/block/TntBlock.java:52,68,83,128,163
      *
      * @return 点火してよいか
      */
-    public static boolean tntPrime(final net.minecraft.world.level.Level level, final BlockPos pos, final LivingEntity source) {
+    public static boolean tntPrime(final net.minecraft.world.level.Level level, final BlockPos pos,
+                                   final org.bukkit.event.block.TNTPrimeEvent.PrimeCause cause,
+                                   final Entity entity) {
         if (!listening(org.bukkit.event.block.TNTPrimeEvent.getHandlerList())) {
             return true;
         }
 
-        org.bukkit.event.block.TNTPrimeEvent.PrimeCause cause = primeCause;
-        Entity entity = primeEntity;
-        final BlockPos block = primeBlock;
-        primeCause = null;
-        primeEntity = null;
-        primeBlock = null;
-
-        if (cause == null) {
-            // 理由を置いていない呼び出し。点火した生き物がいればそれを主とみなす
-            cause = source instanceof net.minecraft.world.entity.player.Player
-                    ? org.bukkit.event.block.TNTPrimeEvent.PrimeCause.PLAYER
-                    : org.bukkit.event.block.TNTPrimeEvent.PrimeCause.REDSTONE;
-            entity = source;
-        }
-
-        return CraftEventFactory.callTNTPrimeEvent(level, pos, cause, entity, block);
+        return CraftEventFactory.callTNTPrimeEvent(level, pos, cause, entity, null);
     }
 
-    /** 爆発で誘爆するとき。vanilla は prime を通らず {@code wasExploded} で直に作る。 */
-    // 1.20.6 の TntBlock.wasExploded は Level を受ける。CraftEventFactory も Level で足りる
-    public static boolean tntPrimeByExplosion(final net.minecraft.world.level.Level level, final BlockPos pos, final net.minecraft.world.level.Explosion explosion) {
+    /**
+     * 誘爆。vanilla は {@code setBlock(AIR)} を済ませてから {@code wasExploded} を呼ぶので、
+     * そこで取り消すと TNT は消えたままになる。差し込みは
+     * {@code Explosion.finalizeExplosion} の、その位置を壊す手前に置いてある。
+     *
+     * <p>爆発で壊れる位置ごとに通るので、登録を見てからブロックを見る。
+     *
+     * <p>読んだ位置: Paper-Server
+     * src/main/java/net/minecraft/world/level/Explosion.java:723-733
+     *
+     * @return その位置を vanilla のとおり壊してよいか
+     */
+    public static boolean tntPrimeByExplosion(final net.minecraft.world.level.Level level, final BlockPos pos,
+                                              final net.minecraft.world.level.Explosion explosion) {
         if (!listening(org.bukkit.event.block.TNTPrimeEvent.getHandlerList())) {
+            return true;
+        }
+
+        final net.minecraft.world.level.block.state.BlockState state = level.getBlockState(pos);
+
+        if (!(state.getBlock() instanceof net.minecraft.world.level.block.TntBlock)) {
             return true;
         }
 
         final Entity source = explosion.getDirectSourceEntity();
 
-        return CraftEventFactory.callTNTPrimeEvent(level, pos, org.bukkit.event.block.TNTPrimeEvent.PrimeCause.EXPLOSION,
-                source, source == null ? BlockPos.containing(explosion.center()) : null);
+        if (CraftEventFactory.callTNTPrimeEvent(level, pos, org.bukkit.event.block.TNTPrimeEvent.PrimeCause.EXPLOSION,
+                source, source == null ? BlockPos.containing(explosion.center()) : null)) {
+            return true;
+        }
+
+        // クライアントは爆発の packet でこの位置を空気にしているので、送り直す
+        level.sendBlockUpdated(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), state,
+                net.minecraft.world.level.block.Block.UPDATE_ALL);
+
+        return false;
     }
+
 
     // ------------------------------------------------------------ ゲームモード・飛行・ベッド・食事
 
@@ -1266,6 +1577,37 @@ public final class ShifuEvents {
 
         gameModePlayer = player;
         gameModeCause = cause;
+    }
+
+    /**
+     * PlayerGameModeChangeEvent。{@code changeGameModeForPlayer} の先頭、「同じモードなら何もしない」の
+     * 判定の手前。同じモードなら発火せずに true(Paper は判定のあとで出すので、同じモードでは出ない)。
+     * 判定の手前に置くのは、置かれた理由をどの経路でも消すため。判定のあとに置くと、同じモードへの
+     * /gamemode や CraftPlayer.setGameMode で理由と ServerPlayer が欄に残った。
+     *
+     * <p>未対応: cancelMessage(Paper の /gamemode はこれを送るが、vanilla のコマンドは読まない)。
+     *
+     * <p>読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/server/level/ServerPlayerGameMode.java(changeGameModeForPlayer)
+     *
+     * @return 変えてよいか
+     */
+    public static boolean gameModeChange(final ServerPlayer player, final net.minecraft.world.level.GameType mode) {
+        if (!listening(org.bukkit.event.player.PlayerGameModeChangeEvent.getHandlerList())) {
+            return true;
+        }
+
+        final org.bukkit.event.player.PlayerGameModeChangeEvent.Cause cause = gameModePlayer == player && gameModeCause != null
+                ? gameModeCause
+                : org.bukkit.event.player.PlayerGameModeChangeEvent.Cause.UNKNOWN;
+        gameModePlayer = null;
+        gameModeCause = null;
+
+        if (mode == player.gameMode.getGameModeForPlayer()) {
+            return true;
+        }
+
+        return new org.bukkit.event.player.PlayerGameModeChangeEvent(
+                player.getBukkitEntity(), org.bukkit.GameMode.getByValue(mode.getId()), cause, null).callEvent();
     }
 
 
@@ -1461,9 +1803,17 @@ public final class ShifuEvents {
     }
 
 
-    /** 取り消されたクリックのあと。画面の中身を送り直して食い違いを消す。 */
+    /**
+     * 取り消されたクリックのあと。画面の中身を送り直して食い違いを消す。
+     *
+     * <p>vanilla の {@code handleContainerClick} は {@code clicked} の手前で
+     * {@code suppressRemoteUpdates()} を立て、末尾の {@code resumeRemoteUpdates()} で戻す。
+     * 差し込みは取り消しでその間から抜けるので、ここで戻さないと、
+     * そのメニューの差分の同期が閉じるまで止まったままになっていた。
+     */
     public static void cancelledInventoryClick(final ServerPlayer player,
                                                final org.bukkit.event.inventory.InventoryClickEvent event) {
+        player.containerMenu.resumeRemoteUpdates();
         player.containerMenu.sendAllDataToRemote();
     }
 
@@ -1581,10 +1931,24 @@ public final class ShifuEvents {
      * <p>Paper は落とし物を世界に入れる前に押さえて、通ったものだけ入れる。
      * Shifu は <b>vanilla のとおり先に入れて</b>、あとで発火し、
      * プラグインが外したものだけ消す。入る順は vanilla のまま。
+     *
+     * <p>壊す前のブロックの様子(イベントに渡す)も登録があるときだけここで作って返す。
+     * 差し込み側で作っていたときは、登録が無くても 1 回壊すたびに組み立てていた。
+     *
+     * @return 壊す前のブロックの様子。登録が無ければ null
      */
-    public static void blockDropArm() {
-        blockDrops = listening(org.bukkit.event.block.BlockDropItemEvent.getHandlerList())
-                ? new ArrayList<>() : null;
+    public static org.bukkit.block.BlockState blockDropArm(final ServerLevel level, final BlockPos pos,
+            final net.minecraft.world.level.block.state.BlockState state,
+            final net.minecraft.world.level.block.entity.BlockEntity blockEntity) {
+        if (!listening(org.bukkit.event.block.BlockDropItemEvent.getHandlerList())) {
+            blockDrops = null;
+
+            return null;
+        }
+
+        blockDrops = new ArrayList<>();
+
+        return org.bukkit.craftbukkit.block.CraftBlockStates.getBlockState(level.getWorld(), pos, state, blockEntity);
     }
 
     /**
