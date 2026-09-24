@@ -2,7 +2,8 @@
 
 # Paper と同じ順で、設定(spigot.yml と Paper の設定)を読んでからプラグインを読む。
 # SpigotConfig.init は CraftServer.loadPlugins でも呼ばれるが、Paper の設定の既定値が
-# SpigotWorldConfig を先に要求するので、ここでも先に読む。watchdog はプラグインを読む前に起動する。
+# SpigotWorldConfig を先に要求するので、ここでも先に読む。watchdog はプラグインを読んだあと、
+# STARTUP の enable の前に起動する(プラグインが無ければ起動しない。理由は ShifuBootstrap.startWatchdog)。
 # 1.19.4 には brigadier API の PaperCommands と lifecycle event が無いので、その 2 行は無い。
 #
 # 読んだ位置: Paper-Server src/main/java/net/minecraft/server/dedicated/DedicatedServer.java(initServer)
@@ -12,8 +13,8 @@ anchor:
 insert-after:
     org.spigotmc.SpigotConfig.init((java.io.File) this.options.valueOf("spigot-settings"));
     dev.shifu.event.ShifuBootstrap.initializeConfigurations(this);
-    org.spigotmc.WatchdogThread.doStart(org.spigotmc.SpigotConfig.timeoutTime, org.spigotmc.SpigotConfig.restartOnCrash);
     this.server.loadPlugins();
+    dev.shifu.event.ShifuBootstrap.startWatchdog(this.server);
     this.server.enablePlugins(org.bukkit.plugin.PluginLoadOrder.STARTUP);
 
 file: net/minecraft/server/dedicated/DedicatedServer.java
@@ -38,8 +39,10 @@ file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
             LOGGER.info("Done ({})! For help, type \"help\"", string);
 insert-after:
-    org.spigotmc.WatchdogThread.tick();
-    org.spigotmc.WatchdogThread.hasStarted = true;
+    if (dev.shifu.event.ShifuBootstrap.watchdog) {
+        org.spigotmc.WatchdogThread.tick();
+        org.spigotmc.WatchdogThread.hasStarted = true;
+    }
 
 # プラグインのログを log4j に流す(中身は発火層)
 file: net/minecraft/server/dedicated/DedicatedServer.java

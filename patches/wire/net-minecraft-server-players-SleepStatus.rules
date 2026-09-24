@@ -12,7 +12,7 @@ file: net/minecraft/server/players/SleepStatus.java
 anchor:
     return i >= this.sleepersNeeded(percentage);
 insert:
-    if (dev.shifu.event.PlayerEvents.anySleepIgnored(players)) {
+    if (!dev.shifu.event.PlayerEvents.noneSleepIgnored(players)) {
         return dev.shifu.event.PlayerEvents.enoughDeepSleeping(players, i, this.sleepersNeeded(percentage));
     }
 

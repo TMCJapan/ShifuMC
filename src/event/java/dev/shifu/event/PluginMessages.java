@@ -2,17 +2,9 @@
 package dev.shifu.event;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelPipeline;
-import net.minecraft.network.Connection;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.protocol.game.ServerGamePacketListener;
 import net.minecraft.network.protocol.game.ServerboundCustomPayloadPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
@@ -20,26 +12,14 @@ import net.minecraft.server.network.ServerGamePacketListenerImpl;
 /**
  * プラグインメッセージ(Bukkit の Messenger)の受け口。
  *
- * <p>vanilla の {@code ServerCommonPacketListenerImpl.handleCustomPayload} は空で、
- * {@code DiscardedPayload} の codec は本文を {@code skipBytes} で捨てる。Paper は record に
- * {@code byte[] data} を足して codec を書き換えているが、Shifu は vanilla の行を触らないので、
- * <b>捨てる直前に控えを取る</b>形にする({@code remember})。読むだけで reader index は動かさないので、
- * vanilla の {@code skipBytes} は同じ量を飛ばす。
- *
- * <p>控えは復号したスレッドの中に置き、同じ packet が次の handler に着いたところで接続ごとの列へ移す
- * ({@code afterDecode})。復号と、その packet が handler に着くのは同じスレッドの同じ呼び出しの中なので、
- * 別の接続の分と混ざらない。
+ * <p>この版の {@code ServerboundCustomPayloadPacket} は本文を自分で持っている({@code getData})ので、
+ * 新しい版のように復号の途中で本文の控えを取る仕組みは要らない。
  *
  * <p><b>プラグインが 1 つも入っていなければ何もしない。</b>そのときに実行される命令列は vanilla と同じ。
  */
 public final class PluginMessages {
-
-    /** 復号したスレッドが、次の handler に渡すまでの間だけ持つ控え。 */
-    private static final ThreadLocal<Deque<byte[]>> DECODED = ThreadLocal.withInitial(ArrayDeque::new);
-
-    /** 接続ごとの控えの列と、登録しているチャンネル。 */
-    private static final Map<Connection, Deque<byte[]>> PENDING = new ConcurrentHashMap<>();
-    private static final Map<Connection, Set<String>> CHANNELS = new ConcurrentHashMap<>();
+    private static final ResourceLocation REGISTER = new ResourceLocation("register");
+    private static final ResourceLocation UNREGISTER = new ResourceLocation("unregister");
 
     private PluginMessages() {
     }
@@ -52,100 +32,82 @@ public final class PluginMessages {
     }
 
     /**
-     * {@code DiscardedPayload} の codec が本文を捨てる直前。読むだけで reader index は動かさない。
+     * {@code minecraft:register} / {@code unregister}(チャンネルの登録)。
+     * {@code ServerboundCustomPayloadPacket.handle} の先頭、listener の {@code handleCustomPayload} を
+     * 呼ぶ前に呼ぶ(patches/wire/net-minecraft-network-protocol-game-ServerboundCustomPayloadPacket.rules)。
      *
-     * @param buf    これから捨てられる本文が入っている buffer
-     * @param length 本文の長さ(vanilla が数えた値)
+     * <p>Fabric API は {@code handleCustomPayload} の先頭に取り消せる inject を置き、register / unregister を
+     * 自分のチャンネル登録として受けて取り消す。{@link #handle} はその後ろに差してあるので届かず、
+     * Fabric API が入っていると CraftPlayer のチャンネルが 1 つも登録されず、sendPluginMessage が
+     * 送らずに捨てていた。packet の {@code handle} は {@code handleCustomPayload} より前に動くので、
+     * ここなら Fabric API より先に見られる。Fabric API が無くても同じ経路を通る。
+     *
+     * <p>本文は {@code handle} が戻ったところで release されるので、ここで写してからサーバースレッドへ回す。
+     * ほかのプラグインメッセージも {@link #handle} がサーバースレッドの同じ待ち行列へ回すので、順番は届いた順のまま。
+     *
+     * <p>読んだ位置(javap): fabric-api-0.87.2+1.19.4.jar の fabric-networking-api-v1-0.87.2.jar
+     *   net/fabricmc/fabric/mixin/networking/ServerPlayNetworkHandlerMixin.handleCustomPayloadReceivedAsync
+     *   ({@code @Inject(method = "onCustomPayload", at = @At("HEAD"), cancellable = true)}、
+     *   {@code addon.handle(packet)} が true なら cancel)と
+     *   net/fabricmc/fabric/impl/networking/AbstractChanneledNetworkAddon.handle
+     *   ({@code REGISTER_CHANNEL} / {@code UNREGISTER_CHANNEL} なら receiveRegistration して true)。
      */
-    public static void remember(final FriendlyByteBuf buf, final int length) {
-        if (length == 0 || !enabled()) {
+    public static void registration(final ServerGamePacketListener listener, final ServerboundCustomPayloadPacket packet) {
+        final ResourceLocation identifier = packet.getIdentifier();
+        final boolean register = REGISTER.equals(identifier);
+
+        if ((!register && !UNREGISTER.equals(identifier)) || !enabled()
+                || !(listener instanceof ServerGamePacketListenerImpl game)) {
             return;
         }
 
-        final byte[] data = new byte[length];
-        buf.getBytes(buf.readerIndex(), data);
+        final FriendlyByteBuf body = packet.getData();
+        final byte[] data = new byte[body.readableBytes()];
+        body.getBytes(body.readerIndex(), data);
 
-        final Deque<byte[]> queue = DECODED.get();
-
-        // 次の handler が拾わなかった分(プレイヤーの接続以外)が溜まらないように上限を置く
-        if (queue.size() >= 8) {
-            queue.removeFirst();
-        }
-
-        queue.addLast(data);
-    }
-
-    /** 復号した packet が handler に着いたところ。控えを接続ごとの列へ移す。 */
-    private static void afterDecode(final Connection connection, final Object message) {
-        final Deque<byte[]> decoded = DECODED.get();
-
-        if (decoded.isEmpty()) {
-            return;
-        }
-
-        if (!(message instanceof ServerboundCustomPayloadPacket)) {
-            decoded.clear();
-
-            return;
-        }
-
-        final Deque<byte[]> queue = PENDING.computeIfAbsent(connection, key -> new ArrayDeque<>());
-
-        synchronized (queue) {
-            while (!decoded.isEmpty()) {
-                if (queue.size() >= 64) {
-                    queue.removeFirst();
-                }
-
-                queue.addLast(decoded.removeFirst());
+        net.minecraft.server.MinecraftServer.getServer().execute(() -> {
+            // PacketUtils.ensureRunningOnSameThread と同じく、isAcceptingMessages が false なら何もしない
+            if (!game.isAcceptingMessages()) {
+                return;
             }
-        }
-    }
 
-    /** その接続が登録しているチャンネル。設定フェーズと本編で同じものを使う。 */
-    public static Set<String> channelsFor(final Connection connection) {
-        return CHANNELS.computeIfAbsent(connection, key -> java.util.concurrent.ConcurrentHashMap.newKeySet());
-    }
+            final org.bukkit.craftbukkit.entity.CraftPlayer bukkit = game.player.getBukkitEntity();
 
-    /** 接続を閉じたら忘れる。 */
-    public static void forget(final Connection connection) {
-        PENDING.remove(connection);
-        CHANNELS.remove(connection);
-    }
+            try {
+                for (final String channel : new String(data, StandardCharsets.UTF_8).split("\0")) {
+                    if (channel.isEmpty()) {
+                        continue;
+                    }
 
-    /** 復号した packet を接続ごとの列と結びつける handler を差し込む。 */
-    public static void install(final ChannelPipeline pipeline, final Connection connection) {
-        pipeline.addBefore("packet_handler", "shifu_plugin_messages", new ChannelInboundHandlerAdapter() {
-            @Override
-            public void channelRead(final ChannelHandlerContext context, final Object message) throws Exception {
-                afterDecode(connection, message);
-                super.channelRead(context, message);
+                    if (register) {
+                        bukkit.addChannel(channel);
+                    } else {
+                        bukkit.removeChannel(channel);
+                    }
+                }
+            } catch (final RuntimeException e) {
+                org.slf4j.LoggerFactory.getLogger(PluginMessages.class)
+                        .error("チャンネル {} のプラグインメッセージを処理できない", identifier, e);
             }
         });
     }
 
-
-    private static final ResourceLocation REGISTER = new ResourceLocation("register");
-    private static final ResourceLocation UNREGISTER = new ResourceLocation("unregister");
-
     /**
      * {@code handleCustomPayload}(vanilla は空)の中身。
      *
-     * <p>Paper と同じことをする: {@code minecraft:register} / {@code unregister} は
-     * チャンネルの登録、それ以外は Bukkit の Messenger へ渡す。
+     * <p>Paper と同じことをする: Bukkit の Messenger へ渡す。{@code minecraft:register} /
+     * {@code unregister} は {@link #registration} が受けているので、ここでは何もしない。
      *
      * <p>Paper は読めない本文で接続を切るが、vanilla は何もしないので切らずに記録だけ残す。
      *
-     * <p>1.19.4 の {@code ServerboundCustomPayloadPacket} は本文を自分で持っている
-     * ({@code getData})ので、控え({@code remember} / {@code take})は使わない。
-     * {@code minecraft:brand} は Paper の {@code clientBrandName} が private で、
+     * <p>{@code minecraft:brand} は Paper の {@code clientBrandName} が private で、
      * 外から書けないため渡していない。
      *
      * <p>読んだ位置:
      *   Paper-Server@HEAD src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java:3545
      */
     public static void handle(final ServerGamePacketListenerImpl listener, final ServerboundCustomPayloadPacket packet) {
-        if (!enabled()) {
+        if (!enabled() || REGISTER.equals(packet.getIdentifier()) || UNREGISTER.equals(packet.getIdentifier())) {
             return;
         }
 
@@ -161,24 +123,6 @@ public final class PluginMessages {
         final org.bukkit.craftbukkit.entity.CraftPlayer bukkit = listener.player.getBukkitEntity();
 
         try {
-            final boolean register = REGISTER.equals(identifier);
-
-            if (register || UNREGISTER.equals(identifier)) {
-                for (final String channel : new String(data, StandardCharsets.UTF_8).split("\0")) {
-                    if (channel.isEmpty()) {
-                        continue;
-                    }
-
-                    if (register) {
-                        bukkit.addChannel(channel);
-                    } else {
-                        bukkit.removeChannel(channel);
-                    }
-                }
-
-                return;
-            }
-
             net.minecraft.server.MinecraftServer.getServer().server.getMessenger()
                     .dispatchIncomingMessage(bukkit, identifier.toString(), data);
         } catch (final RuntimeException e) {
@@ -186,18 +130,4 @@ public final class PluginMessages {
                     .error("チャンネル {} のプラグインメッセージを処理できない", identifier, e);
         }
     }
-
-    private static byte[] take(final Connection connection) {
-        final Deque<byte[]> queue = PENDING.get(connection);
-
-        if (queue == null) {
-            return null;
-        }
-
-        synchronized (queue) {
-            return queue.pollFirst();
-        }
-    }
-
-
 }

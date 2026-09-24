@@ -1,12 +1,13 @@
 # AnvilDamagedEvent。金床が傷む直前。登録があるときだけ組み直す。
+# 手で書いた規則。組み直した状態は vanilla の局所変数に書き戻す(別の BlockState に受けると、公式の
+# lambda にもある BlockState の局所変数が増え、MixinExtras の @Local BlockState が当たらない)。
 file: net/minecraft/world/inventory/AnvilMenu.java
 anchor:
                 BlockState blockState1 = AnvilBlock.damage(blockState);
 insert-after:
     if (dev.shifu.event.ItemEvents.anvilDamagedListening()) {
-        BlockState shifuAnvil = dev.shifu.event.ItemEvents.anvilDamaged(this, blockState, blockState1);
-        if (shifuAnvil == blockState) {
+        blockState1 = dev.shifu.event.ItemEvents.anvilDamaged(this, blockState, blockState1);
+        if (blockState1 == blockState) {
             return;
         }
-        blockState1 = shifuAnvil;
     }

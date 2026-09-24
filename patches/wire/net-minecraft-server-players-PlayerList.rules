@@ -22,3 +22,16 @@ anchor:
     this.executor = Util.backgroundExecutor();
 insert:
     this.options = dev.shifu.event.ShifuBootstrap.options;
+
+# 隠された sender のチャット。Paper は broadcastChatMessage の本体で、sender が見えない viewer には署名の無い文を送る。
+# vanilla の本体(AsyncChatEvent の既定の送り方、/say・/me も通る)にはその分岐が無いので、プラグインが一度でも
+# 誰かを隠したとき(hand の PlayerList.shifuVisibilityChanged、立てるのは patches/adapter の CraftPlayer / CraftEntity)
+# だけ Paper の本体(hand の shifuBroadcastChat)へ回す。プラグインが無ければ旗は立たず、vanilla の本体が走る。
+file: net/minecraft/server/players/PlayerList.java
+anchor:
+    boolean flag = this.verifyChatTrusted(message);
+insert:
+    if (sender != null && PlayerList.shifuVisibilityChanged) {
+        this.shifuBroadcastChat(message, shouldSendFiltered, sender, params, null);
+        return;
+    }

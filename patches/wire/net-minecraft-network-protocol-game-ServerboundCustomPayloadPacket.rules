@@ -1,0 +1,16 @@
+# Bukkit 層の配線。vanilla の行は変えていない。
+
+# minecraft:register / unregister(プラグインメッセージのチャンネル登録)。
+# Fabric API は listener の handleCustomPayload の先頭に取り消せる inject を置いて、
+# register / unregister を自分で受けて取り消す。handleCustomPayload に差した
+# dev.shifu.event.PluginMessages.handle には届かず、Fabric API が入っていると CraftPlayer の
+# チャンネルが登録されないまま sendPluginMessage が送らずに捨てていた。
+# packet の handle は handleCustomPayload を呼ぶ前なので、ここで先に受ける。
+# プラグインが 1 つも入っていなければ何もしない。
+#
+# 読んだ位置は dev.shifu.event.PluginMessages.registration の注記(Fabric API の jar を javap で読んだ)。
+file: net/minecraft/network/protocol/game/ServerboundCustomPayloadPacket.java
+anchor:
+    public void handle(ServerGamePacketListener listener) {
+insert-after:
+    dev.shifu.event.PluginMessages.registration(listener, this);

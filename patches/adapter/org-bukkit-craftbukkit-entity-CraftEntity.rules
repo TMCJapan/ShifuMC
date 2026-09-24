@@ -1,0 +1,11 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+# 表示の既定を見えないにした実体は、invertedVisibilityEntities に無くても canSee が false になる。
+# 同じく PlayerList.shifuVisibilityChanged を立てる(CraftPlayer.rules の同じ旗の説明を参照)。
+# 読んだ位置: D:/.pw194/Paper-Server HEAD src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java:1005
+file: org/bukkit/craftbukkit/entity/CraftEntity.java
+replace:
+            this.getHandle().visibleByDefault = visible;
+with:
+            this.getHandle().visibleByDefault = visible;
+            if (!visible) net.minecraft.server.players.PlayerList.shifuVisibilityChanged = true; // Shifu

@@ -355,17 +355,38 @@ public final class EntityEvents {
 
     private static boolean targetCancelled;
 
-    public static boolean targetListening() {
-        return listening(EntityTargetEvent.getHandlerList());
+    /** 追う相手を vanilla が決める前の相手。登録が無いときは控えない({@link #orbWatching} が false)。 */
+    private static Player orbPrevious;
+    private static boolean orbWatching;
+
+    /**
+     * 追う相手を vanilla が決める前に呼ぶ。登録があれば今の相手を控える。
+     *
+     * <p>控えは呼ぶ側の局所変数に置かない。公式の {@code followNearbyPlayer} にも Player の
+     * 局所変数があり、足すと MixinExtras の {@code @Local Player} の候補が 2 つになる。
+     */
+    public static void orbTargetBefore(final Player current) {
+        orbWatching = listening(EntityTargetEvent.getHandlerList());
+        orbPrevious = orbWatching ? current : null;
+    }
+
+    /** vanilla が決めた相手が、控えた相手と違うか。登録が無ければ false。 */
+    public static boolean orbTargetChanged(final Player now) {
+        final boolean changed = orbWatching && now != orbPrevious;
+        orbWatching = false;
+
+        return changed;
     }
 
     /**
      * EntityTargetLivingEntityEvent(オーブが追うプレイヤーが変わった)。
      * {@code ExperienceOrb.followNearbyPlayer} で、vanilla が決めたあとに出す。
      *
-     * @return 追う相手。取り消されたら前の相手({@link #takeTargetCancelled} が true になる)
+     * @return 追う相手。取り消されたら前の相手({@link #takeTargetGoesOn} が false になる)
      */
-    public static Player orbTarget(final ExperienceOrb orb, final Player previous, final Player now) {
+    public static Player orbTarget(final ExperienceOrb orb, final Player now) {
+        final Player previous = orbPrevious;
+        orbPrevious = null;
         targetCancelled = false;
 
         final EntityTargetLivingEntityEvent event = CraftEventFactory.callEntityTargetLivingEvent(orb, now,
@@ -382,11 +403,12 @@ public final class EntityEvents {
         return target instanceof Player player ? player : null;
     }
 
-    public static boolean takeTargetCancelled() {
+    /** 直前の {@link #orbTarget} が取り消されていなければ true(vanilla の寄せる処理を続ける)。読んだら消す。 */
+    public static boolean takeTargetGoesOn() {
         final boolean cancelled = targetCancelled;
         targetCancelled = false;
 
-        return cancelled;
+        return !cancelled;
     }
 
 
@@ -473,11 +495,11 @@ public final class EntityEvents {
      * @return 取り消されて残す効果。登録が無ければ null(呼ぶ側は何もしない)
      */
     public static List<MobEffectInstance> clearEffects(final LivingEntity entity, final Collection<MobEffectInstance> effects) {
-        final EntityPotionEffectEvent.Cause cause = takeEffectCause();
-
         if (!listening(EntityPotionEffectEvent.getHandlerList())) {
             return null;
         }
+
+        final EntityPotionEffectEvent.Cause cause = takeEffectCause();
 
         final List<MobEffectInstance> kept = new ArrayList<>();
 
@@ -498,22 +520,32 @@ public final class EntityEvents {
      */
     public static boolean addEffect(final LivingEntity entity, final MobEffectInstance old,
                                     final MobEffectInstance added, final Entity source) {
-        final EntityPotionEffectEvent.Cause cause = takeEffectCause();
-
         if (!listening(EntityPotionEffectEvent.getHandlerList())) {
             return true;
         }
+
+        final EntityPotionEffectEvent.Cause cause = takeEffectCause();
 
         final boolean override = old != null && new MobEffectInstance(old).update(added);
 
         return !CraftEventFactory.callEntityPotionEffectChangeEvent(entity, old, added, cause, null, override).isCancelled();
     }
 
-    /** EntityPotionEffectEvent(REMOVED)。{@code removeEffectNoUpdate} で消す直前。 */
-    public static boolean removeEffect(final LivingEntity entity, final MobEffectInstance instance) {
-        final EntityPotionEffectEvent.Cause cause = takeEffectCause();
+    /**
+     * EntityPotionEffectEvent(REMOVED)。{@code removeEffectNoUpdate} で消す直前。
+     *
+     * <p>消す効果は登録があるときだけここで引く。差し込み側で {@code this.activeEffects.get(effect)} を
+     * 引数にしていたときは、登録が無くても Map の引きが 1 回増えていた。
+     */
+    public static boolean removeEffect(final LivingEntity entity, final net.minecraft.world.effect.MobEffect effect) {
+        if (!listening(EntityPotionEffectEvent.getHandlerList())) {
+            return true;
+        }
 
-        if (instance == null || !listening(EntityPotionEffectEvent.getHandlerList())) {
+        final EntityPotionEffectEvent.Cause cause = takeEffectCause();
+        final MobEffectInstance instance = entity.getEffect(effect);
+
+        if (instance == null) {
             return true;
         }
 

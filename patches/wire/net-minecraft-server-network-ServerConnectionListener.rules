@@ -1,0 +1,14 @@
+# Bukkit 層の配線。vanilla の行は変えていない。
+#
+# Paper の ChannelInitializeListenerHolder に登録された listener を、TCP の接続の pipeline を
+# 組み終えたところで呼ぶ。Paper はここで呼んでいる(読んだ位置: Paper-Server の HEAD(paper Patched)の ServerConnectionListener.java:160)。
+# ViaVersion はこの listener で自分の handler を pipeline に差し込む
+# (PaperViaInjector が ChannelInitializeListenerHolder.addListener に渡す。viaversion-5.12.0 を javap で読んだ)。
+# 呼ばないと差し込まれず、参加時に「Could not find UserConnection for logging-in player」が出て、
+# 更新通知のタスク(UpdateUtil.sendUpdateMessage)が NullPointerException で落ちた。
+# listener が 1 つも無ければ空の表を回すだけ。
+file: net/minecraft/server/network/ServerConnectionListener.java
+anchor:
+    connection.setListener(new ServerHandshakePacketListenerImpl(ServerConnectionListener.this.server, connection));
+insert-after:
+    io.papermc.paper.network.ChannelInitializeListenerHolder.callListeners(channel);

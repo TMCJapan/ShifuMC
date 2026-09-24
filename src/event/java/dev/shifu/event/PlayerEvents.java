@@ -169,17 +169,17 @@ public final class PlayerEvents {
     // ------------------------------------------------------------ 眠り
 
     /**
-     * Player.setSleepingIgnored を入れた人が 1 人でも居るか。
-     * 誰も呼んでいなければ全員 false なので、vanilla の判定へ進んでよい。
+     * Player.setSleepingIgnored を入れた人が 1 人も居ないか。
+     * 誰も呼んでいなければ全員 false なので true を返し、vanilla の判定へ進む。
      */
-    public static boolean anySleepIgnored(final java.util.List<ServerPlayer> players) {
+    public static boolean noneSleepIgnored(final java.util.List<ServerPlayer> players) {
         for (final ServerPlayer player : players) {
             if (player.fauxSleeping) {
-                return true;
+                return false;
             }
         }
 
-        return false;
+        return true;
     }
 
     /**
@@ -283,7 +283,7 @@ public final class PlayerEvents {
 
     /**
      * PreCreatureSpawnEvent(自然湧き)。位置の判定の前。取り消しはこの位置を諦める。
-     * {@code shouldAbortSpawn} は控えて、判定のあとで {@link #takeSpawnAbort} が読む。
+     * {@code shouldAbortSpawn} は控えて、判定のあとで {@link #takeSpawnGoesOn} が読む。
      *
      * 読んだ位置: Paper-Server src/main/java/net/minecraft/world/entity/EntityType.java:416
      */
@@ -314,14 +314,14 @@ public final class PlayerEvents {
     private static boolean spawnAbort;
 
     /**
-     * 直前の PreCreatureSpawnEvent が「この回の湧きごとやめる」と言ったか。Paper は判定の
+     * 直前の PreCreatureSpawnEvent が「この回の湧きごとやめる」と言っていなければ true。Paper は判定の
      * 返り値を enum にして呼び出し側で見るが、vanilla の返り値は真偽値なので控えで運ぶ。
      */
-    public static boolean takeSpawnAbort() {
+    public static boolean takeSpawnGoesOn() {
         final boolean abort = spawnAbort;
         spawnAbort = false;
 
-        return abort;
+        return !abort;
     }
 
 
@@ -377,11 +377,12 @@ public final class PlayerEvents {
     private static boolean swapCancelled;
 
 
-    public static boolean swapHandsCancelled() {
+    /** {@link #swapHands} が false を返したとき、入れ替えのあとの処理を続けるか。取り消しなら false。読んだら消す。 */
+    public static boolean swapHandsGoesOn() {
         final boolean cancelled = swapCancelled;
         swapCancelled = false;
 
-        return cancelled;
+        return !cancelled;
     }
 
     /** 本を書き換える前の控え。登録が無ければ null。 */
@@ -424,13 +425,13 @@ public final class PlayerEvents {
      * <p>読んだ位置: Paper-Server HEAD src/main/java/net/minecraft/server/level/ServerPlayer.java(setRespawnPosition)、
      * src/main/java/net/minecraft/server/players/PlayerList.java(respawn)
      *
-     * @return 済ませたか。true なら呼ぶ側は vanilla の本体を飛ばして抜ける
+     * @return vanilla の本体へ進んでよいか。false なら済ませてあるので、呼ぶ側は本体を飛ばして抜ける
      */
     public static boolean setSpawn(final ServerPlayer player, final net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension,
                                    final BlockPos pos, final float angle, final boolean forced, final boolean sendMessage) {
         if (!listening(com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.getHandlerList())
                 && !listening(org.bukkit.event.player.PlayerSpawnChangeEvent.getHandlerList())) {
-            return false;
+            return true;
         }
 
         final com.destroystokyo.paper.event.player.PlayerSetSpawnEvent.Cause cause = spawnPlayer == player && spawnCause != null
@@ -439,12 +440,12 @@ public final class PlayerEvents {
         spawnCause = null;
 
         if (player.server.getPlayerList().getPlayer(player.getUUID()) != player) {
-            return false;
+            return true;
         }
 
         player.setRespawnPosition(dimension, pos, angle, forced, sendMessage, cause);
 
-        return true;
+        return false;
     }
 
 
@@ -1723,8 +1724,8 @@ public final class PlayerEvents {
      * 積み直す。その手前は受信の担い手の上なので、そこで発火すれば Paper と
      * 同じく main の外で聞ける。main で 2 度目に通るときは何もしない。
      *
-     * <p>返り値は「vanilla の道を止めるか」。プラグインが答えを出した
-     * (isHandled)ときと、答えを出さずに取り消したときだけ止める。
+     * <p>返り値は「vanilla の道へ進んでよいか」。プラグインが答えを出した
+     * (isHandled)ときと、答えを出さずに取り消したときだけ false。
      *
      * <p>読んだ位置(Paper 1.20.6):
      *   Paper-Server src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java:811
@@ -1736,7 +1737,7 @@ public final class PlayerEvents {
             final net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket packet) {
         if (server.isSameThread()
                 || !listening(com.destroystokyo.paper.event.server.AsyncTabCompleteEvent.getHandlerList())) {
-            return false;
+            return true;
         }
 
         final com.destroystokyo.paper.event.server.AsyncTabCompleteEvent event =
@@ -1745,11 +1746,11 @@ public final class PlayerEvents {
         event.callEvent();
 
         if (!event.isHandled()) {
-            return event.isCancelled();
+            return !event.isCancelled();
         }
 
         if (event.isCancelled() || event.completions().isEmpty()) {
-            return true;
+            return false;
         }
 
         final com.mojang.brigadier.StringReader reader =
@@ -1781,7 +1782,7 @@ public final class PlayerEvents {
         listener.send(new net.minecraft.network.protocol.game.ClientboundCommandSuggestionsPacket(
                 packet.getId(), builder.buildFuture().join()));
 
-        return true;
+        return false;
     }
 
 
