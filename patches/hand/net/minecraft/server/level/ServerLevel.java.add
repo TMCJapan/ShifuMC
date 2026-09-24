@@ -94,10 +94,6 @@
         this.generator = generator;
     }
 
-// ServerLevel.hasEntityMoveEvent
-    // EntityMoveEvent に登録があるか。毎 tick 世界を回す前に入れる(patches/wire)
-    public boolean hasEntityMoveEvent;
-
 // ServerLevel.addEntity
     // Paper のチャンク系(entityLookup)へ渡す版を写すと、繋いでいないので NPE になる。
     // **プラグインからのエンティティ生成が全部これで落ちていた**

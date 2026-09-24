@@ -296,15 +296,6 @@ public final class AnimalEvents {
     }
 
 
-    /**
-     * RaidTriggerEvent に登録があるか。{@code Raids.createOrExtendRaid} が、この呼び出しで
-     * 襲撃を登録したかどうかを控えるのに使う。
-     */
-    public static boolean raidTriggerListening() {
-        return listening(org.bukkit.event.raid.RaidTriggerEvent.getHandlerList());
-    }
-
-
     /** PiglinBarterEvent に登録が無いか。 */
     public static boolean silentBarter() {
         return !listening(org.bukkit.event.entity.PiglinBarterEvent.getHandlerList());
@@ -435,11 +426,24 @@ public final class AnimalEvents {
      * @return 書き換えてよいか
      */
     public static boolean toggleSit(final net.minecraft.world.entity.Entity entity, final boolean sitting) {
-        if (!listening(io.papermc.paper.event.entity.EntityToggleSitEvent.getHandlerList())) {
+        if (sitLoading || !listening(io.papermc.paper.event.entity.EntityToggleSitEvent.getHandlerList())) {
             return true;
         }
 
         return new io.papermc.paper.event.entity.EntityToggleSitEvent(entity.getBukkitEntity(), sitting).callEvent();
+    }
+
+    /** 保存から座り状態を読み戻している間。{@link #toggleSit} は発火しない。 */
+    private static boolean sitLoading;
+
+    /**
+     * {@code TamableAnimal} / {@code Fox} の {@code readAdditionalSaveData} が座り状態を読み戻す行の前後で呼ぶ。
+     * Paper はそこで発火の引数に false を渡すので、読み込みでは EntityToggleSitEvent が出ない。
+     *
+     * <p>読んだ位置: Paper-Server(HEAD)src/main/java/net/minecraft/world/entity/TamableAnimal.java:71、animal/Fox.java:435
+     */
+    public static void sitFromSave(final boolean loading) {
+        sitLoading = loading;
     }
 
     /**

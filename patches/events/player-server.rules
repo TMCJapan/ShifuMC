@@ -155,7 +155,7 @@ anchor:
     }
     }
 insert-after:
-    if (dev.shifu.event.PlayerEvents.takeSpawnAbort()) {
+    if (!dev.shifu.event.PlayerEvents.takeSpawnGoesOn()) {
         return;
     }
 
@@ -169,7 +169,7 @@ file: net/minecraft/server/level/ServerPlayer.java
 anchor:
     public void setRespawnPosition(ResourceKey<Level> dimension, @Nullable BlockPos pos, float angle, boolean forced, boolean sendMessage) {
 insert-after:
-    if (dev.shifu.event.PlayerEvents.setSpawn(this, dimension, pos, angle, forced, sendMessage)) {
+    if (!dev.shifu.event.PlayerEvents.setSpawn(this, dimension, pos, angle, forced, sendMessage)) {
         return;
     }
 

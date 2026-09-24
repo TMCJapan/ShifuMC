@@ -22,7 +22,7 @@ jobs:
       - run: sh tools/test-all.sh
 
       # *.ps1 は sh -n では見られないので PowerShell の parser に掛ける。
-      # closure.ps1 / run-server.ps1 は ver/* にしか無い。
+      # closure.ps1 / run-server.ps1 は classic の 3 系統(1.18.2 / 1.19.4 / 1.20.6)にしか無い。
       - name: PowerShell の構文
         shell: pwsh
         run: |

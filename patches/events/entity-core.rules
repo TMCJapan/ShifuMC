@@ -68,7 +68,7 @@ file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
     if (this.followingPlayer != null && (this.followingPlayer.isSpectator() || this.followingPlayer.isDeadOrDying())) {
 insert:
-    final Player shifuPrevTarget = this.followingPlayer;
+    dev.shifu.event.EntityEvents.orbTargetBefore(this.followingPlayer);
 
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
@@ -85,12 +85,10 @@ anchor:
     }
     }
 insert:
-    boolean shifuCancelled = false;
-    if (this.followingPlayer != shifuPrevTarget && dev.shifu.event.EntityEvents.targetListening()) {
-        this.followingPlayer = dev.shifu.event.EntityEvents.orbTarget(this, shifuPrevTarget, this.followingPlayer);
-        shifuCancelled = dev.shifu.event.EntityEvents.takeTargetCancelled();
+    if (dev.shifu.event.EntityEvents.orbTargetChanged(this.followingPlayer)) {
+        this.followingPlayer = dev.shifu.event.EntityEvents.orbTarget(this, this.followingPlayer);
     }
-    if (!shifuCancelled) {
+    if (dev.shifu.event.EntityEvents.takeTargetGoesOn()) {
 insert-after:
     }
 
@@ -149,7 +147,7 @@ file: net/minecraft/world/entity/LivingEntity.java
 anchor:
     return this.activeEffects.remove(effect);
 insert:
-    if (!dev.shifu.event.EntityEvents.removeEffect(this, this.activeEffects.get(effect))) {
+    if (!dev.shifu.event.EntityEvents.removeEffect(this, effect)) {
         return null;
     }
 
@@ -465,12 +463,12 @@ insert:
     dev.shifu.event.EntityEvents.exhaustionReason(org.bukkit.event.entity.EntityExhaustionEvent.ExhaustionReason.ATTACK);
 
 # 死亡の経験値のうち、既にあるオーブへ足し込まれる分(ExperienceOrb.award → tryMergeToExisting)。
-# 足し込まれた分は addFreshEntity を通らないので catchDrop で控えられず、死亡イベントの
+# 足し込まれた分は addFreshEntity を通らないので addEntityGoesOn で控えられず、死亡イベントの
 # getDroppedExp に入らず setDroppedExp(0) でも消せなかった。控えている最中だけ、その回を控えに入れて飛ばす。
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
     if (!tryMergeToExisting(world, pos, i)) {
 insert:
-    if (dev.shifu.event.ShifuEvents.catchAward(pos, i)) {
+    if (!dev.shifu.event.ShifuEvents.awardGoesOn(pos, i)) {
         continue;
     }

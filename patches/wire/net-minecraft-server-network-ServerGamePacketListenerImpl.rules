@@ -23,3 +23,27 @@ anchor:
     this.player = this.server.getPlayerList().respawn(this.player, false);
 insert-after:
     super.player = this.player;
+
+# 設定フェーズで受けたチャンネルの登録と名乗りを、本編のプレイヤーに入れる。
+# Paper 1.20.6 は設定フェーズの時点で ServerPlayer を作って直に入れるが、vanilla は
+# 設定フェーズの終わりに作るので、それまで接続ごとに持っている(dev.shifu.event.PluginMessages.joined)。
+# 入れないと、設定フェーズで minecraft:register を送るクライアントのチャンネルが登録されず、
+# sendPluginMessage が送らずに捨てる。プラグインが無ければ持っているものが無いので何もしない。
+#
+# 読んだ位置: Paper-Server@HEAD src/main/java/net/minecraft/server/network/ServerCommonPacketListenerImpl.java:150-172
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+        this.chatMessageChain = new FutureChain(server);
+insert-after:
+    dev.shifu.event.PluginMessages.joined(this);
+
+# 本編の listener は handleCustomPayload を空で上書きしている(Paper はこの上書きを消している)。
+# 共通側の配線は届かないので、ここにも同じものを置く(設定フェーズは共通側が受ける)。
+# 置かないと、本編で受けたプラグインメッセージが Messenger に渡らない。
+#
+# 読んだ位置: Paper-Server@HEAD src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java:3550
+file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
+anchor:
+    public void handleCustomPayload(ServerboundCustomPayloadPacket packet) {
+insert-after:
+    dev.shifu.event.PluginMessages.handle(this, packet);

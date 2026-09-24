@@ -21,8 +21,7 @@ anchor:
 insert:
     // Paper start - Server Tick Events
     if (dev.shifu.event.EventGuard.listening(com.destroystokyo.paper.event.server.ServerTickEndEvent.class)) {
-        long endTime = System.nanoTime();
-        long remaining = this.nextTickTimeNanos - endTime;
-        new com.destroystokyo.paper.event.server.ServerTickEndEvent(this.tickCount, ((double)(endTime - this.currentTickStart) / 1000000D), remaining).callEvent();
+        // Shifu - 局所変数にしない。公式の tickServer にも long があると @Local long の候補が増えて mixin が当たらない
+        dev.shifu.event.ShifuEvents.serverTickEnd(this.tickCount, this.currentTickStart, this.nextTickTimeNanos);
     }
     // Paper end - Server Tick Events

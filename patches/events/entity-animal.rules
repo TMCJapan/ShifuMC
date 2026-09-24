@@ -102,6 +102,24 @@ insert-after:
         return InteractionResult.SUCCESS;
     }
 
+# 保存からの読み戻し。Paper は readAdditionalSaveData の呼び出しだけ発火の引数に false を渡す。
+# Shifu は発火を setter の先頭に差し込んでいるので、その行の前後で発火を止める。
+file: net/minecraft/world/entity/TamableAnimal.java
+anchor:
+    this.setInSittingPose(this.orderedToSit);
+insert:
+    dev.shifu.event.AnimalEvents.sitFromSave(true);
+insert-after:
+    dev.shifu.event.AnimalEvents.sitFromSave(false);
+
+file: net/minecraft/world/entity/animal/Fox.java
+anchor:
+    this.setSitting(nbt.getBoolean("Sitting"));
+insert:
+    dev.shifu.event.AnimalEvents.sitFromSave(true);
+insert-after:
+    dev.shifu.event.AnimalEvents.sitFromSave(false);
+
 # ============================================================ 誘い(EntityTargetLivingEntityEvent TEMPT)
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/ai/sensing/TemptingSensor.java.patch
@@ -290,16 +308,6 @@ insert-after:
             throwItems(piglin, shifuOutcome);
         }
     }
-
-# RaidTriggerEvent。vanilla が先に襲撃を登録するので、取り消されたらこの呼び出しで登録した分を外す。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/raid/Raids.java.patch(callRaidTriggerEvent)
-file: net/minecraft/world/entity/raid/Raids.java
-anchor:
-    Raid raid = this.getOrCreateRaid(player.serverLevel(), blockPos2);
-insert-after:
-    final boolean shifuNewRaid = dev.shifu.event.AnimalEvents.raidTriggerListening()
-            && !raid.isStarted() && !this.raidMap.containsValue(raid);
 
 file: net/minecraft/world/entity/monster/Slime.java
 anchor:

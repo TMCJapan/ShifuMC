@@ -1,10 +1,37 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
 
 // ServerPlayer.sendChatMessage
-    // unsigned は署名の無い代替文。vanilla は署名付きの文だけを送るので渡さない。
+    // unsigned は Paper の ChatProcessor が viewer ごとに描いた本文。Paper は OutgoingChatMessage に
+    // 4 引数の sendToPlayer を足し、署名付きの文なら filter のあと withUnsignedContent で署名の外の本文にし、
+    // 署名の無い文(Disguised)なら本文をそれに替えて送る。vanilla の OutgoingChatMessage は触らないので、
+    // 同じ分け方をここで行って vanilla の送信(sendPlayerChatMessage / sendDisguisedChatMessage)へ渡す。
+    // unsigned が null なら vanilla の 3 引数版のまま。
+    // 以前は unsigned を捨てていたので、本文を変えて既定の描き方のまま viewer を指定したプラグインでも元の本文が届いていた。
+    // 読んだ位置: D:/.pw206/Paper-Server HEAD src/main/java/net/minecraft/server/level/ServerPlayer.java:2200
+    //             D:/.pw206/Paper-Server HEAD src/main/java/net/minecraft/network/chat/OutgoingChatMessage.java:28,45
     public void sendChatMessage(final OutgoingChatMessage message, final boolean filtered,
                                 final ChatType.Bound chatType, final Component unsigned) {
-        this.sendChatMessage(message, filtered, chatType);
+        if (unsigned == null) {
+            this.sendChatMessage(message, filtered, chatType);
+            return;
+        }
+
+        if (!this.acceptsChatMessages()) {
+            return;
+        }
+
+        if (message instanceof OutgoingChatMessage.Player signed) {
+            final net.minecraft.network.chat.PlayerChatMessage chat = signed.message().filter(filtered).withUnsignedContent(unsigned);
+
+            if (!chat.isFullyFiltered()) {
+                this.connection.sendPlayerChatMessage(chat, chatType);
+            }
+        } else if (message instanceof OutgoingChatMessage.Disguised) {
+            this.connection.sendDisguisedChatMessage(unsigned, chatType);
+        } else {
+            // Paper の既定の 4 引数版も unsigned を使わずに 3 引数版へ渡す
+            message.sendToPlayer(this, filtered, chatType);
+        }
     }
 
 // ServerPlayer.shifuNextContainerCounter
@@ -30,10 +57,6 @@
     // PlayerDeathEvent が発火したか。リスポーンで新しい ServerPlayer へ経験値と持ち物を
     // 写すかの判定に使う。発火していなければ vanilla の restoreFrom だけで済ませる。
     public boolean shifuDeathEvent;
-
-// ServerPlayer.shifuKeepInventory
-    // PlayerDeathEvent の getKeepInventory()。リスポーンで新しい ServerPlayer へ写すために持つ。
-    public boolean shifuKeepInventory;
 
 // ServerPlayer.shifuNaturallySpawnedEvent
     // PlayerNaturallySpawnCreaturesEvent。ServerChunkCache が 1 tick に 1 度作って置き、

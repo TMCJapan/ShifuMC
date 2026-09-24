@@ -520,15 +520,24 @@ public final class BlockEvents {
 
     private static boolean signFront = true;
 
+    /** SignChangeEvent を聞いている登録があるか。{@link #signChange} の代入を囲む。 */
+    public static boolean signListening() {
+        return ShifuEvents.listening(org.bukkit.event.block.SignChangeEvent.getHandlerList());
+    }
+
     /**
      * SignChangeEvent。文を組み立てたあと、返す直前。
+     *
+     * <p>元の文は看板から読む。{@code setMessages} を呼ぶのは {@code updateText} だけで、
+     * そこは {@code getText(面)} を渡して、返った文を {@code setText} するまで看板を書き換えない。
+     * 呼ぶ側で元の文を局所変数に取っておくと、公式の {@code setMessages} にもある
+     * SignText の局所変数が 2 つになり、MixinExtras の {@code @Local SignText} が当たらない。
      *
      * @return 返す文。取り消されたら元の文
      */
     public static net.minecraft.world.level.block.entity.SignText signChange(
             final net.minecraft.world.level.block.entity.SignBlockEntity sign,
             final net.minecraft.world.entity.player.Player player,
-            final net.minecraft.world.level.block.entity.SignText original,
             final net.minecraft.world.level.block.entity.SignText text,
             final java.util.List<net.minecraft.server.network.FilteredText> lines) {
         if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)
@@ -549,7 +558,7 @@ public final class BlockEvents {
                 signFront ? org.bukkit.block.sign.Side.FRONT : org.bukkit.block.sign.Side.BACK);
 
         if (!event.callEvent()) {
-            return original;
+            return sign.getText(signFront);
         }
 
         net.minecraft.world.level.block.entity.SignText result = text;
@@ -652,11 +661,11 @@ public final class BlockEvents {
     // 1.20.6 の serverTick は Level を受ける
     public static boolean furnaceBurn(final net.minecraft.world.level.Level level, final BlockPos pos, final ItemStack fuel,
                                       final net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity furnace) {
-        furnaceConsumesFuel = true;
-
         if (!listening(org.bukkit.event.inventory.FurnaceBurnEvent.getHandlerList())) {
             return true;
         }
+
+        furnaceConsumesFuel = true;
 
         final org.bukkit.event.inventory.FurnaceBurnEvent event = new org.bukkit.event.inventory.FurnaceBurnEvent(
                 bukkit(level, pos), CraftItemStack.asCraftMirror(fuel), furnace.litTime);
@@ -673,8 +682,12 @@ public final class BlockEvents {
         return true;
     }
 
+    /**
+     * 燃料を減らしてよいか。登録が無ければ見ない({@link #furnaceBurn} は登録があるときだけ欄を書くので、
+     * 前にイベントが false にした値が残っていることがある)。
+     */
     public static boolean furnaceConsumesFuel() {
-        return furnaceConsumesFuel;
+        return !listening(org.bukkit.event.inventory.FurnaceBurnEvent.getHandlerList()) || furnaceConsumesFuel;
     }
 
     public static boolean listeningFurnaceStart() {
@@ -802,18 +815,34 @@ public final class BlockEvents {
     /**
      * BlockCookEvent。焚き火の焼き上がりを落とす直前。登録があるときだけ呼ばれる。
      *
-     * @return 落とす物。取り消されたら null(tick を抜ける。Paper と同じ)
+     * <p>落とす物は {@link #cookedResult} で渡す。戻り値で渡して呼ぶ側の局所変数に受けると、
+     * 公式の {@code cookTick} にもある ItemStack の局所変数が増え、MixinExtras の
+     * {@code @Local ItemStack} の候補が増える。
+     *
+     * @return 落としてよいか。取り消されたら false(tick を抜ける。Paper と同じ)
      */
-    public static ItemStack cook(final Level level, final BlockPos pos, final ItemStack source, final ItemStack result,
-                                 final org.bukkit.inventory.CookingRecipe<?> recipe) {
+    public static boolean cook(final Level level, final BlockPos pos, final ItemStack source, final ItemStack result,
+                               final org.bukkit.inventory.CookingRecipe<?> recipe) {
         final org.bukkit.event.block.BlockCookEvent event = new org.bukkit.event.block.BlockCookEvent(
                 bukkit(level, pos), CraftItemStack.asCraftMirror(source), CraftItemStack.asBukkitCopy(result), recipe);
 
         if (!event.callEvent()) {
-            return null;
+            return false;
         }
 
-        return CraftItemStack.asNMSCopy(event.getResult());
+        cookedResult = CraftItemStack.asNMSCopy(event.getResult());
+
+        return true;
+    }
+
+    private static ItemStack cookedResult;
+
+    /** {@link #cook} が true を返したときの、落とす物。 */
+    public static ItemStack cookedResult() {
+        final ItemStack result = cookedResult;
+        cookedResult = null;
+
+        return result;
     }
 
 
@@ -898,6 +927,30 @@ public final class BlockEvents {
         snapshot.setData(newState);
 
         return new org.bukkit.event.block.BlockSpreadEvent(snapshot.getBlock(), bukkit(level, source), snapshot).callEvent();
+    }
+
+    /** キノコが広がる元。{@link #mushroomSource} が控え、{@link #mushroomSpread} が読む。 */
+    private static BlockPos mushroomSource;
+
+    /**
+     * キノコが広がる元を控える。{@code MushroomBlock.randomTick} は pos を書き換えながら置き場所を
+     * 探すので、探す前に呼ぶ。呼ぶ側の局所変数に取ると、公式の {@code randomTick} にもある BlockPos の
+     * 局所変数が増え、MixinExtras の {@code @Local BlockPos} の候補が増える。登録が無ければ控えない。
+     */
+    public static void mushroomSource(final BlockPos pos) {
+        mushroomSource = listening(org.bukkit.event.block.BlockSpreadEvent.getHandlerList()) ? pos : null;
+    }
+
+    /**
+     * BlockSpreadEvent(キノコ)。元は {@link #mushroomSource} が控えたもの。
+     *
+     * @return 置いてよいか
+     */
+    public static boolean mushroomSpread(final LevelAccessor level, final BlockPos pos, final BlockState newState) {
+        final BlockPos source = mushroomSource;
+        mushroomSource = null;
+
+        return source == null || spreadTo(level, source, pos, newState);
     }
 
     /**

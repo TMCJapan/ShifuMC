@@ -27,3 +27,14 @@ replace:
 with:
             this.clientWorldBorder = craftBorder;
             this.getHandle().shifuClientWorldBorder = true;
+
+# 隠したことを PlayerList.shifuVisibilityChanged(hand)に残す。立っているときだけ vanilla のチャットの配り方が
+# Paper の版(見えない viewer には署名の無い文)へ回る(patches/wire/net-minecraft-server-players-PlayerList.rules)。
+# addInvertedVisibility は、表示の既定が見える実体を隠すときと、見えない実体を見せるときの両方で通る。
+# 読んだ位置: D:/.pw206/Paper-Server HEAD src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java:2027,2230
+file: org/bukkit/craftbukkit/entity/CraftPlayer.java
+replace:
+        this.invertedVisibilityEntities.put(entity.getUniqueId(), invertedPlugins);
+with:
+        this.invertedVisibilityEntities.put(entity.getUniqueId(), invertedPlugins);
+        net.minecraft.server.players.PlayerList.shifuVisibilityChanged = true; // Shifu

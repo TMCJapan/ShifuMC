@@ -41,7 +41,7 @@ file: net/minecraft/server/level/ServerLevel.java
 anchor:
     private boolean addEntity(Entity entity) {
 insert-after:
-    if (dev.shifu.event.ShifuEvents.catchDrop(entity)) {
+    if (!dev.shifu.event.ShifuEvents.addEntityGoesOn(entity)) {
         return true;
     }
 

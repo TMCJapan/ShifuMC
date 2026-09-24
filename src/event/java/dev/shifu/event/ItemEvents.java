@@ -181,7 +181,7 @@ public final class ItemEvents {
      * InventoryDragEvent。vanilla がスロットと手持ちを置いたあと。取り消されたら控えに戻す。
      * 通ったときはカーソルをイベントの値にする(Paper と同じ。プラグインが触っていなければ同じ中身)。
      */
-    public static void drag(final AbstractContainerMenu menu, final boolean greedy) {
+    public static void drag(final AbstractContainerMenu menu, final boolean greedy, final Player player) {
         final Map<Slot, ItemStack[]> before = dragSlots;
         final ItemStack oldCarried = dragCarried;
         dragSlots = null;
@@ -191,7 +191,12 @@ public final class ItemEvents {
             return;
         }
 
-        final org.bukkit.inventory.InventoryView view = menu.getBukkitView();
+        final org.bukkit.inventory.InventoryView view = view(menu, player);
+
+        if (view == null) {
+            return;
+        }
+
         final Map<Integer, org.bukkit.inventory.ItemStack> items = new HashMap<>();
 
         for (final Map.Entry<Slot, ItemStack[]> entry : before.entrySet()) {
@@ -226,6 +231,281 @@ public final class ItemEvents {
         menu.setCarried(oldCarried);
     }
 
+
+    // ------------------------------------------------------------ MOD のメニューの InventoryView
+
+    /**
+     * 型ごとに、getBukkitView の本体を持っているか。
+     *
+     * <p>shim は AbstractContainerMenu に getBukkitView を抽象メソッドとして足し、vanilla の
+     * メニューには Paper の本体を足している。AbstractContainerMenu を直に継いだ MOD のメニューは
+     * 本体を持たないので、呼ぶと AbstractMethodError になる(InventoryClickEvent に登録があると
+     * MOD の画面をクリックした瞬間に落ちていた)。
+     */
+    private static final ClassValue<Boolean> OWN_VIEW = new ClassValue<>() {
+        @Override
+        protected Boolean computeValue(final Class<?> type) {
+            try {
+                return !java.lang.reflect.Modifier.isAbstract(type.getMethod("getBukkitView").getModifiers());
+            } catch (final NoSuchMethodException e) {
+                return false;
+            }
+        }
+    };
+
+    /**
+     * {@code menu.getBukkitView()} の代わり。本体を持たない MOD のメニューには、画面のマスを
+     * そのまま読み書きする view を作って返す(上の段は CHEST として見える)。
+     * プレイヤーは持ち物のマスか、その画面を開いている人から引く。どちらも無ければ null。
+     *
+     * <p>プレイヤーを渡さずに呼ぶのは prepareResult(ItemCombinerMenu と vanilla の結果の枠を持つ
+     * メニュー)だけ。ItemCombinerMenu は構築子で必ず持ち物のマスを足すので、null にはならない。
+     * ほかの呼び手は、その呼び出しの対象のプレイヤーを {@link #view(AbstractContainerMenu, Player)} に渡す。
+     *
+     * <p>shim の抽象メソッドに既定の本体を付ける形にしないのは、closure が vanilla のメニューに
+     * getBukkitView を足す手掛かりが「抽象メソッドを実装していない」というコンパイルエラー
+     * (docs/backlog/required-members.txt の {@code abstract getBukkitView})だから。
+     * 本体を付けるとその要求が出なくなり、vanilla のメニューも汎用の view になる。
+     */
+    public static InventoryView view(final AbstractContainerMenu menu) {
+        return view(menu, null);
+    }
+
+    /**
+     * {@link #view(AbstractContainerMenu)} の、開いているプレイヤーが分かっているときの形。
+     * 開く途中の画面は、まだ誰の containerMenu にもなっていないので探せない。
+     *
+     * @param known 開いているプレイヤー。null なら持ち物のマスと、その画面を開いている人から探す
+     */
+    public static InventoryView view(final AbstractContainerMenu menu, final Player known) {
+        if (OWN_VIEW.get(menu.getClass())) {
+            return menu.getBukkitView();
+        }
+
+        final Player viewer = known != null ? known : MenuSlots.viewer(menu);
+
+        if (viewer == null) {
+            return null;
+        }
+
+        return new org.bukkit.craftbukkit.inventory.CraftInventoryView(viewer.getBukkitEntity(),
+                new org.bukkit.craftbukkit.inventory.CraftInventory(new MenuSlots(menu)), menu);
+    }
+
+    /**
+     * {@code CraftHumanEntity.openInventory(InventoryView)} が画面を開く packet に入れる種類。
+     * Paper は上の段の Bukkit の種類から引くが、汎用の view の上の段は CHEST なので、
+     * MOD の画面では MOD のメニュー自身の種類を使う(大きさが 9 の倍数でなければ引けず null になる)。
+     */
+    public static net.minecraft.world.inventory.MenuType<?> menuType(final AbstractContainerMenu menu,
+                                                                     final org.bukkit.inventory.Inventory top) {
+        if (OWN_VIEW.get(menu.getClass())) {
+            return org.bukkit.craftbukkit.inventory.CraftContainer.getNotchInventoryType(top);
+        }
+
+        return menu.getType();
+    }
+
+    /**
+     * {@code from.transferTo(to, who)}(shim が足した Paper の本体)の代わり。本体は両方の view の
+     * 上下の段に onClose / onOpen を渡すだけなので、同じことを {@link #view} の view で行う。
+     *
+     * <p>読んだ位置: Paper-Server@HEAD src/main/java/net/minecraft/world/inventory/AbstractContainerMenu.java:83
+     */
+    public static void transferTo(final AbstractContainerMenu from, final AbstractContainerMenu to,
+                                  final org.bukkit.craftbukkit.entity.CraftHumanEntity who) {
+        if (OWN_VIEW.get(from.getClass()) && OWN_VIEW.get(to.getClass())) {
+            from.transferTo(to, who);
+
+            return;
+        }
+
+        final InventoryView source = view(from, who.getHandle());
+        final InventoryView destination = view(to, who.getHandle());
+
+        if (source != null) {
+            ((org.bukkit.craftbukkit.inventory.CraftInventory) source.getTopInventory()).getInventory().onClose(who);
+            ((org.bukkit.craftbukkit.inventory.CraftInventory) source.getBottomInventory()).getInventory().onClose(who);
+        }
+
+        if (destination != null) {
+            ((org.bukkit.craftbukkit.inventory.CraftInventory) destination.getTopInventory()).getInventory().onOpen(who);
+            ((org.bukkit.craftbukkit.inventory.CraftInventory) destination.getBottomInventory()).getInventory().onOpen(who);
+        }
+    }
+
+    /**
+     * 本体を持たない MOD のメニューの上の段。プレイヤーの持ち物より前にあるマスを、番号どおりに
+     * 1 つずつ読み書きする。Bukkit の生の番号(上の段が先、持ち物が後)と揃えるため、
+     * 数えるのは先頭から最初の持ち物のマスの手前まで。
+     *
+     * <p>MOD の Container を CraftInventory に直に渡さないのは、MOD が Container を直に実装していると
+     * shim が Container に足した getViewers などの本体も無く、同じ AbstractMethodError になるから。
+     */
+    private static final class MenuSlots implements Container {
+        /** onOpen / onClose で入った人。キーは弱参照で、閉じたメニューはそのまま消える。 */
+        private static final Map<AbstractContainerMenu, List<org.bukkit.entity.HumanEntity>> MENU_VIEWERS =
+                new java.util.WeakHashMap<>();
+
+        private final AbstractContainerMenu menu;
+        private final int size;
+
+        MenuSlots(final AbstractContainerMenu menu) {
+            int count = 0;
+
+            while (count < menu.slots.size()
+                    && !(menu.slots.get(count).container instanceof net.minecraft.world.entity.player.Inventory)) {
+                count++;
+            }
+
+            this.menu = menu;
+            this.size = count;
+        }
+
+        /** その画面を開いているプレイヤー。持ち物のマスから引き、無ければ開いている人を探す。 */
+        static Player viewer(final AbstractContainerMenu menu) {
+            for (final Slot slot : menu.slots) {
+                if (slot.container instanceof net.minecraft.world.entity.player.Inventory inventory) {
+                    return inventory.player;
+                }
+            }
+
+            for (final ServerPlayer player : net.minecraft.server.MinecraftServer.getServer().getPlayerList().getPlayers()) {
+                if (player.containerMenu == menu) {
+                    return player;
+                }
+            }
+
+            return null;
+        }
+
+        @Override
+        public int getContainerSize() {
+            return this.size;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            for (int i = 0; i < this.size; i++) {
+                if (!this.menu.getSlot(i).getItem().isEmpty()) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        @Override
+        public ItemStack getItem(final int slot) {
+            return this.menu.getSlot(slot).getItem();
+        }
+
+        @Override
+        public ItemStack removeItem(final int slot, final int amount) {
+            return this.menu.getSlot(slot).remove(amount);
+        }
+
+        @Override
+        public ItemStack removeItemNoUpdate(final int slot) {
+            final ItemStack stack = this.menu.getSlot(slot).getItem();
+            this.menu.getSlot(slot).set(ItemStack.EMPTY);
+
+            return stack;
+        }
+
+        @Override
+        public void setItem(final int slot, final ItemStack stack) {
+            this.menu.getSlot(slot).set(stack);
+        }
+
+        @Override
+        public void setChanged() {
+            for (int i = 0; i < this.size; i++) {
+                this.menu.getSlot(i).setChanged();
+            }
+        }
+
+        @Override
+        public boolean stillValid(final Player player) {
+            return this.menu.stillValid(player);
+        }
+
+        @Override
+        public void clearContent() {
+            for (int i = 0; i < this.size; i++) {
+                this.menu.getSlot(i).set(ItemStack.EMPTY);
+            }
+        }
+
+        @Override
+        public List<ItemStack> getContents() {
+            final List<ItemStack> contents = new ArrayList<>(this.size);
+
+            for (int i = 0; i < this.size; i++) {
+                contents.add(this.menu.getSlot(i).getItem());
+            }
+
+            return contents;
+        }
+
+        // 開いている人は、transferTo が渡す onOpen / onClose(Paper の transaction と同じ)と、
+        // その画面を containerMenu にしている人の和。view は呼ぶたびに作り直すので、控えはメニューに結ぶ。
+        // containerMenu だけで数えると、InventoryOpenEvent の中(まだ containerMenu になっていない)で
+        // 開く人が入らない。onOpen だけで数えると、InventoryOpenEvent の登録が無く transferTo を
+        // 通らずに開いた人が入らない。
+        @Override
+        public void onOpen(final org.bukkit.craftbukkit.entity.CraftHumanEntity who) {
+            synchronized (MENU_VIEWERS) {
+                final List<org.bukkit.entity.HumanEntity> viewers =
+                        MENU_VIEWERS.computeIfAbsent(this.menu, key -> new ArrayList<>());
+
+                if (!viewers.contains(who)) {
+                    viewers.add(who);
+                }
+            }
+        }
+
+        @Override
+        public void onClose(final org.bukkit.craftbukkit.entity.CraftHumanEntity who) {
+            synchronized (MENU_VIEWERS) {
+                final List<org.bukkit.entity.HumanEntity> viewers = MENU_VIEWERS.get(this.menu);
+
+                if (viewers != null) {
+                    viewers.remove(who);
+                }
+            }
+        }
+
+        @Override
+        public List<org.bukkit.entity.HumanEntity> getViewers() {
+            final List<org.bukkit.entity.HumanEntity> viewers = new ArrayList<>();
+
+            synchronized (MENU_VIEWERS) {
+                viewers.addAll(MENU_VIEWERS.getOrDefault(this.menu, List.of()));
+            }
+
+            for (final ServerPlayer player : net.minecraft.server.MinecraftServer.getServer().getPlayerList().getPlayers()) {
+                if (player.containerMenu == this.menu && !viewers.contains(player.getBukkitEntity())) {
+                    viewers.add(player.getBukkitEntity());
+                }
+            }
+
+            return viewers;
+        }
+
+        public org.bukkit.inventory.InventoryHolder getOwner() {
+            return null;
+        }
+
+        @Override
+        public void setMaxStackSize(final int size) {
+        }
+
+        @Override
+        public org.bukkit.Location getLocation() {
+            return null;
+        }
+    }
 
     // ------------------------------------------------------------ PrepareResultEvent 系
 
@@ -524,10 +804,17 @@ public final class ItemEvents {
 
     /**
      * 次の {@code LeadItem.bindPlayerMobs} で使った手を置く。vanilla の bindPlayerMobs は手を受け取らない
-     * (Paper は引数を足している)。
+     * (Paper は引数を足している)。柵を素手で右クリックした経路は context が null で、MAIN_HAND を置く。
+     *
+     * <p>手は登録があるときだけ引いて置く。差し込み側で {@code context.getHand()} を引数にしていたときは、
+     * 登録が無くても手の読み出しと欄への書き込みが毎回あった。
      */
-    public static void leashHand(final Player player, final InteractionHand hand) {
-        leashHand = hand;
+    public static void leashHand(final Player player, final net.minecraft.world.item.context.UseOnContext context) {
+        if (!ShifuEvents.listening(org.bukkit.event.entity.PlayerLeashEntityEvent.getHandlerList())) {
+            return;
+        }
+
+        leashHand = context != null ? context.getHand() : InteractionHand.MAIN_HAND;
         leashHandPlayer = player;
     }
 
@@ -794,14 +1081,14 @@ public final class ItemEvents {
      *
      * @return 結果のアイテム。プラグインが差し替えたらそれ
      */
-    public static ItemStack prepareCraft(final AbstractContainerMenu menu, final ItemStack result) {
+    public static ItemStack prepareCraft(final AbstractContainerMenu menu, final Player player, final ItemStack result) {
         if (!ShifuEvents.listening(org.bukkit.event.inventory.PrepareItemCraftEvent.getHandlerList())) {
             return result;
         }
 
-        final org.bukkit.inventory.InventoryView view = menu.getBukkitView();
+        final org.bukkit.inventory.InventoryView view = view(menu, player);
 
-        if (!(view.getTopInventory() instanceof org.bukkit.inventory.CraftingInventory inventory)) {
+        if (view == null || !(view.getTopInventory() instanceof org.bukkit.inventory.CraftingInventory inventory)) {
             return result;
         }
 

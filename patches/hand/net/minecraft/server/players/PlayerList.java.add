@@ -10,13 +10,60 @@
         }
     }
 
+// PlayerList.shifuVisibilityChanged
+    // プラグインが誰かを誰かから隠したことがあるか(CraftPlayer の hideEntity などで invertedVisibilityEntities に入れた、
+    // または CraftEntity.setVisibleByDefault(false))。立てるのは patches/adapter で、下ろさない。
+    // 立っていなければ全員が全員を見えるので、vanilla の broadcastChatMessage の本体がそのまま走る(patches/wire)。
+    public static volatile boolean shifuVisibilityChanged;
+
+// PlayerList.shifuBroadcastChat
+    // Paper の broadcastChatMessage(5 引数)の本体。vanilla の本体との違いは 2 つ。
+    // sender が見えない viewer(CraftPlayer.canSee が false)には署名付きの文を送らず、署名の無い文
+    // (ClientboundDisguisedChatPacket)で本文だけを送る。unsignedFunction があれば、コンソールへの記録と
+    // 各 viewer への本文をその結果にする。vanilla の本体は触らない。ここへ来るのは上の旗が立っているとき
+    // (patches/wire の差し込み)か、unsignedFunction があるとき(下の 4 引数版)だけ。
+    // 読んだ位置: D:/.pw206/Paper-Server HEAD src/main/java/net/minecraft/server/players/PlayerList.java:1429
+    public void shifuBroadcastChat(final PlayerChatMessage message, final Predicate<ServerPlayer> shouldSendFiltered,
+                                   final @Nullable ServerPlayer sender, final ChatType.Bound chatType,
+                                   final @Nullable Function<net.kyori.adventure.audience.Audience, Component> unsignedFunction) {
+        final boolean secure = this.verifyChatTrusted(message);
+        this.server.logChatMessage(unsignedFunction == null ? message.decoratedContent() : unsignedFunction.apply(this.server.console),
+                chatType, secure ? null : "Not Secure");
+        final OutgoingChatMessage outgoing = OutgoingChatMessage.create(message);
+        boolean fullyFiltered = false;
+
+        for (final ServerPlayer viewer : this.players) {
+            final boolean filtered = shouldSendFiltered.test(viewer);
+            // Paper の for の更新式で数えるので、見えない viewer の分も数える
+            fullyFiltered |= filtered && message.isFullyFiltered();
+
+            if (sender != null && !viewer.getBukkitEntity().canSee(sender.getBukkitEntity())) {
+                viewer.connection.sendDisguisedChatMessage(unsignedFunction != null
+                        ? unsignedFunction.apply(viewer.getBukkitEntity()) : outgoing.content(), chatType);
+                continue;
+            }
+
+            viewer.sendChatMessage(outgoing, filtered, chatType, unsignedFunction == null ? null : unsignedFunction.apply(viewer.getBukkitEntity()));
+        }
+
+        if (fullyFiltered && sender != null) {
+            sender.sendSystemMessage(CHAT_FILTERED_FULL);
+        }
+    }
+
 // PlayerList.broadcastChatMessage
-    // unsignedFunction は Paper が viewer ごとに表示を差し替えるための関数。
-    // vanilla の版は viewer ごとに変えないので渡さない。
-    // viewer ごとに描き分ける ChatRenderer は効かず、全員に同じ本文が届く。
+    // unsignedFunction は Paper の ChatProcessor が viewer ごとに ChatRenderer で描く関数
+    // (AsyncChatEvent の renderer を替え、viewer は替えていないとき)。関数があれば Paper の本体(上の shifuBroadcastChat)に
+    // 通す。null なら vanilla の版へ渡す(隠された sender は、そちらに入れた差し込みが shifuBroadcastChat へ回す)。
+    // 以前は関数を捨てて vanilla の版へ渡していたので、全員に描く前の本文が届いていた。
     public void broadcastChatMessage(final PlayerChatMessage message, final ServerPlayer sender, final ChatType.Bound chatType,
                                      final @Nullable Function<net.kyori.adventure.audience.Audience, Component> unsignedFunction) {
-        this.broadcastChatMessage(message, sender, chatType);
+        if (unsignedFunction == null) {
+            this.broadcastChatMessage(message, sender, chatType);
+            return;
+        }
+
+        this.shifuBroadcastChat(message, sender::shouldFilterMessageTo, sender, chatType, unsignedFunction);
     }
 
 // PlayerList.getPlayerStats

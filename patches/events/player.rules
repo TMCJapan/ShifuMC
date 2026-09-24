@@ -63,7 +63,7 @@ file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     public void teleport(double x, double y, double z, float yaw, float pitch, Set<RelativeMovement> flags) {
 insert-after:
-    if (dev.shifu.event.ShifuEvents.playerTeleport(this, x, y, z, yaw, pitch, flags)) {
+    if (!dev.shifu.event.ShifuEvents.playerTeleport(this, x, y, z, yaw, pitch, flags)) {
         return;
     }
 
@@ -75,7 +75,7 @@ file: net/minecraft/server/level/ServerPlayer.java
 anchor:
     public void teleportTo(ServerLevel targetWorld, double x, double y, double z, float yaw, float pitch) {
 insert-after:
-    if (dev.shifu.event.ShifuEvents.playerTeleportWorld(this, targetWorld, x, y, z, yaw, pitch)) {
+    if (!dev.shifu.event.ShifuEvents.playerTeleportWorld(this, targetWorld, x, y, z, yaw, pitch)) {
         return;
     }
 
@@ -151,7 +151,9 @@ file: net/minecraft/server/level/ServerPlayer.java
 anchor:
     this.gameEvent(GameEvent.ENTITY_DIE);
 insert:
-    final boolean shifuDeath = dev.shifu.event.ShifuEvents.listening(org.bukkit.event.entity.PlayerDeathEvent.getHandlerList());
+    // Boolean にしておく。公式の die にも boolean があり、boolean の局所変数を足すと
+    // MixinExtras の @Local boolean の候補が 2 つになって mixin が当たらない
+    final Boolean shifuDeath = dev.shifu.event.ShifuEvents.listening(org.bukkit.event.entity.PlayerDeathEvent.getHandlerList());
 
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
@@ -202,7 +204,7 @@ file: net/minecraft/server/level/ServerPlayerGameMode.java
 anchor:
     if (!stack.isEmpty() && !player.getCooldowns().isOnCooldown(stack.getItem())) {
 insert:
-    if (dev.shifu.event.ShifuEvents.interactItemDenied(shifuInteract, player)) {
+    if (!dev.shifu.event.ShifuEvents.interactItemAllowed(shifuInteract, player)) {
         return InteractionResult.PASS;
     }
 
@@ -239,14 +241,8 @@ file: net/minecraft/server/level/ServerPlayer.java
 anchor:
     Either<Player.BedSleepingProblem, Unit> either = super.startSleepInBed(pos).ifRight(unit -> {
 insert:
-    // 波括弧で囲って、局所変数の生存範囲をここで終わらせる。囲まないと
-    // すぐ下の either が公式より 1 つ後ろの slot に入る(javac は scope の
-    // 終わりまで slot を空けない)。
-    {
-        final Either<Player.BedSleepingProblem, Unit> shifuBed = dev.shifu.event.ShifuEvents.bedEnter(this, pos);
-        if (shifuBed != null) {
-            return shifuBed;
-        }
+    if (!dev.shifu.event.ShifuEvents.bedEnter(this, pos)) {
+        return Either.left(Player.BedSleepingProblem.OTHER_PROBLEM);
     }
 
 # PlayerItemConsumeEvent

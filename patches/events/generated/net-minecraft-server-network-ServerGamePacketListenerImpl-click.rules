@@ -12,7 +12,7 @@ insert:
             dev.shifu.event.ShifuEvents.inventoryClick(this.player, packet, i);
     if (shifuClick == null || !shifuClick.isCancelled()) {
 insert-after:
-        if (dev.shifu.event.ShifuEvents.containerChanged(this.player, shifuClick)) {
+        if (!dev.shifu.event.ShifuEvents.containerKept(this.player, shifuClick)) {
             return;
         }
         dev.shifu.event.ShifuEvents.afterInventoryClick(this.player, shifuClick);

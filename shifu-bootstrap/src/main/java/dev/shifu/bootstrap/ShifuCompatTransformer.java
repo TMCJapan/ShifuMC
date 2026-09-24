@@ -403,6 +403,47 @@ final class ShifuCompatTransformer extends GameTransformer {
 		}
 	}
 
+	/**
+	 * クラス中の {@code URLClassLoader} の構築子呼び出し(親を取る形)すべてで、
+	 * 親を {@code ShifuHooks.pluginParent} に通す。
+	 *
+	 * <p>親は構築子の最後の引数なので、呼び出しの直前ではスタックの一番上にある。
+	 * {@code new URLClassLoader(urls, parent)} と {@code super(name, urls, parent)} の両方に当たる。
+	 * 1 つも見つからなければ、プラグインから MOD のクラスが見えたままになるのでエラーを出す。
+	 */
+	record WrapPluginParent() implements Rule {
+		private static final String URL_CLASS_LOADER = "java/net/URLClassLoader";
+		private static final String PARENT_LAST = "Ljava/lang/ClassLoader;)V";
+
+		@Override
+		public void apply(ClassNode node) {
+			int hits = 0;
+
+			for (MethodNode m : node.methods) {
+				for (AbstractInsnNode insn : m.instructions.toArray()) {
+					if (insn instanceof MethodInsnNode call
+							&& call.getOpcode() == Opcodes.INVOKESPECIAL
+							&& call.owner.equals(URL_CLASS_LOADER)
+							&& call.name.equals("<init>")
+							&& call.desc.endsWith(PARENT_LAST)) {
+						m.instructions.insertBefore(call, new MethodInsnNode(Opcodes.INVOKESTATIC,
+								"dev/shifu/bootstrap/ShifuHooks", "pluginParent",
+								"(Ljava/lang/ClassLoader;)Ljava/lang/ClassLoader;", false));
+						hits++;
+					}
+				}
+			}
+
+			if (hits == 0) {
+				Log.error(LogCategory.GAME_PROVIDER,
+						"[shifu] no URLClassLoader(..., ClassLoader) call in %s; plugins will see MOD classes", node.name);
+				return;
+			}
+
+			Log.info(LogCategory.GAME_PROVIDER, "[shifu] plugin class loader parent wrapped in %s (%d)", node.name, hits);
+		}
+	}
+
 	/** ある static 呼び出しの直前に、引数を1つ加工する static 呼び出しを挟む。 */
 	record InsertStaticCallBefore(String method, String methodDesc, MethodRef before,
 			MethodRef insert) implements Rule {

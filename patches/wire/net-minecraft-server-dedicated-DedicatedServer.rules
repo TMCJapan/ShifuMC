@@ -5,7 +5,8 @@
 # SpigotWorldConfig を先に要求するので、ここでも先に読む。
 # GlobalConfiguration.get() はこれが済むまで null を返す(WatchdogThread が読む)。
 #
-# watchdog は **プラグインを読む前** に起動する。WorldEdit は org.spigotmc.WatchdogThread を
+# watchdog は **STARTUP の enable の前** に起動する(プラグインが無ければ起動しない。理由は
+# ShifuBootstrap.startWatchdog)。WorldEdit は org.spigotmc.WatchdogThread を
 # 見つけると長い操作の途中で tick() を呼ぶ(PaperweightAdapter$SpigotWatchdog)が、
 # その中で instance と lastTick を反射で読むだけで null を見ない。STARTUP の enable の
 # 中(LegacyMapper の読み込み)で呼ばれるので、そこまでに instance が要る。
@@ -18,8 +19,8 @@ anchor:
 insert-after:
     org.spigotmc.SpigotConfig.init((java.io.File) this.options.valueOf("spigot-settings"));
     dev.shifu.event.ShifuBootstrap.initializeConfigurations(this);
-    org.spigotmc.WatchdogThread.doStart(org.spigotmc.SpigotConfig.timeoutTime, org.spigotmc.SpigotConfig.restartOnCrash);
     this.server.loadPlugins();
+    dev.shifu.event.ShifuBootstrap.startWatchdog(this.server);
     this.server.enablePlugins(org.bukkit.plugin.PluginLoadOrder.STARTUP);
 
 # 案の位置で通す。Paper と同じく、設定(spigot.yml と Paper の設定)を
@@ -51,8 +52,10 @@ file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
     LOGGER.info("Done ({})! For help, type \"help\"", string);
 insert-after:
-    org.spigotmc.WatchdogThread.tick();
-    org.spigotmc.WatchdogThread.hasStarted = true;
+    if (dev.shifu.event.ShifuBootstrap.watchdog) {
+        org.spigotmc.WatchdogThread.tick();
+        org.spigotmc.WatchdogThread.hasStarted = true;
+    }
 
 # プラグインのログを log4j に流す。
 #

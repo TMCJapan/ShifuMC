@@ -17,3 +17,29 @@
     public boolean isPositionTicking(net.minecraft.world.entity.Entity entity) {
         return this.isPositionTicking(net.minecraft.world.level.ChunkPos.asLong(entity.blockPosition()));
     }
+
+// ServerChunkCache.getChunkAtIfLoadedImmediately
+    // 読み込み済み(FULL まで来た)チャンク。Paper は自分の表 loadedChunkMap から引き、その表は
+    // LevelChunk.pushChunkIntoLoadedMap / unloadCallback が出し入れする。Shifu の vanilla のチャンク系は
+    // その 2 つを呼ばないので表は空のままで、ここは常に null を返していた(CraftWorld.getChunkAt は毎回
+    // getChunk へ回り、CraftWorld.getChunkAtAsync の即答も効かない)。
+    // vanilla の状態から答える: 見えている ChunkHolder の FULL の future が済んでいればその LevelChunk。
+    // visibleChunkMap は差し替えるだけの volatile の写しなので、主スレッド以外から読んでもよい。
+    // vanilla の ChunkHolder.getFullChunkFuture().getNow(...) を読むだけで、lastChunk の控えには触らない。呼ぶのはアダプタ層だけ。
+    public LevelChunk getChunkAtIfLoadedImmediately(int x, int z) {
+        final ChunkHolder holder = this.chunkMap.getVisibleChunkIfPresent(ChunkPos.asLong(x, z));
+
+        return holder == null ? null : holder.getFullChunkFuture().getNow(ChunkHolder.UNLOADED_LEVEL_CHUNK).orElse(null);
+    }
+
+// ServerChunkCache.getChunkAtIfLoadedMainThread
+    // 同上。Paper は主スレッド用に 16 個の控えを持つが、控えの出し入れも loadedChunkMap と同じ所にあるので使わない。
+    public final LevelChunk getChunkAtIfLoadedMainThread(int x, int z) {
+        return this.getChunkAtIfLoadedImmediately(x, z);
+    }
+
+// ServerChunkCache.getChunkAtIfLoadedMainThreadNoCache
+    // 同上。
+    public final LevelChunk getChunkAtIfLoadedMainThreadNoCache(int x, int z) {
+        return this.getChunkAtIfLoadedImmediately(x, z);
+    }

@@ -12,10 +12,11 @@ anchor:
 insert-after:
     final net.minecraft.nbt.Tag shifuValues = nbt.get("PublicBukkitValues");
 
-    if (shifuValues instanceof CompoundTag shifuCompound) {
+    // CompoundTag の変数に受けない。公式の loadAdditional にも CompoundTag の引数があり、@Local CompoundTag の候補が増える
+    if (shifuValues instanceof CompoundTag) {
         final CraftPersistentDataContainer shifuData = this.shifuPersistentData();
         shifuData.clear();
-        shifuData.putAll(shifuCompound);
+        shifuData.putAll((CompoundTag) shifuValues);
     } else if (this.persistentDataContainer != null) {
         this.persistentDataContainer.clear();
     }

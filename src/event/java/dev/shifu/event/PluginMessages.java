@@ -30,9 +30,11 @@ import net.minecraft.server.network.ServerCommonPacketListenerImpl;
  * <b>捨てる直前に控えを取る</b>形にする({@code remember})。読むだけで reader index は動かさないので、
  * vanilla の {@code skipBytes} は同じ量を飛ばす。
  *
- * <p>控えは復号したスレッドの中に置き、同じ packet が次の handler に着いたところで接続ごとの列へ移す
- * ({@code afterDecode})。復号と、その packet が handler に着くのは同じスレッドの同じ呼び出しの中なので、
- * 別の接続の分と混ざらない。
+ * <p>控えは復号したスレッドの中に置き、同じ packet が次の handler に着いたところで、その packet と
+ * 組にして接続ごとの列へ移す({@code afterDecode})。復号と、その packet が handler に着くのは同じスレッドの
+ * 同じ呼び出しの中なので、別の接続の分と混ざらない。取り出すときも packet で引く({@code take})。
+ * 順番だけで対応させていたときは、取り出さずに戻る経路(設定フェーズ、本文 0 バイト)があるたびに
+ * 以降の本文が 1 つずつずれていた。
  *
  * <p><b>プラグインが 1 つも入っていなければ何もしない。</b>そのときに実行される命令列は vanilla と同じ。
  */
@@ -41,9 +43,14 @@ public final class PluginMessages {
     /** 復号したスレッドが、次の handler に渡すまでの間だけ持つ控え。 */
     private static final ThreadLocal<Deque<byte[]>> DECODED = ThreadLocal.withInitial(ArrayDeque::new);
 
-    /** 接続ごとの控えの列と、登録しているチャンネル。 */
-    private static final Map<Connection, Deque<byte[]>> PENDING = new ConcurrentHashMap<>();
+    /** 接続ごとの控えの列(packet と本文の組)と、設定フェーズで受けたチャンネルの登録と名乗り。 */
+    private static final Map<Connection, Deque<Pending>> PENDING = new ConcurrentHashMap<>();
     private static final Map<Connection, Set<String>> CHANNELS = new ConcurrentHashMap<>();
+    private static final Map<Connection, String> BRANDS = new ConcurrentHashMap<>();
+
+    /** 復号した packet と、その本文の控え。 */
+    private record Pending(Object packet, byte[] data) {
+    }
 
     private PluginMessages() {
     }
@@ -62,7 +69,8 @@ public final class PluginMessages {
      * @param length 本文の長さ(vanilla が数えた値)
      */
     public static void remember(final FriendlyByteBuf buf, final int length) {
-        if (length == 0 || !enabled()) {
+        // 本文 0 バイトも控える。控えない packet があると、その packet の本文として次の控えを渡してしまう
+        if (!enabled()) {
             return;
         }
 
@@ -87,34 +95,71 @@ public final class PluginMessages {
             return;
         }
 
-        if (!(message instanceof ServerboundCustomPayloadPacket)) {
-            decoded.clear();
+        // 1 つの packet の復号で控えは 1 つ。前に残っているのは、復号の途中で落ちた packet の分
+        final byte[] data = decoded.peekLast();
+        decoded.clear();
 
+        if (!(message instanceof ServerboundCustomPayloadPacket)) {
             return;
         }
 
-        final Deque<byte[]> queue = PENDING.computeIfAbsent(connection, key -> new ArrayDeque<>());
+        final Deque<Pending> queue = PENDING.computeIfAbsent(connection, key -> new ArrayDeque<>());
 
         synchronized (queue) {
-            while (!decoded.isEmpty()) {
-                if (queue.size() >= 64) {
-                    queue.removeFirst();
-                }
-
-                queue.addLast(decoded.removeFirst());
+            if (queue.size() >= 64) {
+                queue.removeFirst();
             }
+
+            queue.addLast(new Pending(message, data));
         }
     }
 
-    /** その接続が登録しているチャンネル。設定フェーズと本編で同じものを使う。 */
+    /** 設定フェーズで登録されたチャンネル。本編の listener ができたところで {@link #joined} が CraftPlayer へ移す。 */
     public static Set<String> channelsFor(final Connection connection) {
         return CHANNELS.computeIfAbsent(connection, key -> java.util.concurrent.ConcurrentHashMap.newKeySet());
+    }
+
+    /**
+     * 本編の listener ができたところ(構築子で {@code player.connection} を入れた直後)。
+     * 設定フェーズで受けたチャンネルの登録と名乗りを、プレイヤーに入れる。
+     *
+     * <p>Paper 1.20.6 は設定フェーズの時点で ServerPlayer を作っていて、その CraftPlayer に直に
+     * {@code addChannel} し、{@code clientBrandName} を入れる。vanilla は設定フェーズの終わりに
+     * ServerPlayer を作るので、それまで接続ごとに持っておいてここで渡す。
+     * PlayerRegisterChannelEvent もここで出る(Paper は設定フェーズの中で出す)。
+     *
+     * <p>読んだ位置: Paper-Server@HEAD src/main/java/net/minecraft/server/network/ServerCommonPacketListenerImpl.java:150-172
+     * と ServerConfigurationPacketListenerImpl.java:151(getPlayerForLogin に設定フェーズの player を渡す)
+     */
+    public static void joined(final net.minecraft.server.network.ServerGamePacketListenerImpl listener) {
+        final Set<String> channels = CHANNELS.remove(listener.connection);
+        final String brand = BRANDS.remove(listener.connection);
+
+        if (brand != null) {
+            listener.player.clientBrandName = brand;
+        }
+
+        if (channels == null || channels.isEmpty()) {
+            return;
+        }
+
+        final org.bukkit.craftbukkit.entity.CraftPlayer bukkit = listener.player.getBukkitEntity();
+
+        for (final String channel : channels) {
+            try {
+                bukkit.addChannel(channel);
+            } catch (final RuntimeException e) {
+                org.slf4j.LoggerFactory.getLogger(PluginMessages.class)
+                        .error("チャンネル {} を登録できない", channel, e);
+            }
+        }
     }
 
     /** 接続を閉じたら忘れる。 */
     public static void forget(final Connection connection) {
         PENDING.remove(connection);
         CHANNELS.remove(connection);
+        BRANDS.remove(connection);
     }
 
     /** 復号した packet を接続ごとの列と結びつける handler を差し込む。 */
@@ -142,8 +187,9 @@ public final class PluginMessages {
      * <p>Paper は読めない本文で接続を切るが、vanilla は何もしないので切らずに記録だけ残す。
      *
      * <p>1.20.6 の {@code ServerCommonPacketListenerImpl} は自分では人を持たない
-     * (欄は本編の listener 側にある)ので、そちらから取る。設定フェーズは null で、
-     * その間のプラグインメッセージは Paper もチャンネル登録しか見ていない。
+     * (欄は本編の listener 側にある)ので、そちらから取る。設定フェーズはまだ人がいないので、
+     * チャンネルの登録と名乗りは接続ごとに持っておき、{@link #joined} で入れる。
+     * それ以外のチャンネルは渡す先の Player が無いので捨てる。
      */
     public static void handle(final ServerCommonPacketListenerImpl listener, final ServerboundCustomPayloadPacket packet) {
         if (!enabled()) {
@@ -156,27 +202,33 @@ public final class PluginMessages {
         if (packet.payload() instanceof BrandPayload brand) {
             if (player != null) {
                 player.clientBrandName = brand.brand();
+            } else {
+                BRANDS.put(listener.connection, brand.brand());
             }
 
             return;
         }
 
-        if (player == null || !(packet.payload() instanceof DiscardedPayload discarded)) {
+        if (!(packet.payload() instanceof DiscardedPayload discarded)) {
             return;
         }
 
         // vanilla は捨てる packet なので、ここから先はサーバースレッドで行う。
-        // 控えを取り出すのは待ち行列へ回したあと(先に取り出すと、回された 2 回目で列がずれる)。
-        net.minecraft.network.protocol.PacketUtils.ensureRunningOnSameThread(packet, listener, player.serverLevel());
+        // 控えを取り出すのは待ち行列へ回したあと(取り出したあとで回すと、回された 2 回目で本文が無い)。
+        if (player != null) {
+            net.minecraft.network.protocol.PacketUtils.ensureRunningOnSameThread(packet, listener, player.serverLevel());
+        } else {
+            net.minecraft.network.protocol.PacketUtils.ensureRunningOnSameThread(packet, listener,
+                    net.minecraft.server.MinecraftServer.getServer());
+        }
 
-        final byte[] data = take(listener.connection);
+        final byte[] data = take(listener.connection, packet);
 
         if (data == null) {
             return;
         }
 
         final ResourceLocation identifier = discarded.id();
-        final org.bukkit.craftbukkit.entity.CraftPlayer bukkit = player.getBukkitEntity();
 
         try {
             final boolean register = REGISTER.equals(identifier);
@@ -187,15 +239,27 @@ public final class PluginMessages {
                         continue;
                     }
 
-                    if (register) {
-                        bukkit.addChannel(channel);
+                    if (player == null) {
+                        if (register) {
+                            channelsFor(listener.connection).add(channel);
+                        } else {
+                            channelsFor(listener.connection).remove(channel);
+                        }
+                    } else if (register) {
+                        player.getBukkitEntity().addChannel(channel);
                     } else {
-                        bukkit.removeChannel(channel);
+                        player.getBukkitEntity().removeChannel(channel);
                     }
                 }
 
                 return;
             }
+
+            if (player == null) {
+                return;
+            }
+
+            final org.bukkit.craftbukkit.entity.CraftPlayer bukkit = player.getBukkitEntity();
 
             net.minecraft.server.MinecraftServer.getServer().server.getMessenger()
                     .dispatchIncomingMessage(bukkit, identifier.toString(), data);
@@ -205,15 +269,29 @@ public final class PluginMessages {
         }
     }
 
-    private static byte[] take(final Connection connection) {
-        final Deque<byte[]> queue = PENDING.get(connection);
+    /**
+     * その packet の本文の控えを取り出す。packet は復号した順に処理されるので、列でそれより前にある控えは
+     * handler まで来なかった packet の分で、ここで一緒に捨てる。見つからなければ列は触らない。
+     */
+    private static byte[] take(final Connection connection, final ServerboundCustomPayloadPacket packet) {
+        final Deque<Pending> queue = PENDING.get(connection);
 
         if (queue == null) {
             return null;
         }
 
         synchronized (queue) {
-            return queue.pollFirst();
+            if (queue.stream().noneMatch(pending -> pending.packet() == packet)) {
+                return null;
+            }
+
+            while (true) {
+                final Pending pending = queue.removeFirst();
+
+                if (pending.packet() == packet) {
+                    return pending.data();
+                }
+            }
         }
     }
 

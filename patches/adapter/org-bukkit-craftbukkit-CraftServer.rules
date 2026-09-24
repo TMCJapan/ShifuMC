@@ -21,3 +21,11 @@ replace:
 with:
         if (this.getPluginManager().getPlugins().length == 0) { return; } // Shifu - vanilla は読み直しで送り直さない
         Commands dispatcher = this.getHandle().getServer().getCommands(); // Paper - We now register directly to the dispatcher.
+
+# MapItemSavedData.id。Paper は ServerLevel.getMapData で入れるが、Shifu は vanilla の getMapData に
+# 足さない(プラグインが無くても読み出しが 2 回になる)。id を読むのは CraftMapView.getId だけで、
+# CraftMapView はここ(getMap)か createMap(setMapData で入る)か MapInitializeEvent(発火層で入れる)で渡る。
+replace:
+        return worldmap.mapView;
+with:
+        if (worldmap.id == null) worldmap.id = new MapId(id); return worldmap.mapView; // Shifu - getMapData の代わりにここで id を入れる

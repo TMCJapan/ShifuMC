@@ -73,3 +73,26 @@ replace:
             this.world.setDefaultSpawnPos(new BlockPos(x, y, z), angle); // Paper - use ServerLevel#setDefaultSpawnPos
 with:
             if (this.world.serverLevelData instanceof net.minecraft.world.level.storage.PrimaryLevelData) { this.world.setDefaultSpawnPos(new BlockPos(x, y, z), angle); } else { final Location shifuBefore = dev.shifu.event.PlayerEvents.spawnBefore(this.world); this.world.shifuSetSpawn(new BlockPos(x, y, z), angle); dev.shifu.event.PlayerEvents.spawnChanged(this.world, shifuBefore); } // Shifu - 主世界以外は次元フォルダへ永続化。SpawnChangeEvent は主世界なら vanilla の setDefaultSpawnPos に差し込んだ所で出るので、こちらでも同じ 2 つを呼ぶ
+
+# loadChunk(x, z, generate=false) の「ディスクにあるか」の下見。Paper は ChunkMap.regionFileCache(RegionFileStorage)から
+# RegionFile を取って hasChunk を見るが、Shifu の ChunkStorage.regionFileCache は宣言(shim)だけで誰も入れないので null で、
+# 読み込まれていないチャンクでここに来ると NullPointerException で落ちていた。入れたとしても、vanilla の RegionFileStorage は
+# IOWorker の糸だけが触る前提で鍵が無く、main から regionCache を触ると IOWorker と重なる(Paper は自分の版を synchronized にしている)。
+# 下見は外し、すぐ下の getChunk(x, z, EMPTY, true) の結果で決める。vanilla の EMPTY の段はディスクから読むだけで
+# (無ければ空の ProtoChunk)、ImposterProtoChunk / LevelChunk でなければ false を返すところは Paper の行のまま残る。
+# 読んだ位置: D:/.pw206/Paper-Server HEAD src/main/java/org/bukkit/craftbukkit/CraftWorld.java:612
+file: org/bukkit/craftbukkit/CraftWorld.java
+replace:
+            net.minecraft.world.level.chunk.storage.RegionFile file;
+            try {
+                file = world.getChunkSource().chunkMap.regionFileCache.getRegionFile(chunkPos, false);
+            } catch (java.io.IOException ex) {
+                throw new RuntimeException(ex);
+            }
+
+            ChunkStatus status = file.getStatusIfCached(x, z);
+            if (!file.hasChunk(chunkPos) || (status != null && status != ChunkStatus.FULL)) {
+                return false;
+            }
+with:
+            // Shifu - RegionFile の下見は外す(regionFileCache は null。下の EMPTY の読み込みで決まる)

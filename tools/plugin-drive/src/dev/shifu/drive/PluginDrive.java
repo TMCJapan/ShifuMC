@@ -215,11 +215,19 @@ public final class PluginDrive extends JavaPlugin implements Listener {
         this.later(130, () -> this.note("after /home: " + brief(bot.getLocation())
                 + " (home was " + brief(this.origin) + ", distance "
                 + String.format("%.1f", bot.getLocation().distance(this.origin)) + ")"));
+        // EssentialsX の /speed は、種類を書かないと isFlying() で歩く速さか飛ぶ速さかを選ぶ。
+        // bot が飛んでいなければ /speed 3 は歩く速さを変える。飛ぶ速さは別名の /flyspeed で変えさせる
+        // (読んだ位置: EssentialsX 2.22.0 Commandspeed.run の isFlyAlias / isWalkAlias / Player.isFlying、javap)。
+        // run-mix の ver/* の版には EssentialsX が入っていない。/speed は Unknown command になっていた。
         this.later(140, () -> {
-            this.note("fly speed before /speed = " + bot.getFlySpeed());
-            this.tell(bot, "!bot cmd speed 3");
+            if (!Bukkit.getPluginManager().isPluginEnabled("Essentials")) {
+                this.note("EssentialsX is not installed; /flyspeed not checked");
+                return;
+            }
+            this.note("fly speed before /flyspeed = " + bot.getFlySpeed());
+            this.tell(bot, "!bot cmd flyspeed 3");
+            this.later(10, () -> this.note("fly speed after /flyspeed 3 = " + bot.getFlySpeed()));
         });
-        this.later(150, () -> this.note("fly speed after /speed 3 = " + bot.getFlySpeed()));
         // タブ一覧の表示名。vanilla は常に null を返すので、入れた名前が返るかを見る
         this.later(152, () -> {
             bot.setPlayerListName("ShifuTab");

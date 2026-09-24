@@ -72,9 +72,29 @@ with:
 private static void shifuScheduleLoad(final ServerLevel level, final int chunkX, final int chunkZ,
                                       final boolean gen, final ChunkStatus toStatus, final boolean addTicket,
                                       final Consumer<ChunkAccess> onComplete) {
+    // gen=false は Paper の ChunkTaskScheduler.scheduleChunkLoad(gen=false) と同じ形にする。
+    // いったん EMPTY まで読み、ディスクにあった段階が toStatus に届いていなければ null で返す。
+    // vanilla の EMPTY の段は ChunkMap.scheduleChunkLoad でディスクから読むだけで、無ければ
+    // 空の ProtoChunk(段階 EMPTY)を作る。生成は進まず、ChunkMap.save は段階 EMPTY を書かない。
+    // 以前は gen を vanilla の create に渡していたので、gen=false でも地形が生成されていた。
+    // vanilla の create には addTicket だけを渡す。Paper も addTicket=false なら読み込み済みのものしか返さない。
+    // 読んだ位置: D:/.pw206/Paper-Server HEAD src/main/java/io/papermc/paper/chunk/system/scheduling/ChunkTaskScheduler.java:428
+    //             D:/.pw206/vanilla-src/minecraft/java/net/minecraft/server/level/ChunkMap.java:590,833
+    if (!gen) {
+        shifuScheduleLoad(level, chunkX, chunkZ, true, ChunkStatus.EMPTY, addTicket, (chunk) -> {
+            if (chunk != null && chunk.getStatus().isOrAfter(toStatus)) {
+                shifuScheduleLoad(level, chunkX, chunkZ, true, toStatus, addTicket, onComplete);
+            } else {
+                onComplete.accept(null);
+            }
+        });
+
+        return;
+    }
+
     level.getServer().execute(() -> {
         final CompletableFuture<net.minecraft.server.level.ChunkResult<ChunkAccess>> future =
-                level.chunkSource.getChunkFutureMainThread(chunkX, chunkZ, toStatus, gen || addTicket);
+                level.chunkSource.getChunkFutureMainThread(chunkX, chunkZ, toStatus, addTicket);
 
         future.whenComplete((result, throwable) -> level.getServer().execute(() -> {
             if (throwable != null) {
