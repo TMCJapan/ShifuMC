@@ -90,3 +90,20 @@
             }
         }
     }
+
+// LevelChunk.getBukkitChunk
+    // Paper 1.18.2 は構築子で bukkitChunk = new CraftChunk(this) を入れる(読んだ位置: D:/.pw182/Paper-Server HEAD
+    // src/main/java/net/minecraft/world/level/chunk/LevelChunk.java:126)。Shifu の構築子は vanilla のままで誰も入れないので、
+    // 欄は null のままだった。World.getChunkAtAsync が null の Chunk を返し、EssentialsX の /home は
+    // Chunk.getWorld() で落ちて(future が例外で終わるだけなので何も出ない)移動しなかった。
+    // 構築子に足すとプラグインが無くてもチャンクごとに CraftChunk を作るので、初めて聞かれたときに作る。
+    // CraftChunk は LevelChunk を WeakReference で持つだけなので、後から作っても中身は同じ。
+    public org.bukkit.Chunk getBukkitChunk() {
+        org.bukkit.Chunk chunk = this.bukkitChunk;
+
+        if (chunk == null) {
+            this.bukkitChunk = chunk = new org.bukkit.craftbukkit.CraftChunk(this);
+        }
+
+        return chunk;
+    }

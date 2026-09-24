@@ -2,12 +2,12 @@
 
 # ServerCommandEvent。コンソールの入力を実行する直前。
 
-# 取り消されたら飛ばし、差し替えられたら新しい入力で実行する。
+# 取り消されたら飛ばす。差し替えられたら発火層が新しい文で実行し、vanilla の行は飛ばす
+# (consoleInput に書き戻すと、登録が無くても公式に無い代入が毎回 1 つ増える)。
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
     this.getCommands().performCommand(consoleInput.source, consoleInput.msg);
 insert:
-    consoleInput = dev.shifu.event.ShifuEvents.serverCommand(this, consoleInput);
-    if (consoleInput == null) {
+    if (!dev.shifu.event.ShifuEvents.serverCommand(this, consoleInput)) {
         continue;
     }

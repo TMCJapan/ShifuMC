@@ -12,3 +12,12 @@ replace:
                 this.doFixLight(sender, args);
 with:
                 sender.sendMessage(org.bukkit.ChatColor.RED + "/paper fixlight is not available: the vanilla light engine has no relight"); // Shifu
+
+# /paper chunkinfo の数え上げ。Paper の ChunkMap.updatingChunks は Paper の ChunkMap が出し入れする表で、
+# Shifu の vanilla の ChunkMap では shim の空の表のまま(全部 0 と出ていた)。CraftWorld と同じく
+# vanilla の visibleChunkMap(patches/access で public)を読む。
+# 読んだ位置: D:/.pw182/Paper-Server(HEAD)src/main/java/com/destroystokyo/paper/PaperCommand.java:486
+replace:
+chunkMap.updatingChunks.getUpdatingMap()
+with:
+chunkMap.visibleChunkMap

@@ -1,0 +1,9 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+#
+# LevelChunk.bukkitChunk は Paper の構築子が入れる欄で、Shifu の vanilla の構築子では null のまま。
+# 初めて聞かれたときに作る getBukkitChunk(patches/hand の LevelChunk.java.add)を通す。
+file: com/destroystokyo/paper/loottable/PaperLootableBlockInventory.java
+replace:
+        final Chunk bukkitChunk = getTileEntity().getLevel().getChunkAt(position).bukkitChunk;
+with:
+        final Chunk bukkitChunk = getTileEntity().getLevel().getChunkAt(position).getBukkitChunk(); // Shifu

@@ -454,6 +454,11 @@ mixin の狙いを外す。
   しか落とせないので、差し込みの変数が公式の変数より若い番号だと消せない
 
 守れていない場所は `python tools/check_extra_locals.py <クラスの置き場> <Mojang の jar> --list` で出る。
+メソッドごと・型ごとに、同時に生きている変数の数と LVT の項目の数を公式と比べ、両方とも多いものを出す
+(名前は見ない)。`tools/extra-locals-allowed.txt` に無い場所が 1 つでもあれば終了コード 1 で、
+`tools/postcompile.sh` はそこで止まる。この一覧には差し込みではない変数(逆コンパイラの一時変数)だけを、
+1 行 1 か所で `クラス メソッド<TAB>型<TAB># 理由` の形で載せる。差し込みが足した変数は載せずに直す
+(値を式に埋め込む、発火層のメソッドが真偽値を返して書き込みまで行う、発火層の欄に置く、公式に無い型にする)。
 
 **ラムダを増やさない。** javac のラムダ名は `lambda$<メソッド>$<番号>` で、番号は
 そのメソッドの中でソースに出てくる順。差し込みがラムダを 1 つ足すと、後ろにある
@@ -610,7 +615,7 @@ jvm-args            = -Xmx4G
 | `tools/lvtmatch` | 局所変数の番号とラムダの署名を公式に合わせる |
 | `tools/compare_lvt.py` | 局所変数の並びが公式と違うメソッドを出す |
 | `tools/check_lambdas.py` | ラムダの番号が公式とずれたクラスを出す |
-| `tools/check_extra_locals.py` | 差し込みが公式にもある型の局所変数を作っている場所を出す |
+| `tools/check_extra_locals.py` | 差し込みが公式にもある型の局所変数を作っている場所を出す。`tools/extra-locals-allowed.txt` に無ければ exit 1 |
 | `tools/make_decompile_rules.py` | 逆コンパイルで消えた局所変数を戻す規則を作り直す |
 | `tools/lvtmatch` の `SemDiff` | `patches/decompile/exprs.rules` が名指ししたメソッドが公式と同じ命令列にコンパイルされたかを確かめる。違えば exit 1 |
 | `tools/keep_vanilla_classes.py` | 触っていないクラスを公式のバイトコードに差し替える |

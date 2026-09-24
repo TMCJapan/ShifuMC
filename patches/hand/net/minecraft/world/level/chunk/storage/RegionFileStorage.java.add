@@ -1,7 +1,9 @@
 // 自前で書いた追加。Paper の宣言だけを写し、本体は vanilla の版へ渡す。
-// 呼ぶのは ChunkMap.getChunkStatusOnDisk と ServerLevel の無名クラス(どちらも Shifu が足したもの)、
-// CraftWorld.loadChunk、RegionFile の手書きの追加、ThreadedWorldUpgrader。公式のバイトコードの
+// 呼ぶのは ServerLevel の無名クラス(Paper の PaperFileIOThread 向けで、Shifu は繋いでいない)、
+// RegionFile の手書きの追加、ThreadedWorldUpgrader。公式のバイトコードの
 // RegionFileStorage には無いので、足す前はそこへ入った時点で NoSuchMethodError になった。
+// CraftWorld.loadChunk と ChunkMap.getChunkStatusOnDisk はここを通さず IOWorker 経由で読む
+// (vanilla の RegionFileStorage は IOWorker の糸だけが触る前提で、ここの synchronized は vanilla の版と排他にならない)。
 // Paper は region file のキャッシュの上限を設定(regionFileCacheSize)にし、RegionFile を
 // isChunkData 付きで作る。ここは vanilla の getRegionFile(ChunkPos) を通すので、上限は vanilla の 256 のまま。
 

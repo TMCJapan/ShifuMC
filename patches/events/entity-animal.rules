@@ -269,16 +269,6 @@ insert-after:
         }
     }
 
-# RaidTriggerEvent。vanilla が先に襲撃を登録するので、取り消されたらこの呼び出しで登録した分を外す。
-#
-# 読んだ位置: paper-server patches/sources/net/minecraft/world/item/raid/Raids.java.patch(callRaidTriggerEvent)
-file: net/minecraft/world/entity/raid/Raids.java
-anchor:
-    Raid raid = this.getOrCreateRaid(player.getLevel(), blockPos1);
-insert-after:
-    final boolean shifuNewRaid = dev.shifu.event.AnimalEvents.raidTriggerListening()
-            && !raid.isStarted() && !this.raidMap.containsValue(raid);
-
 file: net/minecraft/world/entity/monster/Slime.java
 anchor:
     super.remove(reason);

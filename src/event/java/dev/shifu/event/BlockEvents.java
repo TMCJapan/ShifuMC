@@ -541,19 +541,26 @@ public final class BlockEvents {
 
     /**
      * SignChangeEvent。1.18.2 は看板に面が無く、行は ServerGamePacketListenerImpl.updateSignText で
-     * 1 行ずつ setMessage される。その手前で発火して、書き換えた行を返す。
+     * 1 行ずつ setMessage される。その手前で発火する。
      *
      * <p>1.18.2 の濾した文字は {@code TextFilter} の中の {@code FilteredText}
      * ({@code getRaw()} / {@code getFiltered()})。
      *
-     * @return 書き込む行。取り消されたら null
+     * <p>書き換えた行は {@link #changedSignLines} で渡す。戻り値で渡して呼ぶ側の局所変数に受けると、
+     * 公式の {@code updateSignText} にもある List の局所変数が 2 つになり、
+     * MixinExtras の {@code @Local List} が当たらない。
+     *
+     * @return vanilla の行をそのまま書いてよいか。false なら取り消し({@link #changedSignLines} が null)か、
+     *         書き換えた行がある
      */
-    public static java.util.List<net.minecraft.server.network.TextFilter.FilteredText> signChange(
+    public static boolean signChange(
             final net.minecraft.world.level.block.entity.SignBlockEntity sign,
             final net.minecraft.server.level.ServerPlayer player,
             final java.util.List<net.minecraft.server.network.TextFilter.FilteredText> lines) {
+        changedSignLines = null;
+
         if (!ShifuEvents.listening(org.bukkit.event.block.SignChangeEvent.getHandlerList())) {
-            return lines;
+            return true;
         }
 
         final java.util.List<net.kyori.adventure.text.Component> componentLines = new java.util.ArrayList<>();
@@ -568,21 +575,36 @@ public final class BlockEvents {
                 new java.util.ArrayList<>(componentLines));
 
         if (!event.callEvent()) {
-            return null;
+            return false;
         }
 
         final java.util.List<net.minecraft.server.network.TextFilter.FilteredText> result =
                 new java.util.ArrayList<>(lines);
+        boolean changed = false;
 
         for (int i = 0; i < result.size() && i < event.lines().size(); i++) {
             if (!java.util.Objects.equals(componentLines.get(i), event.line(i))) {
+                changed = true;
                 result.set(i, net.minecraft.server.network.TextFilter.FilteredText.passThrough(
                         net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(event.line(i))));
             }
         }
 
-        return result;
+        if (!changed) {
+            return true;
+        }
+
+        changedSignLines = result;
+
+        return false;
     }
+
+    /** {@link #signChange} が false を返したときの、書き込む行。取り消しなら null。 */
+    public static java.util.List<net.minecraft.server.network.TextFilter.FilteredText> changedSignLines() {
+        return changedSignLines;
+    }
+
+    private static java.util.List<net.minecraft.server.network.TextFilter.FilteredText> changedSignLines;
 
     /**
      * 看板の面。1.18.2 の {@code org.bukkit.block.sign.Side} は {@code FRONT} しか無く、
@@ -673,11 +695,11 @@ public final class BlockEvents {
     // 1.20.6 の serverTick は Level を受ける
     public static boolean furnaceBurn(final net.minecraft.world.level.Level level, final BlockPos pos, final ItemStack fuel,
                                       final net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity furnace) {
-        furnaceConsumesFuel = true;
-
         if (!listening(org.bukkit.event.inventory.FurnaceBurnEvent.getHandlerList())) {
             return true;
         }
+
+        furnaceConsumesFuel = true;
 
         final org.bukkit.event.inventory.FurnaceBurnEvent event = new org.bukkit.event.inventory.FurnaceBurnEvent(
                 bukkit(level, pos), CraftItemStack.asCraftMirror(fuel), furnace.litTime);
@@ -694,8 +716,12 @@ public final class BlockEvents {
         return true;
     }
 
+    /**
+     * 燃料を減らしてよいか。登録が無ければ見ない({@link #furnaceBurn} は登録があるときだけ欄を書くので、
+     * 前にイベントが false にした値が残っていることがある)。
+     */
     public static boolean furnaceConsumesFuel() {
-        return furnaceConsumesFuel;
+        return !listening(org.bukkit.event.inventory.FurnaceBurnEvent.getHandlerList()) || furnaceConsumesFuel;
     }
 
     public static boolean listeningFurnaceStart() {
@@ -823,18 +849,34 @@ public final class BlockEvents {
     /**
      * BlockCookEvent。焚き火の焼き上がりを落とす直前。登録があるときだけ呼ばれる。
      *
-     * @return 落とす物。取り消されたら null(tick を抜ける。Paper と同じ)
+     * <p>落とす物は {@link #cookedResult} で渡す。戻り値で渡して呼ぶ側の局所変数に受けると、
+     * 公式の {@code cookTick} にもある ItemStack の局所変数が増え、MixinExtras の
+     * {@code @Local ItemStack} の候補が増える。
+     *
+     * @return 落としてよいか。取り消されたら false(tick を抜ける。Paper と同じ)
      */
-    public static ItemStack cook(final Level level, final BlockPos pos, final ItemStack source, final ItemStack result,
-                                 final org.bukkit.inventory.CookingRecipe<?> recipe) {
+    public static boolean cook(final Level level, final BlockPos pos, final ItemStack source, final ItemStack result,
+                               final org.bukkit.inventory.CookingRecipe<?> recipe) {
         final org.bukkit.event.block.BlockCookEvent event = new org.bukkit.event.block.BlockCookEvent(
                 bukkit(level, pos), CraftItemStack.asCraftMirror(source), CraftItemStack.asBukkitCopy(result), recipe);
 
         if (!event.callEvent()) {
-            return null;
+            return false;
         }
 
-        return CraftItemStack.asNMSCopy(event.getResult());
+        cookedResult = CraftItemStack.asNMSCopy(event.getResult());
+
+        return true;
+    }
+
+    private static ItemStack cookedResult;
+
+    /** {@link #cook} が true を返したときの、落とす物。 */
+    public static ItemStack cookedResult() {
+        final ItemStack result = cookedResult;
+        cookedResult = null;
+
+        return result;
     }
 
 
@@ -919,6 +961,30 @@ public final class BlockEvents {
         snapshot.setData(newState);
 
         return new org.bukkit.event.block.BlockSpreadEvent(snapshot.getBlock(), bukkit(level, source), snapshot).callEvent();
+    }
+
+    /** キノコが広がる元。{@link #mushroomSource} が控え、{@link #mushroomSpread} が読む。 */
+    private static BlockPos mushroomSource;
+
+    /**
+     * キノコが広がる元を控える。{@code MushroomBlock.randomTick} は pos を書き換えながら置き場所を
+     * 探すので、探す前に呼ぶ。呼ぶ側の局所変数に取ると、公式の {@code randomTick} にもある BlockPos の
+     * 局所変数が増え、MixinExtras の {@code @Local BlockPos} の候補が増える。登録が無ければ控えない。
+     */
+    public static void mushroomSource(final BlockPos pos) {
+        mushroomSource = listening(org.bukkit.event.block.BlockSpreadEvent.getHandlerList()) ? pos : null;
+    }
+
+    /**
+     * BlockSpreadEvent(キノコ)。元は {@link #mushroomSource} が控えたもの。
+     *
+     * @return 置いてよいか
+     */
+    public static boolean mushroomSpread(final LevelAccessor level, final BlockPos pos, final BlockState newState) {
+        final BlockPos source = mushroomSource;
+        mushroomSource = null;
+
+        return source == null || spreadTo(level, source, pos, newState);
     }
 
     /**
@@ -1429,16 +1495,6 @@ public final class BlockEvents {
     }
 
 
-
-
-    /**
-     * SculkBloomEvent。スカルクの広がりを 1 つ足す直前。
-     */
-    public static boolean sculkBloom(final net.minecraft.world.level.LevelAccessor level,
-                                     final net.minecraft.core.BlockPos pos, final int charge) {
-        // SculkBloomEvent は Paper-API 1.18.2 に無い。
-        return true;
-    }
 
 
     /**

@@ -10,6 +10,6 @@ file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     public void handleCustomCommandSuggestions(ServerboundCommandSuggestionPacket packet) {
 insert-after:
-    if (dev.shifu.event.PlayerEvents.asyncTabComplete(this, this.server, this.player, packet)) {
+    if (!dev.shifu.event.PlayerEvents.asyncTabComplete(this, this.server, this.player, packet)) {
         return;
     }

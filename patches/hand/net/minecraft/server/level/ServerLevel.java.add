@@ -50,11 +50,6 @@
     // CraftWorld.getName() が読む(patches/adapter)。入れるのは patches/wire。
     public String bukkitName;
 
-// ServerLevel.hasEntityMoveEvent
-    // EntityMoveEvent に登録があるか。毎 tick 世界を回す前に入れる(patches/wire)。
-    // Paper 1.18.2 は MinecraftServer と LivingEntity から読む
-    public boolean hasEntityMoveEvent;
-
 // ServerLevel.addEntity
     // Paper 1.18.2 の版は最後に entityManager.addNewEntity(entity) を呼ぶ。そこは vanilla の
     // addEntity(Entity) と同じなので、前半の見張りだけを写して最後の 1 行を vanilla へ渡す。

@@ -32,10 +32,6 @@
     // 写すかの判定に使う。発火していなければ vanilla の restoreFrom だけで済ませる。
     public boolean shifuDeathEvent;
 
-// ServerPlayer.shifuKeepInventory
-    // PlayerDeathEvent の getKeepInventory()。リスポーンで新しい ServerPlayer へ写すために持つ。
-    public boolean shifuKeepInventory;
-
 // ServerPlayer.shifuNaturallySpawnedEvent
     // PlayerNaturallySpawnCreaturesEvent。ServerChunkCache が 1 tick に 1 度作って置き、
     // ChunkMap が湧きの範囲を絞るときに読む。登録が無ければ触らないので null のまま。

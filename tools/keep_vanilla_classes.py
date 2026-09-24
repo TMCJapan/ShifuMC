@@ -95,6 +95,13 @@ def owner_of(class_path):
     return name if at < 0 else name[:at]
 
 
+def anonymous(class_path):
+    """外側より内の名前がすべて数字(javac の無名クラス)か。"""
+    parts = class_path[:-len(".class")].split("$")[1:]
+
+    return bool(parts) and all(part.isdigit() for part in parts)
+
+
 def mojang_classes(jar):
     """公式 jar の中の server jar から、クラス名 -> バイト列。"""
     # 公式の配布は bundler(中に server jar が入っている)。paperweight のキャッシュに
@@ -130,7 +137,7 @@ def restore_unreadable(classes_dir, swapped):
     同じ jar を使う bot(クライアント側)が bundle を受けた瞬間に切れる。
     """
     if not swapped:
-        return 0
+        return set()
 
     tools = os.path.dirname(os.path.abspath(__file__))
     lvtmatch = os.path.join(tools, "build", "lvtmatch")
@@ -162,7 +169,7 @@ def restore_unreadable(classes_dir, swapped):
                 io.open(os.path.join(classes_dir, sibling.replace("/", os.sep)), "wb").write(swapped[sibling])
                 restored.add(sibling)
 
-    return len(restored)
+    return restored
 
 
 def main():
@@ -177,6 +184,8 @@ def main():
     replaced = 0
     kept_ours = 0
     missing = 0
+    # 公式に戻した外側の無名クラスで、公式に無いもの。外側が Shifu のものに戻されなければ消す
+    orphans = []
     # 公式へ戻したクラスと、戻す前の Shifu のバイト列。JVM に読めなかったら戻す
     swapped = {}
 
@@ -198,6 +207,15 @@ def main():
             data = official.get(rel)
 
             if data is None:
+                # 外側を公式に戻すクラスの無名クラスで、公式に無いもの。公式の外側からは参照されない。
+                # closure.ps1 -TouchedOnly は Shifu が触っていない Paper の NMS ファイルを Paper の中身のまま
+                # 組むので、Paper だけが持つ無名クラスが残って jar に入っていた
+                # (1.18.2 の ServerConnectionListener$1$1 = Paper の HAProxy の handler)。
+                # 名前の付いた入れ子(ChestBlock$DoubleInventory など)はアダプタ層が使うので残す。
+                if owner_of(rel) + ".class" in official and anonymous(rel):
+                    orphans.append((rel, path))
+                    continue
+
                 missing += 1
                 continue
 
@@ -205,11 +223,20 @@ def main():
             io.open(path, "wb").write(data)
             replaced += 1
 
-    unreadable = restore_unreadable(classes_dir, swapped)
+    restored = restore_unreadable(classes_dir, swapped)
+    unreadable = len(restored)
+    restored_owners = set(owner_of(rel) for rel in restored)
+    dropped = 0
+
+    for rel, path in orphans:
+        if owner_of(rel) not in restored_owners:
+            os.remove(path)
+            dropped += 1
     print("公式のバイトコードに戻した: %d" % (replaced - unreadable))
     print("公式が JVM に読めないので Shifu のものを残した: %d" % unreadable)
     print("Shifu が触ったので残した  : %d" % kept_ours)
     print("公式 jar に無い           : %d" % missing)
+    print("外側を戻したので消した無名クラス: %d" % dropped)
 
     if report:
         print("内訳: Shifu が手を入れた .java %d、AT が触った .java %d" % (len(ours), len(ats)))

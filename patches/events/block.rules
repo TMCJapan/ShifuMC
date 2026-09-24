@@ -20,7 +20,7 @@ insert:
 # BlockBreakEvent#setDropItems(false)
 #
 # Paper は playerDestroy に引数を足して落とし物を出さない。Shifu は vanilla の playerDestroy を
-# そのまま呼び、そのあいだに出た ItemEntity を ShifuEvents.catchDrop(addEntity の頭)で
+# そのまま呼び、そのあいだに出た ItemEntity を ShifuEvents.addEntityGoesOn(addEntity の頭)で
 # 世界に入れずに捨てる。登録が無ければ blockDropsBegin は何も捨てない。
 #
 # 読んだ位置: Paper-Server src/main/java/net/minecraft/server/level/ServerPlayerGameMode.java(destroyBlock、isDropItems)

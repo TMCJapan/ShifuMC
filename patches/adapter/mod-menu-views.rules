@@ -1,0 +1,66 @@
+# アダプタ層の書き換え。vanilla の行ではない。
+
+# MOD のメニュー(AbstractContainerMenu を直に継いだ型)は、shim が足した抽象メソッド
+# getBukkitView の本体を持たない。InventoryOpenEvent / InventoryCloseEvent /
+# PrepareResultEvent の登録があるとき、または Player#getOpenInventory を呼ぶプラグインがいると、
+# 下の行が MOD の画面で getBukkitView を呼んで AbstractMethodError になる。
+# 本体を持たない型には汎用の view を作る dev.shifu.event.ItemEvents.view / transferTo を通す。
+# 本体を持つ型では元の呼び出しをそのまま行う。
+file: org/bukkit/craftbukkit/event/CraftEventFactory.java
+replace:
+        player.containerMenu.transferTo(container, craftPlayer);
+with:
+        dev.shifu.event.ItemEvents.transferTo(player.containerMenu, container, craftPlayer); // Shifu - MOD のメニュー
+
+replace:
+        InventoryOpenEvent event = new InventoryOpenEvent(container.getBukkitView());
+with:
+        InventoryOpenEvent event = new InventoryOpenEvent(dev.shifu.event.ItemEvents.view(container, player)); // Shifu - MOD のメニュー
+
+replace:
+            container.transferTo(player.containerMenu, craftPlayer);
+with:
+            dev.shifu.event.ItemEvents.transferTo(container, player.containerMenu, craftPlayer); // Shifu - MOD のメニュー
+
+replace:
+        InventoryCloseEvent event = new InventoryCloseEvent(human.containerMenu.getBukkitView(), reason); // Paper
+with:
+        InventoryCloseEvent event = new InventoryCloseEvent(dev.shifu.event.ItemEvents.view(human.containerMenu, human), reason); // Paper // Shifu - MOD のメニュー
+
+replace:
+        human.containerMenu.transferTo(human.inventoryMenu, human.getBukkitEntity());
+with:
+        dev.shifu.event.ItemEvents.transferTo(human.containerMenu, human.inventoryMenu, human.getBukkitEntity()); // Shifu - MOD のメニュー
+
+replace:
+        InventoryView view = container.getBukkitView();
+with:
+        InventoryView view = dev.shifu.event.ItemEvents.view(container); // Shifu - MOD のメニュー
+
+# 今開いている画面を返すところ(getOpenInventory、openInventory などの戻り値)
+file: org/bukkit/craftbukkit/entity/CraftHumanEntity.java
+count: 5
+replace:
+        return this.getHandle().containerMenu.getBukkitView();
+with:
+        return dev.shifu.event.ItemEvents.view(this.getHandle().containerMenu, this.getHandle()); // Shifu - MOD のメニュー
+
+replace:
+        return getHandle().containerMenu.getBukkitView();
+with:
+        return dev.shifu.event.ItemEvents.view(this.getHandle().containerMenu, this.getHandle()); // Shifu - MOD のメニュー
+
+# 窓の値(かまどの進み具合など)を送るところ。今開いている画面の種類と比べる
+file: org/bukkit/craftbukkit/entity/CraftPlayer.java
+replace:
+        if (container.getBukkitView().getType() != prop.getType()) {
+with:
+        if (dev.shifu.event.ItemEvents.view(container, this.getHandle()).getType() != prop.getType()) { // Shifu - MOD のメニュー
+
+# openInventory(InventoryView) が画面を開く packet に入れる種類。汎用の view の上の段は CHEST なので、
+# Paper と同じく上の段から引くと MOD の画面の種類にならない(9 の倍数でない大きさでは null)
+file: org/bukkit/craftbukkit/entity/CraftHumanEntity.java
+replace:
+        MenuType<?> windowType = CraftContainer.getNotchInventoryType(inventory.getTopInventory());
+with:
+        MenuType<?> windowType = dev.shifu.event.ItemEvents.menuType(container, inventory.getTopInventory()); // Shifu - MOD のメニュー

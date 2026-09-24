@@ -84,11 +84,12 @@ cp "$SHIFU/tools/build/lvt-differs.txt" "$SLOTS"
 python tools/compare_lvt.py "$CLASSES_M" "$MOJANG" --list
 "$JAVA_HOME/bin/java" -cp "$CP" dev.shifu.lvtmatch.LvtMatch "$CLASSES_M" "$MOJANG" "$DIFFERS" --vars
 
-# 差し込みが公式と同じ型の局所変数を作っていないかを見る(数えるだけ)。
+# 差し込みが公式と同じ型の局所変数を作っていないかを見る。tools/extra-locals-allowed.txt に
+# 無い場所が 1 つでもあれば止める(数えるだけだったころに系統ごとに 12〜61 か所たまっていた)。
 # MixinExtras の @Local は「その型がちょうど 1 つ」でないと当たらない。
 # frame に TOP と書いて隠すことはできない(mixin の Locals.java が TOP を無視する)。
 # 直すには差し込みの側で局所変数を作らないようにするしかない。
-python tools/check_extra_locals.py "$CLASSES_M" "$MOJANG" --list || true
+python tools/check_extra_locals.py "$CLASSES_M" "$MOJANG" --list
 
 python tools/check_lambdas.py "$CLASSES_M" "$MOJANG" --list || true
 "$JAVA_HOME/bin/java" -cp "$CP" dev.shifu.lvtmatch.LambdaMatch "$CLASSES_M" "$MOJANG" \

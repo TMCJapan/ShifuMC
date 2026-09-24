@@ -12,7 +12,7 @@
 #
 # 位置は vanilla の `return this.entityManager.addNewEntity(entity);` の直前。
 # isRemoved の判定が済んだあと、実際に登録する直前で、Paper と同じ場所。
-# 落とし物の控え(catchDrop)はメソッドの頭で見ている(patches/wire)。
+# 落とし物の控え(addEntityGoesOn)はメソッドの頭で見ている(patches/wire)。
 #
 # 取り消されたときは false を返す。vanilla の addEntity が false を返すのは
 # 「isRemoved で登録しなかった」ときなので、呼び手の扱いは変わらない。

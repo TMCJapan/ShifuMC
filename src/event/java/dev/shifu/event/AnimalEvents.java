@@ -290,15 +290,6 @@ public final class AnimalEvents {
     }
 
 
-    /**
-     * RaidTriggerEvent に登録があるか。{@code Raids.createOrExtendRaid} が、この呼び出しで
-     * 襲撃を登録したかどうかを控えるのに使う。
-     */
-    public static boolean raidTriggerListening() {
-        return listening(org.bukkit.event.raid.RaidTriggerEvent.getHandlerList());
-    }
-
-
     /** PiglinBarterEvent に登録が無いか。 */
     public static boolean silentBarter() {
         return !listening(org.bukkit.event.entity.PiglinBarterEvent.getHandlerList());

@@ -1,12 +1,16 @@
 # PlayerItemMendEvent。修繕で直す量が決まった直後。
 # Paper: net/minecraft/world/entity/ExperienceOrb.java の repairPlayerItems
+# 手で書いた規則(tools/make_events.py は出さない)。直す量は vanilla の局所変数に書き戻す。
+# 別の int に受けると、公式の repairPlayerItems にもある int の局所変数が増え、MixinExtras の
+# @Local int が当たらない。登録が無ければ呼ばない。
 
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
             int min = Math.min(this.xpToDurability(this.value), itemStack.getDamageValue());
 insert-after:
-    int shifuRepair = dev.shifu.event.ItemEvents.itemMend(player, this, itemStack, randomItemWith.getKey(), min);
-    if (shifuRepair < 0) {
-        return amount;
+    if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerItemMendEvent.class)) {
+        min = dev.shifu.event.ItemEvents.itemMend(player, this, itemStack, randomItemWith.getKey(), min);
+        if (min < 0) {
+            return amount;
+        }
     }
-    min = shifuRepair;

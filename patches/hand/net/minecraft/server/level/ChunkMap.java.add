@@ -24,3 +24,16 @@
 
         return false;
     }
+
+// ChunkMap.getChunkStatusOnDisk
+    // CraftWorld.isChunkGenerated が読み込まれていないチャンクで呼ぶ(main の上)。Paper の版(shim)は
+    // ChunkStorage.regionFileCache から RegionFile を取るが、Shifu ではその欄に誰も入れないので null で、
+    // NullPointerException で落ちていた。vanilla の RegionFileStorage は IOWorker の糸だけが触る前提で鍵が無いので、
+    // main から regionCache を触る形にもしない。vanilla の isExistingChunkFull と同じく readChunk(IOWorker 経由、
+    // 書き出し待ちの分も見る)で読み、保存されている段階を返す。無ければ null(Paper と同じ)。
+    // isExistingChunkFull 自体は chunkTypeCache に書くので呼ばない。
+    // 読んだ位置: D:/.pw182/vanilla-src/minecraft/java/net/minecraft/server/level/ChunkMap.java:788,929
+    public ChunkStatus getChunkStatusOnDisk(ChunkPos chunkPos) throws IOException {
+        final CompoundTag tag = this.readChunk(chunkPos);
+        return tag == null ? null : ChunkStatus.byName(tag.getString("Status"));
+    }

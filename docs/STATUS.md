@@ -405,7 +405,7 @@ LuckPerms 5.5.71、Vault 1.7.3、ProtocolLib 5.5.0)を入れ、bot を繋いで�
 | `//pos1` `//pos2` `//set stone` | 3×3×3 の 27 ブロックすべてが石になる |
 | `//undo` | 27 ブロックすべてが空気に戻る |
 | `/sethome` と `/home` | 離れた場所から家へ戻る |
-| `/speed 3` | 飛行速度が 0.1 → 0.3 |
+| `/flyspeed 3` | 飛行速度が 0.1 → 0.3(`/speed 3` は飛んでいないと歩く速さを変えるので、drive は `/flyspeed` を送る) |
 | `/gamemode survival`(EssentialsX 版) | 変わる |
 | サーバー側の例外 | 0 |
 

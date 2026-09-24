@@ -9,6 +9,7 @@ import java.util.Map;
 import dev.shifu.bootstrap.ShifuCompatTransformer.DropInjector;
 import dev.shifu.bootstrap.ShifuCompatTransformer.InsertFabricStartServer;
 import dev.shifu.bootstrap.ShifuCompatTransformer.Rule;
+import dev.shifu.bootstrap.ShifuCompatTransformer.WrapPluginParent;
 
 /**
  * MOD 側 Mixin の対応表。
@@ -36,9 +37,11 @@ import dev.shifu.bootstrap.ShifuCompatTransformer.Rule;
  * <p>残すと直るどころか壊れる。{@code reloadResources -> reloadTagData} の書き換えは
  * vanilla にある方を無い方へ向けることになる。
  *
- * <p>残っているのは MOD 初期化フックの 1 件だけ。これは Paper の都合ではなく、
+ * <p>MOD 側 Mixin に向けた規則で残っているのは MOD 初期化フックの 1 件だけ。これは Paper の都合ではなく、
  * 「Fabric のエントリポイントはレジストリのブートストラップ後でなければ動かない」
  * という Fabric 側の要件によるもの。
+ *
+ * <p>ほかに、プラグインのクラスローダの親を差し替える規則がある(MOD の jar のクラスをプラグインから隠す)。
  */
 final class PaperCompatRules {
 	private PaperCompatRules() {
@@ -64,6 +67,25 @@ final class PaperCompatRules {
 				new InsertFabricStartServer("main",
 						List.of("([Ljava/lang/String;)V", "(Ljoptsimple/OptionSet;)V"),
 						"net/minecraft/server/Bootstrap", "validate"));
+
+		// --- プラグインから MOD のクラスを隠す ---
+		// プラグインのクラスローダは親の Knot を先に見るので、MOD とプラグインが同じパッケージを
+		// 持つと MOD 側が返る(ModHidingClassLoader)。親を渡す URLClassLoader の構築子はこの 5 か所。
+		// 版によって無いクラスは読まれないので、規則も当たらない。
+		// 読んだ位置(各版の Paper-API / Paper-Server):
+		//   PluginClassLoader の構築子 super(file.getName(), urls, parent)
+		//   LibraryLoader.createLoader の new URLClassLoader(urls, getClass().getClassLoader())
+		//   PaperSimplePluginClassLoader の構築子 super(name, urls, parentLoader)(1.19.4 以降。PaperPluginClassLoader もここを通る)
+		//   PaperClasspathBuilder.buildClassLoader の new URLClassLoader(urls, getClass().getClassLoader())(1.19.4 以降)
+		//   BytecodeModifyingURLClassLoader の構築子 super(urls, parent)(1.20.6 以降)
+		for (String loader : List.of(
+				"org.bukkit.plugin.java.PluginClassLoader",
+				"org.bukkit.plugin.java.LibraryLoader",
+				"io.papermc.paper.plugin.entrypoint.classloader.PaperSimplePluginClassLoader",
+				"io.papermc.paper.plugin.loader.PaperClasspathBuilder",
+				"io.papermc.paper.plugin.entrypoint.classloader.BytecodeModifyingURLClassLoader")) {
+			b.add(loader, new WrapPluginParent());
+		}
 
 		return b.build();
 	}

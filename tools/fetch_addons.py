@@ -93,6 +93,8 @@ LIST = [
     ("quickshop-hikari", "plugins", "paper"),
     ("authmereloaded", "plugins", "paper"),
     ("bluemap", "plugins", "paper"),
+    # /flyspeed と /home を drive が叩く(tools/plugin-drive)。Modrinth の slug は essentialsx
+    ("essentialsx", "plugins", "paper"),
     # --- サーバー側で効く MOD(2 巡目)---
     ("carpet", "mods", "fabric"),
     ("alternate-current", "mods", "fabric"),
