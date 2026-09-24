@@ -10,6 +10,8 @@ insert-after:
     // プラグインメッセージのチャンネル。Paper は cookie に成分を足して設定フェーズから引き継ぐが、
     // vanilla の CommonListenerCookie には無いので、接続ごとに 1 つの集合を持つ
     this.pluginMessagerChannels = dev.shifu.event.PluginMessages.channelsFor(connection);
+    // クライアントの名乗りも同じ。設定フェーズで受けた値を本編の listener に入れる
+    this.playerBrand = dev.shifu.event.PluginMessages.brandFor(connection);
 
 # handleCustomPayload。vanilla は中身が空(本文も捨てられている)。
 # Bukkit の Messenger へ渡す経路をここで作る。プラグインが無ければ何もしない。

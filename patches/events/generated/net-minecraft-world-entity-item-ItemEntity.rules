@@ -20,13 +20,13 @@ anchor:
 insert:
     if ((dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerAttemptPickupItemEvent.class) || dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerPickupItemEvent.class) || dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityPickupItemEvent.class))) { // Shifu - 登録が無ければ組み立てない
         // CraftBukkit start - fire PlayerPickupItemEvent
-        int canHold = entity.getInventory().canHold(item);
-        int remaining = count - canHold;
+        // Shifu - 局所変数にしない。公式にも int があると @Local int の候補が増えて mixin が当たらない
+        this.shifuCanHold = entity.getInventory().canHold(item);
         boolean flyAtPlayer = false; // Paper
 
         // Paper start - PlayerAttemptPickupItemEvent
         if (this.pickupDelay <= 0) {
-            org.bukkit.event.player.PlayerAttemptPickupItemEvent attemptEvent = new org.bukkit.event.player.PlayerAttemptPickupItemEvent((org.bukkit.entity.Player) entity.getBukkitEntity(), (org.bukkit.entity.Item) this.getBukkitEntity(), remaining);
+            org.bukkit.event.player.PlayerAttemptPickupItemEvent attemptEvent = new org.bukkit.event.player.PlayerAttemptPickupItemEvent((org.bukkit.entity.Player) entity.getBukkitEntity(), (org.bukkit.entity.Item) this.getBukkitEntity(), count - this.shifuCanHold);
             this.level().getCraftServer().getPluginManager().callEvent(attemptEvent);
 
             flyAtPlayer = attemptEvent.getFlyAtPlayer();
@@ -39,10 +39,10 @@ insert:
             }
         }
 
-        if (this.pickupDelay <= 0 && canHold > 0) {
-            item.setCount(canHold);
+        if (this.pickupDelay <= 0 && this.shifuCanHold > 0) {
+            item.setCount(this.shifuCanHold);
             // Call legacy event
-            org.bukkit.event.player.PlayerPickupItemEvent playerEvent = new org.bukkit.event.player.PlayerPickupItemEvent((org.bukkit.entity.Player) entity.getBukkitEntity(), (org.bukkit.entity.Item) this.getBukkitEntity(), remaining);
+            org.bukkit.event.player.PlayerPickupItemEvent playerEvent = new org.bukkit.event.player.PlayerPickupItemEvent((org.bukkit.entity.Player) entity.getBukkitEntity(), (org.bukkit.entity.Item) this.getBukkitEntity(), count - this.shifuCanHold);
             playerEvent.setCancelled(!playerEvent.getPlayer().getCanPickupItems());
             this.level().getCraftServer().getPluginManager().callEvent(playerEvent);
             flyAtPlayer = playerEvent.getFlyAtPlayer(); // Paper
@@ -57,7 +57,7 @@ insert:
             }
 
             // Call newer event afterwards
-            org.bukkit.event.entity.EntityPickupItemEvent entityEvent = new org.bukkit.event.entity.EntityPickupItemEvent(entity.getBukkitEntity(), (org.bukkit.entity.Item) this.getBukkitEntity(), remaining);
+            org.bukkit.event.entity.EntityPickupItemEvent entityEvent = new org.bukkit.event.entity.EntityPickupItemEvent(entity.getBukkitEntity(), (org.bukkit.entity.Item) this.getBukkitEntity(), count - this.shifuCanHold);
             entityEvent.setCancelled(!entityEvent.getEntity().getCanPickupItems());
             this.level().getCraftServer().getPluginManager().callEvent(entityEvent);
             if (entityEvent.isCancelled()) {
@@ -66,17 +66,17 @@ insert:
             }
 
             // Update the ItemStack if it was changed in the event
-            ItemStack current = this.getItem();
-            if (!item.equals(current)) {
-                item = current;
+            // Shifu - 局所変数にしない。公式にも ItemStack があると @Local ItemStack の候補が増えて mixin が当たらない
+            if (!item.equals(this.getItem())) {
+                item = this.getItem();
             } else {
-                item.setCount(canHold + remaining); // = i
+                item.setCount(count); // = canHold + remaining
             }
 
             // Possibly < 0; fix here so we do not have to modify code below
             this.pickupDelay = 0;
         } else if (this.pickupDelay == 0) {
-            // ensure that the code below isn't triggered if canHold says we can't pick the items up
+            // ensure that the code below isn't triggered if shifuCanHold says we can't pick the items up
             this.pickupDelay = -1;
         }
         // CraftBukkit end

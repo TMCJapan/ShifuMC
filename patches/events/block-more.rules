@@ -274,8 +274,8 @@ anchor:
     return getContainerAt(level, pos.relative(blockEntity.facing));
 insert:
     if (dev.shifu.event.BlockEvents.listeningHopperSearch()) {
-        final BlockPos shifuSearch = pos.relative(blockEntity.facing);
-        return dev.shifu.event.BlockEvents.hopperSearch(level, pos, shifuSearch, getContainerAt(level, shifuSearch),
+        // 位置は局所変数に置かずに 2 回組む(公式にも BlockPos の局所変数があり、足すと @Local BlockPos の候補が増える)
+        return dev.shifu.event.BlockEvents.hopperSearch(level, pos, pos.relative(blockEntity.facing), getContainerAt(level, pos.relative(blockEntity.facing)),
                 org.bukkit.event.inventory.HopperInventorySearchEvent.ContainerType.DESTINATION);
     }
 
@@ -285,8 +285,8 @@ anchor:
     return getContainerAt(level, pos, state, hopper.getLevelX(), hopper.getLevelY() + 1.0, hopper.getLevelZ());
 insert:
     if (dev.shifu.event.BlockEvents.listeningHopperSearch()) {
-        final BlockPos shifuHopperPos = BlockPos.containing(hopper.getLevelX(), hopper.getLevelY(), hopper.getLevelZ());
-        return dev.shifu.event.BlockEvents.hopperSearch(level, shifuHopperPos, shifuHopperPos.above(),
+        // 位置は局所変数に置かずに 2 回組む(公式にも BlockPos の局所変数があり、足すと @Local BlockPos の候補が増える)
+        return dev.shifu.event.BlockEvents.hopperSearch(level, BlockPos.containing(hopper.getLevelX(), hopper.getLevelY(), hopper.getLevelZ()), BlockPos.containing(hopper.getLevelX(), hopper.getLevelY(), hopper.getLevelZ()).above(),
                 getContainerAt(level, pos, state, hopper.getLevelX(), hopper.getLevelY() + 1.0, hopper.getLevelZ()),
                 org.bukkit.event.inventory.HopperInventorySearchEvent.ContainerType.SOURCE);
     }
@@ -690,20 +690,18 @@ file: net/minecraft/world/level/block/TargetBlock.java
 anchor:
     if (!level.getBlockTicks().hasScheduledTick(hit.getBlockPos(), state.getBlock())) {
 insert:
-    final int shifuHit = dev.shifu.event.BlockEvents.targetHit(level, hit, projectile, redstoneStrength);
-    if (shifuHit < 0) {
-        return redstoneStrength;
+    if (!dev.shifu.event.BlockEvents.targetHit(level, hit, projectile, redstoneStrength)) {
+        if (dev.shifu.event.BlockEvents.targetHitStrength() < 0) {
+            return redstoneStrength;
+        }
+        redstoneStrength = dev.shifu.event.BlockEvents.targetHitStrength();
     }
-    redstoneStrength = shifuHit;
 
 file: net/minecraft/world/level/block/TargetBlock.java
 anchor:
     level.setBlock(pos, state.setValue(OUTPUT_POWER, power), Block.UPDATE_ALL);
 insert:
-    final int shifuPower = dev.shifu.event.BlockEvents.redstoneChange(level, pos, state.getValue(OUTPUT_POWER), power);
-    if (shifuPower != power) {
-        level.setBlock(pos, state.setValue(OUTPUT_POWER, shifuPower), Block.UPDATE_ALL);
-        level.scheduleTick(pos, state.getBlock(), waitTime);
+    if (!dev.shifu.event.BlockEvents.targetPower(level, pos, state, power, waitTime)) {
         return;
     }
 
@@ -876,13 +874,12 @@ anchor:
     Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), itemStack1);
 insert:
     if (dev.shifu.event.BlockEvents.listeningCook()) {
-        final ItemStack shifuCooked = dev.shifu.event.BlockEvents.cook(level, pos, itemStack, itemStack1,
+        if (!dev.shifu.event.BlockEvents.cook(level, pos, itemStack, itemStack1,
                 (org.bukkit.inventory.CookingRecipe<?>) check.getRecipeFor(singleRecipeInput, level)
-                        .map(net.minecraft.world.item.crafting.RecipeHolder::toBukkitRecipe).orElse(null));
-        if (shifuCooked == null) {
+                        .map(net.minecraft.world.item.crafting.RecipeHolder::toBukkitRecipe).orElse(null))) {
             return;
         }
-        itemStack1 = shifuCooked;
+        itemStack1 = dev.shifu.event.BlockEvents.cookedResult();
     }
 
 # CampfireStartEvent
@@ -903,18 +900,15 @@ insert:
 
 file: net/minecraft/world/level/block/entity/SignBlockEntity.java
 anchor:
-    private SignText setMessages(Player player, List<FilteredText> filteredText, SignText text) {
-insert-after:
-    final SignText shifuOriginalText = text;
-
-file: net/minecraft/world/level/block/entity/SignBlockEntity.java
-anchor:
     return text;
     }
 
     public boolean setText(SignText text, boolean isFrontText) {
 insert:
-    text = dev.shifu.event.BlockEvents.signChange(this, player, shifuOriginalText, text, filteredText);
+    // 元の文は発火層が看板から読む(局所変数に取ると、公式にもある SignText の @Local の候補が増える)
+    if (dev.shifu.event.BlockEvents.signListening()) {
+        text = dev.shifu.event.BlockEvents.signChange(this, player, text, filteredText);
+    }
 
 # PlayerSignCommandPreprocessEvent
 file: net/minecraft/world/level/block/entity/SignBlockEntity.java
@@ -1127,19 +1121,20 @@ insert-after:
 
 # ------------------------------------------------------------ キノコが広がる
 #
-# vanilla は pos を書き換えながら place を探すので、広がりの元は探す前に控える。
+# vanilla は pos を書き換えながら place を探すので、広がりの元は探す前に控える
+# (控えは発火層に置く。局所変数にすると公式にもある BlockPos の @Local の候補が増える)。
 # Paper も同じ理由で sourcePos を足している(Use correct source for mushroom block spread event)。
 file: net/minecraft/world/level/block/MushroomBlock.java
 anchor:
     for (int i2 = 0; i2 < 4; i2++) {
 insert:
-    final BlockPos shifuMushroomSource = pos;
+    dev.shifu.event.BlockEvents.mushroomSource(pos);
 
 file: net/minecraft/world/level/block/MushroomBlock.java
 anchor:
     level.setBlock(blockPos1, state, Block.UPDATE_CLIENTS);
 insert:
-    if (dev.shifu.event.BlockEvents.spreadTo(level, shifuMushroomSource, blockPos1, state)) {
+    if (dev.shifu.event.BlockEvents.mushroomSpread(level, blockPos1, state)) {
 insert-after:
     }
 
@@ -1316,7 +1311,7 @@ file: net/minecraft/world/level/block/FenceBlock.java
 anchor:
         return (InteractionResult)(!level.isClientSide() ? LeadItem.bindPlayerMobs(player, level, pos) : InteractionResult.PASS);
 insert:
-    dev.shifu.event.ItemEvents.leashHand(player, net.minecraft.world.InteractionHand.MAIN_HAND);
+    dev.shifu.event.ItemEvents.leashHand(player, null);
 
 # ------------------------------------------------------------ 戦利品表を器に詰める
 #

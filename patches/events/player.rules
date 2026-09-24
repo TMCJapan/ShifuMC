@@ -77,18 +77,15 @@ insert-after:
 # Paper と同じく動かす前に発火する。取り消されたら null を返す(Paper と同じ)。
 # 行き先が変わったら作り直した TeleportTransition で自分を呼び直す。
 # transition は final なので差し替えられない。呼び直しの中では発火しない。
+# 戻り値は局所変数に置かない(公式にも TeleportTransition の引数があり、@Local の候補が増える)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch:740
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
     ServerLevel level = teleportTransition.newLevel();
 insert:
-    final TeleportTransition shifuTransition = dev.shifu.event.ShifuEvents.playerTeleport(this, teleportTransition);
-    if (shifuTransition == null) {
-        return null;
-    }
-    if (shifuTransition != teleportTransition) {
-        return this.teleport(shifuTransition);
+    if (dev.shifu.event.ShifuEvents.playerTeleport(this, teleportTransition) != teleportTransition) {
+        return dev.shifu.event.ShifuEvents.teleportRedirected(this);
     }
 
 # PlayerChangedWorldEvent
@@ -152,7 +149,7 @@ anchor:
 insert:
     final org.bukkit.event.inventory.InventoryClickEvent shifuClick =
             dev.shifu.event.ShifuEvents.inventoryClick(this.player, packet, slotNum);
-    if (dev.shifu.event.ShifuEvents.containerChanged(this.player, shifuClick)) {
+    if (!dev.shifu.event.ShifuEvents.containerKept(this.player, shifuClick)) {
         this.player.containerMenu.resumeRemoteUpdates();
         this.player.containerMenu.broadcastFullState();
         return;
@@ -193,7 +190,9 @@ file: net/minecraft/server/level/ServerPlayer.java
 anchor:
     this.gameEvent(GameEvent.ENTITY_DIE);
 insert:
-    final boolean shifuDeath = dev.shifu.event.ShifuEvents.listening(org.bukkit.event.entity.PlayerDeathEvent.getHandlerList());
+    // Boolean にしておく。公式の die にも boolean があり、boolean の局所変数を足すと
+    // MixinExtras の @Local boolean の候補が 2 つになって mixin が当たらない
+    final Boolean shifuDeath = dev.shifu.event.ShifuEvents.listening(org.bukkit.event.entity.PlayerDeathEvent.getHandlerList());
 
 file: net/minecraft/server/level/ServerPlayer.java
 anchor:
@@ -234,9 +233,8 @@ file: net/minecraft/server/players/PlayerList.java
 anchor:
     TeleportTransition teleportTransition = player.findRespawnPositionAndUseSpawnBlock(!keepInventory, TeleportTransition.DO_NOTHING);
 insert-after:
-    final TeleportTransition shifuRespawn = dev.shifu.event.ShifuEvents.playerRespawn(player, teleportTransition, keepInventory);
-    if (shifuRespawn != null) {
-        teleportTransition = shifuRespawn;
+    if (dev.shifu.event.ShifuEvents.playerRespawn(player, teleportTransition, keepInventory)) {
+        teleportTransition = dev.shifu.event.ShifuEvents.changedRespawn();
     }
 
 # リスポーンで作り直された ServerPlayer へ、Bukkit の Player を付け替える。
@@ -269,7 +267,7 @@ file: net/minecraft/server/level/ServerPlayerGameMode.java
 anchor:
     if (!stack.isEmpty() && !player.getCooldowns().isOnCooldown(stack)) {
 insert:
-    if (dev.shifu.event.ShifuEvents.interactItemDenied(shifuInteract, player)) {
+    if (!dev.shifu.event.ShifuEvents.interactItemAllowed(shifuInteract, player)) {
         return InteractionResult.PASS;
     }
 
@@ -367,9 +365,8 @@ file: net/minecraft/server/level/ServerPlayer.java
 anchor:
     Either<Player.BedSleepingProblem, Unit> either = super.startSleepInBed(bedPos).ifRight(unit -> {
 insert:
-    final Either<Player.BedSleepingProblem, Unit> shifuBed = dev.shifu.event.ShifuEvents.bedEnter(this, bedPos);
-    if (shifuBed != null) {
-        return shifuBed;
+    if (!dev.shifu.event.ShifuEvents.bedEnter(this, bedPos)) {
+        return Either.left(Player.BedSleepingProblem.OTHER_PROBLEM);
     }
 
 # PlayerItemConsumeEvent
@@ -388,16 +385,14 @@ insert:
 # ---------------------------------------------------------------- AsyncPlayerSendSuggestionsEvent
 #
 # 補完候補を送る直前。候補の差し替えと取り消しが効く。
-# vanilla の送信行はそのまま残し、差し替えられたときだけ別の行で送る。
+# vanilla の送信行はそのまま残し、差し替えられたときは発火層が送る(戻り値を局所変数に
+# 受けると、公式のラムダにもある Suggestions の @Local の候補が増える)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     this.send(new ClientboundCommandSuggestionsPacket(packet.getId(), suggestions1));
 insert:
-    final com.mojang.brigadier.suggestion.Suggestions shifuSuggestions = dev.shifu.event.PlayerEvents.sendSuggestions(this.player, packet.getCommand(), suggestions1);
-    if (shifuSuggestions == suggestions1) {
+    if (dev.shifu.event.PlayerEvents.sendSuggestions(this, packet, suggestions1)) {
 insert-after:
-    } else if (shifuSuggestions != null) {
-        this.send(new ClientboundCommandSuggestionsPacket(packet.getId(), shifuSuggestions));
     }

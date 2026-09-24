@@ -40,14 +40,25 @@ insert:
 insert-after:
     dev.shifu.event.ShifuEvents.blockForm(this, heightmapPos, shifuBlock3, net.minecraft.world.level.block.Block.UPDATE_ALL, null);
 
-# handleBlockFormEvent
+# handleBlockFormEvent(ウィザーに倒されて咲くウィザーローズ)
+# 取り消されたら「置いた」の旗(逆コンパイルの名前は var6、公式は plantedWitherRose)を立てず、
+# すぐ下の「置けなかったら花を落とす」へ進める。Paper は旗に handleBlockFormEvent の結果を入れる。
+# 旗を立てたままだと、取り消しでブロックも花も出ない。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/LivingEntity.java.patch:888
 file: net/minecraft/world/entity/LivingEntity.java
 anchor:
     this.level().setBlock(blockPos, blockState, Block.UPDATE_ALL);
 insert:
     final org.bukkit.craftbukkit.block.CraftBlockState shifuBlock4 = dev.shifu.event.ShifuEvents.blockChangeBefore(this.level(), blockPos, org.bukkit.event.block.BlockFormEvent.getHandlerList());
 insert-after:
-    dev.shifu.event.ShifuEvents.blockForm(this.level(), blockPos, shifuBlock4, Block.UPDATE_ALL, this);
+    if (dev.shifu.event.ShifuEvents.blockForm(this.level(), blockPos, shifuBlock4, Block.UPDATE_ALL, this)) {
+
+file: net/minecraft/world/entity/LivingEntity.java
+anchor:
+    var6 = true;
+insert-after:
+    }
 
 # handleBlockFormEvent
 file: net/minecraft/world/entity/animal/golem/SnowGolem.java

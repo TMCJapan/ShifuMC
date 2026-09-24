@@ -21,7 +21,10 @@ anchor:
     itemStack.setCount(count);
     this.setCarried(itemStack);
 insert-after:
-    dev.shifu.event.ItemEvents.drag(this, shifuDragBefore, this.quickcraftType == QUICKCRAFT_TYPE_GREEDY);
+    // quickcraftType の読みと比較は登録があるとき(控えが null でないとき)だけ
+    if (shifuDragBefore != null) {
+        dev.shifu.event.ItemEvents.drag(this, shifuDragBefore, this.quickcraftType == QUICKCRAFT_TYPE_GREEDY, player);
+    }
 
 # ---------------------------------------------------------------- PrepareResultEvent 系
 #
@@ -134,13 +137,12 @@ file: net/minecraft/world/inventory/LecternMenu.java
 anchor:
     this.setData(0, i - 1);
 insert:
-    final int shifuPage = dev.shifu.event.ItemEvents.lecternPage(this, player,
-            io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection.LEFT, i, i - 1);
-    if (shifuPage == dev.shifu.event.ItemEvents.CANCELLED) {
-        return false;
-    }
-    if (shifuPage != i - 1) {
-        this.setData(0, shifuPage);
+    if (!dev.shifu.event.ItemEvents.lecternPage(this, player,
+            io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection.LEFT, i, i - 1)) {
+        if (dev.shifu.event.ItemEvents.menuChoice() == dev.shifu.event.ItemEvents.CANCELLED) {
+            return false;
+        }
+        this.setData(0, dev.shifu.event.ItemEvents.menuChoice());
         return true;
     }
 
@@ -148,13 +150,12 @@ file: net/minecraft/world/inventory/LecternMenu.java
 anchor:
     this.setData(0, i + 1);
 insert:
-    final int shifuPage = dev.shifu.event.ItemEvents.lecternPage(this, player,
-            io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection.RIGHT, i, i + 1);
-    if (shifuPage == dev.shifu.event.ItemEvents.CANCELLED) {
-        return false;
-    }
-    if (shifuPage != i + 1) {
-        this.setData(0, shifuPage);
+    if (!dev.shifu.event.ItemEvents.lecternPage(this, player,
+            io.papermc.paper.event.player.PlayerLecternPageChangeEvent.PageChangeDirection.RIGHT, i, i + 1)) {
+        if (dev.shifu.event.ItemEvents.menuChoice() == dev.shifu.event.ItemEvents.CANCELLED) {
+            return false;
+        }
+        this.setData(0, dev.shifu.event.ItemEvents.menuChoice());
         return true;
     }
 
@@ -187,14 +188,13 @@ file: net/minecraft/world/inventory/StonecutterMenu.java
 anchor:
     this.setupResultSlot(id);
 insert:
-    final int shifuRecipe = dev.shifu.event.ItemEvents.stonecutterRecipe(this, player, this.recipesForInput, id);
-    if (shifuRecipe == dev.shifu.event.ItemEvents.CANCELLED) {
-        player.containerMenu.sendAllDataToRemote();
-        return false;
-    }
-    if (shifuRecipe != id) {
-        this.selectedRecipeIndex.set(shifuRecipe);
-        this.setupResultSlot(shifuRecipe);
+    if (!dev.shifu.event.ItemEvents.stonecutterRecipe(this, player, this.recipesForInput, id)) {
+        if (dev.shifu.event.ItemEvents.menuChoice() == dev.shifu.event.ItemEvents.CANCELLED) {
+            player.containerMenu.sendAllDataToRemote();
+            return false;
+        }
+        this.selectedRecipeIndex.set(dev.shifu.event.ItemEvents.menuChoice());
+        this.setupResultSlot(dev.shifu.event.ItemEvents.menuChoice());
         return true;
     }
 
@@ -628,7 +628,7 @@ file: net/minecraft/world/item/LeadItem.java
 anchor:
     return bindPlayerMobs(player, level, clickedPos);
 insert:
-    dev.shifu.event.ItemEvents.leashHand(player, context.getHand());
+    dev.shifu.event.ItemEvents.leashHand(player, context);
 
 # HangingPlaceEvent(柵に新しく結び目を作るとき)は 1.21.11 では出せない。
 # vanilla の getOrCreateKnot は「新しく作ったか」を返さず、Paper は
@@ -700,9 +700,8 @@ anchor:
     int min = Math.min(this.getDamageValue() + i, this.getMaxDamage() - 1);
 insert-after:
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerItemDamageEvent.class) && min - this.getDamageValue() > 0) {
-        final int shifuDamage = dev.shifu.event.ItemEvents.itemDamage(this, serverPlayer, min - this.getDamageValue(), damage);
-        if (shifuDamage == 0) {
+        min = dev.shifu.event.ItemEvents.itemDamageTo(this, serverPlayer, min, damage);
+        if (min == dev.shifu.event.ItemEvents.CANCELLED) {
             return;
         }
-        min = Math.min(this.getDamageValue() + shifuDamage, this.getMaxDamage() - 1);
     }

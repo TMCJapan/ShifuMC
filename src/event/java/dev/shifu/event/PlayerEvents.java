@@ -139,17 +139,17 @@ public final class PlayerEvents {
     }
 
     /**
-     * Player.setSleepingIgnored を入れた人が 1 人でも居るか。
-     * 誰も呼んでいなければ全員 false なので、vanilla の判定へ進んでよい。
+     * Player.setSleepingIgnored を入れた人が 1 人も居ないか。
+     * 誰も呼んでいなければ全員 false なので true を返し、vanilla の判定へ進む。
      */
-    public static boolean anySleepIgnored(final java.util.List<ServerPlayer> players) {
+    public static boolean noneSleepIgnored(final java.util.List<ServerPlayer> players) {
         for (final ServerPlayer player : players) {
             if (player.fauxSleeping) {
-                return true;
+                return false;
             }
         }
 
-        return false;
+        return true;
     }
 
     /**
@@ -180,25 +180,40 @@ public final class PlayerEvents {
      * AsyncPlayerSendSuggestionsEvent。補完候補をクライアントへ送る直前。
      *
      * 候補が空のときは既定で取り消し済みにして渡す(Paper と同じ)。登録が無ければ
-     * 発火せず、渡された候補をそのまま返すので vanilla の送信になる。
+     * 発火せず true を返すので vanilla の送信になる。
      *
-     * @return 送る候補。差し替えられていなければ引数と同じもの。取り消されたら null
+     * 差し替えられた候補はここで送る。呼ぶ側で局所変数に受けると、公式のラムダにも
+     * Suggestions があるので MixinExtras の {@code @Local Suggestions} の候補が増える。
+     *
+     * @return vanilla の行で送るか。取り消されたとき、差し替えた候補をここで送ったときは false
      *
      * 読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerGamePacketListenerImpl.java.patch(AsyncPlayerSendSuggestionsEvent)
      */
-    public static com.mojang.brigadier.suggestion.Suggestions sendSuggestions(
-            final ServerPlayer player, final String buffer,
+    public static boolean sendSuggestions(
+            final ServerGamePacketListenerImpl connection,
+            final net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket packet,
             final com.mojang.brigadier.suggestion.Suggestions suggestions) {
         if (!listening(com.destroystokyo.paper.event.brigadier.AsyncPlayerSendSuggestionsEvent.getHandlerList())) {
-            return suggestions;
+            return true;
         }
 
         final com.destroystokyo.paper.event.brigadier.AsyncPlayerSendSuggestionsEvent event =
                 new com.destroystokyo.paper.event.brigadier.AsyncPlayerSendSuggestionsEvent(
-                        player.getBukkitEntity(), suggestions, buffer);
+                        connection.player.getBukkitEntity(), suggestions, packet.getCommand());
         event.setCancelled(suggestions.isEmpty());
 
-        return event.callEvent() ? event.getSuggestions() : null;
+        if (!event.callEvent()) {
+            return false;
+        }
+
+        if (event.getSuggestions() == suggestions) {
+            return true;
+        }
+
+        connection.send(new net.minecraft.network.protocol.game.ClientboundCommandSuggestionsPacket(
+                packet.getId(), event.getSuggestions()));
+
+        return false;
     }
 
     /**
@@ -439,9 +454,18 @@ public final class PlayerEvents {
         return false;
     }
 
-    /** 夜を飛ばす前の時刻。登録が無ければ読まずに 0。 */
-    public static long nightBefore(final ServerLevel level) {
-        return timeListening() ? level.getDayTime() : 0L;
+    /**
+     * 夜を飛ばす前の時刻。{@link #nightBefore} が控え、{@link #nightSkipped} が読む。
+     * 呼ぶ側の局所変数に置くと、公式の {@code ServerLevel.tick} にもある long の局所変数が
+     * 2 つになり、MixinExtras の {@code @Local long} が当たらない。
+     */
+    private static long nightTime;
+
+    /** 夜を飛ばす前の時刻を控える。登録が無ければ読まない。 */
+    public static void nightBefore(final ServerLevel level) {
+        if (timeListening()) {
+            nightTime = level.getDayTime();
+        }
     }
 
     /**
@@ -449,11 +473,12 @@ public final class PlayerEvents {
      *
      * @return 起こしてよいか
      */
-    public static boolean nightSkipped(final ServerLevel level, final long before) {
+    public static boolean nightSkipped(final ServerLevel level) {
         if (!timeListening()) {
             return true;
         }
 
+        final long before = nightTime;
         final long after = level.getDayTime();
         final TimeSkipEvent event = timeSkip(level.getWorld(), TimeSkipEvent.SkipReason.NIGHT_SKIP, after - before);
 
@@ -614,7 +639,7 @@ public final class PlayerEvents {
 
     /**
      * PreCreatureSpawnEvent(自然湧き)。位置の判定の前。取り消しはこの位置を諦める。
-     * {@code shouldAbortSpawn} は控えて、判定のあとで {@link #takeSpawnAbort} が読む。
+     * {@code shouldAbortSpawn} は控えて、判定のあとで {@link #takeSpawnGoesOn} が読む。
      */
     public static boolean preCreatureSpawn(final ServerLevel level, final BlockPos pos, final EntityType<?> type) {
         spawnAbort = false;
@@ -636,24 +661,30 @@ public final class PlayerEvents {
     private static boolean spawnAbort;
 
     /**
-     * 直前の PreCreatureSpawnEvent が「この回の湧きごとやめる」と言ったか。Paper は判定の
-     * 返り値を enum にして呼び出し側で見るが、vanilla の返り値は真偽値なので控えで運ぶ。
+     * 直前の PreCreatureSpawnEvent / PreSpawnerSpawnEvent が「この回の湧きごとやめる」と言っていなければ true。
+     * Paper は判定の返り値を enum にして呼び出し側で見るが、vanilla の返り値は真偽値なので控えで運ぶ。
      */
-    public static boolean takeSpawnAbort() {
+    public static boolean takeSpawnGoesOn() {
         final boolean abort = spawnAbort;
         spawnAbort = false;
 
-        return abort;
+        return !abort;
     }
 
     /**
      * PreSpawnerSpawnEvent。スポナーがエンティティを作る前。
      *
-     * @return 0 = 続ける、1 = この 1 体を飛ばす、2 = このスポナーの残りも止める
+     * <p>取り消されたとき、このスポナーの残りも続けるかは {@link #takeSpawnGoesOn} で渡す。
+     * 3 通りの値を返して呼ぶ側の局所変数に受けると、公式の {@code serverTick} にもある
+     * int の局所変数が増え、MixinExtras の {@code @Local int} が当たらない。
+     *
+     * @return 作ってよいか。false ならこの 1 体を飛ばす
      */
-    public static int preSpawnerSpawn(final ServerLevel level, final Vec3 spawnPos, final EntityType<?> type, final BlockPos pos) {
+    public static boolean preSpawnerSpawn(final ServerLevel level, final Vec3 spawnPos, final EntityType<?> type, final BlockPos pos) {
+        spawnAbort = false;
+
         if (!listening(com.destroystokyo.paper.event.entity.PreSpawnerSpawnEvent.getHandlerList())) {
-            return 0;
+            return true;
         }
 
         final com.destroystokyo.paper.event.entity.PreSpawnerSpawnEvent event = new com.destroystokyo.paper.event.entity.PreSpawnerSpawnEvent(
@@ -662,10 +693,12 @@ public final class PlayerEvents {
                 CraftLocation.toBukkit(pos, level));
 
         if (event.callEvent()) {
-            return 0;
+            return true;
         }
 
-        return event.shouldAbortSpawn() ? 2 : 1;
+        spawnAbort = event.shouldAbortSpawn();
+
+        return false;
     }
 
     /** SpawnerSpawnEvent。世界に入れる直前。 */
@@ -1008,7 +1041,7 @@ public final class PlayerEvents {
     private static boolean swapCancelled;
 
     /**
-     * PlayerSwapHandItemsEvent。入れ替える前。取り消されたら {@link #swapHandsCancelled} が true。
+     * PlayerSwapHandItemsEvent。入れ替える前。取り消されたら {@link #swapHandsGoesOn} が false。
      * 物が差し替えられていたらここで持たせて false。
      *
      * @return vanilla の入れ替えを行ってよいか
@@ -1044,20 +1077,29 @@ public final class PlayerEvents {
         return false;
     }
 
-    public static boolean swapHandsCancelled() {
+    /** {@link #swapHands} が false を返したとき、入れ替えのあとの処理を続けるか。取り消しなら false。読んだら消す。 */
+    public static boolean swapHandsGoesOn() {
         final boolean cancelled = swapCancelled;
         swapCancelled = false;
 
-        return cancelled;
+        return !cancelled;
     }
 
-    /** 本を書き換える前の控え。登録が無ければ null。 */
-    public static ItemStack bookBefore(final ItemStack book) {
+    /**
+     * 本を書き換える前の控え。{@link #bookEdited} が取り出す。登録が無ければ null のまま。
+     *
+     * <p>呼ぶ側の局所変数に置かないのは、公式の {@code updateBookContents} / {@code signBook} にも
+     * ItemStack の局所変数があり、足すと MixinExtras の {@code @Local ItemStack} の候補が増えるから。
+     */
+    private static ItemStack bookCopy;
+
+    /** 本を書き換える前の控えを取る。登録が無ければ何もしない。 */
+    public static void bookBefore(final ItemStack book) {
         if (!listening(org.bukkit.event.player.PlayerEditBookEvent.getHandlerList())) {
-            return null;
+            return;
         }
 
-        return book.copy();
+        bookCopy = book.copy();
     }
 
     /**
@@ -1065,7 +1107,10 @@ public final class PlayerEvents {
      * 中身が差し替えられていたら置き直す。署名の場合は {@code signed} が新しい本で、
      * 取り消されたら元の本をスロットに戻す。
      */
-    public static void bookEdited(final ServerPlayer player, final int slot, final ItemStack before, final ItemStack after, final boolean signing) {
+    public static void bookEdited(final ServerPlayer player, final int slot, final ItemStack after, final boolean signing) {
+        final ItemStack before = bookCopy;
+        bookCopy = null;
+
         if (before == null) {
             return;
         }
@@ -1276,27 +1321,54 @@ public final class PlayerEvents {
         shieldAttacker = attacker;
     }
 
+    private static boolean shieldDisableGoesOn;
+
     /**
      * PlayerShieldDisableEvent。クールダウンを付ける前。
      *
-     * @return 付ける tick 数。取り消されたら -1。攻撃者が置かれていなければ元の値
+     * <p>tick 数が変えられたら、ここで変えた値のクールダウンを付けて false を返す。
+     * 値を戻り値で返して呼ぶ側の局所変数に受けると、公式の {@code disable} にもある
+     * int の局所変数が 2 つになり、MixinExtras の {@code @Local int} が当たらない。
+     *
+     * @return vanilla の行でクールダウンを付けるか。false のときは {@link #shieldDisableGoesOn} で
+     *         続けるか(変えた値を付けた)、抜けるか(取り消し)を見る
      */
-    public static int shieldDisable(final net.minecraft.world.entity.player.Player player, final int cooldownTicks) {
+    public static boolean shieldDisable(final net.minecraft.world.entity.player.Player player, final int cooldownTicks,
+                                        final ItemStack blockingWith) {
+        shieldDisableGoesOn = true;
+
         if (!listening(io.papermc.paper.event.player.PlayerShieldDisableEvent.getHandlerList())) {
-            return cooldownTicks;
+            return true;
         }
 
         final LivingEntity attacker = shieldAttacker;
         shieldAttacker = null;
 
         if (attacker == null) {
-            return cooldownTicks;
+            return true;
         }
 
         final io.papermc.paper.event.player.PlayerShieldDisableEvent event = new io.papermc.paper.event.player.PlayerShieldDisableEvent(
                 (org.bukkit.entity.Player) player.getBukkitEntity(), attacker.getBukkitEntity(), cooldownTicks);
 
-        return event.callEvent() ? event.getCooldown() : -1;
+        if (!event.callEvent()) {
+            shieldDisableGoesOn = false;
+
+            return false;
+        }
+
+        if (event.getCooldown() == cooldownTicks) {
+            return true;
+        }
+
+        player.getCooldowns().addCooldown(blockingWith, event.getCooldown());
+
+        return false;
+    }
+
+    /** {@link #shieldDisable} が false を返したとき、盾を下ろす処理を続けるか。取り消しなら false。 */
+    public static boolean shieldDisableGoesOn() {
+        return shieldDisableGoesOn;
     }
 
     // EntityLungeEvent は 26.x で入った Paper のイベントで、1.21.11 の API には無い。

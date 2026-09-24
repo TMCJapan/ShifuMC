@@ -56,10 +56,10 @@ anchor:
 insert:
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // CraftBukkit start
-        boolean powered = poweredValue;
+        // Shifu - poweredValue を別の boolean に写さない(公式にも boolean があり、足すと @Local boolean の候補が増える)
         org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
-        int old = (powered) ? 15 : 0;
-        int current = (!powered) ? 15 : 0;
+        int old = (poweredValue) ? 15 : 0;
+        int current = (!poweredValue) ? 15 : 0;
 
         org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(block, old, current);
         level.getCraftServer().getPluginManager().callEvent(eventRedstone);

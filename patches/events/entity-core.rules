@@ -86,9 +86,12 @@ anchor:
 insert:
     final int shifuSelf = dev.shifu.event.EntityEvents.unleashSelf(this, player);
     list = dev.shifu.event.EntityEvents.unleashEach(list, player);
-    final boolean shifuHandled = dev.shifu.event.EntityEvents.takeUnleashHandled();
 insert-after:
-    flag = flag || shifuHandled;
+    // 落とさずに外した個体があったかは発火層に持たせる(boolean の局所変数を足すと、
+    // 公式にもある flag と並んで @Local boolean の候補が 2 つになる)
+    if (dev.shifu.event.EntityEvents.takeUnleashHandled()) {
+        flag = true;
+    }
 
 file: net/minecraft/world/entity/Entity.java
 anchor:
@@ -154,7 +157,7 @@ file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
     if (this.followingPlayer == null || this.followingPlayer.isSpectator() || this.followingPlayer.distanceToSqr(this) > 64.0) {
 insert:
-    final Player shifuPrevTarget = this.followingPlayer;
+    dev.shifu.event.EntityEvents.orbTargetBefore(this.followingPlayer);
 
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
@@ -169,12 +172,10 @@ anchor:
     this.setDeltaMovement(this.getDeltaMovement().add(vec3.normalize().scale(d1 * d1 * 0.1)));
     }
 insert:
-    boolean shifuCancelled = false;
-    if (this.followingPlayer != shifuPrevTarget && dev.shifu.event.EntityEvents.targetListening()) {
-        this.followingPlayer = dev.shifu.event.EntityEvents.orbTarget(this, shifuPrevTarget, this.followingPlayer);
-        shifuCancelled = dev.shifu.event.EntityEvents.takeTargetCancelled();
+    if (dev.shifu.event.EntityEvents.orbTargetChanged(this.followingPlayer)) {
+        this.followingPlayer = dev.shifu.event.EntityEvents.orbTarget(this, this.followingPlayer);
     }
-    if (!shifuCancelled) {
+    if (dev.shifu.event.EntityEvents.takeTargetGoesOn()) {
 insert-after:
     }
 
@@ -277,7 +278,7 @@ file: net/minecraft/world/entity/LivingEntity.java
 anchor:
     return this.activeEffects.remove(effect);
 insert:
-    if (!dev.shifu.event.EntityEvents.removeEffect(this, this.activeEffects.get(effect))) {
+    if (!dev.shifu.event.EntityEvents.removeEffect(this, effect)) {
         return null;
     }
 
@@ -904,12 +905,12 @@ insert:
     dev.shifu.event.EntityEvents.exhaustionReason(org.bukkit.event.entity.EntityExhaustionEvent.ExhaustionReason.ATTACK);
 
 # 死亡の経験値のうち、既にあるオーブへ足し込まれる分(ExperienceOrb.award → tryMergeToExisting)。
-# 足し込まれた分は addFreshEntity を通らないので catchDrop で控えられず、死亡イベントの
+# 足し込まれた分は addFreshEntity を通らないので addEntityGoesOn で控えられず、死亡イベントの
 # getDroppedExp に入らず setDroppedExp(0) でも消せなかった。控えている最中だけ、その回を控えに入れて飛ばす。
 file: net/minecraft/world/entity/ExperienceOrb.java
 anchor:
     if (!tryMergeToExisting(level, pos, experienceValue)) {
 insert:
-    if (dev.shifu.event.ShifuEvents.catchAward(pos, direction, experienceValue)) {
+    if (!dev.shifu.event.ShifuEvents.awardGoesOn(pos, direction, experienceValue)) {
         continue;
     }

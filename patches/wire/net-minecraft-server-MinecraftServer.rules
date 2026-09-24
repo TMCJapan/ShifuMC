@@ -59,12 +59,6 @@ anchor:
 insert:
     this.paperConfigurations = dev.shifu.event.ShifuBootstrap.paperConfigurations(dev.shifu.event.ShifuBootstrap.options);
 
-file: net/minecraft/server/MinecraftServer.java
-anchor:
-    LOGGER.info("Stopping server");
-insert:
-    org.spigotmc.WatchdogThread.doStop();
-
 # MinecraftServer.getServer() が返す先。これが入っていないと null が返り、
 # アダプタ層と発火層のほぼ全部が NPE になる。
 #
@@ -96,7 +90,9 @@ file: net/minecraft/server/MinecraftServer.java
 anchor:
     public void tickServer(BooleanSupplier hasTimeLeft) {
 insert-after:
-    org.spigotmc.WatchdogThread.tick();
+    if (dev.shifu.event.ShifuBootstrap.watchdog) {
+        org.spigotmc.WatchdogThread.tick();
+    }
 
 file: net/minecraft/server/MinecraftServer.java
 anchor:

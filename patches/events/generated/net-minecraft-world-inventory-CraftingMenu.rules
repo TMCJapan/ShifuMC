@@ -5,6 +5,8 @@ file: net/minecraft/world/inventory/CraftingMenu.java
 anchor:
     resultSlots.setItem(0, itemStack);
 insert:
+    // Shifu - menu は MOD の作業台のこともある(この static メソッドを MOD が呼ぶ)。getBukkitView の本体を
+    // 持たない型で AbstractMethodError にならないよう ItemEvents.view を通す
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.inventory.PrepareItemCraftEvent.class)) { // Shifu - 登録が無ければ組み立てない
-        itemStack = org.bukkit.craftbukkit.event.CraftEventFactory.callPreCraftEvent(craftSlots, resultSlots, itemStack, menu.getBukkitView(), recipeFor.map(RecipeHolder::value).orElse(null) instanceof net.minecraft.world.item.crafting.RepairItemRecipe); // CraftBukkit
+        itemStack = org.bukkit.craftbukkit.event.CraftEventFactory.callPreCraftEvent(craftSlots, resultSlots, itemStack, dev.shifu.event.ItemEvents.view(menu, player), recipeFor.map(RecipeHolder::value).orElse(null) instanceof net.minecraft.world.item.crafting.RepairItemRecipe); // CraftBukkit
     }

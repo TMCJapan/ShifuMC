@@ -1,11 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-only
 package dev.shifu.bootstrap;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.impl.FabricLoaderImpl;
+import net.fabricmc.loader.impl.util.LoaderUtil;
+import net.fabricmc.loader.impl.util.UrlUtil;
 
 /**
  * Paper のバイトコードから呼び返されるフック。
@@ -68,5 +79,41 @@ public final class ShifuHooks {
 
 	static boolean modsInitialized() {
 		return modsInitialized;
+	}
+
+	private static volatile Set<Path> serverCodeSources = Set.of();
+	/** サーバーの jar だけを見る。親は無し(= 起動クラスローダ)。クラスの定義には使わず、findResource だけ呼ぶ。 */
+	private static volatile URLClassLoader serverJars = new URLClassLoader(new URL[0], null);
+
+	/** ShifuGameProvider.unlockClassPath から。Paper の jar と bundler のライブラリ。 */
+	static void setServerCodeSources(Collection<Path> paths) {
+		Set<Path> normalized = new HashSet<>();
+		List<URL> urls = new ArrayList<>();
+
+		for (Path path : paths) {
+			Path real = LoaderUtil.normalizeExistingPath(path);
+			normalized.add(real);
+
+			try {
+				urls.add(UrlUtil.asUrl(real));
+			} catch (MalformedURLException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		serverCodeSources = Set.copyOf(normalized);
+		serverJars = new URLClassLoader(urls.toArray(new URL[0]), null);
+	}
+
+	/**
+	 * プラグインのクラスローダの親を {@link ModHidingClassLoader} に差し替える。
+	 *
+	 * <p>PaperCompatRules の {@code WrapPluginParent} が、Paper のプラグイン用クラスローダを作る
+	 * {@code URLClassLoader} の構築子呼び出しの直前に差し込む。
+	 */
+	public static ClassLoader pluginParent(ClassLoader parent) {
+		if (parent instanceof ModHidingClassLoader) return parent;
+
+		return new ModHidingClassLoader(parent, serverCodeSources, serverJars);
 	}
 }

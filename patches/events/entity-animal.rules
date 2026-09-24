@@ -64,6 +64,24 @@ insert-after:
         return;
     }
 
+# 保存からの読み戻し。Paper は readAdditionalSaveData の呼び出しだけ発火の引数に false を渡す。
+# Shifu は発火を setter の先頭に差し込んでいるので、その行の前後で発火を止める。
+file: net/minecraft/world/entity/TamableAnimal.java
+anchor:
+    this.setInSittingPose(this.orderedToSit);
+insert:
+    dev.shifu.event.AnimalEvents.sitFromSave(true);
+insert-after:
+    dev.shifu.event.AnimalEvents.sitFromSave(false);
+
+file: net/minecraft/world/entity/animal/fox/Fox.java
+anchor:
+    this.setSitting(input.getBooleanOr("Sitting", false));
+insert:
+    dev.shifu.event.AnimalEvents.sitFromSave(true);
+insert-after:
+    dev.shifu.event.AnimalEvents.sitFromSave(false);
+
 # ============================================================ 飼われている動物
 
 # TameableDeathMessageEvent。文が差し替えられていれば発火層が送り、vanilla の送信は飛ばす。
@@ -257,6 +275,40 @@ insert-after:
     if (!dev.shifu.event.AnimalEvents.tame(this, player)) {
         this.level().broadcastEntityEvent(this, EntityEvent.TAMING_FAILED);
         return InteractionResult.SUCCESS;
+    }
+
+# ============================================================ ヤギの突進の相手(EntityTargetLivingEntityEvent)
+#
+# Paper は start の Optional の鎖に .map のラムダを足して発火する。ここにラムダを足すと
+# PrepareRamNearestTarget の vanilla のラムダの番号が繰り下がる。Shifu は選ばれた相手を受け取る
+# chooseRamPosition の先頭で発火し、start から来たときだけ出す(tick も相手が動いたときに
+# chooseRamPosition を呼ぶが、Paper はそこでは出さない)。取り消されたら何も選ばずに抜ける
+# (Paper の .map が null を返して ifPresent が走らないのと同じ)。相手が変えられたら、その相手で
+# chooseRamPosition を呼び直す(引数はラムダが捕まえているので代入できない)。
+# 登録が無ければ ramStart は旗を立てず、ramTarget はすぐ true を返す。
+#
+# 読んだ位置: paper-server patches/sources/net/minecraft/world/entity/ai/behavior/PrepareRamNearestTarget.java.patch
+file: net/minecraft/world/entity/ai/behavior/PrepareRamNearestTarget.java
+anchor:
+    brain.getMemory(MemoryModuleType.NEAREST_VISIBLE_LIVING_ENTITIES)
+insert:
+    dev.shifu.event.EntityEvents.ramStart(true);
+
+file: net/minecraft/world/entity/ai/behavior/PrepareRamNearestTarget.java
+anchor:
+    .ifPresent(entity1 -> this.chooseRamPosition(entity, entity1));
+insert-after:
+    dev.shifu.event.EntityEvents.ramStart(false);
+
+file: net/minecraft/world/entity/ai/behavior/PrepareRamNearestTarget.java
+anchor:
+    private void chooseRamPosition(PathfinderMob pathfinder, LivingEntity entity) {
+insert-after:
+    if (!dev.shifu.event.EntityEvents.ramTarget(pathfinder, entity)) {
+        if (dev.shifu.event.EntityEvents.changedRamTarget() != null) {
+            this.chooseRamPosition(pathfinder, dev.shifu.event.EntityEvents.changedRamTarget());
+        }
+        return;
     }
 
 # ============================================================ 誘い(EntityTargetLivingEntityEvent TEMPT)
@@ -518,11 +570,10 @@ file: net/minecraft/world/entity/monster/zombie/Zombie.java
 anchor:
     target.igniteForSeconds(2 * (int)effectiveDifficulty);
 insert:
-    final float shifuBurn = dev.shifu.event.AnimalEvents.combustByEntity(this, target, 2 * (int)effectiveDifficulty);
-    if (shifuBurn == 2 * (int)effectiveDifficulty) {
+    // 秒数が変わったときは発火層が点火する(秒数を局所変数に受けると、公式の doHurtTarget にも
+    // float があるので @Local float の候補が増える)
+    if (dev.shifu.event.EntityEvents.combustByEntity(this, target, 2 * (int)effectiveDifficulty)) {
 insert-after:
-    } else if (shifuBurn >= 0.0F) {
-        target.igniteForSeconds(shifuBurn);
     }
 
 # PigZombieAngerEvent。怒りの長さは 1 回だけ引く(登録が無ければ vanilla の行がそのまま引く)。
@@ -569,15 +620,16 @@ file: net/minecraft/world/entity/raid/Raids.java
 anchor:
     Raid raid = this.getOrCreateRaid(serverLevel, blockPos);
 insert-after:
-    final boolean shifuNewRaid = dev.shifu.event.AnimalEvents.raidTriggerListening()
-            && !raid.isStarted() && !this.raidMap.containsValue(raid);
+    if (dev.shifu.event.AnimalEvents.raidTriggerListening()) {
+        dev.shifu.event.AnimalEvents.raidNew(!raid.isStarted() && !this.raidMap.containsValue(raid));
+    }
 
 file: net/minecraft/world/entity/raid/Raids.java
 anchor:
     raid.absorbRaidOmen(player);
 insert:
     if (!dev.shifu.event.AnimalEvents.raidTrigger(serverLevel, raid, player)) {
-        if (shifuNewRaid) {
+        if (dev.shifu.event.AnimalEvents.takeRaidNew()) {
             this.raidMap.values().remove(raid);
         }
         player.removeEffect(net.minecraft.world.effect.MobEffects.RAID_OMEN);

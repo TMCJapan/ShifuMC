@@ -8,9 +8,9 @@ insert:
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockDispenseEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // CraftBukkit start
         ServerLevel serverLevel = blockSource.level();
-        ItemStack singleItemStack = item.copyWithCount(1);
+        // Shifu - 局所変数にしない。公式にも ItemStack があると @Local ItemStack の候補が増えて mixin が当たらない
         org.bukkit.block.Block block = org.bukkit.craftbukkit.block.CraftBlock.at(serverLevel, blockSource.pos());
-        org.bukkit.craftbukkit.inventory.CraftItemStack craftItem = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(singleItemStack);
+        org.bukkit.craftbukkit.inventory.CraftItemStack craftItem = org.bukkit.craftbukkit.inventory.CraftItemStack.asCraftMirror(item.copyWithCount(1));
 
         org.bukkit.event.block.BlockDispenseEvent event = new org.bukkit.event.block.BlockDispenseEvent(block, craftItem.clone(), new org.bukkit.util.Vector(0, 0, 0));
         serverLevel.getCraftServer().getPluginManager().callEvent(event);
@@ -23,15 +23,15 @@ insert:
         if (!event.getItem().equals(craftItem)) {
             shrink = false;
             // Chain to handler for new item
-            ItemStack eventStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItem());
-            DispenseItemBehavior dispenseBehavior = DispenserBlock.getDispenseBehavior(blockSource, eventStack);
+            // Shifu - 局所変数にしない。公式にも ItemStack があると @Local ItemStack の候補が増えて mixin が当たらない
+            // (写しを 2 回作る。中身は同じなので getDispenseBehavior の答えも同じ)
+            DispenseItemBehavior dispenseBehavior = DispenserBlock.getDispenseBehavior(blockSource, org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItem()));
             if (dispenseBehavior != DispenseItemBehavior.NOOP && dispenseBehavior != this) {
-                dispenseBehavior.dispense(blockSource, eventStack);
+                dispenseBehavior.dispense(blockSource, org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItem()));
                 return item;
             }
             // Paper start - track changed items in the dispense event
-            singleItemStack = org.bukkit.craftbukkit.inventory.CraftItemStack.unwrap(event.getItem()); // unwrap is safe because the stack won't be modified
-            type = ((SpawnEggItem) singleItemStack.getItem()).getType(singleItemStack);
+            type = ((SpawnEggItem) org.bukkit.craftbukkit.inventory.CraftItemStack.unwrap(event.getItem()).getItem()).getType(org.bukkit.craftbukkit.inventory.CraftItemStack.unwrap(event.getItem())); // unwrap is safe because the stack won't be modified
             // Paper end - track changed item from dispense event
         }
     }
@@ -44,7 +44,6 @@ insert:
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockDispenseEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // CraftBukkit start
         BlockState state = level.getBlockState(blockPos);
-        ItemStack dispensedItem = item; // Paper - track changed item from the dispense event
         // Paper start - correctly check if the bucket place will succeed
         /* Taken from SolidBucketItem#emptyContents */
         boolean willEmptyContentsSolidBucketItem = dispensibleContainerItem instanceof net.minecraft.world.item.SolidBucketItem && level.isInWorldBounds(blockPos) && state.isAir();
@@ -64,17 +63,18 @@ insert:
 
             if (!event.getItem().equals(craftItem)) {
                 // Chain to handler for new item
-                ItemStack eventStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItem());
-                DispenseItemBehavior dispenseBehavior = DispenserBlock.getDispenseBehavior(blockSource, eventStack);
+                // Shifu - 局所変数にしない。公式にも ItemStack があると @Local ItemStack の候補が増えて mixin が当たらない
+                // (写しを 2 回作る。中身は同じなので getDispenseBehavior の答えも同じ)
+                DispenseItemBehavior dispenseBehavior = DispenserBlock.getDispenseBehavior(blockSource, org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItem()));
                 if (dispenseBehavior != DispenseItemBehavior.NOOP && dispenseBehavior != this) {
-                    dispenseBehavior.dispense(blockSource, eventStack);
+                    dispenseBehavior.dispense(blockSource, org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItem()));
                     return item;
                 }
             }
 
             // Paper start - track changed item from dispense event
-            dispensedItem = org.bukkit.craftbukkit.inventory.CraftItemStack.unwrap(event.getItem()); // unwrap is safe here as the stack isn't mutated
-            dispensibleContainerItem = (DispensibleContainerItem) dispensedItem.getItem();
+            // Shifu - 局所変数にしない。公式にも ItemStack があると @Local ItemStack の候補が増えて mixin が当たらない
+            dispensibleContainerItem = (DispensibleContainerItem) org.bukkit.craftbukkit.inventory.CraftItemStack.unwrap(event.getItem()).getItem(); // unwrap is safe here as the stack isn't mutated
             // Paper end - track changed item from dispense event
         }
         // CraftBukkit end
@@ -87,9 +87,10 @@ anchor:
 insert:
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockDispenseEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // Paper start - Call BlockDispenseEvent
-        ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this);
-        if (result != null) {
-            return result;
+        // Shifu - 局所変数にしない。公式にも ItemStack があると @Local ItemStack の候補が増えて mixin が当たらない
+        // handleBlockDispenseEvent は null か、渡した item をそのまま返す(読んだ位置: paper-server/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:2247)
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this) != null) {
+            return item;
         }
         // Paper end - Call BlockDispenseEvent
         itemStack = bucketPickup.pickupBlock(null, levelAccessor, blockPos, blockState); // CraftBukkit - from above
@@ -103,10 +104,11 @@ anchor:
 insert:
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockDispenseEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // Paper start - Call BlockDispenseEvent
-        ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this);
-        if (result != null) {
+        // Shifu - 局所変数にしない。公式にも ItemStack があると @Local ItemStack の候補が増えて mixin が当たらない
+        // handleBlockDispenseEvent は null か、渡した item をそのまま返す(読んだ位置: paper-server/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:2247)
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this) != null) {
             this.setSuccess(false);
-            return result;
+            return item;
         }
         // Paper end - Call BlockDispenseEvent
     }
@@ -130,10 +132,11 @@ anchor:
 insert:
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockDispenseEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // Paper start - Call BlockDispenseEvent
-        ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this);
-        if (result != null) {
+        // Shifu - 局所変数にしない。公式にも ItemStack があると @Local ItemStack の候補が増えて mixin が当たらない
+        // handleBlockDispenseEvent は null か、渡した item をそのまま返す(読んだ位置: paper-server/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:2247)
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this) != null) {
             this.setSuccess(false);
-            return result;
+            return item;
         }
         // Paper end - Call BlockDispenseEvent
         level.captureTreeGeneration = true; // CraftBukkit
@@ -146,9 +149,10 @@ anchor:
 insert:
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockDispenseEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // Paper start - Call BlockDispenseEvent
-        ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this);
-        if (result != null) {
-            return result;
+        // Shifu - 局所変数にしない。公式にも ItemStack があると @Local ItemStack の候補が増えて mixin が当たらない
+        // handleBlockDispenseEvent は null か、渡した item をそのまま返す(読んだ位置: paper-server/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:2247)
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos, item, this) != null) {
+            return item;
         }
         // Paper end - Call BlockDispenseEvent
     }
@@ -160,9 +164,10 @@ anchor:
 insert:
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockDispenseEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // Paper start - Call BlockDispenseEvent
-        ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos1, item, this);
-        if (result != null) {
-            return result;
+        // Shifu - 局所変数にしない。公式にも ItemStack があると @Local ItemStack の候補が増えて mixin が当たらない
+        // handleBlockDispenseEvent は null か、渡した item をそのまま返す(読んだ位置: paper-server/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:2247)
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(blockSource, blockPos1, item, this) != null) {
+            return item;
         }
         // Paper end - Call BlockDispenseEvent
     }

@@ -46,7 +46,12 @@ final class InventoryClicks {
             return null;
         }
 
-        final InventoryView view = menu.getBukkitView();
+        final InventoryView view = ItemEvents.view(menu, player);
+
+        if (view == null) {
+            return null;
+        }
+
         final SlotType type = view.getSlotType(slotIndex);
         final int button = packet.buttonNum();
         ClickType click = ClickType.UNKNOWN;

@@ -142,4 +142,33 @@ public final class ShifuBootstrap {
         exit.setDaemon(true);
         exit.start();
     }
+
+    /**
+     * Paper の watchdog({@code org.spigotmc.WatchdogThread})を起動したか。
+     * {@code tickServer} の頭と起動の終わりは、これが立っているときだけ watchdog に知らせる。
+     */
+    public static boolean watchdog;
+
+    /**
+     * プラグインがあれば Paper の watchdog を起動する。プラグインを読んだあと、STARTUP の enable の前に呼ぶ。
+     *
+     * <p>プラグインが無ければ起動しない。vanilla の {@code ServerWatchdog}(max-tick-time)は Shifu では
+     * 止めていない(Paper は {@code if (false && ...)} で止めて WatchdogThread に置き換える)ので、
+     * vanilla と同じ watchdog が動いている。WatchdogThread も起動すると、10 秒止まった tick で
+     * vanilla には無いスレッドの dump が 5 秒ごとにログに出る。起動するのは WorldEdit のように
+     * {@code WatchdogThread.tick()} を呼ぶプラグインのため(instance が null だと //set が止まる)。
+     *
+     * <p>読んだ位置: paper-server patches/sources/net/minecraft/server/dedicated/DedicatedServer.java.patch
+     * ({@code if (false && this.getMaxTickLength() > 0L) { // Spigot - disable})、
+     * paper-server src/main/java/org/spigotmc/WatchdogThread.java(run)、
+     * paper-server src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java:155-156(5000 / 10000 ms)
+     */
+    public static void startWatchdog(final org.bukkit.Server server) {
+        if (server.getPluginManager().getPlugins().length == 0) {
+            return;
+        }
+
+        org.spigotmc.WatchdogThread.doStart(org.spigotmc.SpigotConfig.timeoutTime, org.spigotmc.SpigotConfig.restartOnCrash);
+        watchdog = true;
+    }
 }

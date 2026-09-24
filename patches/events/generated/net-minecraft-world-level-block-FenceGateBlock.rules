@@ -7,10 +7,10 @@ anchor:
 insert:
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // CraftBukkit start
-        boolean oldPowered = state.getValue(FenceGateBlock.POWERED);
-        if (oldPowered != hasNeighborSignal) {
+        // Shifu - 局所変数にしない。公式にも boolean があると @Local boolean の候補が増えて mixin が当たらない
+        if (state.getValue(FenceGateBlock.POWERED) != hasNeighborSignal) {
             int newPower = hasNeighborSignal ? 15 : 0;
-            int oldPower = oldPowered ? 15 : 0;
+            int oldPower = state.getValue(FenceGateBlock.POWERED) ? 15 : 0;
             org.bukkit.block.Block bukkitBlock = org.bukkit.craftbukkit.block.CraftBlock.at(level, pos);
             org.bukkit.event.block.BlockRedstoneEvent eventRedstone = new org.bukkit.event.block.BlockRedstoneEvent(bukkitBlock, oldPower, newPower);
             level.getCraftServer().getPluginManager().callEvent(eventRedstone);

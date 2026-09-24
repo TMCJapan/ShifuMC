@@ -2,16 +2,15 @@
 
 # ServerCommandEvent
 #
-# コンソールの入力を実行する直前。取り消されたら飛ばし、文が差し替えられていれば
-# 差し替えた入力で実行する。input は vanilla の局所変数(final ではない)。
+# コンソールの入力を実行する直前。取り消されたら飛ばす。文が差し替えられていれば
+# 発火層が差し替えた文で実行し、vanilla の行は飛ばす(差し替えた入力を局所変数に置くと、
+# 公式にもある ConsoleInput の局所変数が 2 つになり @Local ConsoleInput が当たらない)。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/dedicated/DedicatedServer.java.patch(ServerCommandEvent)
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
     ConsoleInput consoleInput = this.consoleInput.remove(0);
 insert-after:
-    final ConsoleInput shifuInput = dev.shifu.event.ShifuEvents.serverCommand(this, consoleInput);
-    if (shifuInput == null) {
+    if (!dev.shifu.event.ShifuEvents.serverCommand(this, consoleInput)) {
         continue;
     }
-    consoleInput = shifuInput;

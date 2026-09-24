@@ -65,14 +65,14 @@ insert:
         double z = this.player.getZ();
         Vec3 from = new Vec3(x, eyeY, z);
 
-        float f3 = Mth.cos(-f * 0.017453292F - 3.1415927F);
-        float f4 = Mth.sin(-f * 0.017453292F - 3.1415927F);
-        float f5 = -Mth.cos(-f1 * 0.017453292F);
-        float f6 = Mth.sin(-f1 * 0.017453292F);
-        float f7 = f4 * f5;
-        float f8 = f3 * f5;
+        // Shifu - float の局所変数にしない。公式の handleUseItem にも float(向き)があり、足すと
+        // @Local float の候補が増えて mixin が当たらない。式は Paper の f3〜f8 を順に埋めたもの
+        // (f7 = f4 * f5、f8 = f3 * f5 を float のまま掛けてから double にする)
         double d3 = this.player.blockInteractionRange();
-        Vec3 to = from.add((double) f7 * d3, (double) f6 * d3, (double) f8 * d3);
+        Vec3 to = from.add(
+            (double) (Mth.sin(-f * 0.017453292F - 3.1415927F) * -Mth.cos(-f1 * 0.017453292F)) * d3,
+            (double) Mth.sin(-f1 * 0.017453292F) * d3,
+            (double) (Mth.cos(-f * 0.017453292F - 3.1415927F) * -Mth.cos(-f1 * 0.017453292F)) * d3);
         BlockHitResult hitResult = this.player.level().clip(new net.minecraft.world.level.ClipContext(from, to, net.minecraft.world.level.ClipContext.Block.OUTLINE, net.minecraft.world.level.ClipContext.Fluid.NONE, this.player));
 
         boolean cancelled;
@@ -215,16 +215,13 @@ insert:
     if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.packet.UncheckedSignChangeEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // Paper start - Add API for client-side signs
         // Paper は Stream.map のラムダで書いているが、ここに足すと
-        // ServerGamePacketListenerImpl の vanilla のラムダの番号が繰り下がる。数え上げで書く。
-        final java.util.List<net.kyori.adventure.text.Component> shifuLines = new java.util.ArrayList<>(filteredText.size());
-        for (final net.minecraft.server.network.FilteredText line : filteredText) {
-            shifuLines.add(net.kyori.adventure.text.Component.text(line.raw()));
-        }
+        // ServerGamePacketListenerImpl の vanilla のラムダの番号が繰り下がる。
+        // 並びを局所変数に置くと、公式にもある List の @Local の候補が増える。発火層で作る。
         if (!new io.papermc.paper.event.packet.UncheckedSignChangeEvent(
             this.player.getBukkitEntity(),
             io.papermc.paper.util.MCUtil.toPosition(pos),
             packet.isFrontText() ? org.bukkit.block.sign.Side.FRONT : org.bukkit.block.sign.Side.BACK,
-            shifuLines)
+            dev.shifu.event.BlockEvents.rawSignLines(filteredText))
             .callEvent()) {
             return;
         }

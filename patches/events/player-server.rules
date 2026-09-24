@@ -182,13 +182,13 @@ anchor:
     if (this.sleepStatus.areEnoughSleeping(i) && this.sleepStatus.areEnoughDeepSleeping(i, this.players)) {
 insert-after:
     boolean shifuWake = true;
-    final long shifuNight = dev.shifu.event.PlayerEvents.nightBefore(this);
+    dev.shifu.event.PlayerEvents.nightBefore(this);
 
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
     this.setDayTime(l - l % 24000L);
 insert-after:
-    shifuWake = dev.shifu.event.PlayerEvents.nightSkipped(this, shifuNight);
+    shifuWake = dev.shifu.event.PlayerEvents.nightSkipped(this);
 
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
@@ -277,10 +277,9 @@ file: net/minecraft/world/level/BaseSpawner.java
 anchor:
     Entity entity = EntityType.loadEntityRecursive(valueInput, level, EntitySpawnReason.SPAWNER, entity1 -> {
 insert:
-    final int shifuPre = dev.shifu.event.PlayerEvents.preSpawnerSpawn(level, vec3, optional.get(), pos);
-    if (shifuPre != 0) {
+    if (!dev.shifu.event.PlayerEvents.preSpawnerSpawn(level, vec3, optional.get(), pos)) {
         flag = true;
-        if (shifuPre == 2) {
+        if (!dev.shifu.event.PlayerEvents.takeSpawnGoesOn()) {
             break;
         }
         continue;
@@ -444,7 +443,7 @@ anchor:
     }
     }
 insert-after:
-    if (dev.shifu.event.PlayerEvents.takeSpawnAbort()) {
+    if (!dev.shifu.event.PlayerEvents.takeSpawnGoesOn()) {
         return;
     }
 
@@ -546,7 +545,7 @@ anchor:
 insert:
     if (dev.shifu.event.PlayerEvents.swapHands(this.player, itemInHand1)) {
 insert-after:
-    } else if (dev.shifu.event.PlayerEvents.swapHandsCancelled()) {
+    } else if (!dev.shifu.event.PlayerEvents.swapHandsGoesOn()) {
         return;
     }
 
@@ -574,18 +573,18 @@ file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     item.set(DataComponents.WRITABLE_BOOK_CONTENT, new WritableBookContent(list));
 insert:
-    final ItemStack shifuBook = dev.shifu.event.PlayerEvents.bookBefore(item);
+    dev.shifu.event.PlayerEvents.bookBefore(item);
 insert-after:
-    dev.shifu.event.PlayerEvents.bookEdited(this.player, index, shifuBook, item, false);
+    dev.shifu.event.PlayerEvents.bookEdited(this.player, index, item, false);
 
 # PlayerEditBookEvent(署名)。スロットに置いたあと
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     this.player.getInventory().setItem(index, itemStack);
 insert:
-    final ItemStack shifuSigned = dev.shifu.event.PlayerEvents.bookBefore(item);
+    dev.shifu.event.PlayerEvents.bookBefore(item);
 insert-after:
-    dev.shifu.event.PlayerEvents.bookEdited(this.player, index, shifuSigned, itemStack, true);
+    dev.shifu.event.PlayerEvents.bookEdited(this.player, index, itemStack, true);
 
 # ============================================================ 効果・盾・エンチャント
 
@@ -605,14 +604,12 @@ file: net/minecraft/world/item/component/BlocksAttacks.java
 anchor:
     player.getCooldowns().addCooldown(stack, i);
 insert:
-    final int shifuCooldown = dev.shifu.event.PlayerEvents.shieldDisable(player, i);
-    if (shifuCooldown < 0) {
-        return;
-    }
-    if (shifuCooldown == i) {
-insert-after:
+    if (!dev.shifu.event.PlayerEvents.shieldDisable(player, i, stack)) {
+        if (!dev.shifu.event.PlayerEvents.shieldDisableGoesOn()) {
+            return;
+        }
     } else {
-        player.getCooldowns().addCooldown(stack, shifuCooldown);
+insert-after:
     }
 
 # EntityCombustByEntityEvent / EntityCombustEvent(火属性)

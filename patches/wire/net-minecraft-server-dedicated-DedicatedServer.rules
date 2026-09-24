@@ -49,19 +49,22 @@ insert-after:
 # 読んだ位置: paper-server patches/sources/net/minecraft/server/dedicated/DedicatedServer.java.patch
 #            worldedit@7.4.5 worldedit-bukkit/adapters/.../PaperweightAdapter.java:1228-1252
 # WatchdogThread の作成は GlobalConfiguration.get() を読むので、設定が入ったあとに置く。
+# プラグインが無ければ起動しない(理由は ShifuBootstrap.startWatchdog)。
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
     this.tickTimeLogger = new RemoteSampleLogger(TpsDebugDimensions.values().length, this.debugSubscribers(), RemoteDebugSampleType.TICK_TIME);
 insert:
-    org.spigotmc.WatchdogThread.doStart(org.spigotmc.SpigotConfig.timeoutTime, org.spigotmc.SpigotConfig.restartOnCrash);
+    dev.shifu.event.ShifuBootstrap.startWatchdog(this.server);
 
 # 起動が終わったことを watchdog に伝える。ここまでは長くかかっても落とさない
 file: net/minecraft/server/dedicated/DedicatedServer.java
 anchor:
     LOGGER.info("Done ({})! For help, type \"help\"", string3);
 insert-after:
-    org.spigotmc.WatchdogThread.tick();
-    org.spigotmc.WatchdogThread.hasStarted = true;
+    if (dev.shifu.event.ShifuBootstrap.watchdog) {
+        org.spigotmc.WatchdogThread.tick();
+        org.spigotmc.WatchdogThread.hasStarted = true;
+    }
 
 # プラグインのログを log4j に流す。
 #

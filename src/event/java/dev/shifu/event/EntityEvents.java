@@ -212,10 +212,10 @@ public final class EntityEvents {
     }
 
     /**
-     * EntityCombustByEntityEvent(矢、小さな火の玉)。{@code X.igniteForSeconds(5.0F)} を囲む。
+     * EntityCombustByEntityEvent(矢、小さな火の玉、ゾンビの攻撃)。{@code X.igniteForSeconds(秒)} を囲む。
      *
      * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/projectile/arrow/AbstractArrow.java.patch、
-     * .../hurtingprojectile/SmallFireball.java.patch
+     * .../hurtingprojectile/SmallFireball.java.patch、.../monster/zombie/Zombie.java.patch
      */
     public static boolean combustByEntity(final Entity combuster, final Entity entity, final float seconds) {
         if (!listening(EntityCombustEvent.getHandlerList())) {
@@ -657,21 +657,104 @@ public final class EntityEvents {
         new EntityRemoveEvent(entity.getBukkitEntity(), cause).callEvent();
     }
 
+    // ------------------------------------------------------------ ヤギの突進の相手
+
+    /** {@code PrepareRamNearestTarget.start} が相手を選んでいる間(登録があるときだけ真)。 */
+    private static boolean ramStarting;
+    private static LivingEntity ramChanged;
+
+    /**
+     * {@code PrepareRamNearestTarget.start} の、相手を選ぶ文の前後で呼ぶ。
+     *
+     * <p>Paper はその文の Optional に {@code .map} のラムダを足して EntityTargetLivingEntityEvent を出す。
+     * vanilla のクラスにラムダを足すと後ろのラムダの番号が繰り下がり、名前で狙う mixin が外れる。
+     * Shifu は選んだ相手を受け取る {@code chooseRamPosition} の先頭で出し、そこへ来たのが
+     * {@code start} からかどうかをこの旗で見分ける({@code tick} も相手が動いたときに同じメソッドを呼ぶが、
+     * Paper はそこでは出さない)。
+     *
+     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/ai/behavior/PrepareRamNearestTarget.java.patch
+     */
+    public static void ramStart(final boolean starting) {
+        ramStarting = starting && listening(EntityTargetEvent.getHandlerList());
+    }
+
+    /**
+     * EntityTargetLivingEntityEvent(ヤギが突進の相手を決めた)。{@code chooseRamPosition} の先頭。
+     * {@link #ramStart} の間だけ出す。
+     *
+     * @return 渡された相手のまま vanilla を続けてよいか。false なら {@link #changedRamTarget} を見る
+     *         (null なら取り消し。Paper と同じく、相手も位置も選ばなかったことにする)
+     */
+    public static boolean ramTarget(final Mob body, final LivingEntity target) {
+        if (!ramStarting) {
+            return true;
+        }
+
+        ramStarting = false;
+
+        final EntityTargetLivingEntityEvent event = CraftEventFactory.callEntityTargetLivingEvent(body, target,
+                target instanceof ServerPlayer
+                        ? EntityTargetEvent.TargetReason.CLOSEST_PLAYER
+                        : EntityTargetEvent.TargetReason.CLOSEST_ENTITY);
+
+        if (event.isCancelled() || event.getTarget() == null) {
+            ramChanged = null;
+
+            return false;
+        }
+
+        final LivingEntity chosen = ((CraftLivingEntity) event.getTarget()).getHandle();
+
+        if (chosen == target) {
+            return true;
+        }
+
+        ramChanged = chosen;
+
+        return false;
+    }
+
+    /** {@link #ramTarget} が false を返したときの相手。取り消しなら null。 */
+    public static LivingEntity changedRamTarget() {
+        return ramChanged;
+    }
+
     // ------------------------------------------------------------ 経験値オーブ
 
     private static boolean targetCancelled;
 
-    public static boolean targetListening() {
-        return listening(EntityTargetEvent.getHandlerList());
+    /** 追う相手を vanilla が決める前の相手。登録が無いときは控えない({@link #orbWatching} が false)。 */
+    private static Player orbPrevious;
+    private static boolean orbWatching;
+
+    /**
+     * 追う相手を vanilla が決める前に呼ぶ。登録があれば今の相手を控える。
+     *
+     * <p>控えは呼ぶ側の局所変数に置かない。公式の {@code followNearbyPlayer} にも Player の
+     * 局所変数があり、足すと MixinExtras の {@code @Local Player} の候補が 2 つになる。
+     */
+    public static void orbTargetBefore(final Player current) {
+        orbWatching = listening(EntityTargetEvent.getHandlerList());
+        orbPrevious = orbWatching ? current : null;
+    }
+
+    /** vanilla が決めた相手が、控えた相手と違うか。登録が無ければ false。 */
+    public static boolean orbTargetChanged(final Player now) {
+        final boolean changed = orbWatching && now != orbPrevious;
+        orbWatching = false;
+
+        return changed;
     }
 
     /**
      * EntityTargetLivingEntityEvent(オーブが追うプレイヤーが変わった)。
      * {@code ExperienceOrb.followNearbyPlayer} で、vanilla が決めたあとに出す。
      *
-     * @return 追う相手。取り消されたら前の相手({@link #takeTargetCancelled} が true になる)
+     * @return 追う相手。取り消されたら前の相手({@link #takeTargetGoesOn} が false になる)
      */
-    public static Player orbTarget(final ExperienceOrb orb, final Player previous, final Player now) {
+    public static Player orbTarget(final ExperienceOrb orb, final Player now) {
+        final Player previous = orbPrevious;
+        orbPrevious = null;
         targetCancelled = false;
 
         final EntityTargetLivingEntityEvent event = CraftEventFactory.callEntityTargetLivingEvent(orb, now,
@@ -688,11 +771,12 @@ public final class EntityEvents {
         return target instanceof Player player ? player : null;
     }
 
-    public static boolean takeTargetCancelled() {
+    /** 直前の {@link #orbTarget} が取り消されていなければ true(vanilla の寄せる処理を続ける)。読んだら消す。 */
+    public static boolean takeTargetGoesOn() {
         final boolean cancelled = targetCancelled;
         targetCancelled = false;
 
-        return cancelled;
+        return !cancelled;
     }
 
     /**
@@ -800,11 +884,11 @@ public final class EntityEvents {
      * @return 取り消されて残す効果。登録が無ければ null(呼ぶ側は何もしない)
      */
     public static List<MobEffectInstance> clearEffects(final LivingEntity entity, final Collection<MobEffectInstance> effects) {
-        final EntityPotionEffectEvent.Cause cause = takeEffectCause();
-
         if (!listening(EntityPotionEffectEvent.getHandlerList())) {
             return null;
         }
+
+        final EntityPotionEffectEvent.Cause cause = takeEffectCause();
 
         final List<MobEffectInstance> kept = new ArrayList<>();
 
@@ -834,22 +918,32 @@ public final class EntityEvents {
      */
     public static boolean addEffect(final LivingEntity entity, final MobEffectInstance old,
                                     final MobEffectInstance added, final Entity source) {
-        final EntityPotionEffectEvent.Cause cause = takeEffectCause();
-
         if (!listening(EntityPotionEffectEvent.getHandlerList())) {
             return true;
         }
+
+        final EntityPotionEffectEvent.Cause cause = takeEffectCause();
 
         final boolean override = old != null && new MobEffectInstance(old).update(added);
 
         return !CraftEventFactory.callEntityPotionEffectChangeEvent(entity, old, added, cause, null, override).isCancelled();
     }
 
-    /** EntityPotionEffectEvent(REMOVED)。{@code removeEffectNoUpdate} で消す直前。 */
-    public static boolean removeEffect(final LivingEntity entity, final MobEffectInstance instance) {
-        final EntityPotionEffectEvent.Cause cause = takeEffectCause();
+    /**
+     * EntityPotionEffectEvent(REMOVED)。{@code removeEffectNoUpdate} で消す直前。
+     *
+     * <p>消す効果は登録があるときだけここで引く。差し込み側で {@code this.activeEffects.get(effect)} を
+     * 引数にしていたときは、登録が無くても Map の引きが 1 回増えていた。
+     */
+    public static boolean removeEffect(final LivingEntity entity, final net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> effect) {
+        if (!listening(EntityPotionEffectEvent.getHandlerList())) {
+            return true;
+        }
 
-        if (instance == null || !listening(EntityPotionEffectEvent.getHandlerList())) {
+        final EntityPotionEffectEvent.Cause cause = takeEffectCause();
+        final MobEffectInstance instance = entity.getEffect(effect);
+
+        if (instance == null) {
             return true;
         }
 

@@ -7,15 +7,13 @@ anchor:
 insert:
     if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.world.StructuresLocateEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // Paper start - StructuresLocateEvent
-        // Paper は Stream.map と HolderSet.direct(Function, ...) にメソッド参照を渡している。数え上げで書く
+        // Paper は Stream.map と HolderSet.direct(Function, ...) にメソッド参照を渡している。
+        // ここにラムダを足すと vanilla のラムダの番号が繰り下がり、並びを局所変数に置くと
+        // 公式にもある List の @Local の候補が増える。並びの詰め替えは発火層でやる
         final org.bukkit.World bukkitWorld = level.getWorld();
         final org.bukkit.Location origin = org.bukkit.craftbukkit.util.CraftLocation.toBukkit(pos, level);
-        final List<org.bukkit.generator.structure.Structure> apiStructures = new java.util.ArrayList<>();
-        for (final net.minecraft.core.Holder<net.minecraft.world.level.levelgen.structure.Structure> shifuHolder : structure) {
-            apiStructures.add(org.bukkit.craftbukkit.generator.structure.CraftStructure.minecraftHolderToBukkit(shifuHolder));
-        }
-        if (!apiStructures.isEmpty()) {
-            final io.papermc.paper.event.world.StructuresLocateEvent event = new io.papermc.paper.event.world.StructuresLocateEvent(bukkitWorld, origin, apiStructures, radius, skipKnownStructures);
+        if (structure.size() != 0) {
+            final io.papermc.paper.event.world.StructuresLocateEvent event = new io.papermc.paper.event.world.StructuresLocateEvent(bukkitWorld, origin, dev.shifu.event.ShifuEvents.apiStructures(structure), radius, skipKnownStructures);
             if (!event.callEvent()) {
                 return null;
             }
@@ -25,11 +23,7 @@ insert:
             pos = org.bukkit.craftbukkit.util.CraftLocation.toBlockPosition(event.getOrigin());
             radius = event.getRadius();
             skipKnownStructures = event.shouldFindUnexplored();
-            final List<net.minecraft.core.Holder<net.minecraft.world.level.levelgen.structure.Structure>> shifuHolders = new java.util.ArrayList<>();
-            for (final org.bukkit.generator.structure.Structure shifuStructure : event.getStructures()) {
-                shifuHolders.add(org.bukkit.craftbukkit.generator.structure.CraftStructure.bukkitToMinecraftHolder(shifuStructure));
-            }
-            structure = HolderSet.direct(shifuHolders);
+            structure = dev.shifu.event.ShifuEvents.nmsStructures(event.getStructures());
         }
         // Paper end
     }
