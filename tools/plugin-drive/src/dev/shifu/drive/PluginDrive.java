@@ -151,6 +151,12 @@ public final class PluginDrive extends JavaPlugin implements Listener {
             this.note("world " + world.getName() + " uid=" + world.getUID() + " key=" + world.getKey()
                     + " env=" + world.getEnvironment() + " handle=" + handleOf(world));
         }
+        // Bukkit のエンチャントとポーション効果の表(ShifuBootstrap.registerBukkitEnchantmentsAndEffects が埋める)
+        this.note("enchantments=" + org.bukkit.enchantments.Enchantment.values().length
+                + " getByName(DIG_SPEED)=" + org.bukkit.enchantments.Enchantment.getByName("DIG_SPEED")
+                + " getByKey(efficiency)=" + org.bukkit.enchantments.Enchantment.getByKey(org.bukkit.NamespacedKey.minecraft("efficiency"))
+                + " effects=" + org.bukkit.potion.PotionEffectType.values().length
+                + " getByName(SPEED)=" + org.bukkit.potion.PotionEffectType.getByName("SPEED"));
         this.getLogger().info("[drive] waiting for the bot");
     }
 

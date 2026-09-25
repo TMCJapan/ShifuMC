@@ -6,4 +6,6 @@ anchor:
     Bootstrap.bootStrap();
 insert:
     io.papermc.paper.plugin.PluginInitializerManager.load(dev.shifu.event.ShifuBootstrap.options);
+insert-after:
+    dev.shifu.event.ShifuBootstrap.registerBukkitEnchantmentsAndEffects(); // Paper は Enchantments / MobEffects の register の中で登録する
 

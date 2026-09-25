@@ -115,6 +115,28 @@ public final class ShifuBootstrap {
     }
 
     /**
+     * Bukkit の {@code Enchantment} と {@code PotionEffectType} の表を埋める。{@code Bootstrap.bootStrap()} の直後に呼ぶ。
+     *
+     * <p>1.19.4 の Paper は vanilla の {@code Enchantments.register} / {@code MobEffects.register} の中で
+     * 1 つずつ登録する。Shifu はその行を入れていないので、表が空のまま {@code CraftServer} の構築子で締め切られ、
+     * {@code Enchantment.getByName} / {@code getByKey} と {@code PotionEffectType.getByName} が null を返していた
+     * (ViaVersion の {@code PlayerChangeItemListener} が {@code getEnchantmentLevel(null)} で落ちる)。
+     * レジストリの順に回すので、登録の順は Paper と同じ。
+     *
+     * <p>読んだ位置: Paper-Server src/main/java/net/minecraft/world/item/enchantment/Enchantments.java:55、
+     * Paper-Server src/main/java/net/minecraft/world/effect/MobEffects.java:78
+     */
+    public static void registerBukkitEnchantmentsAndEffects() {
+        for (final net.minecraft.world.item.enchantment.Enchantment enchantment : net.minecraft.core.registries.BuiltInRegistries.ENCHANTMENT) {
+            org.bukkit.enchantments.Enchantment.registerEnchantment(new org.bukkit.craftbukkit.enchantments.CraftEnchantment(enchantment));
+        }
+
+        for (final net.minecraft.world.effect.MobEffect effect : net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT) {
+            org.bukkit.potion.PotionEffectType.registerPotionEffectType(new org.bukkit.craftbukkit.potion.CraftPotionEffectType(effect));
+        }
+    }
+
+    /**
      * Paper の watchdog({@code org.spigotmc.WatchdogThread})を起動したか。
      * {@code tickServer} の頭と起動の終わりは、これが立っているときだけ watchdog に知らせる。
      */
