@@ -24,7 +24,8 @@ record LauncherConfig(String minecraftVersion, String paperBuild, String loaderV
 			paper-build = latest
 
 			# Shifu 自身のサーバー(paperclip 形式)。パスか URL。
-			# 空にすると Paper 公式ビルドをそのまま組み立てる(イベント発火層は入らない)。
+			# 空なら同じフォルダの shifu-server*.jar から minecraft-version の版のものを使う。
+			# それも無ければ Paper 公式ビルドをそのまま組み立てる(イベント発火層は入らない)。
 			# Windows のパスはそのまま書く(C:\\server\\shifu-server.jar)。
 			server-paperclip =
 
