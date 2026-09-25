@@ -30,9 +30,11 @@ import net.minecraft.server.network.ServerCommonPacketListenerImpl;
  * <b>捨てる直前に控えを取る</b>形にする({@code remember})。読むだけで reader index は動かさないので、
  * vanilla の {@code skipBytes} は同じ量を飛ばす。
  *
- * <p>控えは復号したスレッドの中に置き、同じ packet が次の handler に着いたところで接続ごとの列へ移す
- * ({@code afterDecode})。復号と、その packet が handler に着くのは同じスレッドの同じ呼び出しの中なので、
- * 別の接続の分と混ざらない。
+ * <p>控えは復号したスレッドの中に置き、同じ packet が次の handler に着いたところで、その packet と
+ * 組にして接続ごとの列へ移す({@code afterDecode})。復号と、その packet が handler に着くのは同じスレッドの
+ * 同じ呼び出しの中なので、別の接続の分と混ざらない。取り出すときも packet で引く({@code take})。
+ * 順番だけで対応させていたときは、取り出さずに戻る経路(設定フェーズ、本文 0 バイト)があるたびに
+ * 以降の本文が 1 つずつずれていた。
  *
  * <p><b>プラグインが 1 つも入っていなければ何もしない。</b>そのときに実行される命令列は vanilla と同じ。
  */
@@ -43,9 +45,14 @@ public final class PluginMessages {
     /** 復号したスレッドが、次の handler に渡すまでの間だけ持つ控え。 */
     private static final ThreadLocal<Deque<byte[]>> DECODED = ThreadLocal.withInitial(ArrayDeque::new);
 
-    /** 接続ごとの控えの列と、登録しているチャンネル。 */
-    private static final Map<Connection, Deque<byte[]>> PENDING = new ConcurrentHashMap<>();
+    /** 接続ごとの控えの列(packet と本文の組)と、登録しているチャンネル、クライアントの名乗り。 */
+    private static final Map<Connection, Deque<Pending>> PENDING = new ConcurrentHashMap<>();
     private static final Map<Connection, Set<String>> CHANNELS = new ConcurrentHashMap<>();
+    private static final Map<Connection, String> BRANDS = new ConcurrentHashMap<>();
+
+    /** 復号した packet と、その本文の控え。 */
+    private record Pending(Object packet, byte[] data) {
+    }
 
     private PluginMessages() {
     }
@@ -64,7 +71,8 @@ public final class PluginMessages {
      * @param length 本文の長さ(vanilla が数えた値)
      */
     public static void remember(final FriendlyByteBuf buf, final int length) {
-        if (length == 0 || !enabled()) {
+        // 本文 0 バイトも控える。控えない packet があると、その packet の本文として次の控えを渡してしまう
+        if (!enabled()) {
             return;
         }
 
@@ -89,22 +97,22 @@ public final class PluginMessages {
             return;
         }
 
-        if (!(message instanceof ServerboundCustomPayloadPacket)) {
-            decoded.clear();
+        // 1 つの packet の復号で控えは 1 つ。前に残っているのは、復号の途中で落ちた packet の分
+        final byte[] data = decoded.peekLast();
+        decoded.clear();
 
+        if (!(message instanceof ServerboundCustomPayloadPacket)) {
             return;
         }
 
-        final Deque<byte[]> queue = PENDING.computeIfAbsent(connection, key -> new ArrayDeque<>());
+        final Deque<Pending> queue = PENDING.computeIfAbsent(connection, key -> new ArrayDeque<>());
 
         synchronized (queue) {
-            while (!decoded.isEmpty()) {
-                if (queue.size() >= 64) {
-                    queue.removeFirst();
-                }
-
-                queue.addLast(decoded.removeFirst());
+            if (queue.size() >= 64) {
+                queue.removeFirst();
             }
+
+            queue.addLast(new Pending(message, data));
         }
     }
 
@@ -113,10 +121,23 @@ public final class PluginMessages {
         return CHANNELS.computeIfAbsent(connection, key -> java.util.concurrent.ConcurrentHashMap.newKeySet());
     }
 
+    /**
+     * 設定フェーズで受けたクライアントの名乗り。設定フェーズの listener に入れた値は本編の listener に
+     * 移らないので、本編の {@code Player#getClientBrandName} が null になっていた。Paper は cookie に
+     * 成分を足して引き継ぐが、vanilla の CommonListenerCookie には無いので、接続ごとに持って構築子で入れる。
+     *
+     * <p>読んだ位置: paper-server patches/sources/net/minecraft/server/network/ServerCommonPacketListenerImpl.java.patch
+     * ({@code this.clientBrand = cookie.clientBrand()} と {@code createCookie})
+     */
+    public static String brandFor(final Connection connection) {
+        return BRANDS.get(connection);
+    }
+
     /** 接続を閉じたら忘れる。 */
     public static void forget(final Connection connection) {
         PENDING.remove(connection);
         CHANNELS.remove(connection);
+        BRANDS.remove(connection);
     }
 
     /** 復号した packet を接続ごとの列と結びつける handler を差し込む。 */
@@ -146,6 +167,7 @@ public final class PluginMessages {
 
         if (packet.payload() instanceof BrandPayload brand) {
             listener.clientBrand = brand.brand();
+            BRANDS.put(listener.connection, brand.brand());
 
             return;
         }
@@ -158,7 +180,7 @@ public final class PluginMessages {
         // 控えを取り出すのは待ち行列へ回したあと(先に取り出すと、回された 2 回目で列がずれる)。
         net.minecraft.network.protocol.PacketUtils.ensureRunningOnSameThread(packet, listener, net.minecraft.server.MinecraftServer.getServer().packetProcessor());
 
-        final byte[] data = take(listener.connection);
+        final byte[] data = take(listener.connection, packet);
 
         if (data == null) {
             return;
@@ -191,15 +213,29 @@ public final class PluginMessages {
         }
     }
 
-    private static byte[] take(final Connection connection) {
-        final Deque<byte[]> queue = PENDING.get(connection);
+    /**
+     * その packet の本文の控えを取り出す。packet は復号した順に処理されるので、列でそれより前にある控えは
+     * handler まで来なかった packet の分で、ここで一緒に捨てる。見つからなければ列は触らない。
+     */
+    private static byte[] take(final Connection connection, final ServerboundCustomPayloadPacket packet) {
+        final Deque<Pending> queue = PENDING.get(connection);
 
         if (queue == null) {
             return null;
         }
 
         synchronized (queue) {
-            return queue.pollFirst();
+            if (queue.stream().noneMatch(pending -> pending.packet() == packet)) {
+                return null;
+            }
+
+            while (true) {
+                final Pending pending = queue.removeFirst();
+
+                if (pending.packet() == packet) {
+                    return pending.data();
+                }
+            }
         }
     }
 

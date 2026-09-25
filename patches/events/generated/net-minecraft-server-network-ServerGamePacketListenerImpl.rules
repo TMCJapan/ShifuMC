@@ -184,16 +184,13 @@ insert:
     if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.packet.UncheckedSignChangeEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // Paper start - Add API for client-side signs
         // Paper は Stream.map のラムダで書いているが、ここに足すと
-        // ServerGamePacketListenerImpl の vanilla のラムダの番号が繰り下がる。数え上げで書く。
-        final java.util.List<net.kyori.adventure.text.Component> shifuLines = new java.util.ArrayList<>(lines.size());
-        for (final net.minecraft.server.network.FilteredText line : lines) {
-            shifuLines.add(net.kyori.adventure.text.Component.text(line.raw()));
-        }
+        // ServerGamePacketListenerImpl の vanilla のラムダの番号が繰り下がる。
+        // 並びを局所変数に置くと、公式にもある List の @Local の候補が増える。発火層で作る。
         if (!new io.papermc.paper.event.packet.UncheckedSignChangeEvent(
             this.player.getBukkitEntity(),
             io.papermc.paper.util.MCUtil.toPosition(pos),
             packet.isFrontText() ? org.bukkit.block.sign.Side.FRONT : org.bukkit.block.sign.Side.BACK,
-            shifuLines)
+            dev.shifu.event.BlockEvents.rawSignLines(lines))
             .callEvent()) {
             return;
         }

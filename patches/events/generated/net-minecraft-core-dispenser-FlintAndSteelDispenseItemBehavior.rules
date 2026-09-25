@@ -7,10 +7,11 @@ anchor:
 insert:
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockDispenseEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // Paper start - Call BlockDispenseEvent
-        ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(source, targetPos, dispensed, this);
-        if (result != null) {
+        // Shifu - 局所変数にしない。公式にも ItemStack があると @Local ItemStack の候補が増えて mixin が当たらない
+        // handleBlockDispenseEvent は null か、渡した dispensed をそのまま返す(読んだ位置: paper-server/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:2249)
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(source, targetPos, dispensed, this) != null) {
             this.setSuccess(false);
-            return result;
+            return dispensed;
         }
         // Paper end - Call BlockDispenseEvent
     }

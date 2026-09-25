@@ -1,0 +1,9 @@
+# check_extra_locals.py が許す場所。1 行 1 か所で「クラス メソッド<TAB>型<TAB># 理由」。
+# 差し込みが足した局所変数はここに載せない(発火層か欄に移して消す)。
+# 載せてあるのは、差し込みのためにクラスをコンパイルし直すと出てくる、差し込みではない変数だけ。
+#
+# 逆コンパイラ: 公式は式の途中の値をスタックに置くが、逆コンパイルしたソースは名前の付いた
+# 変数(var4、var10000 など)にする。patches/decompile で公式の形に戻したら、その行を消す。
+
+net/minecraft/world/level/LevelReader canSeeSkyFromBelowWater	Lnet/minecraft/core/BlockPos;	# 逆コンパイラの一時変数(差し込みではない)。for の var4
+net/minecraft/world/level/block/state/BlockBehaviour$Properties lambda$offsetType$1	D	# 逆コンパイラの一時変数(差し込みではない)。y

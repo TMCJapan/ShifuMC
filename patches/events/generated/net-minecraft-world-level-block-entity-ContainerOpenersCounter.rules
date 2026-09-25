@@ -9,11 +9,9 @@ insert:
 
         // Paper start - Call BlockRedstoneEvent
         if (blockState.is(net.minecraft.world.level.block.Blocks.TRAPPED_CHEST)) {
-            int oldCurrent = Math.clamp(previous, 0, 15);
-            int newCurrent = Math.clamp(this.openCount, 0, 15);
-
-            if (oldCurrent != newCurrent) {
-                org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, oldCurrent, newCurrent);
+            // Shifu - 局所変数にしない。公式にも int があると @Local int の候補が増えて mixin が当たらない
+            if (Math.clamp(previous, 0, 15) != Math.clamp(this.openCount, 0, 15)) {
+                org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, Math.clamp(previous, 0, 15), Math.clamp(this.openCount, 0, 15));
             }
         }
         // Paper end - Call BlockRedstoneEvent
@@ -28,11 +26,9 @@ insert:
 
         // Paper start - Call BlockRedstoneEvent
         if (blockState.is(net.minecraft.world.level.block.Blocks.TRAPPED_CHEST)) {
-            int oldCurrent = Math.clamp(previous, 0, 15);
-            int newCurrent = Math.clamp(this.openCount, 0, 15);
-
-            if (oldCurrent != newCurrent) {
-                org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, oldCurrent, newCurrent);
+            // Shifu - 局所変数にしない。公式にも int があると @Local int の候補が増えて mixin が当たらない
+            if (Math.clamp(previous, 0, 15) != Math.clamp(this.openCount, 0, 15)) {
+                org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, Math.clamp(previous, 0, 15), Math.clamp(this.openCount, 0, 15));
             }
         }
         // Paper end - Call BlockRedstoneEvent
@@ -46,11 +42,9 @@ insert:
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockRedstoneEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // Paper start - Call BlockRedstoneEvent
         if (blockState.is(net.minecraft.world.level.block.Blocks.TRAPPED_CHEST)) {
-            int oldCurrent = Math.clamp(prevCount, 0, 15);
-            int newCurrent = Math.clamp(openCount, 0, 15);
-
-            if (oldCurrent != newCurrent) {
-                org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, oldCurrent, newCurrent);
+            // Shifu - 局所変数にしない。公式にも int があると @Local int の候補が増えて mixin が当たらない
+            if (Math.clamp(prevCount, 0, 15) != Math.clamp(openCount, 0, 15)) {
+                org.bukkit.craftbukkit.event.CraftEventFactory.callRedstoneChange(level, pos, Math.clamp(prevCount, 0, 15), Math.clamp(openCount, 0, 15));
             }
         }
         // Paper end - Call BlockRedstoneEvent

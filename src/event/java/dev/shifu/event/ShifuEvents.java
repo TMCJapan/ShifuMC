@@ -181,7 +181,7 @@ public final class ShifuEvents {
      * <p>{@code setDropItems(false)} は、この呼び出しの {@code playerDestroy} が出す
      * 落とし物(ItemEntity)を世界に入れない形で効かせる({@link #blockDropsBegin})。
      * Paper は {@code playerDestroy} に引数を足して落とさないが、vanilla の署名は変えられないので、
-     * 出てきたものを {@link #catchDrop} で入れずに捨てる。道具の減り・統計・空腹・経験値は
+     * 出てきたものを {@link #addEntityGoesOn} で入れずに捨てる。道具の減り・統計・空腹・経験値は
      * Paper と同じく残る。
      *
      * <p>読んだ位置: Paper-Server
@@ -388,7 +388,7 @@ public final class ShifuEvents {
     private static final class DeathCapture {
         final List<Entity.DefaultDrop> drops = new ArrayList<>();
         final List<ExperienceOrb> orbs = new ArrayList<>();
-        /** {@code ExperienceOrb.award} が既にあるオーブへ足そうとした分({@link #catchAward})。 */
+        /** {@code ExperienceOrb.award} が既にあるオーブへ足そうとした分({@link #awardGoesOn})。 */
         final List<Award> awards = new ArrayList<>();
         final DeathCapture previous;
         DeathInventory inventory;
@@ -418,25 +418,25 @@ public final class ShifuEvents {
 
     /**
      * {@code ExperienceOrb.award} のループで、既にあるオーブへ足す判定({@code tryMergeToExisting})の手前。
-     * 死亡の控えを取っている最中なら、その回の量を控えに入れて true を返し、呼ぶ側はその回を飛ばす。
+     * 死亡の控えを取っている最中なら、その回の量を控えに入れて false を返し、呼ぶ側はその回を飛ばす。
      *
-     * <p>足し込まれた経験値は新しいオーブにならず addFreshEntity を通らないので、{@link #catchDrop} では
+     * <p>足し込まれた経験値は新しいオーブにならず addFreshEntity を通らないので、{@link #addEntityGoesOn} では
      * 控えられない。そのため PlayerDeathEvent / EntityDeathEvent の {@code getDroppedExp} に入らず、
-     * {@code setDroppedExp(0)} でも消せなかった。控えを取っていなければ参照 1 つの比較で false。
+     * {@code setDroppedExp(0)} でも消せなかった。控えを取っていなければ参照 1 つの比較で true。
      *
      * <p>控えた分は {@link #releaseExperience} が、量が変えられていなければ同じ位置と向き({@code awardWithDirection})で
      * もう 1 度 award に通す(足し込むかどうかはそのとき vanilla が決める)。
      */
-    public static boolean catchAward(final net.minecraft.world.phys.Vec3 pos, final net.minecraft.world.phys.Vec3 direction, final int value) {
+    public static boolean awardGoesOn(final net.minecraft.world.phys.Vec3 pos, final net.minecraft.world.phys.Vec3 direction, final int value) {
         final DeathCapture current = capture;
 
         if (current == null) {
-            return false;
+            return true;
         }
 
         current.awards.add(new Award(pos, direction, value));
 
-        return true;
+        return false;
     }
 
     private static DeathCapture capture;
@@ -458,7 +458,7 @@ public final class ShifuEvents {
     }
 
     /**
-     * 世界に入ろうとしている物を控えに移す。移したら true。
+     * 世界に入ろうとしている物を控えに移す。移したら false(呼ぶ側は世界に入れずに抜ける)。
      *
      * <p>{@code ServerLevel.addEntity} から呼ぶ。控えている最中でなければ
      * 何もしないので、プラグインを入れていないときに増える仕事は
@@ -469,16 +469,16 @@ public final class ShifuEvents {
      * 速度や向きも vanilla が決めたままになる。差し替えられた分だけ
      * {@code CraftEventFactory} が作り直す。経験値オーブも同じ。
      */
-    public static boolean catchDrop(final Entity entity) {
+    public static boolean addEntityGoesOn(final Entity entity) {
         if (discardBlockDrops && entity instanceof net.minecraft.world.entity.item.ItemEntity) {
             // BlockBreakEvent#setDropItems(false)。世界に入れずに捨てる(呼び手の addEntity は true を返す)
-            return true;
+            return false;
         }
 
         final DeathCapture current = capture;
 
         if (current == null) {
-            return false;
+            return true;
         }
 
         if (entity instanceof ItemEntity item) {
@@ -487,16 +487,16 @@ public final class ShifuEvents {
                 item.level().addFreshEntity(item);
             }));
 
-            return true;
+            return false;
         }
 
         if (entity instanceof ExperienceOrb orb) {
             current.orbs.add(orb);
 
-            return true;
+            return false;
         }
 
-        return false;
+        return true;
     }
 
     /** 控えを閉じて返す。渡された落とし物の控えと食い違っていたら、それが見つかるまで戻す。 */
@@ -973,6 +973,9 @@ public final class ShifuEvents {
     /** 行き先を変えられた {@code teleport(transition)} の、入れ子の呼び出しの相手。 */
     private static ServerPlayer suppressTransition;
 
+    /** 行き先を変えられた {@code teleport(transition)} の、作り直した行き先。{@link #teleportRedirected} が取り出す。 */
+    private static TeleportTransition redirectTransition;
+
     /**
      * 呼び出し側が先に置いた理由。vanilla の署名には理由を運ぶ引数が無い。
      *
@@ -1047,8 +1050,12 @@ public final class ShifuEvents {
      *
      * <p>Paper と同じく、動かす前に発火する。取り消されたら null を返して
      * 呼ぶ側は何もせずに抜ける。行き先を変えられたら作り直した
-     * {@code TeleportTransition} を返し、呼ぶ側はそれで自分を呼び直す。
+     * {@code TeleportTransition} を返し、呼ぶ側は {@link #teleportRedirected} で自分を呼び直す。
      * 呼び直しでは発火しない。どちらでもなければ渡されたものをそのまま返す。
+     *
+     * <p>呼ぶ側は戻り値を局所変数に置かず、渡したものと同じかだけを見る。公式の
+     * {@code teleport} にも TeleportTransition の引数があり、局所変数を足すと
+     * MixinExtras の {@code @Local TeleportTransition} の候補が 2 つになる。
      *
      * <p>この先の {@code connection.teleport} でも発火しないよう印を付ける。
      * Paper はそこを {@code internalTeleport} に向け替えているが、
@@ -1077,6 +1084,7 @@ public final class ShifuEvents {
                 absolute.position(), transition.newLevel(), absolute.yRot(), absolute.xRot());
         final PlayerTeleportEvent event = new PlayerTeleportEvent(player.getBukkitEntity(), enter, exit.clone(), reason);
         event.callEvent();
+        redirectTransition = null;
 
         if (event.isCancelled()) {
             return null;
@@ -1091,8 +1099,7 @@ public final class ShifuEvents {
         }
 
         suppressTransition = player;
-
-        return new TeleportTransition(
+        redirectTransition = new TeleportTransition(
                 ((CraftWorld) to.getWorld()).getHandle(),
                 CraftLocation.toVec3(to),
                 Vec3.ZERO,
@@ -1102,6 +1109,19 @@ public final class ShifuEvents {
                 transition.asPassenger(),
                 java.util.Set.of(),
                 transition.postTeleportTransition());
+
+        return redirectTransition;
+    }
+
+    /**
+     * {@link #playerTeleport} が渡されたものと違う値を返したときに呼ぶ。取り消しなら null、
+     * 行き先を変えられたなら作り直した行き先で {@code teleport} を呼び直した結果を返す。
+     */
+    public static ServerPlayer teleportRedirected(final ServerPlayer player) {
+        final TeleportTransition changed = redirectTransition;
+        redirectTransition = null;
+
+        return changed == null ? null : player.teleport(changed);
     }
 
     /**
@@ -1253,10 +1273,10 @@ public final class ShifuEvents {
         return event;
     }
 
-    /** イベントの中で別の画面が開かれたか(SPIGOT-1224)。 */
-    public static boolean containerChanged(final ServerPlayer player,
-                                           final org.bukkit.event.inventory.InventoryClickEvent event) {
-        return event != null && player.containerMenu != clickedMenu;
+    /** イベントの中で別の画面が開かれていなければ true(SPIGOT-1224)。 */
+    public static boolean containerKept(final ServerPlayer player,
+                                        final org.bukkit.event.inventory.InventoryClickEvent event) {
+        return event == null || player.containerMenu == clickedMenu;
     }
 
     /** クリックの処理が済んだあと。作業台と鍛冶台は中身を送り直す(Paper と同じ)。 */
@@ -1400,7 +1420,6 @@ public final class ShifuEvents {
         player.expToDrop = event.getDroppedExp();
         player.newExp = event.getNewExp();
         player.shifuDeathEvent = true;
-        player.shifuKeepInventory = event.getKeepInventory();
 
         if (event.getKeepInventory()) {
             if (!keepInventory) {
@@ -1483,8 +1502,11 @@ public final class ShifuEvents {
     /**
      * リスポーン先。vanilla が寝床・リスポーンアンカー・既定から決めた直後。
      *
-     * <p>Paper と同じ位置で発火する。変えられていなければ null を返し、
-     * 呼ぶ側は vanilla が決めたものをそのまま使う。
+     * <p>Paper と同じ位置で発火する。変えられていなければ false を返し、
+     * 呼ぶ側は vanilla が決めたものをそのまま使う。変えられたら true を返し、
+     * 呼ぶ側は {@link #changedRespawn} で作り直した行き先を受け取る(戻り値で渡して
+     * 局所変数に受けると、公式の {@code respawn} にもある TeleportTransition の
+     * MixinExtras {@code @Local} の候補が 2 つになる)。
      *
      * <p>リスポーンアンカーの残量は vanilla が先に減らしている。
      * Paper は行き先が変わらなかったときだけ減らすが、その順序は vanilla と違う。
@@ -1494,10 +1516,10 @@ public final class ShifuEvents {
      * <p>参照した位置(Paper 26.2):
      * {@code paper-server patches/sources/net/minecraft/server/level/ServerPlayer.java.patch:607}
      */
-    public static TeleportTransition playerRespawn(final ServerPlayer player, final TeleportTransition vanilla,
-                                                   final boolean keepAllPlayerData) {
+    public static boolean playerRespawn(final ServerPlayer player, final TeleportTransition vanilla,
+                                        final boolean keepAllPlayerData) {
         if (!listening(org.bukkit.event.player.PlayerRespawnEvent.getHandlerList())) {
-            return null;
+            return false;
         }
 
         boolean bed = false;
@@ -1533,10 +1555,10 @@ public final class ShifuEvents {
         final Location changed = event.getRespawnLocation();
 
         if (changed.equals(location)) {
-            return null;
+            return false;
         }
 
-        return new TeleportTransition(
+        changedRespawn = new TeleportTransition(
                 ((CraftWorld) changed.getWorld()).getHandle(),
                 CraftLocation.toVec3(changed),
                 vanilla.deltaMovement(),
@@ -1546,6 +1568,18 @@ public final class ShifuEvents {
                 vanilla.asPassenger(),
                 vanilla.relatives(),
                 vanilla.postTeleportTransition());
+
+        return true;
+    }
+
+    private static TeleportTransition changedRespawn;
+
+    /** {@link #playerRespawn} が true を返したときの、作り直した行き先。 */
+    public static TeleportTransition changedRespawn() {
+        final TeleportTransition transition = changedRespawn;
+        changedRespawn = null;
+
+        return transition;
     }
 
     /**
@@ -1815,15 +1849,15 @@ public final class ShifuEvents {
                 : net.minecraft.world.InteractionResult.PASS;
     }
 
-    /** 右クリックのうち、手に持った物の使用だけが拒まれたか。拒まれていれば手元を送り直す。 */
-    public static boolean interactItemDenied(final org.bukkit.event.player.PlayerInteractEvent event, final ServerPlayer player) {
+    /** 右クリックのうち、手に持った物の使用が拒まれていなければ true。拒まれていれば手元を送り直して false。 */
+    public static boolean interactItemAllowed(final org.bukkit.event.player.PlayerInteractEvent event, final ServerPlayer player) {
         if (event == null || event.useItemInHand() != org.bukkit.event.Event.Result.DENY) {
-            return false;
+            return true;
         }
 
         player.containerMenu.sendAllDataToRemote();
 
-        return true;
+        return false;
     }
 
     /**
@@ -2157,18 +2191,21 @@ public final class ShifuEvents {
      * <p>Paper は寝られない理由(遠い・塞がれている・怪物)のときも発火して、プラグインが
      * {@code setUseBed(ALLOW)} で寝かせられる。Shifu は vanilla が通した場合だけ発火する。
      *
-     * @return 寝られない理由。寝てよければ null
+     * <p>寝てよい({@code Either.right})を渡すので、Paper が left を返すのは DENY のときの
+     * {@code OTHER_PROBLEM} だけ。呼ぶ側はその値を自分で作って返す(受け取る Either を局所変数に
+     * 置くと、公式の {@code startSleepInBed} にもある Either の候補が増える)。
+     *
+     * <p>読んだ位置: paper-server/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:379
+     *
+     * @return 寝てよいか。false なら呼ぶ側は {@code OTHER_PROBLEM} を返す
      */
-    public static com.mojang.datafixers.util.Either<net.minecraft.world.entity.player.Player.BedSleepingProblem, net.minecraft.util.Unit> bedEnter(
-            final ServerPlayer player, final BlockPos pos) {
+    public static boolean bedEnter(final ServerPlayer player, final BlockPos pos) {
         if (!listening(org.bukkit.event.player.PlayerBedEnterEvent.getHandlerList())) {
-            return null;
+            return true;
         }
 
-        final com.mojang.datafixers.util.Either<net.minecraft.world.entity.player.Player.BedSleepingProblem, net.minecraft.util.Unit> result =
-                CraftEventFactory.callPlayerBedEnterEvent(player, pos, com.mojang.datafixers.util.Either.right(net.minecraft.util.Unit.INSTANCE));
-
-        return result.left().isPresent() ? result : null;
+        return CraftEventFactory.callPlayerBedEnterEvent(player, pos,
+                com.mojang.datafixers.util.Either.right(net.minecraft.util.Unit.INSTANCE)).left().isEmpty();
     }
 
     /**
@@ -2206,20 +2243,43 @@ public final class ShifuEvents {
     /**
      * ServerCommandEvent。コンソールの入力を実行する直前。
      *
-     * @return 実行する入力。取り消されたら null。文が差し替えられていれば新しい入力
+     * <p>文が差し替えられたら、差し替えた文をここで実行して false を返す。
+     * 差し替えた入力を呼ぶ側の局所変数に入れると、公式に無い局所変数
+     * (MixinExtras の {@code @Local} の候補が増える)か代入が増える。
+     *
+     * @return vanilla の行で実行するか。取り消されたとき、差し替えた文をここで実行したときは false
      */
-    public static net.minecraft.server.ConsoleInput serverCommand(final net.minecraft.server.MinecraftServer server,
-                                                                  final net.minecraft.server.ConsoleInput input) {
+    public static boolean serverCommand(final net.minecraft.server.MinecraftServer server,
+                                        final net.minecraft.server.ConsoleInput input) {
         if (!listening(org.bukkit.event.server.ServerCommandEvent.getHandlerList())) {
-            return input;
+            return true;
         }
 
         final org.bukkit.event.server.ServerCommandEvent event = new org.bukkit.event.server.ServerCommandEvent(server.console, input.msg);
 
         if (!event.callEvent()) {
-            return null;
+            return false;
         }
 
-        return event.getCommand().equals(input.msg) ? input : new net.minecraft.server.ConsoleInput(event.getCommand(), input.source);
+        if (event.getCommand().equals(input.msg)) {
+            return true;
+        }
+
+        server.getCommands().performPrefixedCommand(input.source, event.getCommand());
+
+        return false;
+    }
+
+    /**
+     * ServerTickEndEvent。{@code tickServer} の集計の直前。
+     * 終わりの時刻をここで取る。呼ぶ側で局所変数に置くと、公式の {@code tickServer} にも
+     * long があるので MixinExtras の {@code @Local long} の候補が増える。
+     *
+     * <p>読んだ位置: paper-server patches/sources/net/minecraft/server/MinecraftServer.java.patch:1028
+     */
+    public static void serverTickEnd(final int tickCount, final long tickStart, final long nextTickTimeNanos) {
+        final long endTime = System.nanoTime();
+        new com.destroystokyo.paper.event.server.ServerTickEndEvent(
+                tickCount, (double) (endTime - tickStart) / 1000000D, nextTickTimeNanos - endTime).callEvent();
     }
 }

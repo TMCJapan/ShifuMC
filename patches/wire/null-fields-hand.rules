@@ -30,20 +30,10 @@ insert:
         shifuGame.player.compassTarget = org.bukkit.craftbukkit.util.CraftLocation.toBukkit(shifuSpawn.respawnData().pos(), shifuGame.getPlayer().level());
     }
 
-# MapItemSavedData.id。Paper は getMapData / setMapData で入れる。getMapData は return の式しか無いので、
-# 同じ読み出しを先に 1 回して id を入れる(2 回目は cache に当たる)。
+# MapItemSavedData.id。Paper は getMapData / setMapData で入れる。ここでは setMapData でだけ入れる。
+# getMapData で読み込んだ地図の id は、読む側(CraftMapView.getId)へ渡る入口の CraftServer.getMap で入れる
+# (patches/adapter)。getMapData に差し込んでいたときは、同じ読み出しがプラグインが無くても毎回 2 回になっていた。
 # 読んだ位置: patches/sources/net/minecraft/server/level/ServerLevel.java.patch(getMapData / setMapData)
-file: net/minecraft/server/level/ServerLevel.java
-anchor:
-    return this.getServer().getDataStorage().get(MapItemSavedData.type(id));
-insert:
-    {
-        final MapItemSavedData shifuMap = this.getServer().getDataStorage().get(MapItemSavedData.type(id));
-        if (shifuMap != null && shifuMap.id == null) {
-            shifuMap.id = id;
-        }
-    }
-
 file: net/minecraft/server/level/ServerLevel.java
 anchor:
     this.getServer().getDataStorage().set(MapItemSavedData.type(id), data);

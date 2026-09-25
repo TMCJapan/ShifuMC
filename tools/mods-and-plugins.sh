@@ -28,7 +28,41 @@ rm -f "$ADDONS/mods/zz-fabric-permission-api-shifu.jar" "$RUN/mods/zz-fabric-per
 mkdir -p "$RUN/mods" "$RUN/plugins"
 cp "$ADDONS"/mods/*.jar "$RUN/mods/"
 cp "$ADDONS"/plugins/*.jar "$RUN/plugins/"
-[ -f "$SHIFU/tools/build/ShifuPluginDrive.jar" ] && cp "$SHIFU/tools/build/ShifuPluginDrive.jar" "$RUN/plugins/"
+
+# bot と、bot に指示を出すプラグインを組む。組む相手は run-shifu(tools/run-server.sh が展開したもの)。
+# 出力が無いとき、ソースかサーバーの jar の方が新しいときだけ組み直す。
+# 組むところが無かったころは tools/build/bot が空のまま残り、bot が ClassNotFoundException で
+# 何もせずに終わっていた(9-24 の 26.2 の確認)。
+SERVER_JAR=$PW/run-shifu/versions/26.2/paper-26.2.jar
+CP="$(cygpath -w "$SERVER_JAR")"
+for jar in $(find "$PW/run-shifu/libraries" -name "*.jar"); do
+    CP="$CP;$(cygpath -w "$jar")"
+done
+
+# $1 が無いか、$2 以降のどれかより古ければ真
+stale() {
+    _out=$1
+    shift
+    [ -f "$_out" ] || return 0
+    [ "$SERVER_JAR" -nt "$_out" ] && return 0
+    [ -n "$(find "$@" -newer "$_out" -print -quit)" ]
+}
+
+BOT_CLASS=$SHIFU/tools/build/bot/dev/shifu/bot/Bot.class
+if stale "$BOT_CLASS" "$SHIFU/tools/bot/src"; then
+    rm -rf "$SHIFU/tools/build/bot"
+    "$JAVA_HOME/bin/javac" -encoding UTF-8 --release 25 -cp "$CP" -d "$SHIFU/tools/build/bot" "$SHIFU"/tools/bot/src/dev/shifu/bot/*.java
+fi
+
+DRIVE_JAR=$SHIFU/tools/build/ShifuPluginDrive.jar
+if stale "$DRIVE_JAR" "$SHIFU/tools/plugin-drive"; then
+    rm -rf "$SHIFU/tools/build/drive"
+    "$JAVA_HOME/bin/javac" -encoding UTF-8 --release 21 -cp "$CP" -d "$SHIFU/tools/build/drive" "$SHIFU"/tools/plugin-drive/src/dev/shifu/drive/*.java
+    cp "$SHIFU/tools/plugin-drive/plugin.yml" "$SHIFU/tools/build/drive/"
+    (cd "$SHIFU/tools/build/drive" && "$JAVA_HOME/bin/jar" cf "$(cygpath -w "$DRIVE_JAR")" .)
+fi
+
+cp "$DRIVE_JAR" "$RUN/plugins/"
 [ -f "$PW/run-fabric/mods/ProbeMod.jar" ] && cp "$PW/run-fabric/mods/ProbeMod.jar" "$RUN/mods/"
 
 # 26.2 で動かないもの。一覧は docs/STATUS.md
@@ -78,11 +112,6 @@ if ! grep -aq "Done (" launch.out; then
     kill $SERVER 2>/dev/null || true
     exit 1
 fi
-
-CP="$(cygpath -w "$PW/run-shifu/versions/26.2/paper-26.2.jar")"
-for jar in $(find "$PW/run-shifu/libraries" -name "*.jar"); do
-    CP="$CP;$(cygpath -w "$jar")"
-done
 
 "$JAVA" -cp "$(cygpath -w "$SHIFU/tools/build/bot");$CP" dev.shifu.bot.Bot 127.0.0.1 25593 ShifuBot 50 > bot.out 2>&1 || true
 sleep 8

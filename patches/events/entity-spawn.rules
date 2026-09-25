@@ -29,7 +29,7 @@ file: net/minecraft/server/level/ServerLevel.java
 anchor:
     return this.entityManager.addNewEntity(entity);
 insert:
-    if (dev.shifu.event.ShifuEvents.catchDrop(entity)) {
+    if (!dev.shifu.event.ShifuEvents.addEntityGoesOn(entity)) {
         return true;
     }
 

@@ -95,7 +95,9 @@ file: net/minecraft/server/MinecraftServer.java
 anchor:
     protected void tickServer(final BooleanSupplier haveTime) {
 insert-after:
-    org.spigotmc.WatchdogThread.tick();
+    if (dev.shifu.event.ShifuBootstrap.watchdog) {
+        org.spigotmc.WatchdogThread.tick();
+    }
 
 file: net/minecraft/server/MinecraftServer.java
 anchor:

@@ -115,3 +115,21 @@ with:
             // Shifu - paperConfig() を読む 2 ブロックを落とした。Level.paperConfig は Shifu では null。
             // 湧き上限は spawnCategoryLimit を空のままにすると getSpawnLimitUnsafe が server 側の値へ落ちる。
             // voidDamage の 3 つは Paper の World API 用で、vanilla の奈落ダメージは Entity 側にある。
+
+# 世界ごとのスポーン。vanilla の nether / end の serverLevelData は DerivedLevelData で、setSpawn / getRespawnData が
+# 主世界のものへ通る。Multiverse-Core が起動時に世界ごとに setSpawnLocation するので、主世界のスポーンが
+# nether(0, 128, 0)に書き換わり、新しいプレイヤーが nether に参加していた(9-25 の 26.2 の bot。level.dat の
+# spawn.dimension が minecraft:the_nether)。DerivedLevelData の世界だけ ServerLevel.shifuSpawn(hand)へ置き、
+# 次元フォルダへ保存する。CraftServer.createWorld で作った世界は PaperLevelOverrides(世界ごとの SavedData)を
+# 持つので、そのまま setSpawn へ通す(1.21.11 は PrimaryLevelData かどうかで分けているが、26.2 の createWorld の
+# 世界は PrimaryLevelData ではない)。
+# 読んだ位置: paper-server/src/main/java/io/papermc/paper/world/saveddata/PaperLevelOverrides.java:96,153
+replace:
+        final var respawnData = this.world.serverLevelData.getRespawnData();
+with:
+        final var respawnData = this.world.shifuGetSpawn() != null ? this.world.shifuGetSpawn() : this.world.serverLevelData.getRespawnData(); // Shifu
+
+replace:
+            this.world.serverLevelData.setSpawn(LevelData.RespawnData.of(this.world.dimension(), new BlockPos(x, y, z), yaw, pitch));
+with:
+            if (!(this.world.serverLevelData instanceof net.minecraft.world.level.storage.DerivedLevelData)) { this.world.serverLevelData.setSpawn(LevelData.RespawnData.of(this.world.dimension(), new BlockPos(x, y, z), yaw, pitch)); } else { this.world.shifuSetSpawn(LevelData.RespawnData.of(this.world.dimension(), new BlockPos(x, y, z), yaw, pitch)); } // Shifu - nether / end は世界ごとの欄へ

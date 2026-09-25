@@ -66,9 +66,9 @@ insert:
             }
 
             // Update the ItemStack if it was changed in the event
-            ItemStack current = this.getItem();
-            if (!itemStack.equals(current)) {
-                itemStack = current;
+            // Shifu - 局所変数にしない。公式にも ItemStack があると @Local ItemStack の候補が増えて mixin が当たらない
+            if (!itemStack.equals(this.getItem())) {
+                itemStack = this.getItem();
             } else {
                 itemStack.setCount(orgCount); // = canHold + remaining
             }

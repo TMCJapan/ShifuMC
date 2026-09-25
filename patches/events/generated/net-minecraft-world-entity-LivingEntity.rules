@@ -50,7 +50,9 @@ anchor:
 insert:
     if (dev.shifu.event.EventGuard.listening(io.papermc.paper.event.entity.EntityMoveEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // Paper start - Add EntityMoveEvent
-        if (((ServerLevel) this.level()).hasEntityMoveEvent && !(this instanceof Player)) {
+        // Shifu - Paper は tick の頭で世界ごとに控えた ServerLevel.hasEntityMoveEvent を見るが、
+        // Shifu はその欄に書かない(書く側の MinecraftServer の行を入れていない)。登録の有無は外側の if で見ている
+        if (!(this instanceof Player)) {
             if (this.xo != this.getX() || this.yo != this.getY() || this.zo != this.getZ() || this.yRotO != this.getYRot() || this.xRotO != this.getXRot()) {
                 Location from = new Location(this.level().getWorld(), this.xo, this.yo, this.zo, this.yRotO, this.xRotO);
                 Location to = new Location(this.level().getWorld(), this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());

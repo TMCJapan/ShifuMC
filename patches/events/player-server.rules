@@ -291,10 +291,9 @@ file: net/minecraft/world/level/BaseSpawner.java
 anchor:
     Entity entity = EntityType.loadEntityRecursive(input, level, EntitySpawnReason.SPAWNER, e -> {
 insert:
-    final int shifuPre = dev.shifu.event.PlayerEvents.preSpawnerSpawn(level, spawnPos, entityType.get(), pos);
-    if (shifuPre != 0) {
+    if (!dev.shifu.event.PlayerEvents.preSpawnerSpawn(level, spawnPos, entityType.get(), pos)) {
         delay = true;
-        if (shifuPre == 2) {
+        if (!dev.shifu.event.PlayerEvents.takeSpawnGoesOn()) {
             break;
         }
         continue;
@@ -469,7 +468,7 @@ anchor:
     }
     }
 insert-after:
-    if (dev.shifu.event.PlayerEvents.takeSpawnAbort()) {
+    if (!dev.shifu.event.PlayerEvents.takeSpawnGoesOn()) {
         return;
     }
 
@@ -580,7 +579,7 @@ anchor:
 insert:
     if (dev.shifu.event.PlayerEvents.swapHands(this.player, swap)) {
 insert-after:
-    } else if (dev.shifu.event.PlayerEvents.swapHandsCancelled()) {
+    } else if (!dev.shifu.event.PlayerEvents.swapHandsGoesOn()) {
         return;
     }
 
@@ -608,18 +607,18 @@ file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     carried.set(DataComponents.WRITABLE_BOOK_CONTENT, new WritableBookContent(pages));
 insert:
-    final ItemStack shifuBook = dev.shifu.event.PlayerEvents.bookBefore(carried);
+    dev.shifu.event.PlayerEvents.bookBefore(carried);
 insert-after:
-    dev.shifu.event.PlayerEvents.bookEdited(this.player, slot, shifuBook, carried, false);
+    dev.shifu.event.PlayerEvents.bookEdited(this.player, slot, carried, false);
 
 # PlayerEditBookEvent(署名)。スロットに置いたあと
 file: net/minecraft/server/network/ServerGamePacketListenerImpl.java
 anchor:
     this.player.getInventory().setItem(slot, writtenBook);
 insert:
-    final ItemStack shifuSigned = dev.shifu.event.PlayerEvents.bookBefore(carried);
+    dev.shifu.event.PlayerEvents.bookBefore(carried);
 insert-after:
-    dev.shifu.event.PlayerEvents.bookEdited(this.player, slot, shifuSigned, writtenBook, true);
+    dev.shifu.event.PlayerEvents.bookEdited(this.player, slot, writtenBook, true);
 
 # ============================================================ 効果・盾・エンチャント
 
@@ -639,20 +638,19 @@ file: net/minecraft/world/item/component/BlocksAttacks.java
 anchor:
     player.getCooldowns().addCooldown(blockingWith, cooldownTicks);
 insert:
-    final int shifuCooldown = dev.shifu.event.PlayerEvents.shieldDisable(player, cooldownTicks);
-    if (shifuCooldown < 0) {
-        return;
-    }
-    if (shifuCooldown == cooldownTicks) {
-insert-after:
+    if (!dev.shifu.event.PlayerEvents.shieldDisable(player, cooldownTicks, blockingWith)) {
+        if (!dev.shifu.event.PlayerEvents.shieldDisableGoesOn()) {
+            return;
+        }
     } else {
-        player.getCooldowns().addCooldown(blockingWith, shifuCooldown);
+insert-after:
     }
 
 # EntityLungeEvent。突きの効果を囲む。
 #
-# 強さが差し替えられたときは vanilla の行を飛ばして、同じ効果を新しい強さで当てる
-# (hand の shifuLunge。vanilla の enchantmentLevel は引数なので代入できない)。
+# 強さが差し替えられたときは vanilla の行を飛ばして、発火層が同じ効果を新しい強さで当てる
+# (hand の shifuLunge。vanilla の enchantmentLevel は引数なので代入できない。強さを局所変数に
+# 受けると、公式にもある int の @Local の候補が増える)。
 # 取り消しなら何もしない。登録が無ければ vanilla の行だけが走る。
 #
 # 読んだ位置: paper-server patches/sources/net/minecraft/world/item/enchantment/Enchantment.java.patch
@@ -664,11 +662,8 @@ anchor:
     e -> e.apply(serverLevel, enchantmentLevel, item, user, user.position())
     );
 insert:
-    final int shifuLunge = dev.shifu.event.PlayerEvents.lungePower(user, enchantmentLevel);
-    if (shifuLunge == enchantmentLevel) {
+    if (dev.shifu.event.PlayerEvents.lungePower(this, serverLevel, enchantmentLevel, item, user)) {
 insert-after:
-    } else if (shifuLunge != Integer.MIN_VALUE) {
-        this.shifuLunge(serverLevel, shifuLunge, item, user);
     }
 
 # EntityCombustByEntityEvent / EntityCombustEvent(火属性)

@@ -7,8 +7,9 @@ anchor:
 insert:
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerItemBreakEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // CraftBukkit start - Check for item breaking
-        if (this.getCount() == 1 && player instanceof final ServerPlayer serverPlayer) { // Paper - Add EntityDamageItemEvent
-            org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerItemBreakEvent(serverPlayer, this); // Paper - Add EntityDamageItemEvent
+        // Shifu - 型の変数を作らずに cast する。公式にも ServerPlayer の局所変数があり、足すと @Local ServerPlayer の候補が増える
+        if (this.getCount() == 1 && player instanceof ServerPlayer) { // Paper - Add EntityDamageItemEvent
+            org.bukkit.craftbukkit.event.CraftEventFactory.callPlayerItemBreakEvent((ServerPlayer) player, this); // Paper - Add EntityDamageItemEvent
         }
         // CraftBukkit end
     }

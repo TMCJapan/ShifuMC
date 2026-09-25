@@ -22,9 +22,9 @@ anchor:
 insert:
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockIgniteEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // CraftBukkit start - Prevent lava putting something on fire
-        BlockPos up = testPos.above();
-        if (!level.getBlockState(up).is(Blocks.FIRE)) {
-            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, up, pos).isCancelled()) {
+        // Shifu - 局所変数にしない。公式にも BlockPos があると @Local BlockPos の候補が増えて mixin が当たらない
+        if (!level.getBlockState(testPos.above()).is(Blocks.FIRE)) {
+            if (org.bukkit.craftbukkit.event.CraftEventFactory.callBlockIgniteEvent(level, testPos.above(), pos).isCancelled()) {
                 continue;
             }
         }

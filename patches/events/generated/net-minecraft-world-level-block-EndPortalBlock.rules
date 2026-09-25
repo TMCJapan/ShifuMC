@@ -29,11 +29,22 @@ insert:
     if ((dev.shifu.event.EventGuard.listening(org.bukkit.event.player.PlayerPortalEvent.class) || dev.shifu.event.EventGuard.listening(org.bukkit.event.entity.EntityPortalEvent.class))) { // Shifu - 登録が無ければ組み立てない
         // CraftBukkit start
         relatives.removeAll(Relative.ROTATION); // remove relative rotation flags to simplify event mutation
-        float absoluteYaw = !fromEnd ? yRot : entity.getYRot() + yRot;
-        float absolutePitch = entity.getXRot() + xRot;
-        org.bukkit.craftbukkit.event.PortalEventResult result = org.bukkit.craftbukkit.event.CraftEventFactory.handlePortalEvents(entity, org.bukkit.craftbukkit.util.CraftLocation.toBukkit(spawnPos, newLevel, absoluteYaw, absolutePitch), org.bukkit.PortalType.ENDER, 0, 0);
+        // Shifu - 向きを局所変数にしない。公式にも float の局所変数があり、足すと @Local float の候補が増える
+        org.bukkit.craftbukkit.event.PortalEventResult result = org.bukkit.craftbukkit.event.CraftEventFactory.handlePortalEvents(entity, org.bukkit.craftbukkit.util.CraftLocation.toBukkit(spawnPos, newLevel, !fromEnd ? yRot : entity.getYRot() + yRot, entity.getXRot() + xRot), org.bukkit.PortalType.ENDER, 0, 0);
         if (result == null) {
             return null;
         }
         org.bukkit.Location to = result.to();
+        // Shifu - Paper は vanilla の return を to から作り直している。ここでは同じものを作って抜ける
+        // (向きの相対の旗は上で外したので、to の向きがそのまま絶対の向きになる)。
+        // Paper の withCause(END_PORTAL) の代わりに、テレポートの理由は ShifuEvents が portalProcess から出す
+        return new TeleportTransition(
+            ((org.bukkit.craftbukkit.CraftWorld) to.getWorld()).getHandle(),
+            org.bukkit.craftbukkit.util.CraftLocation.toVec3(to),
+            Vec3.ZERO,
+            to.getYaw(),
+            to.getPitch(),
+            relatives,
+            TeleportTransition.PLAY_PORTAL_SOUND.then(TeleportTransition.PLACE_PORTAL_TICKET)
+        );
     }

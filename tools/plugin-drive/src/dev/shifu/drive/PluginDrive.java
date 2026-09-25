@@ -25,7 +25,17 @@ public final class PluginDrive extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         this.getServer().getPluginManager().registerEvents(this, this);
+        // 世界の名前・鍵・環境。参加した世界が world_nether と出たので、並びを見る
+        for (final org.bukkit.World world : Bukkit.getWorlds()) {
+            this.note("world " + world.getName() + " key=" + world.getKey() + " env=" + world.getEnvironment()
+                    + " spawn=" + brief(world.getSpawnLocation()));
+        }
         this.getLogger().info("[drive] waiting for the bot");
+    }
+
+    @EventHandler
+    public void onCommandPreprocess(final org.bukkit.event.player.PlayerCommandPreprocessEvent event) {
+        this.note("PlayerCommandPreprocessEvent " + event.getMessage());
     }
 
     private void note(final String text) {
@@ -43,15 +53,33 @@ public final class PluginDrive extends JavaPlugin implements Listener {
     @EventHandler
     public void onJoin(final PlayerJoinEvent event) {
         final Player bot = event.getPlayer();
-        this.note("join " + bot.getName());
+        this.note("join " + bot.getName() + " in " + bot.getWorld().getName() + " at " + brief(bot.getLocation()));
         bot.setOp(true);
         bot.setGameMode(org.bukkit.GameMode.CREATIVE);
+
+        // AuthMe を入れていると、登録するまでコマンドが通らず、飛ぶ速さも 0 にされる。
+        // 26.2 の run-mix で入れ忘れていたので、/home も /flyspeed も //set も
+        // 「In order to use this command you must be authenticated!」で止まっていた(9-25)。
+        // 2 度目からは登録済みなので、どちらも送る。効かない方は
+        // 「登録済み」「ログイン済み」で断られるだけで害が無い。
+        // (読んだ位置: AuthMe 6.0.1 LimboServiceHelper.revokeLimboStates の setFlySpeed(0) / setWalkSpeed(0)、
+        // PlayerListener.onPlayerCommandPreprocess の DENIED_COMMAND、javap)
+        if (Bukkit.getPluginManager().isPluginEnabled("AuthMe")) {
+            this.later(10, () -> this.tell(bot, "!bot cmd register shifu1234 shifu1234"));
+            this.later(14, () -> this.tell(bot, "!bot cmd login shifu1234"));
+        }
 
         // 空中に足場を作って、その上で WorldEdit を使わせる
         this.origin = new Location(bot.getWorld(), bot.getLocation().getBlockX(), 150.0, bot.getLocation().getBlockZ());
         this.later(20, () -> {
+            // AuthMe はログインしたところで、参加した時点の op を戻す(参加の時点では op でない)。
+            // 入れ直さないと /sethome も //set も権限なしで断られた(9-25 の 26.2)。
+            // (読んだ位置: AuthMe 6.0.1 LimboServiceHelper.createLimboPlayer の Player.isOp、revokeLimboStates の setOp、javap)
+            bot.setOp(true);
+            // ver/1.21.11 の drive と同じく、空中へ運ぶ前にクリエイティブへ入れ直す
+            bot.setGameMode(org.bukkit.GameMode.CREATIVE);
             bot.teleport(this.origin);
-            this.note("teleported to " + brief(this.origin));
+            this.note("teleported to " + brief(this.origin) + " (" + bot.getGameMode() + ")");
         });
 
         // EssentialsX。結果が読めるように、家を置いて離れてから戻る
@@ -64,11 +92,19 @@ public final class PluginDrive extends JavaPlugin implements Listener {
         this.later(130, () -> this.note("after /home: " + brief(bot.getLocation())
                 + " (home was " + brief(this.origin) + ", distance "
                 + String.format("%.1f", bot.getLocation().distance(this.origin)) + ")"));
+        // EssentialsX の /speed は、種類を書かないと isFlying() で歩く速さか飛ぶ速さかを選ぶ。
+        // bot が飛んでいなければ /speed 3 は歩く速さを変える。飛ぶ速さは別名の /flyspeed で変えさせる
+        // (読んだ位置: EssentialsX 2.22.0 Commandspeed.run の isFlyAlias / isWalkAlias / Player.isFlying、javap)。
+        // run-mix の ver/* の版には EssentialsX が入っていない。/speed は Unknown command になっていた。
         this.later(140, () -> {
-            this.note("fly speed before /speed = " + bot.getFlySpeed());
-            this.tell(bot, "!bot cmd speed 3");
+            if (!Bukkit.getPluginManager().isPluginEnabled("Essentials")) {
+                this.note("EssentialsX is not installed; /flyspeed not checked");
+                return;
+            }
+            this.note("fly speed before /flyspeed = " + bot.getFlySpeed());
+            this.tell(bot, "!bot cmd flyspeed 3");
+            this.later(10, () -> this.note("fly speed after /flyspeed 3 = " + bot.getFlySpeed()));
         });
-        this.later(150, () -> this.note("fly speed after /speed 3 = " + bot.getFlySpeed()));
         // タブ一覧の表示名。vanilla は常に null を返すので、入れた名前が返るかを見る
         this.later(152, () -> {
             bot.setPlayerListName("ShifuTab");

@@ -373,6 +373,11 @@ public final class ShifuGameProvider implements GameProvider {
 		for (Path lib : gameLibraries) {
 			launcher.addToClassPath(lib);
 		}
+
+		// プラグインから見てよい Knot のクラスはこの 2 つから来たものだけ(ModHidingClassLoader)。
+		List<Path> server = new ArrayList<>(gameJars);
+		server.addAll(gameLibraries);
+		ShifuHooks.setServerCodeSources(server);
 	}
 
 	@Override

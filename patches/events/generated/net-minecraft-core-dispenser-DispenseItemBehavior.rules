@@ -8,7 +8,6 @@ insert:
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockDispenseEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // CraftBukkit start
         BlockState state = level.getBlockState(target);
-        ItemStack dispensedItem = dispensed; // Paper - track changed item from the dispense event
         // Paper start - correctly check if the bucket place will succeed
         /* Taken from SolidBucketItem#emptyContents */
         boolean willEmptyContentsSolidBucketItem = bucket instanceof net.minecraft.world.item.SolidBucketItem && level.isInWorldBounds(target) && state.isAir();
@@ -28,17 +27,18 @@ insert:
 
             if (!event.getItem().equals(craftItem)) {
                 // Chain to handler for new item
-                ItemStack eventStack = org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItem());
-                DispenseItemBehavior dispenseBehavior = DispenserBlock.getDispenseBehavior(source, eventStack);
+                // Shifu - 局所変数にしない。公式にも ItemStack があると @Local ItemStack の候補が増えて mixin が当たらない
+                // (写しを 2 回作る。中身は同じなので getDispenseBehavior の答えも同じ)
+                DispenseItemBehavior dispenseBehavior = DispenserBlock.getDispenseBehavior(source, org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItem()));
                 if (dispenseBehavior != DispenseItemBehavior.NOOP && dispenseBehavior != this) {
-                    dispenseBehavior.dispense(source, eventStack);
+                    dispenseBehavior.dispense(source, org.bukkit.craftbukkit.inventory.CraftItemStack.asNMSCopy(event.getItem()));
                     return dispensed;
                 }
             }
 
             // Paper start - track changed item from dispense event
-            dispensedItem = org.bukkit.craftbukkit.inventory.CraftItemStack.unwrap(event.getItem()); // unwrap is safe here as the stack isn't mutated
-            bucket = (DispensibleContainerItem)dispensedItem.getItem();
+            // Shifu - 局所変数にしない。公式にも ItemStack があると @Local ItemStack の候補が増えて mixin が当たらない
+            bucket = (DispensibleContainerItem) org.bukkit.craftbukkit.inventory.CraftItemStack.unwrap(event.getItem()).getItem(); // unwrap is safe here as the stack isn't mutated
             // Paper end - track changed item from dispense event
         }
         // CraftBukkit end
@@ -51,9 +51,10 @@ anchor:
 insert:
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockDispenseEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // Paper start - Call BlockDispenseEvent
-        ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(source, target, dispensed, this);
-        if (result != null) {
-            return result;
+        // Shifu - 局所変数にしない。公式にも ItemStack があると @Local ItemStack の候補が増えて mixin が当たらない
+        // handleBlockDispenseEvent は null か、渡した dispensed をそのまま返す(読んだ位置: paper-server/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:2249)
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(source, target, dispensed, this) != null) {
+            return dispensed;
         }
         // Paper end - Call BlockDispenseEvent
         pickup = bucket.pickupBlock(null, level, target, blockState); // CraftBukkit - from above
@@ -67,9 +68,10 @@ anchor:
 insert:
     if (dev.shifu.event.EventGuard.listening(org.bukkit.event.block.BlockDispenseEvent.class)) { // Shifu - 登録が無ければ組み立てない
         // Paper start - Call BlockDispenseEvent
-        ItemStack result = org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(source, target, dispensed, this);
-        if (result != null) {
-            return result;
+        // Shifu - 局所変数にしない。公式にも ItemStack があると @Local ItemStack の候補が増えて mixin が当たらない
+        // handleBlockDispenseEvent は null か、渡した dispensed をそのまま返す(読んだ位置: paper-server/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java:2249)
+        if (org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockDispenseEvent(source, target, dispensed, this) != null) {
+            return dispensed;
         }
         // Paper end - Call BlockDispenseEvent
     }

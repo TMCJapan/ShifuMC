@@ -8,6 +8,9 @@
 # 外したものは `docs/backlog/events-dropped.txt` に理由ごと残る。
 # 黙って減らさないため。
 set -e
+# once.sh が途中で落ちたら止める。tail に繋いだだけでは終了コードが tail のものになり、
+# 前の回の vanilla-gap.txt を元に drop_bad_events.py が規則を外す。
+set -o pipefail
 
 . "$(dirname "$0")/env.sh"
 GAP=$SHIFU/docs/backlog/vanilla-gap.txt
@@ -21,7 +24,7 @@ mkdir -p "$SHIFU/docs/backlog"
 touch "$SHIFU/docs/backlog/required-members.txt"
 
 for round in 1 2 3 4 5 6 7 8; do
-    sh "$SHIFU/tools/once.sh" 2>/dev/null | tail -2
+    sh "$SHIFU/tools/once.sh" | tail -2
     count=$(grep -c "error:" "$GAP" || true)
     echo "round $round: $count errors"
 

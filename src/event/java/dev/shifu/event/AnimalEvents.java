@@ -108,11 +108,24 @@ public final class AnimalEvents {
      * @return 座り(立ち)状態を書き換えてよいか
      */
     public static boolean toggleSit(final Entity entity, final boolean sitting) {
-        if (!listening(io.papermc.paper.event.entity.EntityToggleSitEvent.getHandlerList())) {
+        if (sitLoading || !listening(io.papermc.paper.event.entity.EntityToggleSitEvent.getHandlerList())) {
             return true;
         }
 
         return new io.papermc.paper.event.entity.EntityToggleSitEvent(entity.getBukkitEntity(), sitting).callEvent();
+    }
+
+    /** 保存から座り状態を読み戻している間。{@link #toggleSit} は発火しない。 */
+    private static boolean sitLoading;
+
+    /**
+     * {@code TamableAnimal} / {@code Fox} の {@code readAdditionalSaveData} が座り状態を読み戻す行の前後で呼ぶ。
+     * Paper はそこで発火の引数に false を渡すので、読み込みでは EntityToggleSitEvent が出ない。
+     *
+     * <p>読んだ位置: paper-server patches/sources/net/minecraft/world/entity/TamableAnimal.java.patch:8、animal/fox/Fox.java.patch:8
+     */
+    public static void sitFromSave(final boolean loading) {
+        sitLoading = loading;
     }
 
     // ------------------------------------------------------------ 飼われている動物
@@ -530,22 +543,6 @@ public final class AnimalEvents {
         return CraftEventFactory.callStriderTemperatureChangeEvent(strider, shivering);
     }
 
-    /**
-     * EntityCombustByEntityEvent。{@code Zombie.doHurtTarget} で相手に火を付ける直前。
-     *
-     * @return 燃やす秒数。取り消されたら -1。vanilla の値と同じならそのまま vanilla の行へ
-     */
-    public static float combustByEntity(final Entity combuster, final Entity target, final int seconds) {
-        if (!listening(org.bukkit.event.entity.EntityCombustByEntityEvent.getHandlerList())) {
-            return seconds;
-        }
-
-        final org.bukkit.event.entity.EntityCombustByEntityEvent event = new org.bukkit.event.entity.EntityCombustByEntityEvent(
-                combuster.getBukkitEntity(), target.getBukkitEntity(), (float) seconds);
-
-        return event.callEvent() ? event.getDuration() : -1.0F;
-    }
-
     /** PigZombieAngerEvent に登録が無いか。 */
     public static boolean silentPigZombieAnger() {
         return !listening(org.bukkit.event.entity.PigZombieAngerEvent.getHandlerList());
@@ -574,6 +571,25 @@ public final class AnimalEvents {
     }
 
     /**
+     * この呼び出しで vanilla が襲撃を登録したか。{@link #raidNew} が控え、{@link #takeRaidNew} が読む。
+     * 呼ぶ側の局所変数に置くと、公式の {@code createOrExtendRaid} にもある boolean の局所変数が増え、
+     * MixinExtras の {@code @Local boolean} の候補が 2 つになる。
+     */
+    private static boolean raidNew;
+
+    public static void raidNew(final boolean created) {
+        raidNew = created;
+    }
+
+    /** 控えた「この呼び出しで登録した」を返して消す。登録が無ければ控えていないので false。 */
+    public static boolean takeRaidNew() {
+        final boolean created = raidNew;
+        raidNew = false;
+
+        return created;
+    }
+
+    /**
      * RaidTriggerEvent。{@code Raids.createOrExtendRaid} で不吉な予感を吸わせる直前。
      *
      * <p>Paper は襲撃の登録をイベントのあとに回している。Shifu は vanilla が先に登録するので、
@@ -586,7 +602,13 @@ public final class AnimalEvents {
             return true;
         }
 
-        return CraftEventFactory.callRaidTriggerEvent(level, raid, player);
+        if (CraftEventFactory.callRaidTriggerEvent(level, raid, player)) {
+            raidNew = false;
+
+            return true;
+        }
+
+        return false;
     }
 
     /** PiglinBarterEvent に登録が無いか。 */

@@ -210,6 +210,14 @@ public final class LvtMatch {
         for (LocalVariableNode lv : wanted) {
             Integer target = officialSlot(mine, moj, lv, usedVars);
 
+            // 公式と同じ名前・型・番号に居る変数は、その番号に留まる方へ票を入れる(理由は inPlace)。
+            // slot ごと固定はしない。同じ slot を使い回す別の変数が公式では隣の番号に居るときは、
+            // slot ごと動かす方が一時変数も一緒に動いて合い、留まる変数は --vars が戻す
+            // (1.21.11 の LeashFenceKnotEntity.interact の success と flag1)
+            if (inPlace(moj, lv)) {
+                target = lv.index;
+            }
+
             if (target == null || target >= size || target < fixed) {
                 continue;
             }
@@ -468,6 +476,11 @@ public final class LvtMatch {
 
             if (slot == null) {
                 slot = officialSlot(mine, moj, local.node, used);
+
+                // 公式と同じ名前・型・番号に居る変数は動かさない(理由は inPlace)
+                if (inPlace(moj, local.node)) {
+                    slot = local.node.index;
+                }
 
                 if (slot != null) {
                     group.put(key, slot);
@@ -849,6 +862,43 @@ public final class LvtMatch {
         used.add(best);
 
         return best.index;
+    }
+
+    /**
+     * 公式に同じ名前・型の変数があり、それがどれもこちらと同じ番号に居るか。
+     *
+     * <p>javac が公式と同じ番号に置いた変数も、{@link #officialSlot} の答えのままだと動くことがある。
+     * 差し込みで宣言の位置が {@link #START_TOLERANCE} より後ろへずれると、同じ名前の
+     * 公式の変数が候補から外れ、近くの同じ型の別の変数の番号を取るため。
+     * 1.21.11 の {@code ServerGamePacketListenerImpl.handleMovePlayer} は PlayerJumpEvent の
+     * 差し込みで {@code flag1} の宣言が 87 ずれ、公式どおり 30 / 33 / 34 に居た {@code flag1} /
+     * {@code flag2} / {@code isAutoSpinAttack} が 33 / 34 / 30 に入れ替わった
+     * (MOD の {@code @Local(ordinal)} がずれる)。
+     *
+     * <p>officialSlot は先に呼んだまま、答えだけをここで差し替える。公式の変数を先に
+     * 押さえてしまうと、残りの変数が取る候補が変わり、名前の合わない別の変数に当たる
+     * (1.21.11 の EnderDragon.findClosestNode で、var7 が公式の max の 6 番を取り、max が 3 番に残った)。
+     *
+     * <p>同じ名前・型の変数が公式に別の番号でも居るときは、どれに当たるか名前では決まらないので
+     * 対象にしない(26.2 の ServerPlayer.hurtServer は player が 5 番と 7 番にあり、
+     * 5 番に当たる player を 7 番に留めていた)。
+     */
+    private static boolean inPlace(MethodNode moj, LocalVariableNode lv) {
+        boolean found = false;
+
+        for (LocalVariableNode other : moj.localVariables) {
+            if (!other.name.equals(lv.name) || !other.desc.equals(lv.desc)) {
+                continue;
+            }
+
+            if (other.index != lv.index) {
+                return false;
+            }
+
+            found = true;
+        }
+
+        return found;
     }
 
     /** 宣言の位置のずれの許容(opcode の数)。差し込んだ発火の分だけずれる。 */

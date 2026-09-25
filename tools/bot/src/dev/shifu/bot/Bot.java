@@ -89,6 +89,9 @@ import net.minecraft.world.phys.Vec3;
  * </pre>
  */
 public final class Bot {
+    /** Bootstrap.bootStrap() が System.out を logger 送りに差し替えるので、その前のものを控えておく。 */
+    private static final java.io.PrintStream OUT = System.out;
+
     private static final Packet<PacketListener> IGNORED = new Packet<>() {
         @Override
         @SuppressWarnings({"unchecked", "rawtypes"})
@@ -129,8 +132,16 @@ public final class Bot {
         final Bot bot = new Bot(name);
         bot.connect(host, port);
 
-        if (!bot.done.await(seconds, TimeUnit.SECONDS)) {
-            log("time is up");
+        // Connection.tick() を回さないと、切れたときの onDisconnect(理由付き)が届かない。
+        boolean finished = false;
+
+        for (long i = 0; i < seconds && !finished; i++) {
+            finished = bot.done.await(1, TimeUnit.SECONDS);
+            bot.connection.tick();
+        }
+
+        if (!finished) {
+            log("time is up (connected=" + bot.connection.isConnected() + ")");
         }
 
         if (bot.connection.isConnected()) {
@@ -143,8 +154,8 @@ public final class Bot {
     }
 
     static void log(final String text) {
-        System.out.println("[bot] " + text);
-        System.out.flush();
+        OUT.println("[bot] " + text);
+        OUT.flush();
     }
 
     // ------------------------------------------------------------ 接続
@@ -221,6 +232,24 @@ public final class Bot {
             case "handlePing" -> this.connection.send(new ServerboundPongPacket(((ClientboundPingPacket) packet).getId()));
             case "handleLogin" -> log("joined the game");
             case "handleMovePlayer" -> this.accept((ClientboundPlayerPositionPacket) packet);
+            case "handleBossUpdate" -> ((net.minecraft.network.protocol.game.ClientboundBossEventPacket) packet).dispatch(
+                    new net.minecraft.network.protocol.game.ClientboundBossEventPacket.Handler() {
+                        @Override
+                        public void add(final java.util.UUID id, final net.minecraft.network.chat.Component name, final float percent,
+                                final net.minecraft.world.BossEvent.BossBarColor color, final net.minecraft.world.BossEvent.BossBarOverlay style,
+                                final boolean darkenSky, final boolean dragonMusic, final boolean thickenFog) {
+                            log("bossbar add name=" + name.getString() + " progress=" + percent + " color=" + color + " overlay=" + style);
+                        }
+                        @Override
+                        public void remove(final java.util.UUID id) { log("bossbar remove"); }
+                        @Override
+                        public void updateProgress(final java.util.UUID id, final float percent) { log("bossbar progress=" + percent); }
+                        @Override
+                        public void updateName(final java.util.UUID id, final net.minecraft.network.chat.Component name) { log("bossbar name=" + name.getString()); }
+                        @Override
+                        public void updateStyle(final java.util.UUID id, final net.minecraft.world.BossEvent.BossBarColor color,
+                                final net.minecraft.world.BossEvent.BossBarOverlay style) { log("bossbar color=" + color + " overlay=" + style); }
+                    });
             case "handleSetHealth" -> log("health " + ((ClientboundSetHealthPacket) packet).getHealth());
             case "handlePlayerCombatKill" -> {
                 log("died: " + ((ClientboundPlayerCombatKillPacket) packet).message().getString());
@@ -287,6 +316,20 @@ public final class Bot {
                     new net.minecraft.network.protocol.game.ServerboundChatCommandPacket(rest));
             case "click" -> this.connection.send(new ServerboundContainerClickPacket(0, 0, (short) Integer.parseInt(rest), (byte) 0,
                     ContainerInput.PICKUP, new Int2ObjectOpenHashMap<>(), HashedStack.EMPTY));
+            // ブロックを壊す。クリエイティブなら START だけで壊れるが、両方送る
+            case "break" -> {
+                final String[] shifuAt = rest.split(",");
+                final BlockPos target = new BlockPos(Integer.parseInt(shifuAt[0]),
+                        Integer.parseInt(shifuAt[1]), Integer.parseInt(shifuAt[2]));
+                this.connection.send(new ServerboundPlayerActionPacket(
+                        ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, target, Direction.UP, 0));
+                this.connection.send(new ServerboundPlayerActionPacket(
+                        ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, target, Direction.UP, 0));
+            }
+            // 持ち替え。数字は 0..8
+            case "slot" -> this.connection.send(
+                    new net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket(
+                            Integer.parseInt(rest)));
             case "drop" -> this.connection.send(new ServerboundPlayerActionPacket(
                     ServerboundPlayerActionPacket.Action.DROP_ITEM, BlockPos.ZERO, Direction.DOWN, 0));
             case "respawn" -> this.connection.send(new ServerboundClientCommandPacket(ServerboundClientCommandPacket.Action.PERFORM_RESPAWN));
@@ -326,7 +369,7 @@ public final class Bot {
     }
 
     private static BlockPos blockPos(final String text) {
-        final String[] parts = text.trim().split("\\s+");
+        final String[] parts = text.trim().split("[,\\s]+");
 
         return new BlockPos(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
     }
@@ -392,6 +435,8 @@ public final class Bot {
         return null;
     }
 
+    private static final java.util.Set<String> UNDECODED = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
     /** 復号に失敗した packet を捨てて先へ進む codec。 */
     private static <T extends PacketListener> ProtocolInfo<T> forgiving(final ProtocolInfo<T> real) {
         final StreamCodec<ByteBuf, Packet<? super T>> codec = new StreamCodec<>() {
@@ -402,6 +447,11 @@ public final class Bot {
                     return real.codec().decode(buf);
                 } catch (final Throwable t) {
                     buf.readerIndex(buf.writerIndex());
+
+                    // 何を捨てたかが分からないと、指示が届かない理由を追えない。種類ごとに 1 回だけ出す
+                    if (UNDECODED.add(String.valueOf(t))) {
+                        log("undecodable packet: " + t);
+                    }
 
                     return (Packet<? super T>) IGNORED;
                 }
