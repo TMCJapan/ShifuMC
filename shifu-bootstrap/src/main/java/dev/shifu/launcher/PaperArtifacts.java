@@ -28,7 +28,7 @@ record PaperArtifacts(Path serverJar, Path librariesDir, Path vanillaJar, Path l
 
 	/**
 	 * @param ownPaperclip Shifu 自身のサーバー(paperclip 形式)のパスか URL。
-	 *                     空なら Paper 公式ビルドを取る
+	 *                     空なら同じフォルダの shifu-server*.jar を探し、無ければ Paper 公式ビルドを取る
 	 */
 	static PaperArtifacts obtain(Downloader downloader, Path serverDir, String minecraftVersion, String build,
 			String ownPaperclip) throws IOException, InterruptedException {
@@ -39,6 +39,10 @@ record PaperArtifacts(Path serverJar, Path librariesDir, Path vanillaJar, Path l
 		Path stamp = serverJar.resolveSibling(serverJar.getFileName() + ".from");
 		Path list = serverDir.resolve(".shifu").resolve("versions").resolve(minecraftVersion)
 				.resolve("libraries.list");
+		if (ownPaperclip.isEmpty()) {
+			ownPaperclip = findLocalPaperclip(serverDir, minecraftVersion);
+		}
+
 		if (!ownPaperclip.isEmpty()) {
 			Path paperclip = localOrDownloaded(downloader, serverDir, ownPaperclip);
 			requireVersion(paperclip, minecraftVersion);
@@ -139,6 +143,51 @@ record PaperArtifacts(Path serverJar, Path librariesDir, Path vanillaJar, Path l
 					+ ", but shifu.properties says minecraft-version = " + minecraftVersion
 					+ "; set minecraft-version = " + bundled);
 		}
+	}
+
+	/**
+	 * {@code server-paperclip} が空のとき、同じフォルダの {@code shifu-server*.jar} から
+	 * {@code minecraft-version} の版のものを探す。配布物は版ごとに {@code shifu-server-<版>.jar} なので、
+	 * 名前ではなく jar の中の {@code versions.list} で版を見る。
+	 * 見つからなければ空を返し、Paper 公式ビルドを組み立てる。同じ版が 2 つ以上あれば、どれを使うか決めずに止める。
+	 */
+	private static String findLocalPaperclip(Path serverDir, String minecraftVersion) throws IOException {
+		List<Path> matching = new java.util.ArrayList<>();
+		List<String> others = new java.util.ArrayList<>();
+
+		try (java.nio.file.DirectoryStream<Path> files = Files.newDirectoryStream(serverDir, "shifu-server*.jar")) {
+			for (Path file : files) {
+				if (!Files.isRegularFile(file) || !isPaperclip(file)) {
+					continue;
+				}
+
+				String bundled = bundledVersion(file);
+
+				if (minecraftVersion.equals(bundled)) {
+					matching.add(file);
+				} else {
+					others.add(file.getFileName() + " (" + bundled + ")");
+				}
+			}
+		}
+
+		if (matching.size() > 1) {
+			throw new IOException("several Shifu servers for Minecraft " + minecraftVersion + " in " + serverDir
+					+ ": " + matching.stream().map(path -> path.getFileName().toString()).toList()
+					+ "; set server-paperclip in shifu.properties");
+		}
+
+		if (matching.isEmpty()) {
+			if (!others.isEmpty()) {
+				Log.warn("no Shifu server for Minecraft %s here (found %s) - using the official Paper build",
+						minecraftVersion, others);
+			}
+
+			return "";
+		}
+
+		Log.info("using %s (server-paperclip is empty)", matching.get(0).getFileName());
+		return matching.get(0).toString();
 	}
 
 	/** {@code META-INF/versions.list} の 1 行目、2 列目が paperclip の対象の版。 */

@@ -10,8 +10,8 @@ vanilla そのままで、プラグインを入れていなければ処理順ま
 
 ## 状態
 
-検証段階。配布物は [Releases](https://github.com/TMCJapan/ShifuMC/releases) に
-Minecraft の版ごとに置く。
+検証段階。配布物は [Releases](https://github.com/TMCJapan/ShifuMC/releases) に、
+5 つの版の分を 1 つのリリースにまとめて置く。
 
 | Minecraft | ブランチ | Java | MOD の名前空間 |
 |---|---|---|---|
@@ -40,22 +40,17 @@ Minecraft のサーバー本体は入っていない。初回の起動時に Moj
 
 ## 動かし方
 
-Releases から、使う版の `shifu.jar`(起動側、約 100 KB)と `shifu-server.jar`
+Releases から、使う版の `shifu-<版>.jar`(起動側、約 100 KB)と `shifu-server-<版>.jar`
 (サーバー本体、35〜55 MB)を落として、空のフォルダに置く。
-同じフォルダに `shifu.properties` を作り、次の 1 行を書く。
+`eula.txt` は自分で書く。Minecraft の EULA に同意したことになるので、中身を確かめてから。
 
 ```
-server-paperclip = shifu-server.jar
+java -jar shifu-26.2.jar nogui
 ```
 
-この行が無いと、起動側は Paper の公式ビルドを落として組み立てる。その場合は Shifu の
-イベント発火層が入らない(下の「設定」)。
-
-`eula.txt` も自分で書く。Minecraft の EULA に同意したことになるので、中身を確かめてから。
-
-```
-java -jar shifu.jar nogui
-```
+起動側は、同じフォルダの `shifu-server*.jar` から自分の版のものを探して使う
+(名前ではなく jar の中の版で見る)。見つからなければ Paper の公式ビルドを組み立てるので、
+Shifu のイベント発火層が入らない(下の「設定」)。
 
 初回は次の順で進む。数分かかる。
 
@@ -71,9 +66,10 @@ java -jar shifu.jar nogui
 `Done (...)` が出たら `127.0.0.1:25565` で入れる。
 
 初回に `versions/` `libraries/` `cache/` `.shifu/` `world/` `logs/` ができる。
-`shifu-server.jar` を新しいものに入れ替えたら、起動側が中身のハッシュで見分けて
+`shifu-server-<版>.jar` を新しいものに入れ替えたら、起動側が中身のハッシュで見分けて
 組み立て直す(`versions/<版>/paper-<版>.jar.from` に記録している)。消す必要はない。
-`shifu-server.jar` の版と `minecraft-version` が違うと、組み立てる前に止まる。
+同じ版の `shifu-server*.jar` が 2 つ以上あると、どれを使うか決めずに止まる。
+`server-paperclip` に書いたサーバーの版と `minecraft-version` が違うときも、組み立てる前に止まる。
 
 ## 設定
 
@@ -87,7 +83,8 @@ minecraft-version = 26.2
 paper-build = latest
 
 # Shifu 自身のサーバー(paperclip 形式)。パスか URL
-# 空にすると Paper 公式ビルドをそのまま組み立てる(イベント発火層は入らない)
+# 空なら同じフォルダの shifu-server*.jar から minecraft-version の版のものを使う。
+# それも無ければ Paper 公式ビルドをそのまま組み立てる(イベント発火層は入らない)
 server-paperclip =
 
 # fabric-loader のバージョン
@@ -102,14 +99,14 @@ jvm-args = -Xmx2G
 
 Windows のパスはバックスラッシュのまま書ける(`server-paperclip = C:\server\shifu-server.jar`)。
 
-`server-paperclip` を空にすると Paper の公式ビルドが組み上がる。この状態では
-Shifu のイベント発火層が入らないので、プラグインは動くが MOD との同居は Shifu の
-ものではなくなる。
+`server-paperclip` が空で、同じフォルダに版の合う `shifu-server*.jar` も無いと、Paper の公式ビルドが
+組み上がる。この状態では Shifu のイベント発火層が入らないので、プラグインは動くが MOD との同居は
+Shifu のものではなくなる。
 
 `vanilla-parity` は、Paper がエンティティの活性化範囲や湧き上限を vanilla から
 変えている分を設定で戻す。`server-paperclip` に Shifu 自身のサーバーを指定している
 ときは、その設定を読む処理がサーバーに入っていないので効き目が無い。
-`server-paperclip` を空にして Paper 公式ビルドを組み立てる使い方のための設定。
+Paper 公式ビルドを組み立てる使い方のための設定。
 詳しくは [docs/VANILLA-PARITY.md](docs/VANILLA-PARITY.md)。
 
 ## MOD とプラグイン
