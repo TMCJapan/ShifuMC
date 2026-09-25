@@ -94,6 +94,27 @@ public final class ShifuBootstrap {
     }
 
     /**
+     * Bukkit の {@code Enchantment} と {@code PotionEffectType} の表を埋める。{@code Bootstrap.bootStrap()} の直後に呼ぶ。
+     *
+     * <p>1.18.2 の Paper は vanilla の {@code Enchantments} / {@code MobEffects} の static ブロックで
+     * レジストリを回して登録する。Shifu はそのブロックを入れていないので、表が空のまま {@code CraftServer} の
+     * 構築子で締め切られ、{@code Enchantment.getByName} / {@code getByKey} と {@code PotionEffectType.getByName} が
+     * null を返していた。レジストリの順に回すので、登録の順は Paper と同じ。
+     *
+     * <p>読んだ位置: Paper-Server src/main/java/net/minecraft/world/item/enchantment/Enchantments.java:49-53、
+     * Paper-Server src/main/java/net/minecraft/world/effect/MobEffects.java:69-73
+     */
+    public static void registerBukkitEnchantmentsAndEffects() {
+        for (final net.minecraft.world.item.enchantment.Enchantment enchantment : net.minecraft.core.Registry.ENCHANTMENT) {
+            org.bukkit.enchantments.Enchantment.registerEnchantment(new org.bukkit.craftbukkit.enchantments.CraftEnchantment(enchantment));
+        }
+
+        for (final net.minecraft.world.effect.MobEffect effect : net.minecraft.core.Registry.MOB_EFFECT) {
+            org.bukkit.potion.PotionEffectType.registerPotionEffectType(new org.bukkit.craftbukkit.potion.CraftPotionEffectType(effect));
+        }
+    }
+
+    /**
      * Paper の watchdog({@code org.spigotmc.WatchdogThread})を起動したか。
      * {@code tickServer} の頭と起動の終わりは、これが立っているときだけ watchdog に知らせる。
      */

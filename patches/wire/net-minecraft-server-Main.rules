@@ -12,3 +12,4 @@ anchor:
     Bootstrap.bootStrap();
 insert-after:
     io.papermc.paper.world.structure.PaperConfiguredStructure.init();
+    dev.shifu.event.ShifuBootstrap.registerBukkitEnchantmentsAndEffects(); // Paper は Enchantments / MobEffects の static ブロックで登録する
